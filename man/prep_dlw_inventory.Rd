@@ -15,3 +15,6 @@ data.table
 \description{
 Prepare DatalibWeb inventory
 }
+\examples{
+prep_dlw_inventory <- function(pipload::pip_create_globals()$DLW_RAW_DIR)
+}
