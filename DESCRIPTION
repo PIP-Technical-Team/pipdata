@@ -1,10 +1,11 @@
 Package: pipdata
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9002
-Authors@R: c(
- .
-              )
-Description: What the package does (one paragraph).
+Authors@R: 
+  person("R.Andres", "Castaneda",
+        email = "acastanedaa@worldbank.org",
+        role = c("aut", "cre"))
+Description: prepare data to be ingested in PIP pipeline.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -14,6 +15,7 @@ Imports:
     data.table,
     fs,
     lubridate,
+    magrittr,
     pipload,
     readr,
     stringr

@@ -1,4 +1,25 @@
-#' Prepare DatalibWeb inventory
+# Add global variables to avoid NSE notes in R CMD check
+if (getRversion() >= "2.15.1") {
+  utils::globalVariables(
+    c(
+      "creationtime",
+      "fullname",
+      "lastwritetime",
+      "module",
+      "survey_id",
+      "surveyid_year",
+      ".",
+      "!!",
+      ":="
+    )
+  )
+}
+
+#' @title Prepare DatalibWeb inventory
+#'
+#' @description takes dlw inventory in csv form in the official folder structure and format
+#' it to be included in the pipeline. The original csv file is updated each time
+#' the dlw inventory is updated
 #'
 #' @param dlw_dir character: path of dlw raw data
 #'
@@ -6,7 +27,9 @@
 #' @export
 #'
 #' @examples
-#' prep_dlw_inventory <- function(pipload::pip_create_globals()$DLW_RAW_DIR)
+#' library(pipload)
+#' dlw_dir <- pip_create_globals()$DLW_RAW_DIR
+#' prep_dlw_inventory(dlw_dir)
 prep_dlw_inventory <- function(dlw_dir) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # directoires and paths   ---------
@@ -59,7 +82,10 @@ prep_dlw_inventory <- function(dlw_dir) {
   # clean data   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  dlw_inv <- as.data.table(readr::read_csv(dlw_inv_path, name_repair = tolower))
+  dlw_inv <- as.data.table(readr::read_csv(dlw_inv_path,
+                                           name_repair    = tolower,
+                                           progress       = FALSE,
+                                           show_col_types = FALSE))
 
   dlw_inv[,
           survey_id := {
@@ -77,13 +103,13 @@ prep_dlw_inventory <- function(dlw_dir) {
   dlw_inv[, (id_vars) := tstrsplit(survey_id, split = c("_"), fixed = TRUE)]
 
   dlw_inv <- dlw_inv[module %chin% pip_modules] # keep important modules
-  dlw_inv[, c("m", "a")   := null] # remove M and A
+  dlw_inv[, c("M", "A")   := NULL] # remove M and A
 
   # Classify as PC or TB
   dlw_inv[,
           `:=`(
             surveyid_year = as.numeric(surveyid_year),
-            tool          = fifelse(module == "all", "tb", "pc")
+            tool          = fifelse(module == "ALL", "TB", "PC")
           )]
 
   return(dlw_inv)

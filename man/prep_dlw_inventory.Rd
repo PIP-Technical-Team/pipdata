@@ -13,8 +13,12 @@ prep_dlw_inventory(dlw_dir)
 data.table
 }
 \description{
-Prepare DatalibWeb inventory
+takes dlw inventory in csv form in the official folder structure and format
+it to be included in the pipeline. The original csv file is updated each time
+the dlw inventory is updated
 }
 \examples{
-prep_dlw_inventory <- function(pipload::pip_create_globals()$DLW_RAW_DIR)
+library(pipload)
+dlw_dir <- pip_create_globals()$DLW_RAW_DIR
+prep_dlw_inventory(dlw_dir)
 }
