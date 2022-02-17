@@ -1,5 +1,13 @@
-prep_dlw_inventory <- function() {
-  dlw_dir      <- path(root,"DLW-RAW")
+#' Prepare DatalibWeb inventory
+#'
+#' @param dlw_dir character: path of dlw raw data
+#'
+#' @return data.table
+#' @export
+#'
+#' @examples
+prep_dlw_inventory <- function(dlw_dir) {
+
   dlw_inv_path <- path(dlw_dir,"_Inventory",
                        "DLWRAW_all_DTAs", ext = "txt")
 
