@@ -16,6 +16,7 @@ Imports:
     fs,
     lubridate,
     magrittr,
+    pipaux,
     pipload,
     readr,
     stringr

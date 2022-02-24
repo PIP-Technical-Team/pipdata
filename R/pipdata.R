@@ -20,5 +20,27 @@ magrittr::`%>%`
 if (getRversion() >= "2.15.1")
   utils::globalVariables(c(".", ".I", ".N", ".SD"), utils::packageName())
 
+if (getRversion() >= "2.15.1") {
+  utils::globalVariables(
+    names = c(
+      ".",
+      ".I",
+      ".N",
+      ".SD",
+      ".",
+      "!!",
+      ":=",
+      "creationtime",
+      "fullname",
+      "lastwritetime",
+      "module",
+      "survey_id",
+      "surveyid_year"
+      ),
+      package = utils::packageName()
+      )
+}
+
+
 NULL
 

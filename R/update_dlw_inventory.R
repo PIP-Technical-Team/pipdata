@@ -1,52 +1,37 @@
-# Add global variables to avoid NSE notes in R CMD check
-if (getRversion() >= "2.15.1") {
-  utils::globalVariables(
-    c(
-      "creationtime",
-      "fullname",
-      "lastwritetime",
-      "module",
-      "survey_id",
-      "surveyid_year",
-      ".",
-      "!!",
-      ":="
-    )
-  )
-}
-
 #' @title Prepare DatalibWeb inventory
 #'
 #' @description takes dlw inventory in csv form in the official folder structure and format
 #' it to be included in the pipeline. The original csv file is updated each time
 #' the dlw inventory is updated
 #'
+#' @param root_dir character: root directory of the PIP data
 #' @param dlw_dir character: path of dlw raw data
+#' @param force logical: force update of data
 #'
-#' @return data.table
+#' @return logical. TRUE if data changed. FALSE otherwise
 #' @export
 #'
 #' @examples
-#' library(pipload)
-#' dlw_dir <- pip_create_globals()$DLW_RAW_DIR
-#' prep_dlw_inventory(dlw_dir)
-prep_dlw_inventory <- function(dlw_dir) {
+#' update_dlw_inventory()
+update_dlw_inventory <-
+  function(root_dir = Sys.getenv("PIP_ROOT_DIR"),
+           dlw_dir  = pipload::pip_create_globals(root_dir)$DLW_RAW_DIR,
+           force    = FALSE) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # directoires and paths   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-  dlw_inv_path <- fs::path(dlw_dir,"_Inventory",
-                       "DLWRAW_all_DTAs", ext = "txt")
+  dlw_inv_path <- fs::path(dlw_dir,"_Inventory")
 
-  dlw_inv_path <- fs::path(dlw_dir,"_Inventory",
-                       "DLWRAW_all_DTAs", ext = "csv")
+  dlw_inv_file <- fs::path(dlw_inv_path,
+                           "DLWRAW_all_DTAs", ext = "csv")
 
-  if (!fs::file_exists(dlw_inv_path)) {
+  if (!fs::file_exists(dlw_inv_file)) {
 
     msg     <- c(
       "File does not exists",
-      "x" = "{dlw_inv_path} not found.",
+      "x" = "{dlw_inv_file} not found.",
       "i" = "check connection or {.field pipload} globals"
     )
     cli::cli_abort(msg,
@@ -82,16 +67,22 @@ prep_dlw_inventory <- function(dlw_dir) {
   # clean data   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  dlw_inv <- as.data.table(readr::read_csv(dlw_inv_path,
+  dlw_inv <- as.data.table(readr::read_csv(dlw_inv_file,
                                            name_repair    = tolower,
                                            progress       = FALSE,
                                            show_col_types = FALSE))
 
   dlw_inv[,
-          survey_id := {
-            x <- stringr::str_extract(fullname, "[^\\\\]+\\.dta$")
-            x <- stringr::str_replace_all(x, "\\.dta$", "")
+          fullname := {
+            x <- gsub("\\\\", "/", fullname)
+            x <- gsub(root_dir, "", x)
+            x
           }
+  ][,
+    survey_id := {
+      x <- stringr::str_extract(fullname, "[^/]+\\.dta$")
+      x <- stringr::str_replace_all(x, "\\.dta$", "")
+    }
   ][,
     `:=`(
       creationtime  = lubridate::mdy_hms(creationtime),
@@ -108,9 +99,17 @@ prep_dlw_inventory <- function(dlw_dir) {
   # Classify as PC or TB
   dlw_inv[,
           `:=`(
-            surveyid_year = as.numeric(surveyid_year),
             tool          = fifelse(module == "ALL", "TB", "PC")
           )]
 
-  return(dlw_inv)
+
+  # check if data has changed
+
+  status <- pipaux::pip_sign_save(x       =  dlw_inv,
+                                  measure = "dlw_inventory",
+                                  msrdir  = dlw_inv_path,
+                                  force   = force)
+
+
+  return(invisible(status))
 }
