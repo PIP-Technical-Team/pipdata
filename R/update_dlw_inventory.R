@@ -102,6 +102,8 @@ update_dlw_inventory <-
             tool          = fifelse(module == "ALL", "TB", "PC")
           )]
 
+  setorder(dlw_inv, country_code, surveyid_year, survey_acronym, vermast, veralt)
+
 
   # check if data has changed
 
