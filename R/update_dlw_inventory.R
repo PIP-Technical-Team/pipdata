@@ -91,16 +91,9 @@ update_dlw_inventory <-
 
 
   # add variables from survey ID
-  dlw_inv[, (id_vars) := tstrsplit(survey_id, split = c("_"), fixed = TRUE)]
-
+  dlw_inv <- suppressWarnings(pipload::survey_id_to_vars(dlw_inv))
+  dlw_inv <- na.omit(dlw_inv)
   dlw_inv <- dlw_inv[module %chin% pip_modules] # keep important modules
-  dlw_inv[, c("M", "A")   := NULL] # remove M and A
-
-  # Classify as PC or TB
-  dlw_inv[,
-          `:=`(
-            tool          = fifelse(module == "ALL", "TB", "PC")
-          )]
 
   setorder(dlw_inv, country_code, surveyid_year, survey_acronym, vermast, veralt)
 
