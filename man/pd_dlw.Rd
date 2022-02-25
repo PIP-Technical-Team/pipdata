@@ -5,7 +5,7 @@
 \alias{pd_dlw.pipmd}
 \alias{pd_dlw.pipgd}
 \alias{pd_dlw.default}
-\title{Title}
+\title{PD: process data. Case: datalibweb}
 \usage{
 pd_dlw(df)
 
@@ -19,5 +19,6 @@ pd_dlw(df)
 
 }
 \description{
-Title
+process datalibweb data. Use S3 method to identify whether the data is
+microdata, groupdata or imputed data
 }
