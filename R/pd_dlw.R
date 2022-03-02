@@ -3,9 +3,12 @@
 #' process datalibweb data. Use S3 method to identify whether the data is
 #' microdata, groupdata or imputed data
 #'
-#' @return
+#' @param df dataframe loaded with `pipload::pip_load_dlw()`
+#' @param ...  other parameters
+#'
+#' @return data.table
 #' @export
-pd_dlw <- function(df) {
+pd_dlw <- function(df, ...) {
   UseMethod("pd_dlw")
 
 }
@@ -41,9 +44,12 @@ pd_dlw.pipmd <- function(df) {
 
 }
 
+#' @param pfw dataframe with Price Framework data loaded with
+#'   `pipload::pip_load_aux("pfw)`
+#'
 #' @export
 #' @rdname pd_dlw
-pd_dlw.pipgd <- function(df) {
+pd_dlw.pipgd <- function(df, pfw, ...) {
   cli::cli_alert_info("Using group data method")
 
   # on.exit ------------
@@ -62,6 +68,7 @@ pd_dlw.pipgd <- function(df) {
   }
 
   # Computations -------
+  df <- pd_dlw_gd_clean(x = df, pfw = pfw)
 
 
   # Return -------------

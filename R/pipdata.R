@@ -36,12 +36,22 @@ if (getRversion() >= "2.15.1") {
       "lastwritetime",
       "module",
       "survey_id",
-      "surveyid_year"
-      ),
-      package = utils::packageName()
-      )
+      "surveyid_year",
+      "area",
+      "country_code",
+      "distribution_type",
+      "na.omit",
+      "ppp_data_level",
+      "survey_acronym",
+      "survey_year",
+      "urban",
+      "veralt",
+      "vermast",
+      "..mul_vars"
+    ),
+    package = utils::packageName()
+  )
 }
 
 
 NULL
-

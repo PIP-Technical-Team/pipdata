@@ -7,16 +7,24 @@
 \alias{pd_dlw.default}
 \title{PD: process data. Case: datalibweb}
 \usage{
-pd_dlw(df)
+pd_dlw(df, ...)
 
 \method{pd_dlw}{pipmd}(df)
 
-\method{pd_dlw}{pipgd}(df)
+\method{pd_dlw}{pipgd}(df, pfw, ...)
 
 \method{pd_dlw}{default}(df)
 }
-\value{
+\arguments{
+\item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
 
+\item{...}{other parameters}
+
+\item{pfw}{dataframe with Price Framework data loaded with
+\verb{pipload::pip_load_aux("pfw)}}
+}
+\value{
+data.table
 }
 \description{
 process datalibweb data. Use S3 method to identify whether the data is
