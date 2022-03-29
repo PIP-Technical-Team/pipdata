@@ -1,4 +1,4 @@
-#' PD: process data. Case: datalibweb
+#' PD: process data. Source: datalibweb
 #'
 #' process datalibweb data. Use S3 method to identify whether the data is
 #' microdata, groupdata or imputed data
@@ -8,6 +8,11 @@
 #'
 #' @return data.table
 #' @export
+#'
+#' @examples
+#' x   <- pipload::pip_load_dlw("CHN", 2015)
+#' pfw <- pipload::pip_load_aux("pfw")
+#' pd_dlw(x, pfw)
 pd_dlw <- function(df, ...) {
   UseMethod("pd_dlw")
 
@@ -68,7 +73,7 @@ pd_dlw.pipgd <- function(df, pfw, ...) {
   }
 
   # Computations -------
-  df <- pd_dlw_gd_clean(x = df, pfw = pfw)
+  df <- pd_dlw_clean(df = df, pfw = pfw)
 
 
   # Return -------------

@@ -5,7 +5,7 @@
 \alias{pd_dlw.pipmd}
 \alias{pd_dlw.pipgd}
 \alias{pd_dlw.default}
-\title{PD: process data. Case: datalibweb}
+\title{PD: process data. Source: datalibweb}
 \usage{
 pd_dlw(df, ...)
 
@@ -29,4 +29,9 @@ data.table
 \description{
 process datalibweb data. Use S3 method to identify whether the data is
 microdata, groupdata or imputed data
+}
+\examples{
+x   <- pipload::pip_load_dlw("CHN", 2015)
+pfw <- pipload::pip_load_aux("pfw")
+pd_dlw(x, pfw)
 }
