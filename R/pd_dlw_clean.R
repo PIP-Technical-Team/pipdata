@@ -420,7 +420,7 @@ pd_dlw_clean.pipgd <- function(df, pfw, ...) {
        if (cpfw$pop_domain == 1) {
 
          # y <- rep("national", times = trows)
-         Y <- "group"
+         y <- "group"
 
        } else if (cpfw$pop_domain ==  2) {
 
