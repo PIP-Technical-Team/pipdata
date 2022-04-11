@@ -2,7 +2,7 @@
 % Please edit documentation in R/pd_wbpip_clean.R
 \name{pd_wbpip_clean.pipmd}
 \alias{pd_wbpip_clean.pipmd}
-\title{pd_wbpip_clean method for pipmd clss}
+\title{pd_wbpip_clean method for pipmd class (microdata)}
 \usage{
 \method{pd_wbpip_clean}{pipmd}(df, ...)
 }
@@ -13,5 +13,5 @@
 
 }
 \description{
-pd_wbpip_clean method for pipmd clss
+pd_wbpip_clean method for pipmd class (microdata)
 }

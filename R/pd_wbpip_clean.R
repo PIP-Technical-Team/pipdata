@@ -46,6 +46,8 @@ pd_wbpip_clean.pipmd <- function(df, ...) {
     quiet = TRUE
   )$data
 
+  df <- pipload::as_pipmd(df)
+
   # Return -------------
   return(invisible(df))
 
@@ -81,9 +83,30 @@ pd_wbpip_clean.pipgd <- function(df, ...) {
   }
 
   # Computations -------
+  gd_type <- df[, unique(gd_type)]
+  gd_type <- as.numeric(sub("T0", "", gd_type))
+
+  areas <- df[, unique(area)]
+
+  dl <- lapply(areas, function(a) {
+    dtt <- df[area == a]
+
+    dtt <- wbpip:::gd_clean_data(
+      dtt,
+      welfare = "welfare",
+      population = "weight",
+      gd_type = gd_type,
+      quiet = TRUE
+    )
+  })
+
+  ndf <- rbindlist(l = dl,
+                   use.names = TRUE,
+                   fill = TRUE)
+  ndf <- pipload::as_pipgd(ndf)
 
 
   # Return -------------
-  return(invisible(TRUE))
+  return(ndf)
 
 }
