@@ -18,18 +18,19 @@ pd_dlw_clean <- function(df,...) {
 
 #' Clean micro data from Datalibweb original file
 #'
-#' @param df data frame with group data, loaded with `pipload::pip_load_dlw()`
+#' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
 #' @param pfw data frame with Price framework data, loaded with
 #'   `pipload::pip_load_aux("pfw")`
+#' @inheritParams pd_dlw_clean
 #'
 #' @return data.table
 #' @export
 #'
 #' @examples
-#' x   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' pd_dlw_clean(x, pfw)
-pd_dlw_clean.pipmd <- function(df) {
+#' pd_dlw_clean(md, pfw)
+pd_dlw_clean.pipmd <- function(df, pfw, ...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,6 +63,8 @@ pd_dlw_clean.pipmd <- function(df) {
          & surveyid_year  == uvl$surveyid_year
          & survey_acronym == uvl$survey_acronym
     ]
+  rm(pfw)
+
 
   cpfw <- as.list(cpfw)
 
@@ -78,7 +81,8 @@ pd_dlw_clean.pipmd <- function(df) {
   ##
   ## clean weight variable
   variables <- colnames(md)
-  if (!c("weight") %in% variables){
+
+  if (!c("weight") %in% variables) {
     if (c("weight_p") %in% variables){
       setnames(md, old = "weight_p", new = "weight")
     }
@@ -99,12 +103,10 @@ pd_dlw_clean.pipmd <- function(df) {
   md[, welfare := welfare / 365]
 
   # create alt_welfare variable
-  pfw[oth_welfare1_type == "", oth_welfare1_type := NA]
-  pfw[oth_welfare1_var == "", oth_welfare1_var := NA]
-  oth_welfare1_type <- pfw[, oth_welfare1_type]
-  oth_welfare1_var  <- pfw[, oth_welfare1_var]
+  oth_welfare1_type <- cpfw$oth_welfare1_type
+  oth_welfare1_var  <- cpfw$oth_welfare1_var
 
-  if (!is.na(oth_welfare1_var)){
+  if (oth_welfare1_var != ""){
     md[, alt_welfare := oth_welfare1_var /365]
   }else{
     md[, alt_welfare := NA]
@@ -114,10 +116,9 @@ pd_dlw_clean.pipmd <- function(df) {
   ## Education
   # educat4
   if (c("educat4") %in% variables){
-    setnames(md, old = "educat4", new = "educat4_2")
-    md[, educat4 := NA]
-    #md[, as.character(educat4) := educat4]
 
+    setnames(md, old = "educat4", new = "educat4_2")
+    md[, educat4 := NA_character_]
     md[educat4_2 == 1, educat4 := "No education"]
     md[educat4_2 == 2, educat4 := "Primary"]
     md[educat4_2 == 3, educat4 := "Secondary"]
@@ -126,11 +127,11 @@ pd_dlw_clean.pipmd <- function(df) {
     md[, educat4_2:= NULL]
   }
 
-  # educat4
+  # educat5
   if (c("educat5") %in% variables){
+
     setnames(md, old = "educat5", new = "educat5_2")
-    md[, educat5 := NA]
-    #md[, as.character(educat5) := educat5]
+    md[, educat5 := NA_character_]
 
     md[educat5_2 == 1, educat5 := "No education"]
     md[educat5_2 == 2, educat5 := "Primary incomplete"]
@@ -141,10 +142,9 @@ pd_dlw_clean.pipmd <- function(df) {
   }
 
   # literacy
-  if (c("literacy") %in% variables){
+  if (c("literacy") %in% variables) {
     setnames(md, "literacy", "literacy2")
-    md[, literacy := NA]
-    #md[, as.character(literacy) := literacy]
+    md[, literacy := NA_character_]
     md[literacy2 ==1, literacy := "yes"]
     md[literacy2 ==0, literacy := "no"]
     md[, literacy2 := NULL]
@@ -159,9 +159,9 @@ pd_dlw_clean.pipmd <- function(df) {
 
   # Recode urban to string
   if (c("urban") %in% variables){
+
     setnames(md, "urban", "urban2")
-    md[, urban := NA]
-    md[, urban := as.character(urban)]
+    md[, urban := NA_character_]
     md[urban2 == 1, urban := "urban"]
     md[urban2 == 0, urban := "rural"]
     md[, urban2 := NULL]
@@ -169,129 +169,136 @@ pd_dlw_clean.pipmd <- function(df) {
 
   # Recode male to string
   if (c("male") %in% variables){
+
     setnames(md, "male", "male2")
-    md[, male := NA]
-    md[, male := as.character(urban)]
+    md[, male := NA_character_]
     md[male2 == 1, male := "male"]
     md[male2 == 0, male := "female"]
     md[, male2 := NULL]
+
   }
 
   # Add variables  from PFW data
-  if (!c("survey_year") %in% variables){
-    md[, survey_year := pfw[, survey_year]]
+  if (!c("survey_year") %in% variables) {
+    md[, survey_year := cpfw$survey_year]
   }
 
   # generate countrycode variable if not available in md data
   if (!c("countrycode") %in% variables){
-    md[, countrycode := pfw[, country_code]]
+    md[, countrycode := cpfw$country_code]
   }
 
   # Create welfare_type
   if (!c("welfare_type") %in% variables){
-    md[, welfare_type := pfw[, welfare_type]]
+    md[, welfare_type := cpfw$welfare_type]
   }
 
   # Create distribution_type
-  if (pfw[, use_imputed] == 1){
+  if (cpfw$use_imputed == 1) {
+
     md[, distribution_type := "imputed"]
+
   }else {
+
     md[, distribution_type := "micro"]
+
   }
 
   # Create ppp_data_level
-  if (c("ppp_data_level") %in% variables){
+  if (c("ppp_data_level") %in% variables) {
     md[, ppp_data_level := NULL]
   }
 
-  if (pfw[, ppp_domain] == 1){
+  if (cpfw$ppp_domain == 1){
     md[, ppp_data_level := "national"]
   }
 
-  if (pfw[, ppp_domain] == 2){
+  if (cpfw$ppp_domain == 2) {
+
     md[, ppp_data_level := urban]
+
   }
 
   # Create cpi_data_level
-  if (c("cpi_data_level") %in% variables){
+  if (c("cpi_data_level") %in% variables) {
     md[, cpi_data_level := NULL]
   }
-  if (pfw[, cpi_domain] == 1){
+  if (cpfw$cpi_domain == 1) {
+
     md[, cpi_data_level := "national"]
+
   }
-  if (pfw[, cpi_domain] == 2){
+  if (cpfw$cpi_domain == 2) {
+
     md[, cpi_data_level := urban]
   }
 
   # Create gdp_data_level
-  if (pfw[, gdp_domain] == 1){
+  if (cpfw$gdp_domain == 1) {
     md[, gdp_data_level := "national"]
   }
-  if (pfw[, gdp_domain] == 2){
+  if (cpfw$gdp_domain == 2) {
+
     md[, gdp_data_level := urban]
+
   }
 
   # Create pce_data_level
-  if (c("pce_domain") %in% variables){
+  if (c("pce_domain") %in% variables) {
     md[, pce_data_level := NULL]
   }
-  if (pfw[, pce_domain] == 1){
+  if (cpfw$pce_domain == 1) {
+
     md[, pce_data_level := "national"]
+
   }
-  if (pfw[, pce_domain] == 2){
+  if (cpfw$pce_domain == 2) {
+
     md[, pce_data_level := urban]
+
   }
 
   # Create pop_data_level
-  if (c("pop_domain") %in% variables){
+  if (c("pop_domain") %in% variables) {
+
     md[, pop_data_level := NULL]
+
   }
-  if (pfw[, pop_domain] == 1){
+  if (cpfw$pop_domain == 1) {
     md[, pop_data_level := "national"]
   }
-  if (pfw[, pop_domain] == 2){
+  if (cpfw$pop_domain == 2) {
+
     md[, pop_data_level := urban]
+
   }
 
-  ###---------------- Clean md data ---------------###
-  ### load variable cleaning csv file
-  varclean <- read.csv("md_pip_var_type.csv")
-  md_var_names <- varclean[, c("md_var_names")]
-  pip_var_names <- varclean[, c("pip_var_names")]
-  pip_vars_class <- varclean[, c("pip_vars_class")]
 
-  nVar <- length(pip_var_names)
-  for (j in seq_along(1:nVar)){
-    if (!c(pip_var_names[j]) %in% variables){
-      if (!c(md_var_names[j]) %in% variables){
-        md <- md[, pip_var_names[j] := NA]
-      } else {
-        setnames(md, md_var_names[j], pip_var_names[j])
-      }
-    }
-  }
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Create variables that do not exist   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  ### Recode variable types
-  coltostr <- varclean %>%
-    filter(pip_vars_class == "string")
-  coltostr <- coltostr$pip_var_names
+  # get from internal data `pip_var_type`
+  pip_vars  <- pip_var_type$pip_vars_pc
+  pip_type  <- pip_var_type$pip_vars_pc_class
 
-  coltonum <- varclean %>%
-    filter(pip_vars_class == "numeric")
-  coltonum <- coltonum$pip_var_names
+  miss_ind  <- !(pip_vars %in% names(md))
+  miss_vars <- pip_vars[miss_ind]
+  miss_type <- pip_type[miss_ind]
 
-  # to string
-  md <- md[,(coltostr):= lapply(.SD, as.character),
-             .SDcols = coltostr]
-  # to numeric
-  md <- md[,(coltonum):= lapply(.SD, as.numeric),
-             .SDcols = coltonum]
+  miss_type <- glue("as.{miss_type}")
+
+  md[,
+     (miss_vars) := lapply(miss_type, \(x) get(x)())]
+
   # order columns in correct order
-  setcolorder(md, pip_var_names)
-  md <- md[, .SD, .SDcols = pip_var_names]
+  setcolorder(md, pip_vars)
+  md <- md[, .SD, .SDcols = pip_vars]
+
   # Sort by country_code, surveyid_year and welfare
   sortbycol <- c("country_code", "surveyid_year", "welfare", "hhid" ,"pid")
   setorderv(md, sortbycol)
+  return(md)
 }
 
 
@@ -300,15 +307,16 @@ pd_dlw_clean.pipmd <- function(df) {
 #' @param df data frame with group data, loaded with `pipload::pip_load_dlw()`
 #' @param pfw data frame with Price framework data, loaded with
 #'   `pipload::pip_load_aux("pfw")`
+#' @inheritParams pd_dlw_clean
 #'
 #' @return data.table
 #' @export
 #'
 #' @examples
-#' x   <- pipload::pip_load_dlw("CHN", 2015)
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' pd_dlw_clean(x, pfw)
-pd_dlw_clean.pipgd <- function(df, pfw) {
+#' pd_dlw_clean(gd, pfw)
+pd_dlw_clean.pipgd <- function(df, pfw, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------

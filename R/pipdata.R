@@ -47,11 +47,32 @@ if (getRversion() >= "2.15.1") {
       "urban",
       "veralt",
       "vermast",
-      "..mul_vars"
+      "..mul_vars",
+      "alt_welfare",
+      "countrycode",
+      "cpi_data_level",
+      "educat4",
+      "educat4_2",
+      "educat5",
+      "educat5_2",
+      "gdp_data_level",
+      "inpovcal",
+      "literacy",
+      "literacy2",
+      "male",
+      "male2",
+      "pce_data_level",
+      "pop_data_level",
+      "urban2",
+      "use_bin",
+      "use_imputed",
+      "use_microdata",
+      "weight",
+      "welfare",
+      "welfare_type"
     ),
     package = utils::packageName()
   )
 }
-
 
 NULL

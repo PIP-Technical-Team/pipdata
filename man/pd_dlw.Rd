@@ -9,11 +9,11 @@
 \usage{
 pd_dlw(df, ...)
 
-\method{pd_dlw}{pipmd}(df)
+\method{pd_dlw}{pipmd}(df, pfw, ...)
 
 \method{pd_dlw}{pipgd}(df, pfw, ...)
 
-\method{pd_dlw}{default}(df)
+\method{pd_dlw}{default}(df, ...)
 }
 \arguments{
 \item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
@@ -21,7 +21,7 @@ pd_dlw(df, ...)
 \item{...}{other parameters}
 
 \item{pfw}{dataframe with Price Framework data loaded with
-\verb{pipload::pip_load_aux("pfw)}}
+\code{pipload::pip_load_aux("pfw")}}
 }
 \value{
 data.table
@@ -31,7 +31,11 @@ process datalibweb data. Use S3 method to identify whether the data is
 microdata, groupdata or imputed data
 }
 \examples{
-x   <- pipload::pip_load_dlw("CHN", 2015)
 pfw <- pipload::pip_load_aux("pfw")
-pd_dlw(x, pfw)
+
+gd  <- pipload::pip_load_dlw("CHN", 2015)
+pd_dlw(gd, pfw)
+
+md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+pd_dlw(md, pfw)
 }

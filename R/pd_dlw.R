@@ -10,18 +10,24 @@
 #' @export
 #'
 #' @examples
-#' x   <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' pd_dlw(x, pfw)
+#'
+#' gd  <- pipload::pip_load_dlw("CHN", 2015)
+#' pd_dlw(gd, pfw)
+#'
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' pd_dlw(md, pfw)
 pd_dlw <- function(df, ...) {
   UseMethod("pd_dlw")
 
 }
 
-
+#' @param pfw dataframe with Price Framework data loaded with
+#'   `pipload::pip_load_aux("pfw")`
+#'
 #' @export
 #' @rdname pd_dlw
-pd_dlw.pipmd <- function(df) {
+pd_dlw.pipmd <- function(df, pfw, ...) {
 
   cli::cli_alert_info("Using microdata method")
 
@@ -41,6 +47,7 @@ pd_dlw.pipmd <- function(df) {
   }
 
   # Computations -------
+  df <- pd_dlw_clean(df = df, pfw = pfw)
 
 
 
@@ -50,7 +57,7 @@ pd_dlw.pipmd <- function(df) {
 }
 
 #' @param pfw dataframe with Price Framework data loaded with
-#'   `pipload::pip_load_aux("pfw)`
+#'   `pipload::pip_load_aux("pfw")`
 #'
 #' @export
 #' @rdname pd_dlw
@@ -83,7 +90,7 @@ pd_dlw.pipgd <- function(df, pfw, ...) {
 
 #' @export
 #' @rdname pd_dlw
-pd_dlw.default <- function(df) {
+pd_dlw.default <- function(df, ...) {
 
   cli::cli_alert("no PIP method for this data. Returning same object")
   return(invisible(df))
