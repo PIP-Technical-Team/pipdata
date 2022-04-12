@@ -4,15 +4,16 @@
 \alias{pd_dlw_clean.pipmd}
 \title{Clean micro data from Datalibweb original file}
 \usage{
-\method{pd_dlw_clean}{pipmd}(df, pfw, ...)
+\method{pd_dlw_clean}{pipmd}(df, cpfw, ...)
 }
 \arguments{
 \item{df}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
 
-\item{pfw}{data frame with Price framework data, loaded with
+\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
+It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
 \code{pipload::pip_load_aux("pfw")}}
 
-\item{...}{Other parameters}
+\item{...}{other parameters}
 }
 \value{
 data.table
@@ -21,7 +22,8 @@ data.table
 Clean micro data from Datalibweb original file
 }
 \examples{
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 pfw <- pipload::pip_load_aux("pfw")
-pd_dlw_clean(md, pfw)
+md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+cpfw <- get_country_pfw(md, pfw)
+pd_dlw_clean(md, cpfw)
 }

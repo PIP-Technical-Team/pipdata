@@ -2,16 +2,21 @@
 #'
 #' Clean data from datalibweb structure
 #'
-#' @inheritParams pd_dlw
-#' @param ... Other parameters
+#' @param df dataframe loaded with `pipload::pip_load_dlw()`
+#' @param ...  other parameters
 #'
 #' @return data.table
 #' @export
 #'
 #' @examples
-#' x   <- pipload::pip_load_dlw("CHN", 2015)
+#' gd  <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' pd_dlw_clean(x, pfw)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' pd_dlw_clean(gd, cpfw)
+#'
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' cpfw <- get_country_pfw(md, pfw)
+#' pd_dlw_clean(md, cpfw)
 pd_dlw_clean <- function(df,...) {
   UseMethod("pd_dlw_clean")
 }
@@ -19,7 +24,8 @@ pd_dlw_clean <- function(df,...) {
 #' Clean micro data from Datalibweb original file
 #'
 #' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
-#' @param pfw data frame with Price framework data, loaded with
+#' @param cpfw data frame with Price framework data for country/survey in `df`.
+#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
 #'   `pipload::pip_load_aux("pfw")`
 #' @inheritParams pd_dlw_clean
 #'
@@ -27,10 +33,11 @@ pd_dlw_clean <- function(df,...) {
 #' @export
 #'
 #' @examples
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' pd_dlw_clean(md, pfw)
-pd_dlw_clean.pipmd <- function(df, pfw, ...) {
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' cpfw <- get_country_pfw(md, pfw)
+#' pd_dlw_clean(md, cpfw)
+pd_dlw_clean.pipmd <- function(df, cpfw, ...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,45 +45,8 @@ pd_dlw_clean.pipmd <- function(df, pfw, ...) {
   # hard copy
   md <- copy(df)
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## process PFQ data --------
-
-  # 1) Check for duplicates
-  keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-  stopifnot("PFW is not unique for country, surveyid year, and survey_acronym" =
-              uniqueN(pfw, by = keyVar) == nrow(pfw))
-
-  # subset microdata survey; BIN is BIN is treated as microdata in PCN/PIP
-  pfw <- pfw[use_microdata == 1 |
-               use_bin     == 1 |
-               use_imputed == 1 |
-               inpovcal     == 1] # subset country-years in Povcalnet
-
-  # filter data by country, survey ID year and survey_acronym
-  # get single-value variables
-  uvl <- uniq_vars_to_list(md)  #list with unique value
-
-  # filter PFW
-
-  cpfw <- # country price framework
-    pfw[ country_code     == uvl$country_code
-         & surveyid_year  == uvl$surveyid_year
-         & survey_acronym == uvl$survey_acronym
-    ]
-  rm(pfw)
-
-
-  cpfw <- as.list(cpfw)
-
-  # check if there is a unique record for country, survey ID year and survey_acronym
-  stopifnot("PFW is not unique for country, surveyid year, and survey_acronym" =
-              nrow(cpfw) == 1)
-  # check if there are no records
-  stopifnot("PFW does not contains info for country, surveyid year, and survey_acronym" =
-              nrow(cpfw) != 0)
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## process dlw data --------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## process dlw data --------
 
   ##
   ## clean weight variable
@@ -305,7 +275,8 @@ pd_dlw_clean.pipmd <- function(df, pfw, ...) {
 #' Clean group data from Datalibweb original file
 #'
 #' @param df data frame with group data, loaded with `pipload::pip_load_dlw()`
-#' @param pfw data frame with Price framework data, loaded with
+#' @param cpfw data frame with Price framework data for country/survey in `df`.
+#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
 #'   `pipload::pip_load_aux("pfw")`
 #' @inheritParams pd_dlw_clean
 #'
@@ -313,10 +284,11 @@ pd_dlw_clean.pipmd <- function(df, pfw, ...) {
 #' @export
 #'
 #' @examples
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' pd_dlw_clean(gd, pfw)
-pd_dlw_clean.pipgd <- function(df, pfw, ...) {
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' pd_dlw_clean(gd, cpfw)
+pd_dlw_clean.pipgd <- function(df, cpfw, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------
@@ -327,31 +299,14 @@ pd_dlw_clean.pipgd <- function(df, pfw, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Rename variables --------
-  gd[, area := fcase(urban == 1, "urban",
-                     urban == 0, "rural",
-                     is.na(urban), "national",
-                     default = "")]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## unique variables --------
-
-  # get single-value variables
-  uvl <- uniq_vars_to_list(gd)  #list with unique value
-
-  # filter PFW
-
-  cpfw <- # country price framework
-    pfw[ country_code     == uvl$country_code
-         & surveyid_year  == uvl$surveyid_year
-         & survey_acronym == uvl$survey_acronym
-    ]
-
-  cpfw <- as.list(cpfw)
-
 
   #--- Is this necessary?
   gd[, survey_year := cpfw$survey_year]
 
+  gd[, area := fcase(urban == 1, "urban",
+                     urban == 0, "rural",
+                     is.na(urban), "national",
+                     default = "")]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------

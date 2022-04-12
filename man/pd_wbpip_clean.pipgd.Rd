@@ -18,14 +18,16 @@
 pd_wbpip_clean method for pipgd class (group data)
 }
 \examples{
-pfw <- pipload::pip_load_aux("pfw")
+pfw  <- pipload::pip_load_aux("pfw")
 gd   <- pipload::pip_load_dlw("CHN", 2015)
-x <- pd_dlw_clean(gd, pfw)
-y <- pd_wbpip_clean(x)
+cpfw <- get_country_pfw(gd, pfw)
+x    <- pd_dlw_clean(gd, cpfw)
+y    <- pd_wbpip_clean(x)
 y[, unique(area)]
 
 gd   <- pipload::pip_load_dlw("ARE", 2019)
-x <- pd_dlw_clean(gd, pfw)
+cpfw <- get_country_pfw(gd, pfw)
+x <- pd_dlw_clean(gd, cpfw)
 y <- pd_wbpip_clean(x)
 y[, unique(area)]
 }

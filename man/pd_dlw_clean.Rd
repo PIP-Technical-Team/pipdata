@@ -9,7 +9,7 @@ pd_dlw_clean(df, ...)
 \arguments{
 \item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
 
-\item{...}{Other parameters}
+\item{...}{other parameters}
 }
 \value{
 data.table
@@ -18,7 +18,12 @@ data.table
 Clean data from datalibweb structure
 }
 \examples{
-x   <- pipload::pip_load_dlw("CHN", 2015)
+gd  <- pipload::pip_load_dlw("CHN", 2015)
 pfw <- pipload::pip_load_aux("pfw")
-pd_dlw_clean(x, pfw)
+cpfw <- get_country_pfw(gd, pfw)
+pd_dlw_clean(gd, cpfw)
+
+md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+cpfw <- get_country_pfw(md, pfw)
+pd_dlw_clean(md, cpfw)
 }

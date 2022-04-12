@@ -7,21 +7,25 @@
 #' @export
 #'
 #' @examples
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' x <- pd_dlw_clean(gd, pfw)
+#' cpfw <- get_country_pfw(md, pfw)
+#' x <- pd_dlw_clean(df = md, cpfw)
 #' y <- pd_wbpip_clean(x)
+#' summary(y$weight)
+#'
+#'
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' x    <- pd_dlw_clean(gd, cpfw)
+#' y    <- pd_wbpip_clean(x)
 #' y[, unique(area)]
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
-#' x <- pd_dlw_clean(gd, pfw)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' x <- pd_dlw_clean(gd, cpfw)
 #' y <- pd_wbpip_clean(x)
 #' y[, unique(area)]
-#'
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' x <- pd_dlw_clean(df = md, pfw = pfw)
-#' y <- pd_wbpip_clean(x)
-#' summary(y$weight)
 pd_wbpip_clean <- function(df, ...) {
   UseMethod("pd_wbpip_clean")
 }
@@ -38,7 +42,8 @@ pd_wbpip_clean <- function(df, ...) {
 #' @examples
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
-#' x <- pd_dlw_clean(df = md, pfw = pfw)
+#' cpfw <- get_country_pfw(md, pfw)
+#' x <- pd_dlw_clean(df = md, cpfw)
 #' y <- pd_wbpip_clean(x)
 #' summary(y$weight)
 pd_wbpip_clean.pipmd <- function(df, ...) {
@@ -82,14 +87,16 @@ pd_wbpip_clean.pipmd <- function(df, ...) {
 #' @export
 #'
 #' @examples
-#' pfw <- pipload::pip_load_aux("pfw")
+#' pfw  <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' x <- pd_dlw_clean(gd, pfw)
-#' y <- pd_wbpip_clean(x)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' x    <- pd_dlw_clean(gd, cpfw)
+#' y    <- pd_wbpip_clean(x)
 #' y[, unique(area)]
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
-#' x <- pd_dlw_clean(gd, pfw)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' x <- pd_dlw_clean(gd, cpfw)
 #' y <- pd_wbpip_clean(x)
 #' y[, unique(area)]
 pd_wbpip_clean.pipgd <- function(df, ...) {

@@ -20,7 +20,8 @@ pd_wbpip_clean method for pipmd class (microdata)
 \examples{
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 pfw <- pipload::pip_load_aux("pfw")
-x <- pd_dlw_clean(df = md, pfw = pfw)
+cpfw <- get_country_pfw(md, pfw)
+x <- pd_dlw_clean(df = md, cpfw)
 y <- pd_wbpip_clean(x)
 summary(y$weight)
 }

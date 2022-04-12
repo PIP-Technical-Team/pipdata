@@ -28,7 +28,6 @@ pd_dlw <- function(df, ...) {
 #' @export
 #' @rdname pd_dlw
 pd_dlw.pipmd <- function(df, pfw, ...) {
-
   cli::cli_alert_info("Using microdata method")
 
   # on.exit ------------
@@ -47,12 +46,14 @@ pd_dlw.pipmd <- function(df, pfw, ...) {
   }
 
   # Computations -------
-  df <- pd_dlw_clean(df = df, pfw = pfw)
+  cpfw <- get_country_pfw(df, pfw)
+  x    <- pd_dlw_clean(df = df, cpfw)
+  y    <- pd_wbpip_clean(x)
 
 
 
   # Return -------------
-  return(invisible(df))
+  return(invisible(y))
 
 }
 
@@ -80,11 +81,15 @@ pd_dlw.pipgd <- function(df, pfw, ...) {
   }
 
   # Computations -------
-  df <- pd_dlw_clean(df = df, pfw = pfw)
+  cpfw <- get_country_pfw(df, pfw)
+  x    <- pd_dlw_clean(df = df, cpfw)
+  y    <- pd_wbpip_clean(x)
+
 
 
   # Return -------------
-  return(invisible(df))
+  return(invisible(y))
+
 }
 
 

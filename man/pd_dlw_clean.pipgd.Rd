@@ -4,15 +4,16 @@
 \alias{pd_dlw_clean.pipgd}
 \title{Clean group data from Datalibweb original file}
 \usage{
-\method{pd_dlw_clean}{pipgd}(df, pfw, ...)
+\method{pd_dlw_clean}{pipgd}(df, cpfw, ...)
 }
 \arguments{
 \item{df}{data frame with group data, loaded with \code{pipload::pip_load_dlw()}}
 
-\item{pfw}{data frame with Price framework data, loaded with
+\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
+It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
 \code{pipload::pip_load_aux("pfw")}}
 
-\item{...}{Other parameters}
+\item{...}{other parameters}
 }
 \value{
 data.table
@@ -21,7 +22,8 @@ data.table
 Clean group data from Datalibweb original file
 }
 \examples{
-gd   <- pipload::pip_load_dlw("CHN", 2015)
 pfw <- pipload::pip_load_aux("pfw")
-pd_dlw_clean(gd, pfw)
+gd   <- pipload::pip_load_dlw("CHN", 2015)
+cpfw <- get_country_pfw(gd, pfw)
+pd_dlw_clean(gd, cpfw)
 }
