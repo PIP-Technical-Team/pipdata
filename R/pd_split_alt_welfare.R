@@ -44,6 +44,19 @@ pd_split_alt_welfare <- function(df, cpfw) {
 
   # Computations -------
 
+  other_welfare      <- cpfw$oth_welfare1_var[[2]] #alternative wlf is in position 2
+  other_welfare_type <- cpfw$wt[[2]]
+  dfa <- copy(df)
+  dfa[,
+      `:=`(
+        welfare = get(other_welfare),
+        welfare_type = get(other_welfare_type)
+      )]
+
+
+
+
+
 
 
   # Return -------------
