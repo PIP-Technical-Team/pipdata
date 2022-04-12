@@ -8,10 +8,29 @@ pd_wbpip_clean(df, ...)
 }
 \arguments{
 \item{df}{dataframe returned by \code{pd_dlw_clean()}}
+
+\item{...}{Other parameters}
 }
 \value{
 dataframe
 }
 \description{
 Clean data to meet wbpip requirements and formats
+}
+\examples{
+pfw <- pipload::pip_load_aux("pfw")
+gd   <- pipload::pip_load_dlw("CHN", 2015)
+x <- pd_dlw_clean(gd, pfw)
+y <- pd_wbpip_clean(x)
+y[, unique(area)]
+
+gd   <- pipload::pip_load_dlw("ARE", 2019)
+x <- pd_dlw_clean(gd, pfw)
+y <- pd_wbpip_clean(x)
+y[, unique(area)]
+
+md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+x <- pd_dlw_clean(df = md, pfw = pfw)
+y <- pd_wbpip_clean(x)
+summary(y$weight)
 }

@@ -8,10 +8,19 @@
 }
 \arguments{
 \item{df}{dataframe returned by \code{pd_dlw_clean()}}
+
+\item{...}{Other parameters}
 }
 \value{
 
 }
 \description{
 pd_wbpip_clean method for pipmd class (microdata)
+}
+\examples{
+md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+pfw <- pipload::pip_load_aux("pfw")
+x <- pd_dlw_clean(df = md, pfw = pfw)
+y <- pd_wbpip_clean(x)
+summary(y$weight)
 }

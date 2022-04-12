@@ -1,11 +1,27 @@
 #' Clean data to meet wbpip requirements and formats
 #'
 #' @param df dataframe returned by `pd_dlw_clean()`
+#' @param ... Other parameters
 #'
 #' @return dataframe
 #' @export
 #'
 #' @examples
+#' pfw <- pipload::pip_load_aux("pfw")
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' x <- pd_dlw_clean(gd, pfw)
+#' y <- pd_wbpip_clean(x)
+#' y[, unique(area)]
+#'
+#' gd   <- pipload::pip_load_dlw("ARE", 2019)
+#' x <- pd_dlw_clean(gd, pfw)
+#' y <- pd_wbpip_clean(x)
+#' y[, unique(area)]
+#'
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' x <- pd_dlw_clean(df = md, pfw = pfw)
+#' y <- pd_wbpip_clean(x)
+#' summary(y$weight)
 pd_wbpip_clean <- function(df, ...) {
   UseMethod("pd_wbpip_clean")
 }
@@ -20,6 +36,11 @@ pd_wbpip_clean <- function(df, ...) {
 #' @export
 #'
 #' @examples
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' pfw <- pipload::pip_load_aux("pfw")
+#' x <- pd_dlw_clean(df = md, pfw = pfw)
+#' y <- pd_wbpip_clean(x)
+#' summary(y$weight)
 pd_wbpip_clean.pipmd <- function(df, ...) {
 
   # on.exit ------------
@@ -53,9 +74,6 @@ pd_wbpip_clean.pipmd <- function(df, ...) {
 
 }
 
-
-
-
 #' pd_wbpip_clean method for pipgd class (group data)
 #'
 #' @inheritParams pd_wbpip_clean
@@ -64,6 +82,16 @@ pd_wbpip_clean.pipmd <- function(df, ...) {
 #' @export
 #'
 #' @examples
+#' pfw <- pipload::pip_load_aux("pfw")
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' x <- pd_dlw_clean(gd, pfw)
+#' y <- pd_wbpip_clean(x)
+#' y[, unique(area)]
+#'
+#' gd   <- pipload::pip_load_dlw("ARE", 2019)
+#' x <- pd_dlw_clean(gd, pfw)
+#' y <- pd_wbpip_clean(x)
+#' y[, unique(area)]
 pd_wbpip_clean.pipgd <- function(df, ...) {
 
   # on.exit ------------
