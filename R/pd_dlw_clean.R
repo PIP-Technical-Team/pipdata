@@ -1,6 +1,83 @@
-#' PD: process data. Source: datalibweb. Action: Clean
+#' Clean data from datalibweb structure (High level)
 #'
-#' Clean data from datalibweb structure
+#' @param lf List of data frames or single dataframe. In pipeline, the data
+#'   frames come from `pd_split_alt_welfare()`
+#' @param cpfw data frame with Price framework data for country/survey in `df`.
+#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
+#'   `pipload::pip_load_aux("pfw")`
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' pfw  <- pipload::pip_load_aux("pfw")
+#' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
+#' cpfw <- get_country_pfw(md, pfw)
+#' lf   <- pd_split_alt_welfare(md, cpfw)
+#' l    <- pd_dlw_clean(lf, cpfw)
+#' names(l)
+pd_dlw_clean <- function(lf, cpfw) {
+
+  # on.exit ------------
+  on.exit({
+
+  })
+
+  # Defenses -----------
+  stopifnot( exprs = {
+
+    ## check that both are lists
+    }
+  )
+
+  # Early returns ------
+  if (FALSE) {
+    return()
+  }
+
+  # Computations -------
+  rl <-
+    tryCatch(
+      expr = {
+        # Your code...
+        if (inherits(lf, "list")) {
+          y <- purrr::map2(.x = lf,
+                           .y =  cpfw,
+                           .f = dlw_clean)
+        } else {
+          y <- dlw_clean(lf, cpfw[[1]])
+          y <- list(y)
+        }
+
+        names(y) <- sapply(cpfw, `[[`, "cache_id")
+        y
+      }, # end of expr section
+
+    error = function(e) {
+      glue("Error: {e$message}")
+    }, # end of error section
+
+    warning = function(w) {
+      glue("Warning: {w$message}")
+    }, # end of warning section
+
+    finally = {
+      # Do this at the end before quitting the tryCatch structure...
+    } # end of finally section
+
+  ) # End of trycatch
+
+
+
+  # Return -------------
+  return(rl)
+
+}
+
+
+#' Clean data from datalibweb structure (lower level, S2 methods)
+#'
+#' PD: process data. Source: datalibweb. Action: Clean
 #'
 #' @param df dataframe loaded with `pipload::pip_load_dlw()`
 #' @param ...  other parameters
@@ -12,13 +89,13 @@
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(gd, pfw)
-#' pd_dlw_clean(gd, cpfw)
+#' dlw_clean(gd, cpfw[[1]])
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' pd_dlw_clean(md, cpfw)
-pd_dlw_clean <- function(df,...) {
-  UseMethod("pd_dlw_clean")
+#' dlw_clean(md, cpfw[[1]])
+dlw_clean <- function(df,...) {
+  UseMethod("dlw_clean")
 }
 
 #' Clean micro data from Datalibweb original file
@@ -27,7 +104,7 @@ pd_dlw_clean <- function(df,...) {
 #' @param cpfw data frame with Price framework data for country/survey in `df`.
 #'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
 #'   `pipload::pip_load_aux("pfw")`
-#' @inheritParams pd_dlw_clean
+#' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @export
@@ -36,8 +113,8 @@ pd_dlw_clean <- function(df,...) {
 #' pfw <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' pd_dlw_clean(md, cpfw)
-pd_dlw_clean.pipmd <- function(df, cpfw, ...) {
+#' dlw_clean(md, cpfw[[1]])
+dlw_clean.pipmd <- function(df, cpfw, ...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,15 +149,6 @@ pd_dlw_clean.pipmd <- function(df, cpfw, ...) {
       .SDcols = varNames]
   md[, welfare := welfare / 365]
 
-  # create alt_welfare variable
-  oth_welfare1_type <- cpfw$oth_welfare1_type
-  oth_welfare1_var  <- cpfw$oth_welfare1_var
-
-  if (oth_welfare1_var != ""){
-    md[, alt_welfare := oth_welfare1_var /365]
-  }else{
-    md[, alt_welfare := NA]
-  }
 
   ### --------- RECODE VARIABLES ------------ ###
   ## Education
@@ -278,7 +346,7 @@ pd_dlw_clean.pipmd <- function(df, cpfw, ...) {
 #' @param cpfw data frame with Price framework data for country/survey in `df`.
 #'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
 #'   `pipload::pip_load_aux("pfw")`
-#' @inheritParams pd_dlw_clean
+#' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @export
@@ -287,8 +355,8 @@ pd_dlw_clean.pipmd <- function(df, cpfw, ...) {
 #' pfw <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
-#' pd_dlw_clean(gd, cpfw)
-pd_dlw_clean.pipgd <- function(df, cpfw, ...) {
+#' dlw_clean(gd, cpfw[[1]])
+dlw_clean.pipgd <- function(df, cpfw, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------

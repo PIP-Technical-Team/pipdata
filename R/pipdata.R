@@ -69,7 +69,13 @@ if (getRversion() >= "2.15.1") {
       "use_microdata",
       "weight",
       "welfare",
-      "welfare_type"
+      "welfare_type",
+      "cache_id",
+      "cpfw",
+      "is_alt_welf",
+      "oth_welfare1_type",
+      "reporting_level",
+      "wt"
     ),
     package = utils::packageName()
   )

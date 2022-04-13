@@ -13,7 +13,7 @@ get_country_pfw(df, pfw)
 \code{pipload::pip_load_aux("pfw")}}
 }
 \value{
-
+list of data.tables
 }
 \description{
 GEt Country Price framework  data based on PFW and DLW data info

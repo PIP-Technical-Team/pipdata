@@ -47,7 +47,7 @@ pd_dlw.pipmd <- function(df, pfw, ...) {
 
   # Computations -------
   cpfw <- get_country_pfw(df, pfw)
-  x    <- pd_dlw_clean(df = df, cpfw)
+  x    <- pd_dlw_clean(df, cpfw)
   y    <- pd_wbpip_clean(x)
 
 
@@ -82,7 +82,7 @@ pd_dlw.pipgd <- function(df, pfw, ...) {
 
   # Computations -------
   cpfw <- get_country_pfw(df, pfw)
-  x    <- pd_dlw_clean(df = df, cpfw)
+  x    <- pd_dlw_clean(df, cpfw)
   y    <- pd_wbpip_clean(x)
 
 

@@ -19,6 +19,7 @@ Imports:
     magrittr,
     pipaux,
     pipload,
+    purrr,
     readr,
     stringr,
     wbpip (>= 0.0.3)
@@ -27,5 +28,5 @@ Suggests:
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
-Remotes:  
+Remotes: 
     github::pip-technical-team/wbpip@dev

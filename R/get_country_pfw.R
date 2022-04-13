@@ -4,7 +4,7 @@
 #' @param pfw data frame with Price framework data, loaded with
 #'   `pipload::pip_load_aux("pfw")`
 #'
-#' @return
+#' @return list of data.tables
 #' @export
 #'
 #' @examples
@@ -143,9 +143,10 @@ get_country_pfw <- function(df, pfw) {
     )
   ]
 
-  cpfw <- as.list(cpfw)
+  cpfw <- split(cpfw, by = "cache_id")
 
   # Return -------------
   return(cpfw)
 
 }
+

@@ -1,3 +1,87 @@
+#' Clean data to for wbpip compatibility (high level)
+#'
+#' @param lf list of dataframe returned by `pd_dlw_clean()`
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' pfw  <- pipload::pip_load_aux("pfw")
+#' cpfw <- get_country_pfw(md, pfw)
+#' md   <- pd_split_alt_welfare(md, cpfw)
+#' x    <- pd_dlw_clean(md, cpfw)
+#' y    <- pd_wbpip_clean(x)[[1]]
+#' summary(y$weight)
+#'
+#'
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' gd   <- pd_split_alt_welfare(gd, cpfw)
+#' x    <- pd_dlw_clean(gd, cpfw)
+#' y    <- pd_wbpip_clean(x)[[1]]
+#' y[, unique(area)]
+#'
+#' gd   <- pipload::pip_load_dlw("ARE", 2019)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' gd   <- pd_split_alt_welfare(gd, cpfw)
+#' x <- pd_dlw_clean(gd, cpfw)
+#' y <- pd_wbpip_clean(x)[[1]]
+#' y[, unique(area)]
+pd_wbpip_clean <- function(lf) {
+
+  # on.exit ------------
+  on.exit({
+
+  })
+
+  # Defenses -----------
+  stopifnot( exprs = {
+
+    }
+  )
+
+  # Early returns ------
+  if (FALSE) {
+    return()
+  }
+
+  # Computations -------
+  rl <-
+    tryCatch(
+      expr = {
+        # Your code...
+        if (inherits(lf, "list")) {
+          y <- purrr::map(.x = lf, .f = wbpip_clean)
+        } else {
+          y <- wbpip_clean(lf)
+        }
+
+        names(y) <- sapply(cpfw, `[[`, "cache_id")
+        y
+      }, # end of expr section
+
+      error = function(e) {
+        glue("Error: {e$message}")
+      }, # end of error section
+
+      warning = function(w) {
+        glue("Warning: {w$message}")
+      }, # end of warning section
+
+      finally = {
+        # Do this at the end before quitting the tryCatch structure...
+      } # end of finally section
+
+    ) # End of trycatch
+
+
+
+  # Return -------------
+  return(rl)
+
+}
+
 #' Clean data to meet wbpip requirements and formats
 #'
 #' @param df dataframe returned by `pd_dlw_clean()`
@@ -10,31 +94,34 @@
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
-#' x <- pd_dlw_clean(df = md, cpfw)
-#' y <- pd_wbpip_clean(x)
+#' md   <- pd_split_alt_welfare(md, cpfw)
+#' x <- pd_dlw_clean(md, cpfw)
+#' y <- wbpip_clean(x[[1]])
 #' summary(y$weight)
 #'
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
+#' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- wbpip_clean(x[[1]])
 #' y[, unique(area)]
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
+#' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x <- pd_dlw_clean(gd, cpfw)
-#' y <- pd_wbpip_clean(x)
+#' y <- wbpip_clean(x[[1]])
 #' y[, unique(area)]
-pd_wbpip_clean <- function(df, ...) {
-  UseMethod("pd_wbpip_clean")
+wbpip_clean <- function(df, ...) {
+  UseMethod("wbpip_clean")
 }
 
 
 
-#' pd_wbpip_clean method for pipmd class (microdata)
+#' wbpip_clean method for pipmd class (microdata)
 #'
-#' @inheritParams pd_wbpip_clean
+#' @inheritParams wbpip_clean
 #'
 #' @return
 #' @export
@@ -43,10 +130,11 @@ pd_wbpip_clean <- function(df, ...) {
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
-#' x <- pd_dlw_clean(df = md, cpfw)
-#' y <- pd_wbpip_clean(x)
+#' md   <- pd_split_alt_welfare(md, cpfw)
+#' x <- pd_dlw_clean(md, cpfw)
+#' y <- wbpip_clean(x[[1]])
 #' summary(y$weight)
-pd_wbpip_clean.pipmd <- function(df, ...) {
+wbpip_clean.pipmd <- function(df, ...) {
 
   # on.exit ------------
   on.exit({
@@ -79,9 +167,9 @@ pd_wbpip_clean.pipmd <- function(df, ...) {
 
 }
 
-#' pd_wbpip_clean method for pipgd class (group data)
+#' wbpip_clean method for pipgd class (group data)
 #'
-#' @inheritParams pd_wbpip_clean
+#' @inheritParams wbpip_clean
 #'
 #' @return
 #' @export
@@ -90,16 +178,18 @@ pd_wbpip_clean.pipmd <- function(df, ...) {
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
+#' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- wbpip_clean(x[[1]])
 #' y[, unique(area)]
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
+#' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x <- pd_dlw_clean(gd, cpfw)
-#' y <- pd_wbpip_clean(x)
+#' y <- wbpip_clean(x[[1]])
 #' y[, unique(area)]
-pd_wbpip_clean.pipgd <- function(df, ...) {
+wbpip_clean.pipgd <- function(df, ...) {
 
   # on.exit ------------
   on.exit({

@@ -2,28 +2,29 @@
 % Please edit documentation in R/pd_dlw_clean.R
 \name{pd_dlw_clean}
 \alias{pd_dlw_clean}
-\title{PD: process data. Source: datalibweb. Action: Clean}
+\title{Clean data from datalibweb structure (High level)}
 \usage{
-pd_dlw_clean(df, ...)
+pd_dlw_clean(lf, cpfw)
 }
 \arguments{
-\item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
+\item{lf}{List of data frames or single dataframe. In pipeline, the data
+frames come from \code{pd_split_alt_welfare()}}
 
-\item{...}{other parameters}
+\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
+It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
+\code{pipload::pip_load_aux("pfw")}}
 }
 \value{
-data.table
+
 }
 \description{
-Clean data from datalibweb structure
+Clean data from datalibweb structure (High level)
 }
 \examples{
-gd  <- pipload::pip_load_dlw("CHN", 2015)
-pfw <- pipload::pip_load_aux("pfw")
-cpfw <- get_country_pfw(gd, pfw)
-pd_dlw_clean(gd, cpfw)
-
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+pfw  <- pipload::pip_load_aux("pfw")
+md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 cpfw <- get_country_pfw(md, pfw)
-pd_dlw_clean(md, cpfw)
+lf   <- pd_split_alt_welfare(md, cpfw)
+l    <- pd_dlw_clean(lf, cpfw)
+names(l)
 }

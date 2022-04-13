@@ -29,37 +29,34 @@ pd_split_alt_welfare <- function(df, cpfw) {
     }
   )
 
-  welfare_type <- cpfw$wt[[1]]
+  # Computations -------
+  welfare_type <- cpfw[[1]]$wt
   df[,
-     welfare_type := get(welfare_type)
+     welfare_type := welfare_type
       ]
 
-  # Early returns ------
-  if (length(cpfw$cache_id)  == 1) {
+  ## one data frame ------
+  if (length(cpfw)  == 1) {
 
     l <- list(df)
-    names(l) <- cpfw$cache_id[[1]]
+    names(l) <- cpfw[[1]]$cache_id
     return(l)
   }
 
-  # Computations -------
-
-  other_welfare      <- cpfw$oth_welfare1_var[[2]] #alternative wlf is in position 2
-  other_welfare_type <- cpfw$wt[[2]]
+  ## Two data frames -----
+  other_welfare      <- cpfw[[2]]$oth_welfare1_var #alternative wlf is in position 2
+  other_welfare_type <- cpfw[[2]]$wt
   dfa <- copy(df)
   dfa[,
       `:=`(
         welfare = get(other_welfare),
-        welfare_type = get(other_welfare_type)
+        welfare_type = other_welfare_type
       )]
 
-
-
-
-
-
+  l <- list(df, dfa)
+  names(l) <- sapply(cpfw, `[[`, "cache_id")
 
   # Return -------------
-  return(invisible(TRUE))
+  return(l)
 
 }
