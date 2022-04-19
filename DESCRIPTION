@@ -24,9 +24,12 @@ Imports:
     stringr,
     wbpip (>= 0.0.3)
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
 Remotes: 
     github::pip-technical-team/wbpip@dev
+VignetteBuilder: knitr

@@ -115,17 +115,14 @@ dlw_clean <- function(df,...) {
 #' cpfw <- get_country_pfw(md, pfw)
 #' dlw_clean(md, cpfw[[1]])
 dlw_clean.pipmd <- function(df, cpfw, ...) {
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Initial formatting   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#   ____________________________________________________________________________
+#   Initial formatting                                                      ####
 
   # hard copy
   md <- copy(df)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## process dlw data --------
 
-  ##
   ## clean weight variable
   variables <- colnames(md)
 
@@ -150,8 +147,14 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
   md[, welfare := welfare / 365]
 
 
-  ### --------- RECODE VARIABLES ------------ ###
-  ## Education
+
+#   ____________________________________________________________________________
+#   Recoding variables                                                      ####
+
+
+##  ............................................................................
+##  Education                                                               ####
+
   # educat4
   if (c("educat4") %in% variables){
 
@@ -188,8 +191,10 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
     md[, literacy2 := NULL]
   }
 
-  ###################################################
-  ## Variables needed for PIP
+
+##  ............................................................................
+##  Geographical variables                                                  ####
+
   # rename subnatid
   if (c("subnatid") %in% variables){
     setnames(md, "subnatid", "subnatid1")
@@ -204,6 +209,10 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
     md[urban2 == 0, urban := "rural"]
     md[, urban2 := NULL]
   }
+
+
+##  ............................................................................
+##  Other variables                                                         ####
 
   # Recode male to string
   if (c("male") %in% variables){
@@ -241,6 +250,10 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
     md[, distribution_type := "micro"]
 
   }
+
+
+##  ............................................................................
+##  Level and domain variables                                              ####
 
   # Create ppp_data_level
   if (c("ppp_data_level") %in% variables) {
@@ -312,9 +325,9 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
   }
 
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Create variables that do not exist   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#   ____________________________________________________________________________
+#   Variables that do not exist                                             ####
 
   # get from internal data `pip_var_type`
   pip_vars  <- pip_var_type$pip_vars_pc
@@ -328,6 +341,10 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
 
   md[,
      (miss_vars) := lapply(miss_type, \(x) get(x)())]
+
+
+#   ____________________________________________________________________________
+#   Final formatting                                                        ####
 
   # order columns in correct order
   setcolorder(md, pip_vars)
