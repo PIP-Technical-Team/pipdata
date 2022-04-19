@@ -41,3 +41,23 @@ processing and estimations.
 df  <- pipload::pip_load_dlw(country = "PHL", year = 2012)
 pfw <- pipload::pip_load_aux("pfw")
 ```
+
+## Country Price FrameWork (cpfw)
+
+The country price framework is a subset of the pfw data. Yet, it is not simply
+filtered data. Sometimes you may find two welfare types in the same survey, so
+it is necessary to have to different sets of information regarding each welfare
+type. This is way, pfw must be filtered using the `get_country_pfw()` function.
+
+```{r}
+cpfw <- get_country_pfw(df, pfw)
+names(cpfw)
+```
+
+# pd\_\* functions
+
+All functions prefixed with `pd_` are using for Processing Data. They are used
+only to convert data from datalibweb form to pip form. The results format of the
+data is what is known as input cache data. All the `pd_` functions are intended
+to be used at a high level, but they depend on lower level S3 methods that vary
+depending on the type of welfare data.
