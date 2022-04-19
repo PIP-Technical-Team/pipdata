@@ -2,7 +2,7 @@
 % Please edit documentation in R/pd_wbpip_clean.R
 \name{pd_wbpip_clean}
 \alias{pd_wbpip_clean}
-\title{Clean data to for wbpip compatibility (high level)}
+\title{Clean data for wbpip compatibility (high level)}
 \usage{
 pd_wbpip_clean(lf)
 }
@@ -13,7 +13,7 @@ pd_wbpip_clean(lf)
 
 }
 \description{
-Clean data to for wbpip compatibility (high level)
+Clean data for wbpip compatibility (high level)
 }
 \examples{
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)

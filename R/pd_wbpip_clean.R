@@ -1,4 +1,4 @@
-#' Clean data to for wbpip compatibility (high level)
+#' Clean data for wbpip compatibility (high level)
 #'
 #' @param lf list of dataframe returned by `pd_dlw_clean()`
 #'

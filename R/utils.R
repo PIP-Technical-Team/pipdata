@@ -87,3 +87,25 @@ pipdata_int <- function(file = NULL) {
     system.file("extdata", file, package = "pipdata", mustWork = TRUE)
   }
 }
+
+
+#' get ordered level of data_level variables
+#'
+#' @param dt cleaned dataframe
+#' @param x data_level variable name
+#'
+#' @return integer
+#' @noRd
+get_ordered_level <- function(dt, x) {
+  x_level <- unique(dt[[x]])
+  d1 <- c("national")
+  d2 <- c("rural", "urban")
+
+  if (identical(x_level, d1)) {
+    1
+  } else if (identical(x_level, d2)) {
+    2
+  } else {
+    3
+  }
+}

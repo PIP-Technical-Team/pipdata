@@ -1,0 +1,43 @@
+---
+title: "Process PIP data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Process PIP data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(pipdata)
+```
+
+This article explains how the `pd_*` functions in {pipdata} work together. These
+are the functions used during the data processing pipeline and that are
+necessary to process both welfare data from datalibweb and auxiliary data from
+different sources into the files that will be used for calculations in the
+estimations pipeline. The process is summarized in the
+
+![Process Data function order](images/pd_functions.png){#pd-flow width="640"}
+
+## Load relevant data
+
+All the data in the PIP process has to be loaded with the package {pipload}.
+function `pip_load_dlw()` loads any welfare data available in DatalibWeb. It
+does not use the datalibweb Stata command but reads directly into a flat folder
+provided by the Poverty GP. Function `pip_load_aux()` loads any auxiliary data
+available in the PIP project. Auxiliary data refers to any dataset that is not
+welfare data. The most important auxiliary data is the Price FrameWork (pfw)
+dataset, since it is data that contains all relevant metadata for data
+processing and estimations.
+
+```{r}
+df  <- pipload::pip_load_dlw(country = "PHL", year = 2012)
+pfw <- pipload::pip_load_aux("pfw")
+```

@@ -13,12 +13,12 @@
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
-#' pd_dlw(gd, pfw)
+#' process_data(gd, pfw)
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' pd_dlw(md, pfw)
-pd_dlw <- function(df, ...) {
-  UseMethod("pd_dlw")
+#' process_data(md, pfw)
+process_data <- function(df, ...) {
+  UseMethod("process_data")
 
 }
 
@@ -26,8 +26,8 @@ pd_dlw <- function(df, ...) {
 #'   `pipload::pip_load_aux("pfw")`
 #'
 #' @export
-#' @rdname pd_dlw
-pd_dlw.pipmd <- function(df, pfw, ...) {
+#' @rdname process_data
+process_data.pipmd <- function(df, pfw, ...) {
   cli::cli_alert_info("Using microdata method")
 
   # on.exit ------------
@@ -61,8 +61,8 @@ pd_dlw.pipmd <- function(df, pfw, ...) {
 #'   `pipload::pip_load_aux("pfw")`
 #'
 #' @export
-#' @rdname pd_dlw
-pd_dlw.pipgd <- function(df, pfw, ...) {
+#' @rdname process_data
+process_data.pipgd <- function(df, pfw, ...) {
   cli::cli_alert_info("Using group data method")
 
   # on.exit ------------
@@ -94,8 +94,8 @@ pd_dlw.pipgd <- function(df, pfw, ...) {
 
 
 #' @export
-#' @rdname pd_dlw
-pd_dlw.default <- function(df, ...) {
+#' @rdname process_data
+process_data.default <- function(df, ...) {
 
   cli::cli_alert("no PIP method for this data. Returning same object")
   return(invisible(df))
