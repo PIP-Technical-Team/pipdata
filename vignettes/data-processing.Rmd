@@ -61,3 +61,24 @@ only to convert data from datalibweb form to pip form. The results format of the
 data is what is known as input cache data. All the `pd_` functions are intended
 to be used at a high level, but they depend on lower level S3 methods that vary
 depending on the type of welfare data.
+
+## Split alternative welfare
+
+```{r}
+lf <- pd_split_alt_welfare(df, cpfw)
+names(lf)
+```
+
+## Clean from DLW format
+
+```{r}
+lf_dlw    <- pd_dlw_clean(lf, cpfw)
+names(lf_dlw)
+```
+
+## Clean to be used by `wbpip`
+
+```{r}
+lf_wbpip <- pd_wbpip_clean(lf_dlw)
+names(lf_wbpip)
+```
