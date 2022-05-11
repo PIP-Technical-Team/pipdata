@@ -98,6 +98,12 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, ...) {
   })
 
   # Defenses -----------
+  if (inherits(df, "data.table")) {
+   df <- data.table::copy(df)
+  } else {
+    df <- data.table::as.data.table(df)
+  }
+
   stopifnot( exprs = {
 
     }
@@ -125,17 +131,18 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, ...) {
   # ppp_table <- ppp_table[ppp_default == TRUE]
 
   # Merge survey table with PPP (left join)
-  df <- joyn::merge(df, ppp_table,
+  ppp <- ppp_to_wide(ppp = ppp)
+
+  df <- joyn::merge(df, ppp,
                     by         = c("country_code", "ppp_data_level"),
                     match_type = "m:1",
-                    yvars      = "ppp",
                     keep       = "left",
                     reportvar  = FALSE,
                     verbose    = FALSE
   )
 
   # Merge survey table with CPI (left join)
-  df <- joyn::merge(df, cpi_table,
+  df <- joyn::merge(df, cpi,
                     by = c(
                       "country_code", "survey_year",
                       "survey_acronym", "cpi_data_level"
@@ -185,5 +192,71 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, ...) {
 
   # Return -------------
   return(invisible(TRUE))
+
+}
+
+
+
+
+
+#' Convert PPP data from `pipload` to wide format
+#'
+#' @param ppp data frame with ppp data from `pipload::pip_load_aux("ppp")`
+#'
+#' @return data.table with PPP values to wide format based on versioning
+#' @export
+#'
+#' @examples
+#' ppp <-  pipload::pip_load_aux("ppp")
+#' x   <-  ppp_to_wide(ppp)
+#' names(x)
+ppp_to_wide <- function(ppp) {
+
+#   ____________________________________________________________________________
+#   on.exit                                                                 ####
+  on.exit({
+
+  })
+
+#   ____________________________________________________________________________
+#   Defenses                                                           ####
+  if (inherits(ppp, "data.table")) {
+    ppp <- data.table::copy(ppp)
+  } else {
+    ppp <- data.table::as.data.table(ppp)
+  }
+  stopifnot( exprs = {
+
+    }
+  )
+
+#   ____________________________________________________________________________
+#   Early returns                                                           ####
+  if (FALSE) {
+    return()
+  }
+
+#   ____________________________________________________________________________
+#   Computations                                                            ####
+  ppp[,
+      ppp_version := {
+        x <- paste0("ppp_", ppp_year, "_", release_version, "_", adaptation_version)
+        x <- gsub("_v", "_0", x )
+      }
+  ]
+
+  ppp_v <- ppp[, unique(ppp_version)]
+
+  ppp <- dcast(ppp,
+               formula = country_code + ppp_data_level ~ ppp_version,
+               value.var = "ppp",
+  )
+  data.table::setattr(ppp, "ppp_versions", ppp_v)
+
+
+
+#   ____________________________________________________________________________
+#   Return                                                                  ####
+  return(ppp)
 
 }
