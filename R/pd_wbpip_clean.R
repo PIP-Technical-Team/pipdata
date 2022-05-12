@@ -55,6 +55,7 @@ pd_wbpip_clean <- function(lf) {
           y <- purrr::map(.x = lf, .f = wbpip_clean)
         } else {
           y <- wbpip_clean(lf)
+          y <- list(y)
         }
 
         names(y) <- sapply(cpfw, `[[`, "cache_id")

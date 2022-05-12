@@ -4,7 +4,7 @@
 \alias{add_pip_vars.default}
 \title{Title}
 \usage{
-\method{add_pip_vars}{default}(df, cpfw, cpi, ppp, ...)
+\method{add_pip_vars}{default}(df, cpfw, cpi, ppp, pop, ...)
 }
 \arguments{
 \item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
@@ -14,6 +14,8 @@ It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
 \item{cpi}{dataframe from \code{pipload::pip_load_aux("cpi")}}
 
 \item{ppp}{dataframe from \code{pipload::pip_load_aux("ppp")}}
+
+\item{pop}{dataframe from \code{pipload::pip_load_aux("pop")}}
 
 \item{...}{extra arguments}
 }
