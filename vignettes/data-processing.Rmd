@@ -82,3 +82,19 @@ names(lf_dlw)
 lf_wbpip <- pd_wbpip_clean(lf_dlw)
 names(lf_wbpip)
 ```
+
+## Add variables for PIP process
+
+```{r}
+ppp  <- pipload::pip_load_aux("ppp")
+cpi  <- pipload::pip_load_aux("cpi")
+pop  <- pipload::pip_load_aux("pop")
+
+lf_pip_vars <- 
+  pd_add_pip_vars(lf = lf_wbpip, 
+                  cpfw = cpfw, 
+                  cpi = cpi, 
+                  ppp = ppp, 
+                  pop = pop)
+names(lf_pip_vars[[1]])
+```
