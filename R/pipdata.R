@@ -75,7 +75,18 @@ if (getRversion() >= "2.15.1") {
       "is_alt_welf",
       "oth_welfare1_type",
       "reporting_level",
-      "wt"
+      "wt",
+      "..cpi_to_keep",
+      "..welf_vars",
+      "adaptation_version",
+      "diff_year",
+      "pop_fact",
+      "ppp_version",
+      "ppp_year",
+      "release_version",
+      "weighted.mean",
+      "welfare_lcu",
+      "wght"
     ),
     package = utils::packageName()
   )

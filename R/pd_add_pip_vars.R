@@ -103,9 +103,13 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 
 
 #' Estimate welfare in PPP values (lower level)
-#' @inheritParams pd_add_pip_vars
+#' @inheritParams pd_dlw_clean
+#' @param  df  dataframe from `pd_wbpip_clean()`
+#' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
+#' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`
+#' @param  pop dataframe from `pipload::pip_load_aux("pop")`
 #' @param ... extra arguments
-#' @return
+#' @return data.table with extra PIP variables
 #' @export
 #'
 #' @examples
@@ -119,29 +123,29 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(md, cpfw)
 #' y    <- pd_wbpip_clean(x)[[1]]
 #'
-#' add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
 #' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- pd_wbpip_clean(x)[[1]]
 #'
-#' add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
 #' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- pd_wbpip_clean(x)[[1]]
 #'
-#' add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 add_pip_vars <- function(df, cpfw, cpi, ppp, pop, ...) {
   UseMethod("add_pip_vars")
 }
 
 
-#' Title
+#' default S3 method for add_pip_vars
 #'
 #' @inheritParams add_pip_vars
 #'
@@ -484,7 +488,7 @@ adjust_population <- function(df, pop) {
   fact <-
     dpop[,
          # get mean of population.
-         lapply(.SD, weighted.mean, w = wght),
+         lapply(.SD, collapse::fmean, w = wght),
          by = "pop_data_level",
          .SDcols = c("pop", "weight")
     ][,

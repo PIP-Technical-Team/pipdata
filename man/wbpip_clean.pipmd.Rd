@@ -12,7 +12,7 @@
 \item{...}{Other parameters}
 }
 \value{
-
+data.table
 }
 \description{
 wbpip_clean method for pipmd class (microdata)

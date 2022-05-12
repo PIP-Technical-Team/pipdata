@@ -10,7 +10,7 @@ pd_wbpip_clean(lf)
 \item{lf}{list of dataframe returned by \code{pd_dlw_clean()}}
 }
 \value{
-
+list with data.tables
 }
 \description{
 Clean data for wbpip compatibility (high level)

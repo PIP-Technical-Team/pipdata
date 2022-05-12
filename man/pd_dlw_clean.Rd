@@ -15,7 +15,7 @@ It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
 \code{pipload::pip_load_aux("pfw")}}
 }
 \value{
-
+list with data.tables
 }
 \description{
 Clean data from datalibweb structure (High level)

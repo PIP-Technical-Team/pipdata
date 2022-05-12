@@ -2,11 +2,13 @@
 % Please edit documentation in R/pd_add_pip_vars.R
 \name{add_pip_vars.default}
 \alias{add_pip_vars.default}
-\title{Title}
+\title{default S3 method for add_pip_vars}
 \usage{
 \method{add_pip_vars}{default}(df, cpfw, cpi, ppp, pop, ...)
 }
 \arguments{
+\item{df}{dataframe from \code{pd_wbpip_clean()}}
+
 \item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
 It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
 \code{pipload::pip_load_aux("pfw")}}
@@ -23,5 +25,5 @@ It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
 data.table.
 }
 \description{
-Title
+default S3 method for add_pip_vars
 }

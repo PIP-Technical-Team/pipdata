@@ -6,7 +6,7 @@
 #'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
 #'   `pipload::pip_load_aux("pfw")`
 #'
-#' @return
+#' @return list with data.tables
 #' @export
 #'
 #' @examples

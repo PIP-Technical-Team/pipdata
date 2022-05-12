@@ -2,7 +2,7 @@
 #'
 #' @param lf list of dataframe returned by `pd_dlw_clean()`
 #'
-#' @return
+#' @return list with data.tables
 #' @export
 #'
 #' @examples
@@ -124,7 +124,7 @@ wbpip_clean <- function(df, ...) {
 #'
 #' @inheritParams wbpip_clean
 #'
-#' @return
+#' @return data.table
 #' @export
 #'
 #' @examples
