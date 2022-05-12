@@ -172,7 +172,7 @@ wbpip_clean.pipmd <- function(df, ...) {
 #'
 #' @inheritParams wbpip_clean
 #'
-#' @return
+#' @return data.table
 #' @export
 #'
 #' @examples
