@@ -1,6 +1,6 @@
 Package: pipdata
 Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9008
+Version: 0.0.0.9012
 Authors@R: 
   person("R.Andres", "Castaneda",
         email = "acastanedaa@worldbank.org",
@@ -12,16 +12,26 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports: 
     cli,
+    collapse,
     data.table,
     fs,
+    glue,
+    joyn,
     lubridate,
     magrittr,
     pipaux,
     pipload,
+    purrr,
     readr,
-    stringr
+    stringr,
+    wbpip (>= 0.0.3)
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
+Remotes: 
+    github::pip-technical-team/wbpip@dev
+VignetteBuilder: knitr
