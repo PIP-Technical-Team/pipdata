@@ -1,6 +1,7 @@
 #' Clean data for wbpip compatibility (high level)
 #'
 #' @param lf list of dataframe returned by `pd_dlw_clean()`
+#' @inheritParams pd_dlw_clean
 #'
 #' @return list with data.tables
 #' @export
@@ -28,7 +29,7 @@
 #' x <- pd_dlw_clean(gd, cpfw)
 #' y <- pd_wbpip_clean(x)[[1]]
 #' y[, unique(area)]
-pd_wbpip_clean <- function(lf) {
+pd_wbpip_clean <- function(lf, cpfw) {
 
   # on.exit ------------
   on.exit({

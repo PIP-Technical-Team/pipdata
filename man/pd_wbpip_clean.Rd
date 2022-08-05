@@ -4,10 +4,14 @@
 \alias{pd_wbpip_clean}
 \title{Clean data for wbpip compatibility (high level)}
 \usage{
-pd_wbpip_clean(lf)
+pd_wbpip_clean(lf, cpfw)
 }
 \arguments{
 \item{lf}{list of dataframe returned by \code{pd_dlw_clean()}}
+
+\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
+It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
+\code{pipload::pip_load_aux("pfw")}}
 }
 \value{
 list with data.tables
