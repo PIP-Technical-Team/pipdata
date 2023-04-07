@@ -56,7 +56,7 @@ names(cpfw)
 
 # pd\_\* functions
 
-All functions prefixed with `pd_` are using for Processing Data. They are used
+All functions prefixed with `pd_` are for Processing Data. They are used
 only to convert data from datalibweb form to pip form. The results format of the
 data is what is known as input cache data. All the `pd_` functions are intended
 to be used at a high level, but they depend on lower level S3 methods that vary
