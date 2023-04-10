@@ -18,7 +18,7 @@
 #' cpfw <- get_country_pfw(md, pfw)
 #' md   <- pd_split_alt_welfare(md, cpfw)
 #' x    <- pd_dlw_clean(md, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
 #' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 #'
@@ -27,7 +27,7 @@
 #' cpfw <- get_country_pfw(gd, pfw)
 #' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
 #' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 #'
@@ -35,7 +35,7 @@
 #' cpfw <- get_country_pfw(gd, pfw)
 #' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)
+#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
 #' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
@@ -121,7 +121,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' cpfw <- get_country_pfw(md, pfw)
 #' md   <- pd_split_alt_welfare(md, cpfw)
 #' x    <- pd_dlw_clean(md, cpfw)
-#' y    <- pd_wbpip_clean(x)[[1]]
+#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
 #' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 #'
@@ -129,7 +129,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' cpfw <- get_country_pfw(gd, pfw)
 #' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)[[1]]
+#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
 #' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 #'
@@ -137,7 +137,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' cpfw <- get_country_pfw(gd, pfw)
 #' gd   <- pd_split_alt_welfare(gd, cpfw)
 #' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(x)[[1]]
+#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
 #' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
 add_pip_vars <- function(df, cpfw, cpi, ppp, pop, ...) {
@@ -208,8 +208,8 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
   ## Deflated data --------
 
 
-### . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ..
-### ppp treatment                                                           ####
+### . . . . . . . . . . . . . . . . . . . . . . . . . . . ..
+### ppp treatment                                                     ####
 
   # ppp_table <- ppp_table[ppp_default == TRUE]
 
@@ -236,7 +236,9 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
 ### . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ..
 ### CPI treatment                                                           ####
 
-  setnames(cpi, "cpi2005_SM21", "cpi2005") # temporal solution
+  if ("cpi2005_SM21" %in% names(cpi)) {
+    setnames(cpi, "cpi2005_SM21", "cpi2005") # temporal solution
+  }
 
   cpi_by      <- c("country_code", "survey_year",
                "survey_acronym", "cpi_data_level")
