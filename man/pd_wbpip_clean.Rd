@@ -25,7 +25,7 @@ pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
 md   <- pd_split_alt_welfare(md, cpfw)
 x    <- pd_dlw_clean(md, cpfw)
-y    <- pd_wbpip_clean(x)[[1]]
+y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 summary(y$weight)
 
 
@@ -33,13 +33,13 @@ gd   <- pipload::pip_load_dlw("CHN", 2015)
 cpfw <- get_country_pfw(gd, pfw)
 gd   <- pd_split_alt_welfare(gd, cpfw)
 x    <- pd_dlw_clean(gd, cpfw)
-y    <- pd_wbpip_clean(x)[[1]]
+y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 y[, unique(area)]
 
 gd   <- pipload::pip_load_dlw("ARE", 2019)
 cpfw <- get_country_pfw(gd, pfw)
 gd   <- pd_split_alt_welfare(gd, cpfw)
 x <- pd_dlw_clean(gd, cpfw)
-y <- pd_wbpip_clean(x)[[1]]
+y <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 y[, unique(area)]
 }

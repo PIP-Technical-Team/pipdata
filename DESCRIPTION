@@ -18,8 +18,8 @@ Imports:
     glue,
     joyn,
     lubridate,
-    magrittr,
     pipaux (>= 0.1.0.9006),
+    pipfun (>= 0.0.0.9017),
     pipload (>= 0.2.0.9005),
     purrr,
     readr,
@@ -35,6 +35,7 @@ Depends:
 Remotes:  
     github::pip-technical-team/wbpip@dev,
     github::PIP-Technical-Team/pipload@new_pipeline,
-    github::PIP-Technical-Team/pipaux@new_pipeline
+    github::PIP-Technical-Team/pipaux@new_pipeline,
+    github::PIP-Technical-team/pipfun@ongoing
 VignetteBuilder: knitr
 URL: https://pip-technical-team.github.io/pipdata/

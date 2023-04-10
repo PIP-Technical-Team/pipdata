@@ -3,19 +3,17 @@
 \docType{package}
 \name{pipdata}
 \alias{pipdata}
-\alias{\%>\%}
+\alias{.datatable.aware}
 \title{A package for prepare data to be ingested in PIP pipeline}
+\format{
+An object of class \code{logical} of length 1.
+}
+\usage{
+.datatable.aware
+}
 \section{pipdata functions}{
 
 The pipaux functions ...
 }
 
-\keyword{internal}
-\description{
-These objects are imported from other packages. Follow the links
-below to see their documentation.
-
-\describe{
-  \item{magrittr}{\code{\link[magrittr:pipe]{\%>\%}}}
-}}
-
+\keyword{datasets}

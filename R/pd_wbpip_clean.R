@@ -77,8 +77,6 @@ pd_wbpip_clean <- function(lf, cpfw) {
 
     ) # End of trycatch
 
-
-
   # Return -------------
   return(rl)
 

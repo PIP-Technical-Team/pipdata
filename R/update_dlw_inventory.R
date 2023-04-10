@@ -100,7 +100,7 @@ update_dlw_inventory <-
 
   # check if data has changed
 
-  status <- pipaux::pip_sign_save(x       =  dlw_inv,
+  status <- pipfun::pip_sign_save(x       =  dlw_inv,
                                   measure = "dlw_inventory",
                                   msrdir  = dlw_inv_path,
                                   force   = force)
