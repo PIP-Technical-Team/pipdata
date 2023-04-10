@@ -35,3 +35,4 @@ Depends:
 Remotes: 
     github::pip-technical-team/wbpip@dev
 VignetteBuilder: knitr
+URL: https://pip-technical-team.github.io/pipdata/
