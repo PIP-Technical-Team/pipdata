@@ -12,7 +12,8 @@ pipdata_int(file = NULL)
 \description{
 pipdata comes bundled with a number of internal datasets originally created
 in CSV format and then converted to proper R format. They are placed in  its
-\code{inst/extdata} directory. This function make them easy to access. This function is based (mainly copied) from \code{readr_example} in the \code{readr} package
+\code{inst/extdata} directory. This function make them easy to access. This
+function is based (mainly copied) from \code{readr_example} in the \code{readr} package
 }
 \examples{
 pipdata_int()

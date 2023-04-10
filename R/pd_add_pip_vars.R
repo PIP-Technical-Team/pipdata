@@ -464,7 +464,7 @@ adjust_population <- function(df, pop) {
 
   spop <- df[,
              # get total population by level
-             .(weight = collapse::fsum(weight)),
+             .(weight = sum(weight, na.rm = TRUE)),
              by = c("country_code", "survey_year", "reporting_level")]
 
 
@@ -490,7 +490,7 @@ adjust_population <- function(df, pop) {
   fact <-
     dpop[,
          # get mean of population.
-         lapply(.SD, collapse::fmean, w = wght),
+         lapply(.SD, stats::weighted.mean, w = wght),
          by = "pop_data_level",
          .SDcols = c("pop", "weight")
     ][,

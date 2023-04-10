@@ -73,7 +73,8 @@ uniq_vars_to_attr <- function(x) {
 #'
 #' pipdata comes bundled with a number of internal datasets originally created
 #' in CSV format and then converted to proper R format. They are placed in  its
-#' `inst/extdata` directory. This function make them easy to access. This function is based (mainly copied) from `readr_example` in the `readr` package
+#' `inst/extdata` directory. This function make them easy to access. This
+#' function is based (mainly copied) from `readr_example` in the `readr` package
 #'
 #' @param file Name of file. If `NULL`, the internal files will be listed.
 #' @export

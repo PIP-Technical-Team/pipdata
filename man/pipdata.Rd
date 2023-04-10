@@ -11,9 +11,12 @@ An object of class \code{logical} of length 1.
 \usage{
 .datatable.aware
 }
+\description{
+The objective of pipdata is to blah blah
+}
 \section{pipdata functions}{
 
-The pipaux functions ...
+The function in pipdata...
 }
 
 \keyword{datasets}

@@ -15,10 +15,12 @@
 #' update_dlw_inventory()
 update_dlw_inventory <-
   function(root_dir = Sys.getenv("PIP_ROOT_DIR"),
-           dlw_dir  = pipload::pip_create_globals(root_dir)$DLW_RAW_DIR,
-           force    = FALSE) {
+           dlw_dir  = pipfun::pip_create_globals(root_dir)$DLW_RAW_DIR,
+           force    = FALSE)
+    {
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # directoires and paths   ---------
+  # directories and paths   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -67,10 +69,10 @@ update_dlw_inventory <-
   # clean data   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  dlw_inv <- as.data.table(readr::read_csv(dlw_inv_file,
-                                           name_repair    = tolower,
-                                           progress       = FALSE,
-                                           show_col_types = FALSE))
+  dlw_inv <- fread(file = dlw_inv_file,
+              showProgress = FALSE)
+  setnames(dlw_inv,tolower)
+
 
   dlw_inv[,
           fullname := {
@@ -80,8 +82,9 @@ update_dlw_inventory <-
           }
   ][,
     survey_id := {
-      x <- stringr::str_extract(fullname, "[^/]+\\.dta$")
-      x <- stringr::str_replace_all(x, "\\.dta$", "")
+      fullname |>
+        fs::path_file() |>
+        fs::path_ext_remove()
     }
   ][,
     `:=`(

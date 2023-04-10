@@ -1,8 +1,9 @@
 #' A package for prepare data to be ingested in PIP pipeline
 #'
+#' @description The objective of pipdata is to blah blah
 #'
 #' @section pipdata functions:
-#' The pipaux functions ...
+#' The function in pipdata...
 #'
 #' @docType package
 #' @name pipdata
