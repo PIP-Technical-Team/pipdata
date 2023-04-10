@@ -1,0 +1,12 @@
+---
+title: "PIP data process"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+![PIP data pipeline flow](images/pipeline_flow.png){#pip-data-pipeline}

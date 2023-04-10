@@ -1,0 +1,77 @@
+---
+title: "Processing Data functions"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(pipdata)
+```
+
+This article explains how the `pd_*` functions in {pipdata} work together. These are the functions used during the data processing pipeline and that are necessary to process both welfare data from datalibweb and auxiliary data from different sources into the files that will be used for calculations in the estimations pipeline. The process is summarized in the
+
+![Process Data function order](images/pd_functions.png){#pd-flow width="640"}
+
+## Load relevant data
+
+All the data in the PIP process has to be loaded with the package {pipload}. function `pip_load_dlw()` loads any welfare data available in DatalibWeb. It does not use the datalibweb Stata command but reads directly into a flat folder provided by the Poverty GP. Function `pip_load_aux()` loads any auxiliary data available in the PIP project. Auxiliary data refers to any dataset that is not welfare data. The most important auxiliary data is the Price FrameWork (pfw) dataset, since it is data that contains all relevant metadata for data processing and estimations.
+
+```{r}
+df  <- pipload::pip_load_dlw(country = "PHL", year = 2012)
+pfw <- pipload::pip_load_aux("pfw")
+```
+
+## Country Price FrameWork (cpfw)
+
+The country price framework is a subset of the pfw data. Yet, it is not simply filtered data. Sometimes you may find two welfare types in the same survey, so it is necessary to have to different sets of information regarding each welfare type. This is way, pfw must be filtered using the `get_country_pfw()` function.
+
+```{r}
+cpfw <- get_country_pfw(df, pfw)
+names(cpfw)
+```
+
+# pd\_\* functions
+
+All functions prefixed with `pd_` are for Processing Data. They are used only to convert data from datalibweb form to pip form. The results format of the data is what is known as input cache data. All the `pd_` functions are intended to be used at a high level, but they depend on lower level S3 methods that vary depending on the type of welfare data.
+
+## Split alternative welfare
+
+```{r}
+lf <- pd_split_alt_welfare(df, cpfw)
+names(lf)
+```
+
+## Clean from DLW format
+
+```{r}
+lf_dlw    <- pd_dlw_clean(lf, cpfw)
+names(lf_dlw)
+```
+
+## Clean to be used by `wbpip`
+
+```{r}
+lf_wbpip <- pd_wbpip_clean(lf_dlw)
+names(lf_wbpip)
+```
+
+## Add variables for PIP process
+
+```{r}
+ppp  <- pipload::pip_load_aux("ppp")
+cpi  <- pipload::pip_load_aux("cpi")
+pop  <- pipload::pip_load_aux("pop")
+
+lf_pip_vars <- 
+  pd_add_pip_vars(lf = lf_wbpip, 
+                  cpfw = cpfw, 
+                  cpi = cpi, 
+                  ppp = ppp, 
+                  pop = pop)
+names(lf_pip_vars[[1]])
+```
