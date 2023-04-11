@@ -5,7 +5,8 @@ title: "Processing Data functions"
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>", 
+  eval = FALSE
 )
 ```
 
@@ -32,7 +33,7 @@ The country price framework is a subset of the pfw data. Yet, it is not simply f
 
 ```{r}
 cpfw <- get_country_pfw(df, pfw)
-names(cpfw)
+# names(cpfw)
 ```
 
 # pd\_\* functions
@@ -43,21 +44,21 @@ All functions prefixed with `pd_` are for Processing Data. They are used only to
 
 ```{r}
 lf <- pd_split_alt_welfare(df, cpfw)
-names(lf)
+# names(lf)
 ```
 
 ## Clean from DLW format
 
 ```{r}
 lf_dlw    <- pd_dlw_clean(lf, cpfw)
-names(lf_dlw)
+# names(lf_dlw)
 ```
 
 ## Clean to be used by `wbpip`
 
 ```{r}
 lf_wbpip <- pd_wbpip_clean(lf_dlw)
-names(lf_wbpip)
+# names(lf_wbpip)
 ```
 
 ## Add variables for PIP process
@@ -73,5 +74,5 @@ lf_pip_vars <-
                   cpi = cpi, 
                   ppp = ppp, 
                   pop = pop)
-names(lf_pip_vars[[1]])
+# names(lf_pip_vars[[1]])
 ```
