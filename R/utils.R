@@ -37,30 +37,39 @@ uniq_vars_to_list <- function(x) {
 
 
 
-#' convert variables with unique values along the data set to attrbitus and then
+#' convert variables with unique values along the data set to attributes and then
 #' remove those unique variables
 #'
-#' @param x data frame.
+#' @param x a data.frame
+#' @param exclude_vars variables to be excluded from turning to attributes (default NULL)
 #'
 #' @return data.frame with multiple-value variables only and single-value
-#'   variables as attrbitues
+#'   variables as attributes
 #' @export
-uniq_vars_to_attr <- function(x) {
-
-  uvl <- uniq_vars_to_list(x)
+uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
+  # If not a data.table turn it to data.table
+  if(!is.data.table(x)) x <- data.table::data.table(x)
+  nm <- names(x)
+  # Doing everything on copy of x since we want to preserve x in it's original form
+  x1 <- data.table::copy(x)
+  # Drop exclude_vars columns
+  if(!is.null(exclude_vars)) {
+    # Make sure that the column names in exclude_vars is a part of data
+    if(!all(exclude_vars %in% nm)) cli::cli_abort("{exclude_vars} is not a column name in data. Choose one of {names(x)}")
+    #Dropping columns from x1
+    x1[, (exclude_vars) := NULL]
+  }
+  uvl <- uniq_vars_to_list(x1)
 
   uni_vars <- names(uvl)
-  mul_vars <- names(x)[!(names(x) %in% uni_vars )]
-
+  mul_vars <- setdiff(nm, uni_vars)
 
   for (i in seq_along(uvl)) {
 
     var   <- names(uvl)[i]
     value <- uvl[[i]]
     attr(x, var) <- value
-
   }
-
 
   x <- x[, ..mul_vars]
 
