@@ -2,19 +2,21 @@
 % Please edit documentation in R/utils.R
 \name{uniq_vars_to_attr}
 \alias{uniq_vars_to_attr}
-\title{convert variables with unique values along the data set to attrbitus and then
+\title{convert variables with unique values along the data set to attributes and then
 remove those unique variables}
 \usage{
-uniq_vars_to_attr(x)
+uniq_vars_to_attr(x, exclude_vars = NULL)
 }
 \arguments{
-\item{x}{data frame.}
+\item{x}{a data.frame}
+
+\item{exclude_vars}{variables to be excluded from turning to attributes (default NULL)}
 }
 \value{
 data.frame with multiple-value variables only and single-value
-variables as attrbitues
+variables as attributes
 }
 \description{
-convert variables with unique values along the data set to attrbitus and then
+convert variables with unique values along the data set to attributes and then
 remove those unique variables
 }

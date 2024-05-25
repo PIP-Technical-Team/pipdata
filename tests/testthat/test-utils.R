@@ -21,3 +21,12 @@ test_that("uniq_vars_to_attr works correctly with exclude_vars", {
   expect_length(atr, 5)
   expect_equal(atr$c, 5)
 })
+
+test_that("vars_to_attr works correctly", {
+  dt <- data.table::data.table(a = c(1, 2), b = 1:10, c = 5)
+  out <- vars_to_attr(dt, "a")
+  atr <- attributes(out)
+  expect_equal(dim(out), c(10, 2))
+  expect_length(atr, 5)
+  expect_equal(atr$a, c(1, 2))
+})

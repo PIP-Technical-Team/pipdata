@@ -1,16 +1,11 @@
 #' Identify unique variables in data frame
-#'
-#'
 #' @param x data frame.
 #'
 #' @return character vector of unique variable names
 #' @export
 uniq_vars <- function(x) {
 
-  if (!data.table::is.data.table(x)) {
-    x <- as.data.table(x)
-  }
-
+  x <- check_data_table(x)
   N_vars   <- x[, lapply(.SD, uniqueN)]
   uni_vars <- names(N_vars)[N_vars == 1]
 
@@ -18,7 +13,15 @@ uniq_vars <- function(x) {
 
 }
 
-#' convert variables with unique values along the data set to attrbitus and then
+#' Turn data to data.table if it is not already
+#' @noRd
+check_data_table <- function(x) {
+  if (!data.table::is.data.table(x)) {
+    x <- as.data.table(x)
+  }
+  x
+}
+#' convert variables with unique values along the data set to attributes and then
 #' remove those unique variables
 #'
 #' @param x data frame.
@@ -35,7 +38,16 @@ uniq_vars_to_list <- function(x) {
   as.list(y)
 }
 
-
+#' Return a named list with unique values of variables
+#'
+#' @param x A data.table
+#' @param vars variable to be turn to attributes.
+#'
+#' @return a named list with unique values
+#'
+vars_to_list <- function(x, vars) {
+  lapply(x[, ..vars], unique)
+}
 
 #' convert variables with unique values along the data set to attributes and then
 #' remove those unique variables
@@ -47,8 +59,6 @@ uniq_vars_to_list <- function(x) {
 #'   variables as attributes
 #' @export
 uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
-  # If not a data.table turn it to data.table
-  if(!is.data.table(x)) x <- data.table::data.table(x)
   nm <- names(x)
   # Doing everything on copy of x since we want to preserve x in it's original form
   x1 <- data.table::copy(x)
@@ -63,18 +73,20 @@ uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
 
   uni_vars <- names(uvl)
   mul_vars <- setdiff(nm, uni_vars)
-
-  for (i in seq_along(uvl)) {
-
-    var   <- names(uvl)[i]
-    value <- uvl[[i]]
-    attr(x, var) <- value
-  }
-
+  x <- change_vars_to_attr(x, uvl)
   x <- x[, ..mul_vars]
 
   return(x)
 
+}
+
+change_vars_to_attr <- function(df, uvl) {
+  for (i in seq_along(uvl)) {
+    var   <- names(uvl)[i]
+    value <- uvl[[i]]
+    attr(df, var) <- value
+  }
+  df
 }
 
 
@@ -118,4 +130,24 @@ get_ordered_level <- function(dt, x) {
   } else {
     3
   }
+}
+
+#' Make vars as attributes
+#'
+#' @param df A data.frame
+#' @param vars variables to changed to attributes
+#'
+#' @return A data.frame with vars variables as attributes
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' dt <- data.table(a = c(1, 2), b = 1:10, c = 5)
+#' out <- vars_to_attr(dt, "a")
+#' }
+vars_to_attr <- function(df, vars) {
+  df <- check_data_table(df)
+  uvl <- vars_to_list(df, vars)
+  df <- change_vars_to_attr(df, uvl)
+  df[, !..vars]
 }

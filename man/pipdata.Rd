@@ -2,6 +2,7 @@
 % Please edit documentation in R/pipdata.R
 \docType{package}
 \name{pipdata}
+\alias{-package}
 \alias{pipdata}
 \alias{.datatable.aware}
 \title{A package for prepare data to be ingested in PIP pipeline}

@@ -216,7 +216,7 @@ wbpip_clean.pipgd <- function(df, ...) {
   dl <- lapply(areas, function(a) {
     dtt <- df[area == a]
 
-    dtt <- wbpip:::gd_clean_data(
+    dtt <- wbpip::gd_clean_data(
       dtt,
       welfare = "welfare",
       population = "weight",

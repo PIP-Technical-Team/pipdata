@@ -7,7 +7,7 @@
 #'
 #' @docType package
 #' @name pipdata
-#' @importFrom pipload pip_create_globals add_gls_to_env
+#' @importFrom pipload add_gls_to_env
 #' @import data.table
 #' @importFrom glue glue
 
