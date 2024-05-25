@@ -84,7 +84,10 @@ if (getRversion() >= "2.15.1") {
       "release_version",
       "weighted.mean",
       "welfare_lcu",
-      "wght"
+      "wght",
+      "..c_col",
+      "..nm",
+      "..vars"
     ),
     package = utils::packageName()
   )
