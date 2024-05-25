@@ -4,12 +4,14 @@
 \alias{vars_to_list}
 \title{Return a named list with unique values of variables}
 \usage{
-vars_to_list(x, vars)
+vars_to_list(x, vars, nm = NULL)
 }
 \arguments{
 \item{x}{A data.table}
 
 \item{vars}{variable to be turn to attributes.}
+
+\item{nm}{variables for naming attributes}
 }
 \value{
 a named list with unique values

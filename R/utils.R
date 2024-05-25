@@ -42,11 +42,20 @@ uniq_vars_to_list <- function(x) {
 #'
 #' @param x A data.table
 #' @param vars variable to be turn to attributes.
+#' @param nm variables for naming attributes
 #'
 #' @return a named list with unique values
 #'
-vars_to_list <- function(x, vars) {
-  lapply(x[, ..vars], unique)
+vars_to_list <- function(x, vars, nm = NULL) {
+  var1 <- lapply(x[, ..vars], unique)
+  if(!is.null(nm)) {
+    var2 <- lapply(x[, ..nm], unique)
+    if(!all(mapply(\(x, y) length(x) == length(y), var1, var2))) {
+      cli::cli_abort("The unique values in num_var and name_var column are not equal")
+    }
+    var1 <- Map(stats::setNames, var1, var2)
+  }
+  var1
 }
 
 #' convert variables with unique values along the data set to attributes and then
@@ -150,4 +159,31 @@ vars_to_attr <- function(df, vars) {
   uvl <- vars_to_list(df, vars)
   df <- change_vars_to_attr(df, uvl)
   df[, !..vars]
+}
+
+
+#' Create a named vector of attributes
+#'
+#' @param df A data.frame
+#' @param num_var Column name with numerical values
+#' @param name_var Column name with name values
+#'
+#' @return Data.table with named attributes
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'  dt <- data.table(a = c(1, 2), b = 1:10, c = c("a", "b"))
+#'  out <- num_vars_to_attr(dt, "a", "c")
+#' }
+num_vars_to_attr <- function(df, num_var, name_var) {
+  dt <- check_data_table(df)
+
+  if(length(num_var) != length(name_var)) {
+    cli::cli_abort("num_var and name_var should be of same length. You have passed {length(num_var)} variable(s) in num_var whereas name_var consists of {length(name_var)} variable(s).")
+  }
+  uvl <- vars_to_list(dt, num_var, name_var)
+  dt <- change_vars_to_attr(dt, uvl)
+  c_col <- c(num_var, name_var)
+  dt[, !..c_col]
 }
