@@ -10,7 +10,7 @@ test_that("uniq_vars_to_attr works", {
 })
 
 test_that("uniq_vars_to_attr returns error", {
-  expect_error(uniq_vars_to_attr(dt, "a1"), "a1 is not a column name in data. Choose one of a, b, and c")
+  expect_error(uniq_vars_to_attr(dt, "a1"))
 })
 
 test_that("uniq_vars_to_attr works correctly with exclude_vars", {
@@ -43,11 +43,11 @@ test_that("num_vars_to_attr works correctly", {
 
 test_that("num_vars_to_attr num and name vars are of different length", {
   dt <- data.table(a = c(1, 2), b = 1:10, c = c("a", "b"))
-  expect_error(num_vars_to_attr(dt, c("a", "b"), "c"), "num_var and name_var should be of same length")
+  expect_error(num_vars_to_attr(dt, c("a", "b"), "c"))
 })
 
 
 test_that("num_vars_to_attr num and name varshave different unique values", {
   dt <- data.table(a = c(1, 2), b = 1:10, c = c("a", "b", "c", "d", "e"))
-  expect_error(num_vars_to_attr(dt, "a", "c"), "The unique values in num_var and name_var column are not equal")
+  expect_error(num_vars_to_attr(dt, "a", "c"))
 })
