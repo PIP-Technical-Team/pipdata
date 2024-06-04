@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{uniq_vars_to_list}
 \alias{uniq_vars_to_list}
-\title{convert variables with unique values along the data set to attrbitus and then
+\title{convert variables with unique values along the data set to attributes and then
 remove those unique variables}
 \usage{
 uniq_vars_to_list(x)
@@ -14,6 +14,6 @@ uniq_vars_to_list(x)
 list of single-value variables from dataframe \code{x}
 }
 \description{
-convert variables with unique values along the data set to attrbitus and then
+convert variables with unique values along the data set to attributes and then
 remove those unique variables
 }

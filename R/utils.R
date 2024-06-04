@@ -1,16 +1,11 @@
 #' Identify unique variables in data frame
-#'
-#'
 #' @param x data frame.
 #'
 #' @return character vector of unique variable names
 #' @export
 uniq_vars <- function(x) {
 
-  if (!data.table::is.data.table(x)) {
-    x <- as.data.table(x)
-  }
-
+  x <- check_data_table(x)
   N_vars   <- x[, lapply(.SD, uniqueN)]
   uni_vars <- names(N_vars)[N_vars == 1]
 
@@ -18,7 +13,15 @@ uniq_vars <- function(x) {
 
 }
 
-#' convert variables with unique values along the data set to attrbitus and then
+#' Turn data to data.table if it is not already
+#' @noRd
+check_data_table <- function(x) {
+  if (!is.data.table(x)) {
+    x <- as.data.table(x)
+  }
+  x
+}
+#' convert variables with unique values along the data set to attributes and then
 #' remove those unique variables
 #'
 #' @param x data frame.
@@ -35,37 +38,93 @@ uniq_vars_to_list <- function(x) {
   as.list(y)
 }
 
+#' Return a named list with unique values of variables
+#'
+#' @param x A data.table
+#' @param vars variable to be turn to attributes.
+#' @param nm variables for naming attributes
+#'
+#' @return a named list with unique values
+#'
+vars_to_list <- function(x, vars, nm = NULL) {
+  var1 <- lapply(x[, ..vars], unique)
+  if(!is.null(nm)) {
+    var2 <- lapply(x[, ..nm], unique)
+    if(!all(mapply(\(x, y) length(x) == length(y), var1, var2))) {
+      cli::cli_abort("The unique values in {.arg num_var} and {.arg name_var} column are not equal")
+    }
+    var1 <- Map(stats::setNames, var1, var2)
+  }
+  var1
+}
 
-
-#' convert variables with unique values along the data set to attrbitus and then
+#' convert variables with unique values along the data set to attributes and then
 #' remove those unique variables
 #'
-#' @param x data frame.
+#' @param x a data.frame
+#' @param exclude_vars variables to be excluded from turning to attributes (default NULL)
 #'
 #' @return data.frame with multiple-value variables only and single-value
-#'   variables as attrbitues
+#'   variables as attributes
 #' @export
-uniq_vars_to_attr <- function(x) {
+#' @examples
+#' dt <- data.table::data.table(a = 1, b = 1:10, c = 5)
+#' out <- uniq_vars_to_attr(dt)
+#' out[]
+#' attr(out, "a")
+#' attr(out, "c")
+#'
+#' # Exclude `a` from being added as attribute
+#' out <- uniq_vars_to_attr(dt, "a")
+#' out[]
+#'
+#' # var `a` is not included as part of the attributes
+#' attr(out, "a")
+#'
+#' # Var `c` is
+#' attr(out, "c")
+uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
+  nm <- names(x) |>
+    copy() # make sure names are not modified by reference
+  # Doing everything on copy of x since we want to preserve x in it's original form
+  x1 <- copy(x)
 
-  uvl <- uniq_vars_to_list(x)
+  # Drop exclude_vars columns
+  if(!is.null(exclude_vars)) {
+    # Make sure that the column names in exclude_vars is a part of data
+    if( !all(exclude_vars %in% nm) ) {
+      ev <- exclude_vars[!exclude_vars %in% nm]
+      cli::cli_abort("{.var {ev}} {?is/are} not {?a/} column name{?s} in data.
+                     Choose one of {.var {nm}}")
+    }
+
+    #Dropping columns from x1
+    x1[, (exclude_vars) := NULL]
+  }
+  uvl <- uniq_vars_to_list(x1)
 
   uni_vars <- names(uvl)
-  mul_vars <- names(x)[!(names(x) %in% uni_vars )]
-
-
-  for (i in seq_along(uvl)) {
-
-    var   <- names(uvl)[i]
-    value <- uvl[[i]]
-    attr(x, var) <- value
-
-  }
-
-
+  mul_vars <- setdiff(nm, uni_vars)
+  x <- change_vars_to_attr(x, uvl)
   x <- x[, ..mul_vars]
 
   return(x)
+}
 
+change_vars_to_attr <- function(df, uvl) {
+  for (i in seq_along(uvl)) {
+    var   <- names(uvl)[i]
+    value <- uvl[[i]]
+
+    # make sure that attributes are set correctly for data.table.
+    if (inherits(df, "data.table")) {
+      setattr(df, var, value)
+    } else {
+      attr(df, var) <- value
+    }
+
+  }
+  df
 }
 
 
@@ -109,4 +168,53 @@ get_ordered_level <- function(dt, x) {
   } else {
     3
   }
+}
+
+#' Make vars as attributes
+#'
+#' @param df A data.frame
+#' @param vars variables to changed to attributes
+#'
+#' @return A data.frame with vars variables as attributes
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' dt <- data.table(a = c(1, 2), b = 1:10, c = 5)
+#' out <- vars_to_attr(dt, "a")
+#' }
+vars_to_attr <- function(df, vars) {
+  df <- check_data_table(df)
+  uvl <- vars_to_list(df, vars)
+  df <- change_vars_to_attr(df, uvl)
+  df[, !..vars]
+}
+
+
+#' Create a named vector of attributes
+#'
+#' @param df A data.frame
+#' @param num_var Column name with numerical values
+#' @param name_var Column name with name values
+#'
+#' @return Data.table with named attributes
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'  dt <- data.table(a = c(1, 2), b = 1:10, c = c("a", "b"))
+#'  out <- num_vars_to_attr(dt, "a", "c")
+#' }
+num_vars_to_attr <- function(df, num_var, name_var) {
+  dt <- check_data_table(df)
+
+  if(length(num_var) != length(name_var)) {
+    cli::cli_abort("{.arg num_var} and {.arg name_var} should be of same length.
+                   You have passed {length(num_var)} variable{?s} in {.arg num_var}
+                   whereas {.arg name_var} consists of {length(name_var)} variable{?s}.")
+  }
+  uvl <- vars_to_list(dt, num_var, name_var)
+  dt <- change_vars_to_attr(dt, uvl)
+  c_col <- c(num_var, name_var)
+  dt[, !..c_col]
 }
