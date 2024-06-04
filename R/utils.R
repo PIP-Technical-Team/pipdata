@@ -67,6 +67,22 @@ vars_to_list <- function(x, vars, nm = NULL) {
 #' @return data.frame with multiple-value variables only and single-value
 #'   variables as attributes
 #' @export
+#' @examples
+#' dt <- data.table::data.table(a = 1, b = 1:10, c = 5)
+#' out <- uniq_vars_to_attr(dt)
+#' out[]
+#' attr(out, "a")
+#' attr(out, "c")
+#'
+#' # Exclude `a` from being added as attribute
+#' out <- uniq_vars_to_attr(dt, "a")
+#' out[]
+#'
+#' # var `a` is not included as part of the attributes
+#' attr(out, "a")
+#'
+#' # Var `c` is
+#' attr(out, "c")
 uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
   nm <- names(x)
   # Doing everything on copy of x since we want to preserve x in it's original form
