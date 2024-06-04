@@ -112,7 +112,14 @@ change_vars_to_attr <- function(df, uvl) {
   for (i in seq_along(uvl)) {
     var   <- names(uvl)[i]
     value <- uvl[[i]]
-    attr(df, var) <- value
+
+    # make sure that attributes are set correctly for data.table.
+    if (inherits(df, "data.table")) {
+      setattr(df, var, value)
+    } else {
+      attr(df, var) <- value
+    }
+
   }
   df
 }
