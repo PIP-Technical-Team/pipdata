@@ -51,7 +51,7 @@ vars_to_list <- function(x, vars, nm = NULL) {
   if(!is.null(nm)) {
     var2 <- lapply(x[, ..nm], unique)
     if(!all(mapply(\(x, y) length(x) == length(y), var1, var2))) {
-      cli::cli_abort("The unique values in num_var and name_var column are not equal")
+      cli::cli_abort("The unique values in {.arg num_var} and {.arg name_var} column are not equal")
     }
     var1 <- Map(stats::setNames, var1, var2)
   }
@@ -88,13 +88,16 @@ uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
     copy() # make sure names are not modified by reference
   # Doing everything on copy of x since we want to preserve x in it's original form
   x1 <- copy(x)
+
   # Drop exclude_vars columns
   if(!is.null(exclude_vars)) {
     # Make sure that the column names in exclude_vars is a part of data
-    if(!all(exclude_vars %in% nm)) {
+    if( !all(exclude_vars %in% nm) ) {
       ev <- exclude_vars[!exclude_vars %in% nm]
-      cli::cli_abort("{.var {ev}} {?is/are} not {?a/} column name{?s} in data. Choose one of {.var {nm}}")
+      cli::cli_abort("{.var {ev}} {?is/are} not {?a/} column name{?s} in data.
+                     Choose one of {.var {nm}}")
     }
+
     #Dropping columns from x1
     x1[, (exclude_vars) := NULL]
   }
@@ -206,7 +209,9 @@ num_vars_to_attr <- function(df, num_var, name_var) {
   dt <- check_data_table(df)
 
   if(length(num_var) != length(name_var)) {
-    cli::cli_abort("num_var and name_var should be of same length. You have passed {length(num_var)} variable(s) in num_var whereas name_var consists of {length(name_var)} variable(s).")
+    cli::cli_abort("{.arg num_var} and {.arg name_var} should be of same length.
+                   You have passed {length(num_var)} variable{?s} in {.arg num_var}
+                   whereas {.arg name_var} consists of {length(name_var)} variable{?s}.")
   }
   uvl <- vars_to_list(dt, num_var, name_var)
   dt <- change_vars_to_attr(dt, uvl)
