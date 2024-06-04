@@ -84,13 +84,17 @@ vars_to_list <- function(x, vars, nm = NULL) {
 #' # Var `c` is
 #' attr(out, "c")
 uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
-  nm <- names(x)
+  nm <- names(x) |>
+    data.table::copy() # make sure names are not modified by reference
   # Doing everything on copy of x since we want to preserve x in it's original form
   x1 <- data.table::copy(x)
   # Drop exclude_vars columns
   if(!is.null(exclude_vars)) {
     # Make sure that the column names in exclude_vars is a part of data
-    if(!all(exclude_vars %in% nm)) cli::cli_abort("{exclude_vars} is not a column name in data. Choose one of {names(x)}")
+    if(!all(exclude_vars %in% nm)) {
+      ev <- exclude_vars[!exclude_vars %in% nm]
+      cli::cli_abort("{.var {ev}} {?is/are} not {?a/} column name{?s} in data. Choose one of {.var {nm}}")
+    }
     #Dropping columns from x1
     x1[, (exclude_vars) := NULL]
   }
@@ -102,7 +106,6 @@ uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
   x <- x[, ..mul_vars]
 
   return(x)
-
 }
 
 change_vars_to_attr <- function(df, uvl) {
