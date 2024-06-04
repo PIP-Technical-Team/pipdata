@@ -68,7 +68,7 @@ vars_to_list <- function(x, vars, nm = NULL) {
 #'   variables as attributes
 #' @export
 #' @examples
-#' dt <- data.table(a = 1, b = 1:10, c = 5)
+#' dt <- data.table::data.table(a = 1, b = 1:10, c = 5)
 #' out <- uniq_vars_to_attr(dt)
 #' out[]
 #' attr(out, "a")
