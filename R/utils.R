@@ -16,7 +16,7 @@ uniq_vars <- function(x) {
 #' Turn data to data.table if it is not already
 #' @noRd
 check_data_table <- function(x) {
-  if (!data.table::is.data.table(x)) {
+  if (!is.data.table(x)) {
     x <- as.data.table(x)
   }
   x
@@ -68,7 +68,7 @@ vars_to_list <- function(x, vars, nm = NULL) {
 #'   variables as attributes
 #' @export
 #' @examples
-#' dt <- data.table::data.table(a = 1, b = 1:10, c = 5)
+#' dt <- data.table(a = 1, b = 1:10, c = 5)
 #' out <- uniq_vars_to_attr(dt)
 #' out[]
 #' attr(out, "a")
@@ -85,9 +85,9 @@ vars_to_list <- function(x, vars, nm = NULL) {
 #' attr(out, "c")
 uniq_vars_to_attr <- function(x, exclude_vars = NULL) {
   nm <- names(x) |>
-    data.table::copy() # make sure names are not modified by reference
+    copy() # make sure names are not modified by reference
   # Doing everything on copy of x since we want to preserve x in it's original form
-  x1 <- data.table::copy(x)
+  x1 <- copy(x)
   # Drop exclude_vars columns
   if(!is.null(exclude_vars)) {
     # Make sure that the column names in exclude_vars is a part of data
