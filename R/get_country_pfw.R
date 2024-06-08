@@ -1,4 +1,4 @@
-#' GEt Country Price framework  data based on PFW and DLW data info
+#' Get Country Price framework  data based on PFW and DLW data info
 #'
 #' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
 #' @param pfw data frame with Price framework data, loaded with

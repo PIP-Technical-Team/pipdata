@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_country_pfw.R
 \name{get_country_pfw}
 \alias{get_country_pfw}
-\title{GEt Country Price framework  data based on PFW and DLW data info}
+\title{Get Country Price framework  data based on PFW and DLW data info}
 \usage{
 get_country_pfw(df, pfw)
 }
@@ -16,7 +16,7 @@ get_country_pfw(df, pfw)
 list of data.tables
 }
 \description{
-GEt Country Price framework  data based on PFW and DLW data info
+Get Country Price framework  data based on PFW and DLW data info
 }
 \examples{
 pfw <- pipload::pip_load_aux("pfw")

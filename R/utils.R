@@ -2,6 +2,12 @@
 #' @param x data frame.
 #'
 #' @return character vector of unique variable names
+#' @examples
+#' \dontrun{
+#'  df <- data.frame(a = 1, b = rnorm(5), c = 4)
+#'  uniq_vars(df)
+#' }
+#'
 #' @export
 uniq_vars <- function(x) {
 
@@ -27,9 +33,15 @@ check_data_table <- function(x) {
 #' @param x data frame.
 #'
 #' @return list of single-value variables from dataframe `x`
+#' @examples
+#' \dontrun{
+#'  df <- data.frame(a = 1, b = rnorm(5), c = 4)
+#'  uniq_vars_to_list(df)
+#' }
 #' @export
 uniq_vars_to_list <- function(x) {
 
+  x <- check_data_table(x)
   uni_vars <- uniq_vars(x)
 
   y <- x[, lapply(.SD, unique),
