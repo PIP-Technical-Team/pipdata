@@ -15,3 +15,10 @@ character vector of unique variable names
 \description{
 Identify unique variables in data frame
 }
+\examples{
+\dontrun{
+ df <- data.frame(a = 1, b = rnorm(5), c = 4)
+ uniq_vars(df)
+}
+
+}

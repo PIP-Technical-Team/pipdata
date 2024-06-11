@@ -16,11 +16,9 @@ Imports:
     fs,
     glue,
     joyn,
-    lubridate,
     pipfun (>= 0.0.0.9017),
     pipload (>= 0.2.0.9005),
     purrr,
-    stats,
     wbpip (>= 0.0.3)
 Suggests: 
     knitr,

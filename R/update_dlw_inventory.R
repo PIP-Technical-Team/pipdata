@@ -88,8 +88,10 @@ update_dlw_inventory <-
     }
   ][,
     `:=`(
-      creationtime  = lubridate::mdy_hms(creationtime),
-      lastwritetime = lubridate::mdy_hms(lastwritetime)
+      #creationtime  = lubridate::mdy_hms(creationtime),
+      #lastwritetime = lubridate::mdy_hms(lastwritetime)
+      creationtime  = as.POSIXct(creationtime, tz = "UTC", format = "%m/%d/%Y %T"),
+      lastwritetime = as.POSIXct(lastwritetime, tz = "UTC", format = "%m/%d/%Y %T")
     )]
 
 

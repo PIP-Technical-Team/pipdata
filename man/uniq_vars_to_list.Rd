@@ -17,3 +17,9 @@ list of single-value variables from dataframe \code{x}
 convert variables with unique values along the data set to attributes and then
 remove those unique variables
 }
+\examples{
+\dontrun{
+ df <- data.frame(a = 1, b = rnorm(5), c = 4)
+ uniq_vars_to_list(df)
+}
+}
