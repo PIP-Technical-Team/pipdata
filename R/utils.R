@@ -23,7 +23,7 @@ uniq_vars <- function(x) {
 #' @noRd
 check_data_table <- function(x) {
   if (!is.data.table(x)) {
-    x <- as.data.table(x)
+    x <- qDT(x)
   }
   x
 }

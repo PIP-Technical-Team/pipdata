@@ -174,7 +174,7 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
       assign(fnms[i], data.table::copy(rr))
 
     } else {
-      assign(fnms[i], data.table::as.data.table(rr))
+      assign(fnms[i], qDT(rr))
     }
 
   }
@@ -349,7 +349,7 @@ ppp_to_wide <- function(ppp) {
   if (inherits(ppp, "data.table")) {
     ppp <- data.table::copy(ppp)
   } else {
-    ppp <- data.table::as.data.table(ppp)
+    ppp <- qDT(ppp)
   }
   stopifnot( exprs = {
 
@@ -408,7 +408,7 @@ get_welfare_ppp <- function(df, base_year) {
   if (inherits(df, "data.table")) {
     dt <- data.table::copy(df)
   } else {
-    dt <- data.table::as.data.table(df)
+    dt <- qDT(df)
   }
 
   stopifnot( exprs = {
