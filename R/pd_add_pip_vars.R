@@ -171,10 +171,10 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
   for (i in seq_along(fnms)) {
     rr <- get(fnms[[i]])
     if (inherits(rr, "data.table")) {
-      assign(fnms[i], data.table::copy(rr))
+      assign(fnms[i], copy(rr))
 
     } else {
-      assign(fnms[i], data.table::as.data.table(rr))
+      assign(fnms[i], qDT(rr))
     }
 
   }
@@ -202,7 +202,7 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
 
   df[, reporting_level := get(select_var)]
 
-  data.table::setorder(df, reporting_level)
+  setorder(df, reporting_level)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflated data --------
@@ -347,9 +347,9 @@ ppp_to_wide <- function(ppp) {
 #   ____________________________________________________________________________
 #   Defenses                                                           ####
   if (inherits(ppp, "data.table")) {
-    ppp <- data.table::copy(ppp)
+    ppp <- copy(ppp)
   } else {
-    ppp <- data.table::as.data.table(ppp)
+    ppp <- qDT(ppp)
   }
   stopifnot( exprs = {
 
@@ -377,7 +377,7 @@ ppp_to_wide <- function(ppp) {
                formula = country_code + ppp_data_level ~ ppp_version,
                value.var = "ppp",
   )
-  data.table::setattr(ppp, "ppp_versions", ppp_v)
+  setattr(ppp, "ppp_versions", ppp_v)
 
 
 
@@ -406,9 +406,9 @@ get_welfare_ppp <- function(df, base_year) {
   #   ____________________________________________________________________________
   #   Defenses                                                                ####
   if (inherits(df, "data.table")) {
-    dt <- data.table::copy(df)
+    dt <- copy(df)
   } else {
-    dt <- data.table::as.data.table(df)
+    dt <- qDT(df)
   }
 
   stopifnot( exprs = {
