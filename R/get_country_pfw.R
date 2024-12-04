@@ -21,11 +21,17 @@ get_country_pfw <- function(df, pfw) {
 
   # Defenses -----------
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-  stopifnot( exprs = {
-    # 1) Check for duplicates
-    uniqueN(pfw, by = keyVar) == nrow(pfw)
-    }
-  )
+  # stopifnot( exprs = {
+  #   # 1) Check for duplicates
+  #   uniqueN(pfw, by = keyVar) == nrow(pfw)
+  #   }
+  # )
+  if(uniqueN(pfw, by = keyVar) != nrow(pfw)){
+    pfw_d <- rep_pfw[duplicated(rep_pfw, by = keyVar)]
+    n_rep <- nrow(pfw_d)
+    piperr(message = "There {?is/are} {nrep} duplicates in {.arg {pfw}")
+  }
+
 
   # Early returns ------
   if (FALSE) {
