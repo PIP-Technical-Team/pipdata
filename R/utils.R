@@ -244,18 +244,18 @@ num_vars_to_attr <- function(df, num_var, name_var) {
 piperr <- function(message, call = NULL){
   cli::cli_abort(message = message,
                  call = call,
-                 class = c("piperr","error","condition"))
+                 class = c("piperr"))
 }
 
 pipwrn <- function(message, call = NULL){
   cli::cli_warn(message = message,
                 call = call,
-                 class = c("pipwrn","warn","condition"))
+                 class = c("pipwrn"))
 }
 
 pipmsg <- function(message, call = NULL){
   cli::cli_inform(message = message,
                   call = call,
-                class = c("pipmsg","inform","condition"))
+                class = c("pipmsg"))
 }
 

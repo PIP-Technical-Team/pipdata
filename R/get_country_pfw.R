@@ -26,11 +26,33 @@ get_country_pfw <- function(df, pfw) {
   #   uniqueN(pfw, by = keyVar) == nrow(pfw)
   #   }
   # )
-  if(uniqueN(pfw, by = keyVar) != nrow(pfw)){
-    pfw_d <- pfw[duplicated(pfw, by = keyVar)]
-    n_rep <- nrow(pfw_d)
-    piperr(message = "There {?is/are} {n_rep} duplicates in `pfw`")
-  }
+
+  tryCatch(
+    piperr = function(cnd){
+      if(cnd$log == "y"){
+        cat(
+          "[", cnd$skip, "] ", cnd$message, "\n", sep = "",
+          file = stdout(), append = TRUE
+        )
+      }
+
+      if(cnd$skip == "n"){
+        cli::cli_abort(cnd$message)
+      }
+    },
+
+    if(uniqueN(pfw, by = keyVar) != nrow(pfw)){
+      pfw_d <- pfw[duplicated(pfw, by = keyVar)]
+      n_rep <- nrow(pfw_d)
+      cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
+                 class = "piperr",
+                 log = "y",
+                 skip = "y")
+    }else{
+      print("Pass")
+    }
+  )
+
 
   # Early returns ------
   if (FALSE) {
