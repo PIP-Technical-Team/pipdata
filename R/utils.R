@@ -230,3 +230,29 @@ num_vars_to_attr <- function(df, num_var, name_var) {
   c_col <- c(num_var, name_var)
   dt[, !..c_col]
 }
+
+# piperr <- function(message){
+#   err <- structure(
+#     list(
+#       message = message
+#     ),
+#     class = c("piperr","error","condition")
+#   )
+#   stop(err)
+# }
+
+piperr <- function(message){
+  cli::cli_abort(message = message,
+                 class = c("piperr","error","condition"))
+}
+
+pipwrn <- function(message){
+  cli::cli_warn(message = message,
+                 class = c("pipwrn","warn","condition"))
+}
+
+pipmsg <- function(message){
+  cli::cli_inform(message = message,
+                class = c("pipmsg","inform","condition"))
+}
+
