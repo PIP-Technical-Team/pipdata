@@ -28,11 +28,12 @@ get_country_pfw <- function(df, pfw) {
   # )
 
   tryCatch(
+
     piperr = function(cnd){
       if(cnd$log == "y"){
         cat(
-          "[", cnd$skip, "] ", cnd$message, "\n", sep = "",
-          file = stdout(), append = TRUE
+          "[", class(cnd)[[1]], "] ", cnd$message, "\n", sep = "",
+          file = "log.txt", append = TRUE
         )
       }
 
@@ -41,16 +42,17 @@ get_country_pfw <- function(df, pfw) {
       }
     },
 
-    if(uniqueN(pfw, by = keyVar) != nrow(pfw)){
-      pfw_d <- pfw[duplicated(pfw, by = keyVar)]
-      n_rep <- nrow(pfw_d)
-      cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
-                 class = "piperr",
-                 log = "y",
-                 skip = "y")
-    }else{
-      print("Pass")
+    expr = {
+      if(uniqueN(pfw, by = keyVar) != nrow(pfw)){
+        pfw_d <- pfw[duplicated(pfw, by = keyVar)]
+        n_rep <- nrow(pfw_d)
+        cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
+                       class = "piperr",
+                       log = "y",
+                       skip = "y")
+      }
     }
+
   )
 
 
