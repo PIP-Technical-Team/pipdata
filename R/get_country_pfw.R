@@ -27,34 +27,7 @@ get_country_pfw <- function(df, pfw) {
   #   }
   # )
 
-  tryCatch(
-
-    piperr = function(cnd){
-      if(cnd$log == "y"){
-        cat(
-          "[", class(cnd)[[1]], "] ", cnd$message, "\n", sep = "",
-          file = "log.txt", append = TRUE
-        )
-      }
-
-      if(cnd$skip == "n"){
-        cli::cli_abort(cnd$message)
-      }
-    },
-
-    expr = {
-      if(uniqueN(pfw, by = keyVar) != nrow(pfw)){
-        pfw_d <- pfw[duplicated(pfw, by = keyVar)]
-        n_rep <- nrow(pfw_d)
-        cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
-                       class = "piperr",
-                       log = "y",
-                       skip = "y")
-      }
-    }
-
-  )
-
+  pfw <- unq_obs_dt(pfw, keyVar)
 
   # Early returns ------
   if (FALSE) {
