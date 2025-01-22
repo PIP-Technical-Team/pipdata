@@ -20,12 +20,11 @@ get_country_pfw <- function(df, pfw) {
 
 
   # Defenses -----------
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Unique obs per pfw --------
+
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-  # stopifnot( exprs = {
-  #   # 1) Check for duplicates
-  #   uniqueN(pfw, by = keyVar) == nrow(pfw)
-  #   }
-  # )
 
   pfw <- unq_obs_dt(pfw, keyVar)
 
@@ -47,9 +46,9 @@ get_country_pfw <- function(df, pfw) {
   # get single-value variables
   uvl <- uniq_vars_to_list(df)  #list with unique value
 
-  # filter PFW
+  # filter country PFW
 
-  cpfw <- # country price framework
+  cpfw <-
     pfw[ country_code     == uvl$country_code
          & surveyid_year  == uvl$surveyid_year
          & survey_acronym == uvl$survey_acronym
@@ -57,38 +56,8 @@ get_country_pfw <- function(df, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## reporting level  --------
-  dcols <- c(
-    "cpi_domain",
-    "ppp_domain",
-    "gdp_domain",
-    "pce_domain",
-    "pop_domain"
-  )
 
-  cpfw <-
-    cpfw[
-      # filter inpovcal data
-      inpovcal == 1
-    ][,
-      # Find MAX domain per obs
-      reporting_level := apply(.SD, MARGIN = 1,
-                               function(x) {
-                                 y <- max(x)
-                                 as.character(y)
-                               }),
-      .SDcols = dcols
-    ]
-
-
-
-
-  # check if there is a unique record for country, survey ID year and survey_acronym
-  stopifnot(exprs =  {
-    "PFW is not unique for country, surveyid year, and survey_acronym" = nrow(cpfw) == 1
-    "PFW does not contains info for country, surveyid year, and survey_acronym" = nrow(cpfw) != 0
-  })
-
-
+  cpfw <- report_lvl(cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Other welfare type --------
@@ -221,3 +190,83 @@ unq_obs_dt <- function(dt,
 
 }
 
+#' Add reporting level variable
+#'
+#' @param cpfw data.table with country Price Framework
+#' @inheritParams unq_obs_dt
+#'
+#' @return data.table
+#' @export
+report_lvl <- function(cpfw,
+                       log_err = TRUE,
+                       skip_err = TRUE) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dcols <- c(
+    "cpi_domain",
+    "ppp_domain",
+    "gdp_domain",
+    "pce_domain",
+    "pop_domain"
+  )
+
+  tryCatch(
+    expr = {
+
+      cpfw <-
+        cpfw[
+          # filter inpovcal data
+          inpovcal == 1
+        ][,
+          # Find MAX domain per obs
+          reporting_level := apply(.SD, MARGIN = 1,
+                                   function(x) {
+                                     y <- max(x)
+                                     as.character(y)
+                                   }),
+          .SDcols = dcols
+        ]
+
+      if(nrow(cpfw)==0){
+        cli::cli_abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
+                       class = c("no_pfw", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  unique(cpfw$survey_id),
+                       call = sys.call())
+      }else if(nrow(cpfw) > 1){
+        cli::cli_abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
+                       class = c("unq_pfw", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  unique(cpfw$survey_id),
+                       call = sys.call())
+      }
+
+    },
+
+    unq_pfw = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+    }
+
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(cpfw)
+
+}
