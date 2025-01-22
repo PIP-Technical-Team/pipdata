@@ -23,10 +23,11 @@ uniq_vars <- function(x) {
 #' @noRd
 check_data_table <- function(x) {
   if (!is.data.table(x)) {
-    x <- qDT(x)
+    x <- collapse::qDT(x)
   }
   x
 }
+
 #' convert variables with unique values along the data set to attributes and then
 #' remove those unique variables
 #'
@@ -35,13 +36,12 @@ check_data_table <- function(x) {
 #' @return list of single-value variables from dataframe `x`
 #' @examples
 #' \dontrun{
-#'  df <- data.frame(a = 1, b = rnorm(5), c = 4)
+#'  df <- data.frame::data.frame(a = 1, b = rnorm(5), c = 4)
 #'  uniq_vars_to_list(df)
 #' }
 #' @export
 uniq_vars_to_list <- function(x) {
 
-  x <- check_data_table(x)
   uni_vars <- uniq_vars(x)
 
   y <- x[, lapply(.SD, unique),
