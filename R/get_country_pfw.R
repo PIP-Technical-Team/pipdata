@@ -234,14 +234,14 @@ report_lvl <- function(cpfw,
                        class = c("no_pfw", "piperr"),
                        log = log_err,
                        skip = skip_err,
-                       link =  unique(cpfw$survey_id),
+                       link =  unique(cpfw$link),
                        call = sys.call())
       }else if(nrow(cpfw) > 1){
         cli::cli_abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
                        class = c("unq_pfw", "piperr"),
                        log = log_err,
                        skip = skip_err,
-                       link =  unique(cpfw$survey_id),
+                       link =  unique(cpfw$link),
                        call = sys.call())
       }
 
