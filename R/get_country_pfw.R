@@ -152,3 +152,72 @@ get_country_pfw <- function(df, pfw) {
 
 }
 
+#' Find unique values in dt according to some key variables
+#'
+#' @param dt data.table or data.frame
+#' @param keyVar character vector with variables to determine unique observations
+#' @param log_err boolean TRUE or FALSE if the error of duplicates should be added
+#' to the log
+#' @param skip_err boolean TRUE or FALSE if we want to skip the abort when finding
+#' the duplicates error
+#'
+#' @return data.table or data.frame
+#' @export
+#'
+#' @examples
+#' pfw <- pipload::pip_load_aux("pfw")
+#' keyVar <- c("country_code", "surveyid_year", "survey_acronym")
+#' unq_obs_dt(pfw, keyVar)
+unq_obs_dt <- function(dt,
+                       keyVar,
+                       log_err = TRUE,
+                       skip_err = TRUE) {
+
+  tryCatch(
+
+    expr = {
+
+      if(uniqueN(dt, by = keyVar) != nrow(dt)){
+
+        dt_d <- dt[duplicated(dt, by = keyVar)]
+        n_rep <- nrow(dt_d)
+
+        cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
+                       class = c("dup_pfw", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  unique(dt_d$link),
+                       call = sys.call())
+      }
+
+    },
+
+    dup_pfw = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+
+    },
+
+    finally = {
+
+      dt <- unique(dt, by = keyVar) # eliminate duplicates
+
+    }
+
+  )
+
+
+  return(dt)
+
+}
+
