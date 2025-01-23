@@ -48,11 +48,9 @@ get_country_pfw <- function(df, pfw) {
 
   # filter country PFW
 
-  cpfw <-
-    pfw[ country_code     == uvl$country_code
-         & surveyid_year  == uvl$surveyid_year
-         & survey_acronym == uvl$survey_acronym
-    ]
+  cpfw <- pfw[ country_code     == uvl$country_code
+               & surveyid_year  == uvl$surveyid_year
+               & survey_acronym == uvl$survey_acronym]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## reporting level  --------
@@ -68,26 +66,7 @@ get_country_pfw <- function(df, pfw) {
   # Cache ID   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  cpfw[
-    ,
-    wt := fcase(
-      welfare_type == "income", "INC",
-      welfare_type == "consumption", "CON",
-      default = ""
-    )
-  ][
-    ,
-    cache_id := paste(country_code,
-                      surveyid_year,
-                      survey_acronym,
-                      paste0("D", reporting_level),
-                      wt,
-                      uvl$module,
-                      sep = "_"
-    )
-  ]
-
-  cpfw <- split(cpfw, by = "cache_id")
+  cpfw <- cache_id(cpfw, uvl$module)
 
   # Return -------------
   return(cpfw)
@@ -319,6 +298,84 @@ othr_wlf <- function(cpfw,
 
     }
 
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(cpfw)
+
+}
+
+#' Create cache ID for country PFW
+#'
+#' @param cpfw country PFW data.table
+#' @param module survey module
+#'
+#' @return data.table
+#' @keywords internal
+cache_id <- function(cpfw,
+                     module,
+                     log_err = TRUE,
+                     skip_err = TRUE) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  tryCatch(
+    expr = {
+
+      cpfw[
+        ,
+        wt := fcase(
+          welfare_type == "income", "INC",
+          welfare_type == "consumption", "CON",
+          default = ""
+        )
+      ][
+        ,
+        cache_id := paste(country_code,
+                          surveyid_year,
+                          survey_acronym,
+                          paste0("D", reporting_level),
+                          wt,
+                          uvl$module,
+                          sep = "_"
+        )
+      ]
+
+      if(any(cpfw$wt=="")){
+
+        cli::cli_abort(message = "Welfare type is undefined",
+                       class = c("no_wlf_tp", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  unique(cpfw$link),
+                       call = sys.call())
+      }
+
+    },
+
+    no_wlf_tp = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+    },
+
+    finally = {
+
+      cpfw <- split(cpfw, by = "cache_id")
+
+    }
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
