@@ -62,34 +62,7 @@ get_country_pfw <- function(df, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Other welfare type --------
 
-  cpfw[,
-       is_alt_welf := FALSE
-  ]
-  if (cpfw$oth_welfare1_type != "") {
-
-    cpfw_alt <- copy(cpfw)
-    cpfw_alt[
-      ,
-      welfare_type := fcase(
-        grepl("^([Cc])", oth_welfare1_type), "consumption",
-        grepl("^([Ii])", oth_welfare1_type), "income",
-        default = ""
-      )
-    ][
-      ,
-      oth_welfare1_type := NULL # remove variable
-    ][
-      ,
-      is_alt_welf := TRUE
-    ]
-
-
-    cpfw <- rbindlist(l         =  list(cpfw, cpfw_alt),
-                      use.names = TRUE,
-                      fill      = TRUE)
-
-  }
-
+  cpfw <- othr_wlf(cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Cache ID   ---------
@@ -190,13 +163,13 @@ unq_obs_dt <- function(dt,
 
 }
 
-#' Add reporting level variable
+#' Add reporting level variable to country PFW
 #'
 #' @param cpfw data.table with country Price Framework
 #' @inheritParams unq_obs_dt
 #'
 #' @return data.table
-#' @export
+#' @keywords internal
 report_lvl <- function(cpfw,
                        log_err = TRUE,
                        skip_err = TRUE) {
@@ -230,13 +203,16 @@ report_lvl <- function(cpfw,
         ]
 
       if(nrow(cpfw)==0){
+
         cli::cli_abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
                        class = c("no_pfw", "piperr"),
                        log = log_err,
                        skip = skip_err,
                        link =  unique(cpfw$link),
                        call = sys.call())
+
       }else if(nrow(cpfw) > 1){
+
         cli::cli_abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
                        class = c("unq_pfw", "piperr"),
                        log = log_err,
@@ -260,6 +236,85 @@ report_lvl <- function(cpfw,
         cli::cli_abort(cnd$message, call = cnd$call)
 
       }
+    }
+
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(cpfw)
+
+}
+
+
+#' Duplicate country PFW if there are two types of welfare
+#'
+#' @param cpfw country PFW data.table
+#' @param log_wrn boolean value for logging warning in log.txt
+#'
+#' @return data.table
+#' @keywords internal
+othr_wlf <- function(cpfw,
+                       log_wrn = TRUE) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  withCallingHandlers(
+    expr = {
+
+      cpfw[,
+           is_alt_welf := FALSE
+      ]
+
+      if (cpfw$oth_welfare1_type != "") {
+
+        cpfw_alt <- copy(cpfw)
+
+        cpfw_alt[
+          ,
+          welfare_type := fcase(
+            grepl("^([Cc])", oth_welfare1_type), "consumption",
+            grepl("^([Ii])", oth_welfare1_type), "income",
+            default = ""
+          )
+        ][
+          ,
+          oth_welfare1_type := NULL # remove variable
+        ][
+          ,
+          is_alt_welf := TRUE
+        ]
+
+
+        cpfw <- rbindlist(l         =  list(cpfw, cpfw_alt),
+                          use.names = TRUE,
+                          fill      = TRUE)
+
+      }
+
+      if(nrow(cpfw)>1){
+
+        cli::cli_warn(message = "There are two types of welfare",
+                       class = c("othr_wlf_wrn", "pipwrn"),
+                       log = log_wrn,
+                       link =  unique(cpfw$link),
+                       call = sys.call())
+
+      }
+
+    },
+
+    othr_wlf_wrn = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
     }
 
   )
