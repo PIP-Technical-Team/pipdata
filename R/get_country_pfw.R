@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' pfw <- pipload::pip_load_aux("pfw")
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' gd   <- pipload::pip_load_dlw("PHL", 2012)
 #' cpfw <- get_country_pfw(gd, pfw)
 get_country_pfw <- function(df, pfw) {
 
@@ -278,7 +278,7 @@ othr_wlf <- function(cpfw,
 
         svy <- unique(cpfw$link)
 
-        cli::cli_warn(c("There are more than one type of welfare for {svy}"),
+        cli::cli_warn(c("More than one type of welfare for {svy}"),
                        class = c("othr_wlf_wrn", "pipwrn"),
                        log = log_wrn,
                        link = svy,
@@ -339,7 +339,7 @@ cache_id <- function(cpfw,
                           survey_acronym,
                           paste0("D", reporting_level),
                           wt,
-                          uvl$module,
+                          module,
                           sep = "_"
         )
       ]
@@ -369,14 +369,10 @@ cache_id <- function(cpfw,
         cli::cli_abort(cnd$message, call = cnd$call)
 
       }
-    },
-
-    finally = {
-
-      cpfw <- split(cpfw, by = "cache_id")
-
     }
   )
+
+  cpfw <- split(cpfw, by = "cache_id")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
