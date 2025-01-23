@@ -256,7 +256,7 @@ report_lvl <- function(cpfw,
 #' @return data.table
 #' @keywords internal
 othr_wlf <- function(cpfw,
-                       log_wrn = TRUE) {
+                     log_wrn = TRUE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -297,10 +297,12 @@ othr_wlf <- function(cpfw,
 
       if(nrow(cpfw)>1){
 
-        cli::cli_warn(message = "There are two types of welfare",
+        svy <- unique(cpfw$link)
+
+        cli::cli_warn(c("There are more than one type of welfare for {svy}"),
                        class = c("othr_wlf_wrn", "pipwrn"),
                        log = log_wrn,
-                       link =  unique(cpfw$link),
+                       link = svy,
                        call = sys.call())
 
       }
@@ -309,7 +311,7 @@ othr_wlf <- function(cpfw,
 
     othr_wlf_wrn = function(cnd){
 
-      if(cnd$log){ # Log the error
+      if(cnd$log){ # Log the warning
 
         add_log(cnd)
 
