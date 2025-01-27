@@ -19,7 +19,7 @@ remove those unique variables
 }
 \examples{
 \dontrun{
- df <- data.frame(a = 1, b = rnorm(5), c = 4)
+ df <- data.frame::data.frame(a = 1, b = rnorm(5), c = 4)
  uniq_vars_to_list(df)
 }
 }

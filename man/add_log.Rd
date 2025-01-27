@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_log}
 \alias{add_log}
-\title{Add warnings or errors to a log.txt}
+\title{Add warnings or errors to a .logenv}
 \usage{
 add_log(cnd)
 }
@@ -10,9 +10,9 @@ add_log(cnd)
 \item{cnd}{error or warning condition}
 }
 \value{
-a message in log.txt
+a message in .logenv
 }
 \description{
-Add warnings or errors to a log.txt
+Add warnings or errors to a .logenv
 }
 \keyword{internal}

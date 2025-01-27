@@ -20,6 +20,6 @@ Get Country Price framework  data based on PFW and DLW data info
 }
 \examples{
 pfw <- pipload::pip_load_aux("pfw")
-gd   <- pipload::pip_load_dlw("CHN", 2015)
+gd   <- pipload::pip_load_dlw("PHL", 2012)
 cpfw <- get_country_pfw(gd, pfw)
 }
