@@ -260,21 +260,46 @@ pipmsg <- function(message, call = NULL){
 }
 
 
-#' Add warnings or errors to a log.txt
+#' Add warnings or errors to a .logenv
 #'
 #' @param cnd error or warning condition
 #'
-#' @return a message in log.txt
+#' @return a message in .logenv
 #' @keywords internal
 add_log <- function(cnd) {
 
-  cat(
-    "[", class(cnd)[[1]], "-", class(cnd)[[2]], "] ",
-    cnd$message," for ",
-    cnd$link, " Error in fun= ",
-    deparse(cnd$call[[1]]), "\n",
-    sep = "",
-    file = "log.txt", append = TRUE
-  )
+  # cat(
+  #   "[", class(cnd)[[1]], "-", class(cnd)[[2]], "] ",
+  #   cnd$message," for ",
+  #   cnd$link, " Error in fun= ",
+  #   deparse(cnd$call[[1]]), "\n",
+  #   sep = "",
+  #   file = "log.txt", append = TRUE
+  # )
+
+  if (!exists(class(cnd)[[2]], envir = .logenv)) {
+
+    rlang::env_poke(.logenv,
+                    class(cnd)[[2]],
+                    list())
+  }
+
+  old_list <- get(class(cnd)[[2]],
+                  envir = .logenv)
+
+  entry = list(paste0(cnd$message," for ", cnd$link,
+                 " Error in fun: ", deparse(cnd$call[[1]]),
+                 sep = ""))
+
+  names(entry) <- class(cnd)[[1]]
+
+  current_list = append(old_list,
+                        entry)
+
+  assign(class(cnd)[[2]],
+         current_list,
+         envir = .logenv)
+
+  invisible()
 
 }
