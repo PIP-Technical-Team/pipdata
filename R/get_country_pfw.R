@@ -18,8 +18,10 @@ get_country_pfw <- function(df, pfw) {
 
   })
 
-
-  # Defenses -----------
+  # Early returns ------
+  if (FALSE) {
+    return()
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Unique obs per pfw --------
@@ -27,11 +29,6 @@ get_country_pfw <- function(df, pfw) {
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
 
   pfw <- unq_obs_dt(pfw, keyVar)
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
 
   # Computations -------
   # subset microdata survey; BIN is BIN is treated as microdata in PCN/PIP
@@ -41,30 +38,26 @@ get_country_pfw <- function(df, pfw) {
   #              inpovcal     == 1] # subset country-years in Povcalnet
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## unique variables --------
+  ## Filter country PFW --------
 
-  # get single-value variables
-  uvl <- uniq_vars_to_list(df)  #list with unique value
-
-  # filter country PFW
+  uvl <- uniq_vars_to_list(df)  #list with unique values for survey
 
   cpfw <- pfw[ country_code     == uvl$country_code
                & surveyid_year  == uvl$surveyid_year
                & survey_acronym == uvl$survey_acronym]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## reporting level  --------
+  ## Add reporting level  --------
 
   cpfw <- report_lvl(cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Other welfare type --------
+  ## Check other welfare type --------
 
   cpfw <- othr_wlf(cpfw)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Cache ID   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Create cache ID   ---------
 
   cpfw <- cache_id(cpfw, uvl$module)
 
@@ -241,7 +234,7 @@ othr_wlf <- function(cpfw,
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  withCallingHandlers(
+  tryCatch(
     expr = {
 
       cpfw[,
@@ -278,8 +271,8 @@ othr_wlf <- function(cpfw,
 
         svy <- unique(cpfw$link)
 
-        cli::cli_warn(c("More than one type of welfare for {svy}"),
-                       class = c("othr_wlf_wrn", "pipwrn"),
+        rlang::inform(message = "More than one type of welfare",
+                       class = c("othr_wlf_inf", "pipinf"),
                        log = log_wrn,
                        link = svy,
                        call = sys.call())
@@ -288,7 +281,7 @@ othr_wlf <- function(cpfw,
 
     },
 
-    othr_wlf_wrn = function(cnd){
+    othr_wlf_inf = function(cnd){
 
       if(cnd$log){ # Log the warning
 
