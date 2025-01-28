@@ -15,7 +15,7 @@
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
-#' pd_split_alt_welfare(md, cpfw)
+#' df   <- pd_split_alt_welfare(md, cpfw)
 pd_split_alt_welfare <- function(df, cpfw) {
 
   # on.exit ------------
@@ -30,22 +30,28 @@ pd_split_alt_welfare <- function(df, cpfw) {
   )
 
   # Computations -------
+
   welfare_type <- cpfw[[1]]$wt
+
   df[,
      welfare_type := welfare_type
       ]
 
-  ## one data frame ------
+  ## One data frame ------
+
   if (length(cpfw)  == 1) {
 
     l <- list(df)
     names(l) <- cpfw[[1]]$cache_id
     return(l)
+
   }
 
   ## Two data frames -----
+
   other_welfare      <- cpfw[[2]]$oth_welfare1_var #alternative wlf is in position 2
   other_welfare_type <- cpfw[[2]]$wt
+
   dfa <- copy(df)
   dfa[,
       `:=`(
@@ -54,9 +60,11 @@ pd_split_alt_welfare <- function(df, cpfw) {
       )]
 
   l <- list(df, dfa)
+
   names(l) <- sapply(cpfw, `[[`, "cache_id")
 
-  # Return -------------
+  # Return ------------
+
   return(l)
 
 }
