@@ -101,6 +101,24 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
   variables <- colnames(md)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Main variables (same md and gd) --------
+
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Area (same for md and gd) --------
+
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Domain variables (same for md and gd) --------
+
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Distribution type  (different) --------
+
+
+
+
 
   # Add variables  from PFW data (same as group)
   if (!c("survey_year") %in% variables) {
@@ -126,11 +144,6 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
     md[, distribution_type := "micro"]
 
-  }
-
-  # rename subnatid
-  if (c("subnatid") %in% variables){ #Only md
-    setnames(md, "subnatid", "subnatid1")
   }
 
   # Recode urban to string
