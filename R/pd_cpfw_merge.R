@@ -37,6 +37,10 @@ pd_cpfw_merge <- function(lf, cpfw) {
     return()
   }
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Add variables --------
+
+
   if (inherits(lf, "list")) {
     df <- purrr::map2(.x = lf,
                      .y =  cpfw,
@@ -47,6 +51,11 @@ pd_cpfw_merge <- function(lf, cpfw) {
   }
 
   #names(y) <- sapply(cpfw, `[[`, "cache_id")
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Transform into attributes --------
+
+  # Use Zander functions
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -99,14 +108,14 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
   # hard copy
   md <- copy(df)
 
-  variables <- colnames(md)
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Main variables (same md and gd) --------
+  md <- add_main_vars(md, cpfw)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Area (same for md and gd) --------
+
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -120,20 +129,7 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
 
 
-  # Add variables  from PFW data (same as group)
-  if (!c("survey_year") %in% variables) {
-    md[, survey_year := cpfw$survey_year]
-  }
 
-  # generate countrycode variable if not available in md data
-  if (!c("countrycode") %in% variables){
-    md[, countrycode := cpfw$country_code]
-  }
-
-  # Create welfare_type
-  if (!c("welfare_type") %in% variables){
-    md[, welfare_type := cpfw$welfare_type]
-  }
 
   # Create distribution_type
   if (cpfw$use_imputed == 1) {
@@ -159,6 +155,7 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
   ##  ............................................................................
   ##  Level and domain variables                                              ####
+  variables <- colnames(md)
 
   # Create ppp_data_level
   if (c("ppp_data_level") %in% variables) {
@@ -233,3 +230,64 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
 }
 
+add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
+
+  tryCatch(
+    expr = {
+
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # computations   ---------
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      variables <- colnames(dt)
+
+      main_vars <- c("survey_year",
+                     "countrycode",
+                     "welfare_type")
+
+
+      dt[, (main_vars) :=
+           lapply(main_vars, \(x) {
+
+             if (!(x %in% variables)) {
+               cpfw[[x]]
+
+               } else {
+                 dt[[x]]
+
+                 }
+             })]
+
+      # Inform what country/surveys are missing a main variable
+
+      if(any(!(main_vars %in% variables))){
+
+        svy <- unique(cpfw$link)
+
+        miss_vars <- main_vars[!(main_vars %in% variables)]
+
+        rlang::inform(message = cli::cli_text("Main variable{?s} {miss_vars} missing in DLW"),
+                      class = c("miss_mn_var", "pipinf"),
+                      log = log_wrn,
+                      link = svy,
+                      call = sys.call())
+      }
+
+    },
+
+    miss_mn_var = function(cnd){
+
+      if(cnd$log){ # Log the information
+
+        add_log(cnd)
+
+      }
+    }
+
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
