@@ -287,9 +287,9 @@ add_log <- function(cnd) {
   old_list <- get(class(cnd)[[2]],
                   envir = .logenv)
 
-  entry = list(paste0(cnd$message," for ", cnd$link,
-                 " Error in fun: ", deparse(cnd$call[[1]]),
-                 sep = ""))
+  entry = list(paste0("[Func: ", deparse(cnd$call[[1]]),"] ",
+                      cli::ansi_strip(cnd$message)," for ", cnd$link,
+                      sep = ""))
 
   names(entry) <- class(cnd)[[1]]
 
