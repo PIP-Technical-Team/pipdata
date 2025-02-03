@@ -244,6 +244,23 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
                      "countrycode",
                      "welfare_type")
 
+      # Inform what country/surveys are missing a main variable
+
+      if(any(!(main_vars %in% variables))){
+
+        svy <- unique(cpfw$link)
+
+        miss_vars <- main_vars[!(main_vars %in% variables)]
+
+       cli::cli_inform(message = "Main variable{?s} {miss_vars} missing in DLW",
+                      class = c("mn_var_inf", "pipinf"),
+                      log = log_wrn,
+                      link = svy,
+                      call = sys.call())
+      }
+
+
+      # Add variables if missing
 
       dt[, (main_vars) :=
            lapply(main_vars, \(x) {
@@ -257,24 +274,9 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
                  }
              })]
 
-      # Inform what country/surveys are missing a main variable
-
-      if(any(!(main_vars %in% variables))){
-
-        svy <- unique(cpfw$link)
-
-        miss_vars <- main_vars[!(main_vars %in% variables)]
-
-        rlang::inform(message = cli::cli_text("Main variable{?s} {miss_vars} missing in DLW"),
-                      class = c("miss_mn_var", "pipinf"),
-                      log = log_wrn,
-                      link = svy,
-                      call = sys.call())
-      }
-
     },
 
-    miss_mn_var = function(cnd){
+    mn_var_inf = function(cnd){
 
       if(cnd$log){ # Log the information
 

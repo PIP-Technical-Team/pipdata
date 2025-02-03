@@ -271,7 +271,7 @@ othr_wlf <- function(cpfw,
 
         svy <- unique(cpfw$link)
 
-        rlang::inform(message = "More than one type of welfare",
+        cli::cli_inform(message = "More than one type of welfare",
                        class = c("othr_wlf_inf", "pipinf"),
                        log = log_wrn,
                        link = svy,
