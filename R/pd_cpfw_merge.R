@@ -40,19 +40,18 @@ pd_cpfw_merge <- function(lf, cpfw) {
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Add variables --------
+  ## Map survey to cpfw --------
 
-
-  if (inherits(lf, "list")) { #Needed? Maybe all list?
+  if (inherits(lf, "list")) {
     lfs <- purrr::map2(.x = lf,
                      .y =  cpfw,
                      .f = cpfw_merge)
-  } else {
+  } else { #Needed? Maybe all list?
     dt <- cpfw_merge(lf, cpfw[[1]])
     lfs <- list(dt)
   }
 
-  #names(y) <- sapply(cpfw, `[[`, "cache_id")
+  names(lfs) <- sapply(cpfw, `[[`, "cache_id")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -61,10 +60,9 @@ pd_cpfw_merge <- function(lf, cpfw) {
 
 }
 
-
-#' Merge country/survey PFW with dataliweb survey data (lower level, S3 methods)
+#' Merge country/survey PFW with dataliweb survey data
 #'
-#' @param df data.table loaded with `pipload::pip_load_dlw()`
+#' @param dt data.table
 #' @param cpfw data.table with country/survey PFW
 #' @param ...  other parameters
 #'
@@ -85,65 +83,41 @@ pd_cpfw_merge <- function(lf, cpfw) {
 #' cpfw_merge(md, cpfw[[1]])
 #' FIX
 #' }
-cpfw_merge <- function(dt, cpfw,...) {
-  UseMethod("cpfw_merge")
-}
-
-#' Merge country/survey PFW with dataliweb survey data
-#'
-#' @inheritParams cpfw_merge
-#'
-#' @return data.table
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' pfw <- pipload::pip_load_aux("pfw")
-#' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
-#' FIX...
-#' }
-cpfw_merge.pipmd <- function(dt, cpfw, ...){
+cpfw_merge <- function(dt, cpfw, ...){
 
   #   ____________________________________________________________________________
   #   Initial formatting                                                      ####
 
   # hard copy
-  md <- copy(df)
+  dt_c <- copy(dt)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Main variables (same md and gd) --------
-  md <- add_main_vars(md, cpfw)
+  ## Main variables (same for md and gd) --------
+  dt_c <- add_main_vars(dt_c, cpfw)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Area (same for md and gd??)(Needed for Domain variables)--------
-  md <- add_area(md)
+  ## Area (Needed for Domain variables)--------
+  dt_c <- add_area(dt_c)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Domain variables (same for md and gd) --------
-  md <- add_dom_vars(md, cpfw)
+  dt_c <- add_dom_vars(dt_c, cpfw)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Distribution type  (different) --------
-
-  # Create distribution_type
-  if (cpfw$use_imputed == 1) {
-
-    md[, distribution_type := "imputed"]
-
-  }else {
-
-    md[, distribution_type := "micro"]
-
-  }
+  ## Distribution type  (different for md and gd) --------
+  dt_c <- add_dist_type(dt_c, cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Transform into attributes --------
 
   # Use Zander functions
+
+  dt_f <- dt_c
+
+  return(dt_f)
 
 }
 
@@ -361,6 +335,65 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
     }
   )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+
+#' Add distribution type
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @keywords internal
+add_dist_type <- function(dt, cpfw) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Create distribution_type   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if(any(class(dt)=="pipgd")){
+
+    dt[,
+       distribution_type := {
+
+         if (cpfw$pop_domain == 1) {
+
+           y <- "group"
+
+         } else if (cpfw$pop_domain ==  2) {
+
+           larea <- length(unique(area))
+
+           if (larea %in% c(0, 1)) {
+             y <- "group"
+           } else {
+             y <- "aggregate"
+           }
+
+         } else {
+           y <- ""
+         }
+         y
+
+       }
+    ]
+
+  }else if(any(class(dt)=="pipmd")){
+
+    if (cpfw$use_imputed == 1) {
+
+      dt[, distribution_type := "imputed"]
+
+    }else {
+
+      dt[, distribution_type := "micro"]
+
+    }
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
