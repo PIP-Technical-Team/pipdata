@@ -4,11 +4,9 @@
 \alias{cpfw_merge.pipmd}
 \title{Merge country/survey PFW with dataliweb survey data}
 \usage{
-\method{cpfw_merge}{pipmd}(df, cpfw, ...)
+\method{cpfw_merge}{pipmd}(dt, cpfw, ...)
 }
 \arguments{
-\item{df}{data.table loaded with \code{pipload::pip_load_dlw()}}
-
 \item{cpfw}{data.table with country/survey PFW}
 
 \item{...}{other parameters}

@@ -117,12 +117,13 @@ cpfw_merge.pipmd <- function(dt, cpfw, ...){
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Area (same for md and gd??) --------
+  ## Area (same for md and gd??)(Needed for Domain variables)--------
   md <- add_area(md)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Domain variables (same for md and gd) --------
+  md <- add_dom_vars(md, cpfw)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

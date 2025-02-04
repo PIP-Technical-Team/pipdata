@@ -4,14 +4,14 @@
 \alias{cpfw_merge}
 \title{Merge country/survey PFW with dataliweb survey data (lower level, S3 methods)}
 \usage{
-cpfw_merge(df, cpfw, ...)
+cpfw_merge(dt, cpfw, ...)
 }
 \arguments{
-\item{df}{data.table loaded with \code{pipload::pip_load_dlw()}}
-
 \item{cpfw}{data.table with country/survey PFW}
 
 \item{...}{other parameters}
+
+\item{df}{data.table loaded with \code{pipload::pip_load_dlw()}}
 }
 \value{
 data.table
