@@ -24,5 +24,5 @@ survey
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
-pd_split_alt_welfare(md, cpfw)
+df   <- pd_split_alt_welfare(md, cpfw)
 }

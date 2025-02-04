@@ -9,11 +9,13 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
 #' lf   <- pd_split_alt_welfare(md, cpfw)
 #' l    <- pd_cpfw_merge(lf, cpfw)
+#' }
 pd_cpfw_merge <- function(lf, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,15 +77,19 @@ pd_cpfw_merge <- function(lf, cpfw) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
 #' cpfw_merge(gd, cpfw[[1]])
+#' FIX
 #'
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
 #' cpfw_merge(md, cpfw[[1]])
+#' FIX
+#' }
 cpfw_merge <- function(df, cpfw,...) {
   UseMethod("cpfw_merge")
 }
@@ -96,10 +102,12 @@ cpfw_merge <- function(df, cpfw,...) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' pfw <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' dlw_clean(md[[1]], cpfw[[1]])
+#' FIX...
+#' }
 cpfw_merge.pipmd <- function(df, cpfw, ...){
 
   #   ____________________________________________________________________________
@@ -230,6 +238,13 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
 }
 
+#' Add metadata variables to country/survey
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#'
+#' @keywords internal
 add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
   tryCatch(
