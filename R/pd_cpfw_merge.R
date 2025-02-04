@@ -299,34 +299,59 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 #'
 #' @return dt data.table
 #' @keywords internal
-add_area <- function(dt) {
+add_area <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Abort if not urban variable
-  if (!(c("urban") %in% colnames(dt))){
-    print("error")
-  }
+  tryCatch(
+    expr = {
 
-  # Recode urban to area
+      # Abort if not urban variable
+      if (!(c("urban") %in% colnames(dt))){
 
-  if(any(class(dt)=="pipgd")){
+        cli::cli_abort(message = "There is no urban variable",
+                       class = c("urb_var", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  unique(dt$survey_id),
+                       call = sys.call())
+      }
 
-    dt[, area := fcase(urban == 1, "urban",
-                       urban == 0, "rural",
-                       is.na(urban), "national",
-                       default = "")]
+      # Recode urban to area
 
-  }else if(any(class(dt)=="pipmd")){
+      if(any(class(dt)=="pipgd")){
 
-    dt[, area := fcase(urban == 1, "urban",
-                             urban == 0, "rural",
-                             is.na(urban), "",
-                             default = "")]
-  }
+        dt[, area := fcase(urban == 1, "urban",
+                           urban == 0, "rural",
+                           is.na(urban), "national",
+                           default = "")]
 
+      }else if(any(class(dt)=="pipmd")){
+
+        dt[, area := fcase(urban == 1, "urban",
+                           urban == 0, "rural",
+                           is.na(urban), "",
+                           default = "")]
+      }
+    },
+    urb_var = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+
+    }
+  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
