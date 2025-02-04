@@ -43,13 +43,13 @@ pd_cpfw_merge <- function(lf, cpfw) {
   ## Add variables --------
 
 
-  if (inherits(lf, "list")) {
-    df <- purrr::map2(.x = lf,
+  if (inherits(lf, "list")) { #Needed? Maybe all list?
+    lfs <- purrr::map2(.x = lf,
                      .y =  cpfw,
                      .f = cpfw_merge)
   } else {
-    df <- cpfw_merge(lf, cpfw[[1]])
-    df <- list(df)
+    dt <- cpfw_merge(lf, cpfw[[1]])
+    lfs <- list(dt)
   }
 
   #names(y) <- sapply(cpfw, `[[`, "cache_id")
@@ -62,7 +62,7 @@ pd_cpfw_merge <- function(lf, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(df)
+  return(lfs)
 
 }
 
@@ -90,7 +90,7 @@ pd_cpfw_merge <- function(lf, cpfw) {
 #' cpfw_merge(md, cpfw[[1]])
 #' FIX
 #' }
-cpfw_merge <- function(df, cpfw,...) {
+cpfw_merge <- function(dt, cpfw,...) {
   UseMethod("cpfw_merge")
 }
 
@@ -108,7 +108,7 @@ cpfw_merge <- function(df, cpfw,...) {
 #' cpfw <- get_country_pfw(md, pfw)
 #' FIX...
 #' }
-cpfw_merge.pipmd <- function(df, cpfw, ...){
+cpfw_merge.pipmd <- function(dt, cpfw, ...){
 
   #   ____________________________________________________________________________
   #   Initial formatting                                                      ####
@@ -122,8 +122,8 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Area (same for md and gd) --------
-
+  ## Area (same for md and gd??) --------
+  md <- add_area(md)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -132,12 +132,6 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Distribution type  (different) --------
-
-
-
-
-
-
 
   # Create distribution_type
   if (cpfw$use_imputed == 1) {
@@ -148,16 +142,6 @@ cpfw_merge.pipmd <- function(df, cpfw, ...){
 
     md[, distribution_type := "micro"]
 
-  }
-
-  # Recode urban to string
-  if (c("urban") %in% variables){
-
-    setnames(md, "urban", "urban2")
-    md[, urban := NA_character_]
-    md[urban2 == 1, urban := "urban"]
-    md[urban2 == 0, urban := "rural"]
-    md[, urban2 := NULL]
   }
 
 
@@ -301,6 +285,48 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
     }
 
   )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Recode urban to area
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return dt data.table
+#' @keywords internal
+add_area <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Abort if not urban variable
+  if (!(c("urban") %in% colnames(dt))){
+    print("error")
+  }
+
+  # Recode urban to area
+
+  if(any(class(dt)=="pipgd")){
+
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "national",
+                       default = "")]
+
+  }else if(any(class(dt)=="pipmd")){
+
+    dt[, area := fcase(urban == 1, "urban",
+                             urban == 0, "rural",
+                             is.na(urban), "",
+                             default = "")]
+  }
+
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
