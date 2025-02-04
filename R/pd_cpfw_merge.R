@@ -319,6 +319,26 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
       }
 
+    },
+    dom_var = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+
+    },
+    finally = {
+
+      data_level_vars  <- data_level_vars[(domain_vars %in% names(cpfw))]
+      domain_vars  <- domain_vars[(domain_vars %in% names(cpfw))]
       trows <- nrow(dt)
 
       dt[,
@@ -338,20 +358,6 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
            })
       ]
-    },
-    dom_var = function(cnd){
-
-      if(cnd$log){ # Log the error
-
-        add_log(cnd)
-
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
 
     }
   )
