@@ -54,11 +54,6 @@ pd_cpfw_merge <- function(lf, cpfw) {
 
   #names(y) <- sapply(cpfw, `[[`, "cache_id")
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Transform into attributes --------
-
-  # Use Zander functions
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,81 +139,10 @@ cpfw_merge.pipmd <- function(dt, cpfw, ...){
 
   }
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Transform into attributes --------
 
-  ##  ............................................................................
-  ##  Level and domain variables                                              ####
-  variables <- colnames(md)
-
-  # Create ppp_data_level
-  if (c("ppp_data_level") %in% variables) {
-    md[, ppp_data_level := NULL]
-  }
-
-  if (cpfw$ppp_domain == 1){
-    md[, ppp_data_level := "national"]
-  }
-
-  if (cpfw$ppp_domain == 2) {
-
-    md[, ppp_data_level := urban]
-
-  }
-
-  # Create cpi_data_level
-  if (c("cpi_data_level") %in% variables) {
-    md[, cpi_data_level := NULL]
-  }
-  if (cpfw$cpi_domain == 1) {
-
-    md[, cpi_data_level := "national"]
-
-  }
-  if (cpfw$cpi_domain == 2) {
-
-    md[, cpi_data_level := urban]
-  }
-
-  # Create gdp_data_level
-  if (cpfw$gdp_domain == 1) {
-    md[, gdp_data_level := "national"]
-  }
-  if (cpfw$gdp_domain == 2) {
-
-    md[, gdp_data_level := urban]
-
-  }
-
-  # Create pce_data_level
-  if (c("pce_domain") %in% variables) {
-    md[, pce_data_level := NULL]
-  }
-  if (cpfw$pce_domain == 1) {
-
-    md[, pce_data_level := "national"]
-
-  }
-  if (cpfw$pce_domain == 2) {
-
-    md[, pce_data_level := urban]
-
-  }
-
-  # Create pop_data_level
-  if (c("pop_domain") %in% variables) {
-
-    md[, pop_data_level := NULL]
-
-  }
-  if (cpfw$pop_domain == 1) {
-    md[, pop_data_level := "national"]
-  }
-  if (cpfw$pop_domain == 2) {
-
-    md[, pop_data_level := urban]
-
-  }
-
-
+  # Use Zander functions
 
 }
 
@@ -297,7 +221,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 #'
 #' @inheritParams cpfw_merge
 #'
-#' @return dt data.table
+#' @return data.table
 #' @keywords internal
 add_area <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
@@ -337,6 +261,84 @@ add_area <- function(dt, log_err = TRUE, skip_err = TRUE) {
       }
     },
     urb_var = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+
+    }
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Add Domain variables
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @keywords internal
+add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Level and domain variables    ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  tryCatch(
+    expr = {
+
+      pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
+      data_level_vars  <- glue("{pref}_data_level")
+      domain_vars      <- glue("{pref}_domain")
+
+      if(any(!(domain_vars %in% names(cpfw)))){
+
+        svy <- unique(cpfw$link)
+
+        miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
+
+        cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
+                       class = c("dom_var", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  svy,
+                       call = sys.call())
+
+      }
+
+      trows <- nrow(dt)
+
+      dt[,
+         (data_level_vars) :=
+           lapply(domain_vars, \(x) {
+
+             if (cpfw[[x]] == 1) {
+
+               y <- rep("national", times = trows)
+
+             } else if (cpfw[[x]] == 2) {
+               y <-  area
+             } else {
+               y <-  as.character()
+             }
+             y
+
+           })
+      ]
+    },
+    dom_var = function(cnd){
 
       if(cnd$log){ # Log the error
 
