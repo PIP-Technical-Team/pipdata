@@ -105,11 +105,15 @@ cpfw_merge <- function(dt, cpfw, ...){
   dt_c <- add_dist_type(dt_c, cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Transform into attributes --------
+  ## Transform unique variables into attributes --------
 
   # Use Zander functions
 
-  dt_f <- dt_c
+  unq_vars <- uniq_vars_to_list(dt_c)
+
+  n_unq_vars <- names(dt_c)[!(names(dt_c) %in% unq_vars)]
+
+  dt_f <- pipload::all_cols_to_attr(dt_c, fixed = n_unq_vars)
 
   return(dt_f)
 
