@@ -2,22 +2,22 @@
 % Please edit documentation in R/pd_cpfw_merge.R
 \name{cpfw_merge}
 \alias{cpfw_merge}
-\title{Merge country/survey PFW with dataliweb survey data (lower level, S3 methods)}
+\title{Merge country/survey PFW with dataliweb survey data}
 \usage{
 cpfw_merge(dt, cpfw, ...)
 }
 \arguments{
+\item{dt}{data.table}
+
 \item{cpfw}{data.table with country/survey PFW}
 
 \item{...}{other parameters}
-
-\item{df}{data.table loaded with \code{pipload::pip_load_dlw()}}
 }
 \value{
 data.table
 }
 \description{
-Merge country/survey PFW with dataliweb survey data (lower level, S3 methods)
+Merge country/survey PFW with dataliweb survey data
 }
 \examples{
 \dontrun{

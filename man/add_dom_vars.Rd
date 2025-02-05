@@ -7,6 +7,8 @@
 add_dom_vars(dt, cpfw, log_err = TRUE, skip_err = TRUE)
 }
 \arguments{
+\item{dt}{data.table}
+
 \item{cpfw}{data.table with country/survey PFW}
 }
 \value{
