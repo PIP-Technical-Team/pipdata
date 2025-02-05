@@ -2,9 +2,9 @@
 % Please edit documentation in R/pd_cpfw_merge.R
 \name{add_area}
 \alias{add_area}
-\title{Recode urban to area}
+\title{Recode urban to area (lower level, S3 methods)}
 \usage{
-add_area(dt, log_err = TRUE, skip_err = TRUE)
+add_area(dt, cpfw...)
 }
 \arguments{
 \item{dt}{data.table}
@@ -13,6 +13,6 @@ add_area(dt, log_err = TRUE, skip_err = TRUE)
 data.table
 }
 \description{
-Recode urban to area
+Recode urban to area (lower level, S3 methods)
 }
 \keyword{internal}
