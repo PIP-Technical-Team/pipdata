@@ -85,26 +85,20 @@ pd_cpfw_merge <- function(lf, cpfw) {
 #' }
 cpfw_merge <- function(dt, cpfw, ...){
 
-  #   ____________________________________________________________________________
-  #   Initial formatting                                                      ####
-
-  # hard copy
+  # Create hard copy
   dt_c <- copy(dt)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Main variables (same for md and gd) --------
   dt_c <- add_main_vars(dt_c, cpfw)
 
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Area (Needed for Domain variables)--------
   dt_c <- add_area(dt_c)
 
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Domain variables (same for md and gd) --------
   dt_c <- add_dom_vars(dt_c, cpfw)
-
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Distribution type  (different for md and gd) --------
@@ -343,6 +337,16 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
 }
 
+#' Add distribution type (lower level, S2 methods)
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @keywords internal
+add_dist_type <- function(dt, cpfw...) {
+  UseMethod("add_dist_type")
+}
+
 
 #' Add distribution type
 #'
@@ -350,14 +354,41 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 #'
 #' @return data.table
 #' @keywords internal
-add_dist_type <- function(dt, cpfw) {
+add_dist_type.pipmd <- function(dt, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create distribution_type   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if(any(class(dt)=="pipgd")){
 
-    dt[,
+    if (cpfw$use_imputed == 1) {
+
+      dt[, distribution_type := "imputed"]
+
+    }else {
+
+      dt[, distribution_type := "micro"]
+
+    }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Add distribution type
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @keywords internal
+add_dist_type.pipgd <- function(dt, cpfw) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Create distribution_type   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dt[,
        distribution_type := {
 
          if (cpfw$pop_domain == 1) {
@@ -381,19 +412,6 @@ add_dist_type <- function(dt, cpfw) {
 
        }
     ]
-
-  }else if(any(class(dt)=="pipmd")){
-
-    if (cpfw$use_imputed == 1) {
-
-      dt[, distribution_type := "imputed"]
-
-    }else {
-
-      dt[, distribution_type := "micro"]
-
-    }
-  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
