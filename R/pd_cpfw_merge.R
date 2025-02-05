@@ -107,13 +107,7 @@ cpfw_merge <- function(dt, cpfw, ...){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Transform unique variables into attributes --------
 
-  # Use Zander functions
-
-  unq_vars <- uniq_vars_to_list(dt_c)
-
-  n_unq_vars <- names(dt_c)[!(names(dt_c) %in% unq_vars)]
-
-  dt_f <- pipload::all_cols_to_attr(dt_c, fixed = n_unq_vars)
+  dt_f <- col_to_att(dt_c)
 
   return(dt_f)
 
@@ -479,6 +473,38 @@ add_dist_type.pipgd <- function(dt, cpfw) {
 
        }
     ]
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Transform unique value variable into attributes
+#'
+#' @param dt data.table
+#'
+#' @return data.table
+#' @keywords internal
+col_to_attr <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  unq_vars <- names(uniq_vars_to_list(dt))
+
+  vars <- names(dt)
+
+  n_unq_vars <- vars[!(vars %in% unq_vars)]
+
+
+  # Use Zander functions
+
+  dt <- pipload::all_cols_to_attr(dt, fixed = n_unq_vars)
+
+  # Error : if no variable for weight, welfare
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
