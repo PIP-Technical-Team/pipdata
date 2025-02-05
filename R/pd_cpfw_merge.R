@@ -186,13 +186,23 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
 }
 
-#' Recode urban to area
+#' Recode urban to area (lower level, S3 methods)
 #'
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
 #' @keywords internal
-add_area <- function(dt, log_err = TRUE, skip_err = TRUE) {
+add_area <- function(dt, cpfw...) {
+  UseMethod("add_area")
+}
+
+#' Recode urban to area for micro data
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @keywords internal
+add_area.pipmd <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -214,20 +224,11 @@ add_area <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
       # Recode urban to area
 
-      if(any(class(dt)=="pipgd")){
-
-        dt[, area := fcase(urban == 1, "urban",
-                           urban == 0, "rural",
-                           is.na(urban), "national",
-                           default = "")]
-
-      }else if(any(class(dt)=="pipmd")){
-
         dt[, area := fcase(urban == 1, "urban",
                            urban == 0, "rural",
                            is.na(urban), "",
                            default = "")]
-      }
+
     },
     urb_var = function(cnd){
 
@@ -242,6 +243,68 @@ add_area <- function(dt, log_err = TRUE, skip_err = TRUE) {
         cli::cli_abort(cnd$message, call = cnd$call)
 
       }
+
+      dt[, area := ""]
+
+    }
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Recode urban to area for group data
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @keywords internal
+add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  tryCatch(
+    expr = {
+
+      # Abort if not urban variable
+      if (!(c("urban") %in% colnames(dt))){
+
+        cli::cli_abort(message = "There is no urban variable",
+                       class = c("urb_var", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  unique(dt$survey_id),
+                       call = sys.call())
+      }
+
+      # Recode urban to area
+
+        dt[, area := fcase(urban == 1, "urban",
+                           urban == 0, "rural",
+                           is.na(urban), "national",
+                           default = "")]
+
+    },
+    urb_var = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+
+      dt[, area := ""]
 
     }
   )
@@ -337,7 +400,7 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
 }
 
-#' Add distribution type (lower level, S2 methods)
+#' Add distribution type (lower level, S3 methods)
 #'
 #' @inheritParams cpfw_merge
 #'
