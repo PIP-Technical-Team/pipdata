@@ -10,6 +10,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' ppp  <- pipload::pip_load_aux("ppp")
 #' cpi  <- pipload::pip_load_aux("cpi")
 #' pop  <- pipload::pip_load_aux("pop")
@@ -38,6 +39,7 @@
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
 #' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' }
 pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 
   # on.exit ------------
@@ -113,6 +115,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' ppp  <- pipload::pip_load_aux("ppp")
 #' cpi  <- pipload::pip_load_aux("cpi")
 #' pop  <- pipload::pip_load_aux("pop")
@@ -140,6 +143,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
 #' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' }
 add_pip_vars <- function(df, cpfw, cpi, ppp, pop, ...) {
   UseMethod("add_pip_vars")
 }

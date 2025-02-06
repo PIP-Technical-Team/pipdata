@@ -1,7 +1,6 @@
 #' Merge country/survey PFW info with dataliweb survey data
 #'
-#' @param lf list (more than one if there are two or more
-#' welfare types in the survey)
+#' @param dt DLW country/survey data
 #' @param cpfw list (more than one if there are two or more
 #' welfare types in the survey)
 #'
@@ -9,14 +8,16 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#'
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' lf   <- pd_split_alt_welfare(md, cpfw)
-#' l    <- pd_cpfw_merge(lf, cpfw)
-#' }
-pd_cpfw_merge <- function(lf, cpfw) {
+#' l    <- pd_cpfw_merge(md, cpfw)
+#'
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' cpfw <- get_country_pfw(gd, pfw)
+#' l    <- pd_cpfw_merge(gd, cpfw)
+pd_cpfw_merge <- function(dt, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -38,6 +39,11 @@ pd_cpfw_merge <- function(lf, cpfw) {
   if (FALSE) {
     return()
   }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Split alternative welfare --------
+
+  lf   <- pd_split_alt_welfare(dt, cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Map survey to cpfw --------
@@ -70,19 +76,16 @@ pd_cpfw_merge <- function(lf, cpfw) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#'
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
-#' gd  <- pipload::pip_load_dlw("CHN", 2015)
+#' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
-#' cpfw_merge(gd, cpfw[[1]])
-#' FIX
+#' l    <- cpfw_merge(gd, cpfw[[1]])
 #'
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' cpfw_merge(md, cpfw[[1]])
-#' FIX
-#' }
+#' l    <- cpfw_merge(md, cpfw[[1]])
 cpfw_merge <- function(dt, cpfw, ...){
 
   # Create hard copy
@@ -107,7 +110,8 @@ cpfw_merge <- function(dt, cpfw, ...){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Transform unique variables into attributes --------
 
-  dt_f <- col_to_att(dt_c)
+  # dt_f <- col_to_att(dt_c)
+  dt_f <- dt_c
 
   return(dt_f)
 

@@ -4,11 +4,10 @@
 \alias{pd_cpfw_merge}
 \title{Merge country/survey PFW info with dataliweb survey data}
 \usage{
-pd_cpfw_merge(lf, cpfw)
+pd_cpfw_merge(dt, cpfw)
 }
 \arguments{
-\item{lf}{list (more than one if there are two or more
-welfare types in the survey)}
+\item{dt}{DLW country/survey data}
 
 \item{cpfw}{list (more than one if there are two or more
 welfare types in the survey)}
@@ -20,11 +19,13 @@ list
 Merge country/survey PFW info with dataliweb survey data
 }
 \examples{
-\dontrun{
+
 pfw  <- pipload::pip_load_aux("pfw")
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 cpfw <- get_country_pfw(md, pfw)
-lf   <- pd_split_alt_welfare(md, cpfw)
-l    <- pd_cpfw_merge(lf, cpfw)
-}
+l    <- pd_cpfw_merge(md, cpfw)
+
+gd   <- pipload::pip_load_dlw("CHN", 2015)
+cpfw <- get_country_pfw(gd, pfw)
+l    <- pd_cpfw_merge(gd, cpfw)
 }

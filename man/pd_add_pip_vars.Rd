@@ -26,6 +26,7 @@ data.table with new variable add_pip_vars
 deflate welfare to add_pip_vars (Higher level)
 }
 \examples{
+\dontrun{
 ppp  <- pipload::pip_load_aux("ppp")
 cpi  <- pipload::pip_load_aux("cpi")
 pop  <- pipload::pip_load_aux("pop")
@@ -54,4 +55,5 @@ x    <- pd_dlw_clean(gd, cpfw)
 y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 
 pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+}
 }

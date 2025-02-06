@@ -28,6 +28,7 @@ data.table with extra PIP variables
 Estimate welfare in PPP values (lower level)
 }
 \examples{
+\dontrun{
 ppp  <- pipload::pip_load_aux("ppp")
 cpi  <- pipload::pip_load_aux("cpi")
 pop  <- pipload::pip_load_aux("pop")
@@ -55,4 +56,5 @@ x    <- pd_dlw_clean(gd, cpfw)
 y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 
 add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+}
 }
