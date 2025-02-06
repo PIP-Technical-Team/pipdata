@@ -135,7 +135,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
       variables <- colnames(dt)
 
       main_vars <- c("survey_year",
-                     "countrycode",
+                     "country_code",
                      "welfare_type")
 
       # Inform what country/surveys are missing a main variable
@@ -153,21 +153,6 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
                       call = sys.call())
       }
 
-
-      # Add variables if missing
-
-      dt[, (main_vars) :=
-           lapply(main_vars, \(x) {
-
-             if (!(x %in% variables)) {
-               cpfw[[x]]
-
-               } else {
-                 dt[[x]]
-
-                 }
-             })]
-
     },
 
     mn_var_inf = function(cnd){
@@ -177,6 +162,23 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
         add_log(cnd)
 
       }
+    },
+
+    finally = {
+
+      # Add variables if missing
+
+      dt[, (main_vars) :=
+           lapply(main_vars, \(x) {
+
+             if (!(x %in% variables)) {
+               cpfw[[x]]
+
+             } else {
+               dt[[x]]
+
+             }
+           })]
     }
 
   )
