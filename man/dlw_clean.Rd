@@ -21,9 +21,11 @@ PD: process data. Source: datalibweb. Action: Clean
 gd  <- pipload::pip_load_dlw("CHN", 2015)
 pfw <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(gd, pfw)
-dlw_clean(gd, cpfw[[1]])
+l    <- pd_cpfw_merge(gd, cpfw)
+dlw_clean(l[[1]])
 
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 cpfw <- get_country_pfw(md, pfw)
-dlw_clean(md, cpfw[[1]])
+l    <- pd_cpfw_merge(md, cpfw)
+dlw_clean(l[[1]])
 }

@@ -4,15 +4,10 @@
 \alias{pd_dlw_clean}
 \title{Clean data from datalibweb structure (High level)}
 \usage{
-pd_dlw_clean(lf, cpfw)
+pd_dlw_clean(lf)
 }
 \arguments{
-\item{lf}{List of data frames or single dataframe. In pipeline, the data
-frames come from \code{pd_split_alt_welfare()}}
-
-\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
-It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
-\code{pipload::pip_load_aux("pfw")}}
+\item{lf}{List of data frames or single dataframe.}
 }
 \value{
 list with data.tables
@@ -24,7 +19,7 @@ Clean data from datalibweb structure (High level)
 pfw  <- pipload::pip_load_aux("pfw")
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 cpfw <- get_country_pfw(md, pfw)
-lf   <- pd_split_alt_welfare(md, cpfw)
-l    <- pd_dlw_clean(lf, cpfw)
-names(l)
+l    <- pd_cpfw_merge(md, cpfw)
+lf    <- pd_dlw_clean(l)
+names(lf)
 }

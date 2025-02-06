@@ -1,10 +1,6 @@
 #' Clean data from datalibweb structure (High level)
 #'
-#' @param lf List of data frames or single dataframe. In pipeline, the data
-#'   frames come from `pd_split_alt_welfare()`
-#' @param cpfw data frame with Price framework data for country/survey in `df`.
-#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
-#'   `pipload::pip_load_aux("pfw")`
+#' @param lf List of data frames or single dataframe.
 #'
 #' @return list with data.tables
 #' @export
@@ -13,10 +9,10 @@
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' lf   <- pd_split_alt_welfare(md, cpfw)
-#' l    <- pd_dlw_clean(lf, cpfw)
-#' names(l)
-pd_dlw_clean <- function(lf, cpfw) {
+#' l    <- pd_cpfw_merge(md, cpfw)
+#' lf    <- pd_dlw_clean(l)
+#' names(lf)
+pd_dlw_clean <- function(lf) {
 
   # on.exit ------------
   on.exit({
@@ -41,15 +37,16 @@ pd_dlw_clean <- function(lf, cpfw) {
       expr = {
         # Your code...
         if (inherits(lf, "list")) {
-          y <- purrr::map2(.x = lf,
-                           .y =  cpfw,
+          y <- purrr::map(.x = lf,
+                           #.y =  cpfw,
                            .f = dlw_clean)
         } else {
-          y <- dlw_clean(lf, cpfw[[1]])
+          #y <- dlw_clean(lf, cpfw[[1]])
+          y <- dlw_clean(lf)
           y <- list(y)
         }
 
-        names(y) <- sapply(cpfw, `[[`, "cache_id")
+        #names(y) <- sapply(cpfw, `[[`, "cache_id")
         y
       }, # end of expr section
 
@@ -89,11 +86,13 @@ pd_dlw_clean <- function(lf, cpfw) {
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(gd, pfw)
-#' dlw_clean(gd, cpfw[[1]])
+#' l    <- pd_cpfw_merge(gd, cpfw)
+#' dlw_clean(l[[1]])
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' dlw_clean(md, cpfw[[1]])
+#' l    <- pd_cpfw_merge(md, cpfw)
+#' dlw_clean(l[[1]])
 dlw_clean <- function(df,...) {
   UseMethod("dlw_clean")
 }
@@ -101,9 +100,6 @@ dlw_clean <- function(df,...) {
 #' Clean micro data from Datalibweb original file
 #'
 #' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
-#' @param cpfw data frame with Price framework data for country/survey in `df`.
-#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
-#'   `pipload::pip_load_aux("pfw")`
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
@@ -113,8 +109,9 @@ dlw_clean <- function(df,...) {
 #' pfw <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' dlw_clean(md, cpfw[[1]])
-dlw_clean.pipmd <- function(df, cpfw, ...) {
+#' l    <- pd_cpfw_merge(md, cpfw)
+#' dlw_clean(l[[1]])
+dlw_clean.pipmd <- function(df, ...) {
 
 #   ____________________________________________________________________________
 #   Initial formatting                                                      ####
@@ -238,7 +235,11 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
   md <- md[, .SD, .SDcols = pip_vars]
 
   # Sort by country_code, surveyid_year and welfare
-  sortbycol <- c("country_code", "surveyid_year", "welfare", "hhid" ,"pid")
+  sortbycol <- c("country_code",
+                 "surveyid_year",
+                 "welfare",
+                 "hhid",
+                 "pid")
   setorderv(md, sortbycol)
   return(md)
 }
@@ -247,9 +248,6 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
 #' Clean group data from Datalibweb original file
 #'
 #' @param df data frame with group data, loaded with `pipload::pip_load_dlw()`
-#' @param cpfw data frame with Price framework data for country/survey in `df`.
-#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
-#'   `pipload::pip_load_aux("pfw")`
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
@@ -259,8 +257,9 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
 #' pfw <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
-#' dlw_clean(gd, cpfw[[1]])
-dlw_clean.pipgd <- function(df, cpfw, ...) {
+#' l    <- pd_cpfw_merge(gd, cpfw)
+#' dlw_clean(l[[1]])
+dlw_clean.pipgd <- function(df, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------
