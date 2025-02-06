@@ -3,7 +3,8 @@ create_release_label <- function(
     ppp_round = "2017",
     rv        = "01",           # release version
     av        = "01",           # adaptation version
-    suffix    = "PROD"          # must be one of PROD, TEST, or INT
+    suffix    = "PROD",
+    full      = TRUE            # must be one of PROD, TEST, or INT
 ) {
   # 1. Format date as YYYYMMDD
   date_str <- format(as.Date(date), "%Y%m%d")
@@ -14,9 +15,15 @@ create_release_label <- function(
   }
 
   # 3. Build the label
-  release_label <- paste(date_str, ppp_round, rv, av, suffix, sep = "_")
+  release_label <- paste(date_str, suffix, sep = "_")
+  release_label_full <- paste(date_str, ppp_round, rv, av, suffix, sep = "_")
 
-  return(release_label)
+  if (isTRUE(full)){
+    return(release_label_full)
+  } else {
+    return(release_label)
+  }
+
 }
 
 set_current_release <- function(release_label) {

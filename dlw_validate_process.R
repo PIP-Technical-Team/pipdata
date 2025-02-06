@@ -27,6 +27,7 @@ library(data.table)
 library(fs)
 library(qs)
 library(digest)
+library(cli)
 
 
 # 1. Dynamic folder simulation (trigger) ----
@@ -409,7 +410,6 @@ dlw_raw_folder = folder_time2
 
 
 ## Step 1: Convert .dta files to .qs files -----
-
 tic()
 dlw_dta_to_qs(dlw_raw_folder = dlw_raw_folder,
               dlw_qs_folder  = dlw_qs_folder)
