@@ -147,10 +147,8 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
   md[, welfare := welfare / 365]
 
 
-
 #   ____________________________________________________________________________
 #   Recoding variables                                                      ####
-
 
 ##  ............................................................................
 ##  Education                                                               ####
@@ -200,16 +198,6 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
     setnames(md, "subnatid", "subnatid1")
   }
 
-  # Recode urban to string
-  if (c("urban") %in% variables){
-
-    setnames(md, "urban", "urban2")
-    md[, urban := NA_character_]
-    md[urban2 == 1, urban := "urban"]
-    md[urban2 == 0, urban := "rural"]
-    md[, urban2 := NULL]
-  }
-
 
 ##  ............................................................................
 ##  Other variables                                                         ####
@@ -224,107 +212,6 @@ dlw_clean.pipmd <- function(df, cpfw, ...) {
     md[, male2 := NULL]
 
   }
-
-  # Add variables  from PFW data
-  if (!c("survey_year") %in% variables) {
-    md[, survey_year := cpfw$survey_year]
-  }
-
-  # generate countrycode variable if not available in md data
-  if (!c("countrycode") %in% variables){
-    md[, countrycode := cpfw$country_code]
-  }
-
-  # Create welfare_type
-  if (!c("welfare_type") %in% variables){
-    md[, welfare_type := cpfw$welfare_type]
-  }
-
-  # Create distribution_type
-  if (cpfw$use_imputed == 1) {
-
-    md[, distribution_type := "imputed"]
-
-  }else {
-
-    md[, distribution_type := "micro"]
-
-  }
-
-
-##  ............................................................................
-##  Level and domain variables                                              ####
-
-  # Create ppp_data_level
-  if (c("ppp_data_level") %in% variables) {
-    md[, ppp_data_level := NULL]
-  }
-
-  if (cpfw$ppp_domain == 1){
-    md[, ppp_data_level := "national"]
-  }
-
-  if (cpfw$ppp_domain == 2) {
-
-    md[, ppp_data_level := urban]
-
-  }
-
-  # Create cpi_data_level
-  if (c("cpi_data_level") %in% variables) {
-    md[, cpi_data_level := NULL]
-  }
-  if (cpfw$cpi_domain == 1) {
-
-    md[, cpi_data_level := "national"]
-
-  }
-  if (cpfw$cpi_domain == 2) {
-
-    md[, cpi_data_level := urban]
-  }
-
-  # Create gdp_data_level
-  if (cpfw$gdp_domain == 1) {
-    md[, gdp_data_level := "national"]
-  }
-  if (cpfw$gdp_domain == 2) {
-
-    md[, gdp_data_level := urban]
-
-  }
-
-  # Create pce_data_level
-  if (c("pce_domain") %in% variables) {
-    md[, pce_data_level := NULL]
-  }
-  if (cpfw$pce_domain == 1) {
-
-    md[, pce_data_level := "national"]
-
-  }
-  if (cpfw$pce_domain == 2) {
-
-    md[, pce_data_level := urban]
-
-  }
-
-  # Create pop_data_level
-  if (c("pop_domain") %in% variables) {
-
-    md[, pop_data_level := NULL]
-
-  }
-  if (cpfw$pop_domain == 1) {
-    md[, pop_data_level := "national"]
-  }
-  if (cpfw$pop_domain == 2) {
-
-    md[, pop_data_level := urban]
-
-  }
-
-
 
 #   ____________________________________________________________________________
 #   Variables that do not exist                                             ####
@@ -383,17 +270,6 @@ dlw_clean.pipgd <- function(df, cpfw, ...) {
   gd <- copy(df)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Rename variables --------
-
-  #--- Is this necessary?
-  gd[, survey_year := cpfw$survey_year]
-
-  gd[, area := fcase(urban == 1, "urban",
-                     urban == 0, "rural",
-                     is.na(urban), "national",
-                     default = "")]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------
 
   string <- c("country_code", "survey_acronym", "area", "welfare_type", "gd_type")
@@ -404,82 +280,6 @@ dlw_clean.pipgd <- function(df, cpfw, ...) {
 
   gd[, (nume) := lapply(.SD, as.numeric),
      .SDcols = nume]
-
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # data level vars   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  if (cpfw$ppp_domain == 1) {
-
-    gd[, ppp_data_level := "national"]
-
-  } else if (cpfw$ppp_domain == 2) {
-
-    gd[, ppp_data_level := area]
-
-  } else {
-
-    gd[, ppp_data_level := as.character()]
-
-  }
-
-
-  pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-  data_level_vars  <- glue("{pref}_data_level")
-  domain_vars      <- glue("{pref}_domain")
-
-  trows <- nrow(gd)
-
-  gd[,
-     (data_level_vars) :=
-       lapply(domain_vars, \(x) {
-
-         if (cpfw[[x]] == 1) {
-
-           y <- rep("national", times = trows)
-
-         } else if (cpfw[[x]] == 2) {
-           y <-  area
-         } else {
-           y <- ""
-         }
-         y
-
-       })
-  ]
-
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Distribution type   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  gd[,
-     distribution_type := {
-
-       if (cpfw$pop_domain == 1) {
-
-         # y <- rep("national", times = trows)
-         y <- "group"
-
-       } else if (cpfw$pop_domain ==  2) {
-
-         larea <- length(unique(area))
-
-         if (larea %in% c(0, 1)) {
-           y <- "group"
-         } else {
-           y <- "aggregate"
-         }
-
-       } else {
-         y <- ""
-       }
-       y
-
-     }
-  ]
-
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create variables that do not exist   ---------
