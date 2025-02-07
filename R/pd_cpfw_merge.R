@@ -168,8 +168,6 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
       # Add variables if missing
 
-      main_vars <- main_vars[(main_vars %in% variables)]
-
       dt[, (main_vars) :=
            lapply(main_vars, \(x) {
 
@@ -181,6 +179,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
              }
            })]
+
     }
 
   )
