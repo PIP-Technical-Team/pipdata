@@ -2,12 +2,12 @@
 % Please edit documentation in R/pd_dlw_clean.R
 \name{dlw_clean}
 \alias{dlw_clean}
-\title{Clean data from datalibweb structure (lower level, S2 methods)}
+\title{Clean data from datalibweb structure (lower level, S3 methods)}
 \usage{
 dlw_clean(df, ...)
 }
 \arguments{
-\item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{data.table}
 
 \item{...}{other parameters}
 }
@@ -15,17 +15,17 @@ dlw_clean(df, ...)
 data.table
 }
 \description{
-PD: process data. Source: datalibweb. Action: Clean
+Clean data from datalibweb structure (lower level, S3 methods)
 }
 \examples{
 gd  <- pipload::pip_load_dlw("CHN", 2015)
 pfw <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(gd, pfw)
-l    <- pd_cpfw_merge(gd, cpfw)
-dlw_clean(l[[1]])
+ls    <- pd_cpfw_merge(gd, cpfw)
+dlw_clean(ls[[1]])
 
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 cpfw <- get_country_pfw(md, pfw)
-l    <- pd_cpfw_merge(md, cpfw)
-dlw_clean(l[[1]])
+ls    <- pd_cpfw_merge(md, cpfw)
+dlw_clean(ls[[1]])
 }

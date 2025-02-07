@@ -7,7 +7,7 @@
 \method{dlw_clean}{pipmd}(df, ...)
 }
 \arguments{
-\item{df}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{data frame with micro data,}
 
 \item{...}{other parameters}
 }
@@ -21,6 +21,6 @@ Clean micro data from Datalibweb original file
 pfw <- pipload::pip_load_aux("pfw")
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 cpfw <- get_country_pfw(md, pfw)
-l    <- pd_cpfw_merge(md, cpfw)
-dlw_clean(l[[1]])
+ls    <- pd_cpfw_merge(md, cpfw)
+dlw_clean(ls[[1]])
 }

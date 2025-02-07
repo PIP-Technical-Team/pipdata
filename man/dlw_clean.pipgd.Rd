@@ -7,7 +7,7 @@
 \method{dlw_clean}{pipgd}(df, ...)
 }
 \arguments{
-\item{df}{data frame with group data, loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{data frame with group data}
 
 \item{...}{other parameters}
 }
@@ -21,6 +21,6 @@ Clean group data from Datalibweb original file
 pfw <- pipload::pip_load_aux("pfw")
 gd   <- pipload::pip_load_dlw("CHN", 2015)
 cpfw <- get_country_pfw(gd, pfw)
-l    <- pd_cpfw_merge(gd, cpfw)
-dlw_clean(l[[1]])
+ls    <- pd_cpfw_merge(gd, cpfw)
+dlw_clean(ls[[1]])
 }

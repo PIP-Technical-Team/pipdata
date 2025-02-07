@@ -4,10 +4,10 @@
 \alias{pd_dlw_clean}
 \title{Clean data from datalibweb structure (High level)}
 \usage{
-pd_dlw_clean(lf)
+pd_dlw_clean(ls)
 }
 \arguments{
-\item{lf}{List of data frames or single dataframe.}
+\item{ls}{List of data frames or single dataframe.}
 }
 \value{
 list with data.tables
@@ -19,7 +19,7 @@ Clean data from datalibweb structure (High level)
 pfw  <- pipload::pip_load_aux("pfw")
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 cpfw <- get_country_pfw(md, pfw)
-l    <- pd_cpfw_merge(md, cpfw)
-lf    <- pd_dlw_clean(l)
+ls    <- pd_cpfw_merge(md, cpfw)
+lf    <- pd_dlw_clean(ls)
 names(lf)
 }

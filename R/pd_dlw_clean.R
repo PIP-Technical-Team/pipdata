@@ -1,6 +1,6 @@
 #' Clean data from datalibweb structure (High level)
 #'
-#' @param lf List of data frames or single dataframe.
+#' @param ls List of data frames or single dataframe.
 #'
 #' @return list with data.tables
 #' @export
@@ -9,10 +9,10 @@
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' l    <- pd_cpfw_merge(md, cpfw)
-#' lf    <- pd_dlw_clean(l)
+#' ls    <- pd_cpfw_merge(md, cpfw)
+#' lf    <- pd_dlw_clean(ls)
 #' names(lf)
-pd_dlw_clean <- function(lf) {
+pd_dlw_clean <- function(ls) {
 
   # on.exit ------------
   on.exit({
@@ -33,13 +33,13 @@ pd_dlw_clean <- function(lf) {
 
   # Computations -------
 
-    if (inherits(lf, "list")) {
-      rl <- purrr::map(.x = lf,
+    if (inherits(ls, "list")) {
+      rl <- purrr::map(.x = ls,
                        #.y =  cpfw,
                        .f = dlw_clean)
     } else {
       #y <- dlw_clean(lf, cpfw[[1]])
-      rl <- dlw_clean(lf)
+      rl <- dlw_clean(ls)
       rl <- list(rl)
     }
 
@@ -52,11 +52,9 @@ pd_dlw_clean <- function(lf) {
 }
 
 
-#' Clean data from datalibweb structure (lower level, S2 methods)
+#' Clean data from datalibweb structure (lower level, S3 methods)
 #'
-#' PD: process data. Source: datalibweb. Action: Clean
-#'
-#' @param df dataframe loaded with `pipload::pip_load_dlw()`
+#' @param df data.table
 #' @param ...  other parameters
 #'
 #' @return data.table
@@ -66,20 +64,20 @@ pd_dlw_clean <- function(lf) {
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(gd, pfw)
-#' l    <- pd_cpfw_merge(gd, cpfw)
-#' dlw_clean(l[[1]])
+#' ls    <- pd_cpfw_merge(gd, cpfw)
+#' dlw_clean(ls[[1]])
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' l    <- pd_cpfw_merge(md, cpfw)
-#' dlw_clean(l[[1]])
+#' ls    <- pd_cpfw_merge(md, cpfw)
+#' dlw_clean(ls[[1]])
 dlw_clean <- function(df,...) {
   UseMethod("dlw_clean")
 }
 
 #' Clean micro data from Datalibweb original file
 #'
-#' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
+#' @param df data frame with micro data,
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
@@ -89,8 +87,8 @@ dlw_clean <- function(df,...) {
 #' pfw <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' cpfw <- get_country_pfw(md, pfw)
-#' l    <- pd_cpfw_merge(md, cpfw)
-#' dlw_clean(l[[1]])
+#' ls    <- pd_cpfw_merge(md, cpfw)
+#' dlw_clean(ls[[1]])
 dlw_clean.pipmd <- function(df, ...) {
 
 #   ____________________________________________________________________________
@@ -110,48 +108,14 @@ dlw_clean.pipmd <- function(df, ...) {
 
 ##  ............................................................................
 ##  Education                                                               ####
-
-  # educat4
-  if (c("educat4") %in% variables){
-
-    setnames(md, old = "educat4", new = "educat4_2")
-    md[, educat4 := NA_character_]
-    md[educat4_2 == 1, educat4 := "No education"]
-    md[educat4_2 == 2, educat4 := "Primary"]
-    md[educat4_2 == 3, educat4 := "Secondary"]
-    md[educat4_2 == 4, educat4 := "Tertiary"]
-
-    md[, educat4_2:= NULL]
-  }
-
-  # educat5
-  if (c("educat5") %in% variables){
-
-    setnames(md, old = "educat5", new = "educat5_2")
-    md[, educat5 := NA_character_]
-
-    md[educat5_2 == 1, educat5 := "No education"]
-    md[educat5_2 == 2, educat5 := "Primary incomplete"]
-    md[educat5_2 == 3, educat5 := "Primary complete but secondary incomplete"]
-    md[educat5_2 == 4, educat5 := "Secondary complete"]
-    md[educat5_2 == 5, educat5 := "Some tertiary/post-secondary"]
-    md[, educat5_2:= NULL]
-  }
-
-  # literacy
-  if (c("literacy") %in% variables) {
-    setnames(md, "literacy", "literacy2")
-    md[, literacy := NA_character_]
-    md[literacy2 ==1, literacy := "yes"]
-    md[literacy2 ==0, literacy := "no"]
-    md[, literacy2 := NULL]
-  }
-
+  md <- recode_edu(md)
 
 ##  ............................................................................
 ##  Geographical variables                                                  ####
 
   # rename subnatid
+  variables <- colnames(md)
+
   if (c("subnatid") %in% variables){
     setnames(md, "subnatid", "subnatid1")
   }
@@ -175,29 +139,30 @@ dlw_clean.pipmd <- function(df, ...) {
 #   Variables that do not exist                                             ####
 
   # get from internal data `pip_var_type`
-  pip_vars  <- pip_var_type$pip_vars_pc
-  pip_type  <- pip_var_type$pip_vars_pc_class
-
-  miss_ind  <- !(pip_vars %in% names(md))
-  miss_vars <- pip_vars[miss_ind]
-  miss_type <- pip_type[miss_ind]
-
-  miss_type <- glue("as.{miss_type}")
-
-  md[,
-     (miss_vars) := lapply(miss_type, \(x) get(x)())]
+  # pip_vars  <- pip_var_type$pip_vars_pc
+  # pip_type  <- pip_var_type$pip_vars_pc_class
+  #
+  # miss_ind  <- !(pip_vars %in% names(md))
+  # miss_vars <- pip_vars[miss_ind]
+  # miss_type <- pip_type[miss_ind]
+  #
+  # miss_type <- glue("as.{miss_type}")
+  #
+  # md[,
+  #    (miss_vars) := lapply(miss_type, \(x) get(x)())]
 
 
 #   ____________________________________________________________________________
 #   Final formatting                                                        ####
 
   # order columns in correct order
-  setcolorder(md, pip_vars)
-  md <- md[, .SD, .SDcols = pip_vars]
+  # setcolorder(md, pip_vars)
+  # md <- md[, .SD, .SDcols = pip_vars]
 
   # Sort by country_code, surveyid_year and welfare
-  sortbycol <- c("country_code",
-                 "surveyid_year",
+  sortbycol <- c(
+    # "country_code",
+    #              "surveyid_year",
                  "welfare",
                  "hhid",
                  "pid")
@@ -209,7 +174,7 @@ dlw_clean.pipmd <- function(df, ...) {
 
 #' Clean group data from Datalibweb original file
 #'
-#' @param df data frame with group data, loaded with `pipload::pip_load_dlw()`
+#' @param df data frame with group data
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
@@ -219,8 +184,8 @@ dlw_clean.pipmd <- function(df, ...) {
 #' pfw <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
-#' l    <- pd_cpfw_merge(gd, cpfw)
-#' dlw_clean(l[[1]])
+#' ls    <- pd_cpfw_merge(gd, cpfw)
+#' dlw_clean(ls[[1]])
 dlw_clean.pipgd <- function(df, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -233,43 +198,45 @@ dlw_clean.pipgd <- function(df, ...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------
 
-  string <- c("country_code", "survey_acronym", "area", "welfare_type", "gd_type")
-  nume   <- c("surveyid_year", "survey_year", "weight", "welfare")
-
-  gd[, (string) := lapply(.SD, as.character),
-     .SDcols = string]
-
-  gd[, (nume) := lapply(.SD, as.numeric),
-     .SDcols = nume]
+  # string <- c("country_code", "survey_acronym", "area", "welfare_type", "gd_type")
+  # nume   <- c("surveyid_year", "survey_year", "weight", "welfare")
+  #
+  # gd[, (string) := lapply(.SD, as.character),
+  #    .SDcols = string]
+  #
+  # gd[, (nume) := lapply(.SD, as.numeric),
+  #    .SDcols = nume]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create variables that do not exist   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # get from internal data `pip_var_type`
-  pip_vars  <- pip_var_type$pip_vars_pc
-  pip_type  <- pip_var_type$pip_vars_pc_class
-
-  miss_ind  <- !(pip_vars %in% names(gd))
-  miss_vars <- pip_vars[miss_ind]
-  miss_type <- pip_type[miss_ind]
-
-  miss_type <- glue("as.{miss_type}")
-
-  gd[,
-     (miss_vars) := lapply(miss_type, \(x) get(x)())]
+  # pip_vars  <- pip_var_type$pip_vars_pc
+  # pip_type  <- pip_var_type$pip_vars_pc_class
+  #
+  # miss_ind  <- !(pip_vars %in% names(gd))
+  # miss_vars <- pip_vars[miss_ind]
+  # miss_type <- pip_type[miss_ind]
+  #
+  # miss_type <- glue("as.{miss_type}")
+  #
+  # gd[,
+  #    (miss_vars) := lapply(miss_type, \(x) get(x)())]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Order and format --------
 
   # select columns
-  gd <- gd[,  .SD, .SDcols = pip_vars]
-
-  # of variable (columns)
-  setcolorder(gd, pip_vars)
+  # gd <- gd[,  .SD, .SDcols = pip_vars]
+  #
+  # # of variable (columns)
+  # setcolorder(gd, pip_vars)
 
   # sorting
-  varsort <- c("country_code", "surveyid_year", "area", "welfare")
+  varsort <- c(
+    # "country_code", "surveyid_year",
+    "area", "welfare")
   setorderv(gd, varsort)
 
   return(gd)
@@ -281,7 +248,7 @@ dlw_clean.pipgd <- function(df, ...) {
 #'
 #' @return data.table
 #' @keywords internal
-format_wgt <- function(dt) {
+format_wgt <- function(dt, log_wrn = TRUE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Clean weight variable   ---------
@@ -303,6 +270,8 @@ format_wgt <- function(dt) {
         else{
 
           dt[, weight := 1 / .N]
+
+          svy <- attributes(dt)$survey_id
 
           cli::cli_inform(message = "Weight variable missing in DLW",
                           class = c("mn_wgt_inf", "pipinf"),
@@ -351,6 +320,57 @@ format_wlf <- function(dt) {
   dt[, welfare := as.double(welfare)]
 
   dt[, welfare := welfare / 365]
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+recode_edu <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Education   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  variables <- colnames(dt)
+
+  # educat4
+  if (c("educat4") %in% variables){
+
+    setnames(dt, old = "educat4", new = "educat4_2")
+    dt[, educat4 := NA_character_]
+    dt[educat4_2 == 1, educat4 := "No education"]
+    dt[educat4_2 == 2, educat4 := "Primary"]
+    dt[educat4_2 == 3, educat4 := "Secondary"]
+    dt[educat4_2 == 4, educat4 := "Tertiary"]
+
+    dt[, educat4_2:= NULL]
+  }
+
+  # educat5
+  if (c("educat5") %in% variables){
+
+    setnames(dt, old = "educat5", new = "educat5_2")
+    dt[, educat5 := NA_character_]
+
+    dt[educat5_2 == 1, educat5 := "No education"]
+    dt[educat5_2 == 2, educat5 := "Primary incomplete"]
+    dt[educat5_2 == 3, educat5 := "Primary complete but secondary incomplete"]
+    dt[educat5_2 == 4, educat5 := "Secondary complete"]
+    dt[educat5_2 == 5, educat5 := "Some tertiary/post-secondary"]
+    dt[, educat5_2:= NULL]
+  }
+
+  # literacy
+  if (c("literacy") %in% variables) {
+    setnames(dt, "literacy", "literacy2")
+    dt[, literacy := NA_character_]
+    dt[literacy2 ==1, literacy := "yes"]
+    dt[literacy2 ==0, literacy := "no"]
+    dt[, literacy2 := NULL]
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

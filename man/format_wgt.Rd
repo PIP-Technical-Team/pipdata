@@ -4,7 +4,7 @@
 \alias{format_wgt}
 \title{Format weight variable for micro data}
 \usage{
-format_wgt(dt)
+format_wgt(dt, log_wrn = TRUE)
 }
 \value{
 data.table
