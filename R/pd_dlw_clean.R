@@ -32,38 +32,18 @@ pd_dlw_clean <- function(lf) {
   }
 
   # Computations -------
-  rl <-
-    tryCatch(
-      expr = {
-        # Your code...
-        if (inherits(lf, "list")) {
-          y <- purrr::map(.x = lf,
-                           #.y =  cpfw,
-                           .f = dlw_clean)
-        } else {
-          #y <- dlw_clean(lf, cpfw[[1]])
-          y <- dlw_clean(lf)
-          y <- list(y)
-        }
 
-        #names(y) <- sapply(cpfw, `[[`, "cache_id")
-        y
-      }, # end of expr section
+    if (inherits(lf, "list")) {
+      rl <- purrr::map(.x = lf,
+                       #.y =  cpfw,
+                       .f = dlw_clean)
+    } else {
+      #y <- dlw_clean(lf, cpfw[[1]])
+      rl <- dlw_clean(lf)
+      rl <- list(rl)
+    }
 
-    error = function(e) {
-      glue("Error: {e$message}")
-    }, # end of error section
-
-    warning = function(w) {
-      glue("Warning: {w$message}")
-    }, # end of warning section
-
-    finally = {
-      # Do this at the end before quitting the tryCatch structure...
-    } # end of finally section
-
-  ) # End of trycatch
-
+    #names(y) <- sapply(cpfw, `[[`, "cache_id")
 
 
   # Return -------------
@@ -119,22 +99,8 @@ dlw_clean.pipmd <- function(df, ...) {
   # hard copy
   md <- copy(df)
 
-
   ## clean weight variable
-  variables <- colnames(md)
-
-  if (!c("weight") %in% variables) {
-    if (c("weight_p") %in% variables){
-      setnames(md, old = "weight_p", new = "weight")
-    }
-    else if (c("weight_h") %in% variables){
-      setnames(md, old = "weight_h", new = "weight")
-    }
-    else{
-      md[, weight := 1 / .N]
-      ## add message
-    }
-  }
+  md <- format_wgt(md)
 
   #### Make sure no information is lost
   # change class type of "welfare", "weight"
@@ -313,4 +279,58 @@ dlw_clean.pipgd <- function(df, ...) {
   setorderv(gd, varsort)
 
   return(gd)
+}
+
+#' Format weight variable for micro data
+#'
+#' @param dt data.table
+#'
+#' @return data.table
+#' @keywords internal
+format_wgt <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # clean weight variable   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  tryCatch(
+    expr = {
+
+      variables <- colnames(dt)
+
+      if (!c("weight") %in% variables) {
+
+        if (c("weight_p") %in% variables){
+          setnames(dt, old = "weight_p", new = "weight")
+        }
+        else if (c("weight_h") %in% variables){
+          setnames(dt, old = "weight_h", new = "weight")
+        }
+        else{
+          dt[, weight := 1 / .N]
+
+          cli::cli_inform(message = "Weight variable missing in DLW",
+                          class = c("mn_wgt_inf", "pipinf"),
+                          log = log_wrn,
+                          link = svy,
+                          call = sys.call())
+
+        }
+      }
+    },
+    mn_wgt_inf = function(cnd){
+
+      if(cnd$log){ # Log the information
+
+        add_log(cnd)
+
+      }
+    }
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
 }
