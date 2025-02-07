@@ -102,13 +102,8 @@ dlw_clean.pipmd <- function(df, ...) {
   ## clean weight variable
   md <- format_wgt(md)
 
-  #### Make sure no information is lost
-  # change class type of "welfare", "weight"
-  varNames <- c("welfare", "weight")
-  md[,(varNames):= lapply(.SD, as.double),
-      .SDcols = varNames]
-  md[, welfare := welfare / 365]
-
+  ## format welfare variable
+  md <- format_wlf(md)
 
 #   ____________________________________________________________________________
 #   Recoding variables                                                      ####
@@ -206,6 +201,7 @@ dlw_clean.pipmd <- function(df, ...) {
                  "welfare",
                  "hhid",
                  "pid")
+
   setorderv(md, sortbycol)
   return(md)
 }
@@ -269,12 +265,10 @@ dlw_clean.pipgd <- function(df, ...) {
   # select columns
   gd <- gd[,  .SD, .SDcols = pip_vars]
 
-
   # of variable (columns)
   setcolorder(gd, pip_vars)
 
   # sorting
-
   varsort <- c("country_code", "surveyid_year", "area", "welfare")
   setorderv(gd, varsort)
 
