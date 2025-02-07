@@ -110,8 +110,7 @@ cpfw_merge <- function(dt, cpfw, ...){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Transform unique variables into attributes --------
 
-  # dt_f <- col_to_att(dt_c)
-  dt_f <- dt_c
+  dt_f <- col_to_attr(dt_c)
 
   return(dt_f)
 
@@ -500,18 +499,27 @@ col_to_attr <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  unq_vars <- names(uniq_vars_to_list(dt))
+  var_att_svy <- c("country_code",
+               "survey_id",
+               "surveyid_year",
+               "survey_acronym",
+               "survey_year",
+               "welfare_type",
+               "distribution_type",
+               "cpi_data_level",
+               "ppp_data_level",
+               "gdp_data_level",
+               "pce_data_level",
+               "gd_type",
+               "alt_welfare")
 
   vars <- names(dt)
 
-  n_unq_vars <- vars[!(vars %in% unq_vars)]
+  fixed_vars <- vars[!(vars %in% var_att_svy)]
 
+  # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
 
-  # Use Zander functions
-
-  dt <- pipload::all_cols_to_attr(dt, fixed = n_unq_vars)
-
-  # Error : if no variable for weight, welfare
+  dt <- all_cols_to_attr(dt, fixed = fixed_vars)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
