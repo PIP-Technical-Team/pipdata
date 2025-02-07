@@ -1,7 +1,7 @@
 #' deflate welfare to add_pip_vars (Higher level)
 #'
 #' @param lf list of dataframes with welfare variable called welfare
-#' @inheritParams pd_dlw_clean
+#' @inheritParams pd_cpfw_merge
 #' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
 #' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`
 #' @param  pop dataframe from `pipload::pip_load_aux("pop")`
@@ -105,7 +105,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 
 
 #' Estimate welfare in PPP values (lower level)
-#' @inheritParams pd_dlw_clean
+#' @inheritParams pd_cpfw_merge
 #' @param  df  dataframe from `pd_wbpip_clean()`
 #' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
 #' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`

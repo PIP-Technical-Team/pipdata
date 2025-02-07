@@ -27,7 +27,17 @@ reconstructed via \code{values[index]}. The resulting columns are appended
 to the data frame in the order they appear in the attributes.
 }
 \examples{
-# Continuing from the 'all_cols_to_attr' example:
+# Example data
+df <- data.frame(
+  key      = 1:5,
+  welfare  = runif(5),
+  weight   = rnorm(5),
+  x_var    = c("A", "A", "B", "B", "B"),
+  y_var    = "constant"
+)
+
+# Compress columns
+df_comp <- all_cols_to_attr(df, fixed_cols = c("key", "welfare", "weight"))
 
 # Suppose we have 'df_comp' from above
 df_orig <- all_attr_to_cols(df_comp)

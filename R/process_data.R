@@ -10,6 +10,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
@@ -17,6 +18,7 @@
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' process_data(md, pfw)
+#' }
 process_data <- function(df, ...) {
   UseMethod("process_data")
 
@@ -47,7 +49,8 @@ process_data.pipmd <- function(df, pfw, ...) {
 
   # Computations -------
   cpfw <- get_country_pfw(df, pfw)
-  x    <- pd_dlw_clean(df, cpfw)
+  # x    <- pd_dlw_clean(df, cpfw) # Andres version
+  x    <- pd_dlw_clean(df)
   y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 
 
@@ -82,7 +85,8 @@ process_data.pipgd <- function(df, pfw, ...) {
 
   # Computations -------
   cpfw <- get_country_pfw(df, pfw)
-  x    <- pd_dlw_clean(df, cpfw)
+  # x    <- pd_dlw_clean(df, cpfw) # Andres version
+  x    <- pd_dlw_clean(df)
   y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 
 

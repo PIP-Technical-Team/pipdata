@@ -519,7 +519,7 @@ col_to_attr <- function(dt) {
 
   # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
 
-  dt <- all_cols_to_attr(dt, fixed = fixed_vars)
+  dt <- all_cols_to_attr(dt, fixed_cols = fixed_vars)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

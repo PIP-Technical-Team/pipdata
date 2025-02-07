@@ -31,6 +31,7 @@ process datalibweb data. Use S3 method to identify whether the data is
 microdata, groupdata or imputed data
 }
 \examples{
+\dontrun{
 pfw <- pipload::pip_load_aux("pfw")
 
 gd  <- pipload::pip_load_dlw("CHN", 2015)
@@ -38,4 +39,5 @@ process_data(gd, pfw)
 
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 process_data(md, pfw)
+}
 }

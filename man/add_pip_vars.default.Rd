@@ -9,9 +9,8 @@
 \arguments{
 \item{df}{dataframe from \code{pd_wbpip_clean()}}
 
-\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
-It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
-\code{pipload::pip_load_aux("pfw")}}
+\item{cpfw}{list (more than one if there are two or more
+welfare types in the survey)}
 
 \item{cpi}{dataframe from \code{pipload::pip_load_aux("cpi")}}
 
