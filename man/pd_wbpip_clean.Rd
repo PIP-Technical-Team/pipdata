@@ -9,9 +9,8 @@ pd_wbpip_clean(lf, cpfw)
 \arguments{
 \item{lf}{list of dataframe returned by \code{pd_dlw_clean()}}
 
-\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
-It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
-\code{pipload::pip_load_aux("pfw")}}
+\item{cpfw}{list (more than one if there are two or more
+welfare types in the survey)}
 }
 \value{
 list with data.tables
@@ -20,6 +19,7 @@ list with data.tables
 Clean data for wbpip compatibility (high level)
 }
 \examples{
+\dontrun{
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
@@ -42,4 +42,5 @@ gd   <- pd_split_alt_welfare(gd, cpfw)
 x <- pd_dlw_clean(gd, cpfw)
 y <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 y[, unique(area)]
+}
 }

@@ -18,6 +18,7 @@ data.table
 wbpip_clean method for pipgd class (group data)
 }
 \examples{
+\dontrun{
 pfw  <- pipload::pip_load_aux("pfw")
 gd   <- pipload::pip_load_dlw("CHN", 2015)
 cpfw <- get_country_pfw(gd, pfw)
@@ -32,4 +33,5 @@ gd   <- pd_split_alt_welfare(gd, cpfw)
 x <- pd_dlw_clean(gd, cpfw)
 y <- wbpip_clean(x[[1]])
 y[, unique(area)]
+}
 }

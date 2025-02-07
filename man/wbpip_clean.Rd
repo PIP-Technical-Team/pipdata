@@ -18,6 +18,7 @@ dataframe
 Clean data to meet wbpip requirements and formats
 }
 \examples{
+\dontrun{
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 pfw <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
@@ -40,4 +41,5 @@ gd   <- pd_split_alt_welfare(gd, cpfw)
 x <- pd_dlw_clean(gd, cpfw)
 y <- wbpip_clean(x[[1]])
 y[, unique(area)]
+}
 }

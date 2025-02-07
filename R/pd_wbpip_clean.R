@@ -1,12 +1,13 @@
 #' Clean data for wbpip compatibility (high level)
 #'
 #' @param lf list of dataframe returned by `pd_dlw_clean()`
-#' @inheritParams pd_dlw_clean
+#' @inheritParams pd_cpfw_merge
 #'
 #' @return list with data.tables
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
@@ -29,6 +30,7 @@
 #' x <- pd_dlw_clean(gd, cpfw)
 #' y <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #' y[, unique(area)]
+#' }
 pd_wbpip_clean <- function(lf, cpfw) {
 
   # on.exit ------------
@@ -91,6 +93,7 @@ pd_wbpip_clean <- function(lf, cpfw) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
@@ -113,6 +116,7 @@ pd_wbpip_clean <- function(lf, cpfw) {
 #' x <- pd_dlw_clean(gd, cpfw)
 #' y <- wbpip_clean(x[[1]])
 #' y[, unique(area)]
+#' }
 wbpip_clean <- function(df, ...) {
   UseMethod("wbpip_clean")
 }
@@ -127,6 +131,7 @@ wbpip_clean <- function(df, ...) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' pfw <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
@@ -134,6 +139,7 @@ wbpip_clean <- function(df, ...) {
 #' x <- pd_dlw_clean(md, cpfw)
 #' y <- wbpip_clean(x[[1]])
 #' summary(y$weight)
+#' }
 wbpip_clean.pipmd <- function(df, ...) {
 
   # on.exit ------------
@@ -175,6 +181,7 @@ wbpip_clean.pipmd <- function(df, ...) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -189,6 +196,7 @@ wbpip_clean.pipmd <- function(df, ...) {
 #' x <- pd_dlw_clean(gd, cpfw)
 #' y <- wbpip_clean(x[[1]])
 #' y[, unique(area)]
+#' }
 wbpip_clean.pipgd <- function(df, ...) {
 
   # on.exit ------------
