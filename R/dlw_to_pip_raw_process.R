@@ -18,8 +18,6 @@ library(dplyr)
 library(jsonlite)
 
 
-
-
 # 1. Dynamic folder simulation (trigger) ----
 ## I. Set up folders ----
 
@@ -27,10 +25,12 @@ library(jsonlite)
 base_folder <- paste0(dlw_raw_dir, "/folder_base")
 folder_time1 <- paste0(dlw_raw_dir, "/folder_time1")
 folder_time2 <- paste0(dlw_raw_dir, "/folder_time2")
+folder_time3 <- paste0(dlw_raw_dir, "/folder_time3")
 
 # Create the output folders if they do not exist
 if (!dir.exists(folder_time1)) dir.create(folder_time1)
 if (!dir.exists(folder_time2)) dir.create(folder_time2)
+if (!dir.exists(folder_time2)) dir.create(folder_time3)
 
 # Copy all files from base_folder
 files_to_copy <- list.files(base_folder, pattern = "\\.dta$", full.names = TRUE)
@@ -212,39 +212,15 @@ simulate_changes_exact(
   seed     = 123
 )
 
-
-
-
-
-
-dlw_raw_folder = folder_time1
-dlw_qs_folder  = paste0(dlw_to_pip_dir, "/", "dlw_qs")
-pip_raw_folder = paste0(dlw_to_pip_dir, "/", "pip_raw")
-
-
-dlw_dta_to_qs(dlw_raw_folder, dlw_qs_folder)
-
-
-new_rows <- dlw_scan_and_validate(
-  dlw_qs_folder         = dlw_qs_folder,
-  pip_raw_folder        = pip_raw_folder,
-  pip_raw_inventory_path= paste0(pip_raw_folder, "/", "pip_raw_inventory.qs"),
-  release_label = get_current_release()
+simulate_changes_exact(
+  folder_time1 = folder_time2,
+  folder_time2 = folder_time3,
+  n_add    = 1,
+  n_remove = 0,
+  n_change = 1,
+  n_rename = 3,
+  seed     = 345
 )
-
-dlw_finalize_release(
-  pip_raw_inventory_path = paste0(pip_raw_folder, "/", "pip_raw_inventory.qs"),
-  release_label          = get_current_release()
-)
-
-pip_raw_inv_time1 <- qread('E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/_releases/pip_release_inventory_20250130_2017_01_01_INT_20250131_131457.qs')
-pip_raw_inv_time1
-
-
-pip_raw_inv_time2 <- qread('E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/_releases/pip_release_inventory_20250130_2017_01_01_INT_20250131_131737.qs')
-pip_raw_inv_time2 |> View()
-
-pipipop <- qread('E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/pip_raw_inventory.qs')
 
 
 # 2. Release set-up ----
@@ -287,17 +263,25 @@ new_pip_raw_inv <- dlw_scan_and_validate(
   pip_raw_inventory_path = paste0(pip_raw_folder, "/pip_raw_inventory.qs"),
 )
 
-# 4. Store release ----
+# 5. Store release ----
 dlw_store_release(
   release_label         = get_current_release(),
-  pip_raw_inventory_df=   new_pip_raw_inv,
+  pip_raw_inventory_df  = new_pip_raw_inv, # output of dlw_scan_and_validate()
   pip_raw_releases      = paste0(pip_raw_folder, "/pip_raw_releases.json")
 )
 
-releases <- fromJSON(paste0(pip_raw_folder, "/pip_raw_releases.json"),
-                     simplifyVector=TRUE)
+# 6. Release mgmt ----
 
+# Get a release
+release_json <- 'E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/pip_raw_releases.json'
+releases_df <- dlw_list_releases(release_json)
+releases_list <- fromJSON(release_json, simplifyVector = TRUE)
+one_release_df <- releases_list$`20250207_INT`$data
 
+# View
+new_pip_raw_inv |> View()
+releases_df
+one_release_df |> View()
 
 
 
