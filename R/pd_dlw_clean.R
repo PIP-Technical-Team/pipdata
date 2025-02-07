@@ -283,14 +283,14 @@ dlw_clean.pipgd <- function(df, ...) {
 
 #' Format weight variable for micro data
 #'
-#' @param dt data.table
+#' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 format_wgt <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # clean weight variable   ---------
+  # Clean weight variable   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   tryCatch(
@@ -307,6 +307,7 @@ format_wgt <- function(dt) {
           setnames(dt, old = "weight_h", new = "weight")
         }
         else{
+
           dt[, weight := 1 / .N]
 
           cli::cli_inform(message = "Weight variable missing in DLW",
@@ -325,8 +326,37 @@ format_wgt <- function(dt) {
         add_log(cnd)
 
       }
+    },
+    finally={
+
+      dt[, weight := as.double(weight)]
+
     }
   )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Format welfare variable for micro data
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#'
+#' @keywords internal
+format_wlf <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  dt[, welfare := as.double(welfare)]
+
+  dt[, welfare := welfare / 365]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
