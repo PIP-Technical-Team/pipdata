@@ -13,29 +13,12 @@
 #' cpfw <- get_country_pfw(gd, pfw)
 get_country_pfw <- function(df, pfw) {
 
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Unique obs per pfw --------
 
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
 
   pfw <- unq_obs_dt(pfw, keyVar)
-
-  # Computations -------
-  # subset microdata survey; BIN is BIN is treated as microdata in PCN/PIP
-  # pfw <- pfw[use_microdata == 1 |
-  #              use_bin     == 1 |
-  #              use_imputed == 1 |
-  #              inpovcal     == 1] # subset country-years in Povcalnet
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Filter country PFW --------

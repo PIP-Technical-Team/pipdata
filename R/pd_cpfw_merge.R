@@ -23,23 +23,6 @@ pd_cpfw_merge <- function(dt, cpfw) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    ## check that both are lists
-  }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Split alternative welfare --------
 
@@ -48,14 +31,14 @@ pd_cpfw_merge <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Map survey to cpfw --------
 
-  if (inherits(lf, "list")) {
+  # if (inherits(lf, "list")) { # Not needed because they are always list
     lfs <- purrr::map2(.x = lf,
                      .y =  cpfw,
                      .f = cpfw_merge)
-  } else { #Needed? Maybe all list?
-    dt <- cpfw_merge(lf, cpfw[[1]])
-    lfs <- list(dt)
-  }
+  # } else {
+  #   dt <- cpfw_merge(lf, cpfw[[1]])
+  #   lfs <- list(dt)
+  # }
 
   names(lfs) <- sapply(cpfw, `[[`, "cache_id")
 
