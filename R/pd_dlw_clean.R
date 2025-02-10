@@ -328,60 +328,56 @@ format_wlf <- function(dt) {
 
 }
 
+#' Recoding education variables
+#'
+#' @param dt
+#'
+#' @return data.table
+#' @keywords internal
 recode_edu <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Education   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  dt <- copy(ls[[1]])
-
   variables <- colnames(dt)
 
   # educat4
   if (c("educat4") %in% variables){
 
-    dt2 <- copy(dt)
-
     dt <- dt |>
-      collapse::recode_num(educat4,
-                           `1` = "No education",
-                           `2` = "Primary",
-                           `3` = "Secondary",
-                           `4` = "Tertiary",
-                           default = NA_character_)
+      collapse::ftransform(educat4 = dplyr::case_when(
+        educat4 == 1 ~ "No education",
+        educat4 == 2 ~ "Primary",
+        educat4 == 3 ~ "Secondary",
+        educat4 == 4 ~ "Tertiary",
+        .default = NA_character_))
 
-    setnames(dt, old = "educat4", new = "educat4_2")
-    dt[, educat4 := NA_character_]
-    dt[educat4_2 == 1, educat4 := "No education"]
-    dt[educat4_2 == 2, educat4 := "Primary"]
-    dt[educat4_2 == 3, educat4 := "Secondary"]
-    dt[educat4_2 == 4, educat4 := "Tertiary"]
-
-    dt[, educat4_2:= NULL]
   }
 
   # educat5
   if (c("educat5") %in% variables){
 
-    setnames(dt, old = "educat5", new = "educat5_2")
-    dt[, educat5 := NA_character_]
+    dt <- dt |>
+      collapse::ftransform(educat5 = dplyr::case_when(
+        educat5 == 1 ~ "No education",
+        educat5 == 2 ~ "Primary incomplete",
+        educat5 == 3 ~ "Primary complete but secondary incomplete",
+        educat5 == 4 ~ "Secondary complete",
+        educat5 == 5 ~ "Some tertiary/post-secondary",
+        .default = NA_character_))
 
-    dt[educat5_2 == 1, educat5 := "No education"]
-    dt[educat5_2 == 2, educat5 := "Primary incomplete"]
-    dt[educat5_2 == 3, educat5 := "Primary complete but secondary incomplete"]
-    dt[educat5_2 == 4, educat5 := "Secondary complete"]
-    dt[educat5_2 == 5, educat5 := "Some tertiary/post-secondary"]
-    dt[, educat5_2:= NULL]
   }
 
   # literacy
   if (c("literacy") %in% variables) {
-    setnames(dt, "literacy", "literacy2")
-    dt[, literacy := NA_character_]
-    dt[literacy2 ==1, literacy := "yes"]
-    dt[literacy2 ==0, literacy := "no"]
-    dt[, literacy2 := NULL]
+
+    dt <- dt |>
+      collapse::ftransform(literacy = dplyr::case_when(
+        literacy == 1 ~ "yes",
+        literacy == 0 ~ "no",
+        .default = NA_character_))
+
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
