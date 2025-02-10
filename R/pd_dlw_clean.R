@@ -7,41 +7,29 @@
 #'
 #' @examples
 #' pfw  <- pipload::pip_load_aux("pfw")
-#' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
+#'
+#' gd    <- pipload::pip_load_dlw("CHN", 2015)
+#' cpfw  <- get_country_pfw(gd, pfw)
+#' ls    <- pd_cpfw_merge(gd, cpfw)
+#' lf    <- pd_dlw_clean(ls)
+#' names(lf)
+#'
+#' md    <- pipload::pip_load_dlw(country = "PHL", 2012)
+#' cpfw  <- get_country_pfw(md, pfw)
 #' ls    <- pd_cpfw_merge(md, cpfw)
 #' lf    <- pd_dlw_clean(ls)
 #' names(lf)
 pd_dlw_clean <- function(ls) {
 
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    ## check that both are lists
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
   # Computations -------
 
-    if (inherits(ls, "list")) {
+    # if (inherits(ls, "list")) {  # Not needed because they are always list
       rl <- purrr::map(.x = ls,
-                       #.y =  cpfw,
                        .f = dlw_clean)
-    } else {
-      #y <- dlw_clean(lf, cpfw[[1]])
-      rl <- dlw_clean(ls)
-      rl <- list(rl)
-    }
+    # } else {
+    #   rl <- dlw_clean(ls)
+    #   rl <- list(rl)
+    # }
 
 
   # Return -------------
@@ -150,7 +138,7 @@ dlw_clean.pipgd <- function(df, ...) {
   # hard copy
   gd <- copy(df)
 
-  # NEED TO CHECK FORMATING TO WELFARE AND WEIGHT IN WBPIP!
+  # NEED TO CHECK FORMATTING TO WELFARE AND WEIGHT IN WBPIP!
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------
@@ -329,7 +317,7 @@ recode_gndr <- function(dt) {
         male == 0 ~ "female",
         .default = NA_character_))
 
-  }
+  } # Do we need message about not having this variable?
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
