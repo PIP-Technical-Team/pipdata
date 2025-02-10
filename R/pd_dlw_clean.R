@@ -334,10 +334,22 @@ recode_edu <- function(dt) {
   # Education   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  dt <- copy(ls[[1]])
+
   variables <- colnames(dt)
 
   # educat4
   if (c("educat4") %in% variables){
+
+    dt2 <- copy(dt)
+
+    dt <- dt |>
+      collapse::recode_num(educat4,
+                           `1` = "No education",
+                           `2` = "Primary",
+                           `3` = "Secondary",
+                           `4` = "Tertiary",
+                           default = NA_character_)
 
     setnames(dt, old = "educat4", new = "educat4_2")
     dt[, educat4 := NA_character_]
