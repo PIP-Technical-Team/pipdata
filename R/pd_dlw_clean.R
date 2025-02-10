@@ -113,16 +113,7 @@ dlw_clean.pipmd <- function(df, ...) {
 ##  ............................................................................
 ##  Gender                                                       ####
 
-  # Recode male to string
-  if (c("male") %in% variables){
-
-    setnames(md, "male", "male2")
-    md[, male := NA_character_]
-    md[male2 == 1, male := "male"]
-    md[male2 == 0, male := "female"]
-    md[, male2 := NULL]
-
-  }
+  md <-recode_gndr(md)
 
 #   ____________________________________________________________________________
 #   Variables that do not exist                                             ####
@@ -319,7 +310,7 @@ format_wlf <- function(dt) {
 
 #' Recoding education variables
 #'
-#' @param dt
+#' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
@@ -365,6 +356,35 @@ recode_edu <- function(dt) {
       collapse::ftransform(literacy = dplyr::case_when(
         literacy == 1 ~ "yes",
         literacy == 0 ~ "no",
+        .default = NA_character_))
+
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Recoding gender variable
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#' @keywords internal
+recode_gndr <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Recode male to string   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  if (c("male") %in% variables){
+
+    dt <- dt |>
+      collapse::ftransform(gender = dplyr::case_when(
+        male == 1 ~ "male",
+        male == 0 ~ "female",
         .default = NA_character_))
 
   }
