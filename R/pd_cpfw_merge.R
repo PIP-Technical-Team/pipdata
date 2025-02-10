@@ -505,7 +505,7 @@ col_to_attr <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  var_att_svy <- c("country_code",
+  var_att_svy <- c("country_code", # We can add this to the internal data
                "survey_id",
                "surveyid_year",
                "survey_acronym",
