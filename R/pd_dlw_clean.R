@@ -321,7 +321,7 @@ recode_gndr <- function(dt) {
   # Recode male to string   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  if (c("male") %in% variables){
+  if (c("male") %in% colnames(dt)){
 
     dt <- dt |>
       collapse::ftransform(gender = dplyr::case_when(

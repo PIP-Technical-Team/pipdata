@@ -277,7 +277,7 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
       if (c("subnatid") %in% colnames(dt)){
 
-        setnames(md, "subnatid", "subnatid1")
+        setnames(dt, "subnatid", "subnatid1")
 
       }
 
