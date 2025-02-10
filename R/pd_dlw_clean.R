@@ -111,18 +111,7 @@ dlw_clean.pipmd <- function(df, ...) {
   md <- recode_edu(md)
 
 ##  ............................................................................
-##  Geographical variables                                                  ####
-
-  # rename subnatid
-  variables <- colnames(md)
-
-  if (c("subnatid") %in% variables){
-    setnames(md, "subnatid", "subnatid1")
-  }
-
-
-##  ............................................................................
-##  Other variables                                                         ####
+##  Gender                                                       ####
 
   # Recode male to string
   if (c("male") %in% variables){

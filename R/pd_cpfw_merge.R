@@ -275,6 +275,12 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
   tryCatch(
     expr = {
 
+      if (c("subnatid") %in% colnames(dt)){
+
+        setnames(md, "subnatid", "subnatid1")
+
+      }
+
       # Abort if not urban variable
       if (!(c("urban") %in% colnames(dt))){
 
