@@ -63,11 +63,3 @@ dlw_get_release <- function(json_path, release_label) {
   return(out_df)
 }
 
-
-
-# Difference between releases ----
-
-# Examples -----
-release <- dlw_list_releases('E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/pip_raw_releases.json')[1]
-
-dlw_get_release('E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/pip_raw_releases.json', release)

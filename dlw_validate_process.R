@@ -2,32 +2,20 @@
 # 0. Set-up -----
 ## I. Directory with dlw files and the dlw inventory: ----
 dlw_raw_dir <- "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_raw_test"
-# Within this folder (copy of original but with ITA data only and simulation folders created):
-## - subfolder : folder_base: all dlw-raw files in .dta format
-## - subfolder : folder_time1: all dlw-raw files in .dta format time 1.
-## - subfolder : folder_time2: all dlw-raw files in .dta format time 2.
-## - subfolder: _Inventory:
-### - a .qs or .fst file with all observations recorded (metadata). the most recent one.
-### - DLWRAW_all_DTA.csv: content of all .dta files in one .csv
-## - subsubfolder: _Inventory/_vintage: folder with previous versions of the dlw inventory. (see above)
 
 ## II. Directory with the pip_in_dlw directory: ----
 dlw_to_pip_dir <- "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test"
-# Within this folder:
-## - validated GPWG files in .qs format (all versions)
-## - subfolder: _inventory: a .qs or .fst file with all observations' recorded metadata. the most recent one.
-## - subfolder: _report: a .qs file with a summary of the differences between previous and subsequent version.
-## - subsubfolder: _report/_vintage: folder with previous versions of the dlw in pip inventory reports.
-## - subsubfolder: _inventory/_vintage: folder with previous versions of the dlw in pip inventory.
 
 ## III. Dependencies ----
 library(syncdr)
-#library(myrror)
 library(data.table)
 library(fs)
 library(qs)
 library(digest)
 library(cli)
+library(tictoc)
+library(dplyr)
+library(jsonlite)
 
 
 # 1. Dynamic folder simulation (trigger) ----
@@ -37,10 +25,12 @@ library(cli)
 base_folder <- paste0(dlw_raw_dir, "/folder_base")
 folder_time1 <- paste0(dlw_raw_dir, "/folder_time1")
 folder_time2 <- paste0(dlw_raw_dir, "/folder_time2")
+folder_time3 <- paste0(dlw_raw_dir, "/folder_time3")
 
 # Create the output folders if they do not exist
 if (!dir.exists(folder_time1)) dir.create(folder_time1)
 if (!dir.exists(folder_time2)) dir.create(folder_time2)
+if (!dir.exists(folder_time2)) dir.create(folder_time3)
 
 # Copy all files from base_folder
 files_to_copy <- list.files(base_folder, pattern = "\\.dta$", full.names = TRUE)
@@ -222,172 +212,22 @@ simulate_changes_exact(
   seed     = 123
 )
 
+simulate_changes_exact(
+  folder_time1 = folder_time2,
+  folder_time2 = folder_time3,
+  n_add    = 1,
+  n_remove = 0,
+  n_change = 1,
+  n_rename = 3,
+  seed     = 345
+)
 
 
-
-
-# 2. Update DLW list, inventory, and vintage ----
-## I. Custom DLRRAW_all_DTAs.csv creation ----
-## (R version of GMD-RAW list in powershell)
-generate_dlw_raw_list <- function(input_dir, output_file) {
-  # Record the start time
-  begintime <- Sys.time()
-
-  # Get a list of .dta files with metadata
-  file_info <- data.frame(
-    FullName = list.files(input_dir, pattern = "\\.dta$", full.names = TRUE, recursive = TRUE),
-    stringsAsFactors = FALSE
-  )
-
-  # Add metadata columns
-  file_info <- file_info |>
-    dplyr::mutate(
-      CreationTime = purrr::map_chr(FullName, ~ as.character(file.info(.x)$ctime)),
-      LastWriteTime = purrr::map_chr(FullName, ~ as.character(file.info(.x)$mtime)),
-      Length = purrr::map_dbl(FullName, ~ file.info(.x)$size)
-    )
-
-  # Save to CSV with a semicolon delimiter
-  write.table(
-    file_info,
-    file = output_file,
-    sep = ";",
-    row.names = FALSE,
-    col.names = TRUE,
-    quote = TRUE
-  )
-
-  # Record the end time
-  endtime <- Sys.time()
-
-  # Calculate and print the time difference
-  timediff <- difftime(endtime, begintime, units = "secs")
-  message(sprintf(
-    "Time to create list was %dh %dm %ds",
-    as.integer(timediff) %/% 3600, # Hours
-    (as.integer(timediff) %% 3600) %/% 60, # Minutes
-    as.integer(timediff) %% 60 # Seconds
-  ))
-}
-
-# Run it once for time1
-generate_dlw_raw_list(folder_time1, paste0(dlw_raw_dir, "/_Inventory/DLWRAW_all_DTAs.csv"))
-# Then subsequent times come from time2
-generate_dlw_raw_list(folder_time2, paste0(dlw_raw_dir, "/_Inventory/DLWRAW_all_DTAs.csv"))
-
-## II. Custom update_dlw ----
-update_dlw_inventory_test <-
-  function(dlw_dir = dlw_raw_dir,
-           root_dir = "E:/PovcalNet/01.personal/wb622077/pipdata_test/",
-           force    = FALSE)
-  {
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # directories and paths   ---------
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-    dlw_inv_path <- fs::path(dlw_dir,"_Inventory")
-
-    dlw_inv_file <- fs::path(dlw_inv_path,
-                             "DLWRAW_all_DTAs", ext = "csv")
-
-    if (!fs::file_exists(dlw_inv_file)) {
-
-      msg     <- c(
-        "File does not exists",
-        "x" = "{dlw_inv_file} not found.",
-        "i" = "check connection or {.field pipload} globals"
-      )
-      cli::cli_abort(msg,
-                     class = "pipdata_error"
-      )
-    }
-
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ## variables --------
-    id_vars <-
-      c(
-        "country_code",
-        "surveyid_year",
-        "survey_acronym",
-        "vermast",
-        "M",
-        "veralt",
-        "A",
-        "collection",
-        "module"
-      )
-
-
-    pip_modules <-
-      c("GPWG",
-        "ALL",
-        "BIN",
-        "GROUP",
-        "HIST")
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # clean data   ---------
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    dlw_inv <- fread(file = dlw_inv_file,
-                     showProgress = FALSE)
-    setnames(dlw_inv,tolower)
-
-
-    dlw_inv[,
-            fullname := {
-              x <- gsub("\\\\", "/", fullname)
-              x <- gsub(root_dir, "", x)
-              x
-            }
-    ][,
-      survey_id := {
-        fullname |>
-          fs::path_file() |>
-          fs::path_ext_remove()
-      }
-    ][,
-      `:=`(
-        #creationtime  = lubridate::mdy_hms(creationtime),
-        #lastwritetime = lubridate::mdy_hms(lastwritetime)
-        creationtime  = as.POSIXct(creationtime, tz = "UTC", format = "%m/%d/%Y %T"),
-        lastwritetime = as.POSIXct(lastwritetime, tz = "UTC", format = "%m/%d/%Y %T")
-      )]
-
-
-    # add variables from survey ID
-    dlw_inv <- suppressWarnings(pipload::survey_id_to_vars(dlw_inv))
-    dlw_inv <- na.omit(dlw_inv)
-    dlw_inv <- dlw_inv[module %chin% pip_modules] # keep important modules
-
-    setorder(dlw_inv, country_code, surveyid_year, survey_acronym, vermast, veralt)
-
-
-    # check if data has changed
-
-    status <- pipfun::pip_sign_save(x       =  dlw_inv,
-                                    measure = "dlw_inventory",
-                                    msrdir  = dlw_inv_path,
-                                    force   = force)
-
-
-    return(invisible(status))
-  }
-
-# Run to update directory inventory
-update_dlw_inventory_test()
-
-
-# 3. Release set-up ----
+# 2. Release set-up ----
 ## 1. Create a label
 release_label <- create_release_label(
-  ppp_round = "2017",
-  rv        = "01",
-  av        = "01",
-  suffix    = "INT"
+  suffix    = "INT",
+  full = FALSE
 )
 
 ## 2. Set that as the current release
@@ -398,86 +238,50 @@ get_current_release()
 
 
 
-# 3. Versioning and Validation Process ----
-## Set-up for simulation:
-## Clear the folders
+
+# 3. Copy files to dlw_qs ----
+## I. Set-up for simulation ----
+base_folder <- paste0(dlw_raw_dir, "/folder_base")
+folder_time1 <- paste0(dlw_raw_dir, "/folder_time1")
+folder_time2 <- paste0(dlw_raw_dir, "/folder_time2")
 dlw_qs_folder  = paste0(dlw_to_pip_dir, "/", "dlw_qs")
 pip_raw_folder = paste0(dlw_to_pip_dir, "/", "pip_raw")
 
 
-## First run with folder_time1 and then with folder_time2
-dlw_raw_folder = folder_time2
+## II. folder_time1/folder_time2 ----
+dlw_raw_folder = folder_time1
 
 
-## Step 1: Convert .dta files to .qs files -----
-tic()
+## III. Convert .dta files to .qs files -----
 dlw_dta_to_qs(dlw_raw_folder = dlw_raw_folder,
               dlw_qs_folder  = dlw_qs_folder)
-toc()
-# 13 seconds for N files.
 
-# Step 2: Scan the .qs folder -----
-# - Record changes into changes df object
-# - archive timestamped dlw_qs
-# - update dlw_qs_inventory
-changes <- dlw_scan_qs_folder(
-  dlw_qs_folder_path    = dlw_qs_folder,
-  dlw_qs_inventory_path = paste0(dlw_qs_folder, "/", "dlw_qs_inventory.qs"),
-  vintage_folder_path = paste0(dlw_qs_folder, "/_vintage")
+# 4. Scan dlw_qs, validate, version to pip_raw ----
+new_pip_raw_inv <- dlw_scan_and_validate(
+  dlw_qs_folder        = dlw_qs_folder,
+  pip_raw_folder       = pip_raw_folder,
+  pip_raw_inventory_path = paste0(pip_raw_folder, "/pip_raw_inventory.qs"),
 )
 
-changes |> filter(status != "same")
-dlw_qs_inv <- qread(paste0(dlw_qs_folder, "/", "dlw_qs_inventory.qs"))
-
-
-# Step 3: Validation and versioning ------
-validation <- dlw_validate_and_version(
-  comp_df = changes,
-  dlw_qs_folder_path = dlw_qs_folder,
-  pip_raw_folder_path = pip_raw_folder,
-  pip_raw_inventory_path = paste0(pip_raw_folder, "/", "pip_raw_inventory.qs"),
-  validation_fn = NULL,
-  release_label = get_current_release()
+# 5. Store release ----
+dlw_store_release(
+  release_label         = get_current_release(),
+  pip_raw_inventory_df  = new_pip_raw_inv, # output of dlw_scan_and_validate()
+  pip_raw_releases      = paste0(pip_raw_folder, "/pip_raw_releases.json")
 )
 
-pip_raw_inv <- qread(paste0(pip_raw_folder, "/", "pip_raw_inventory.qs"))
-pip_raw_inv |>
-  filter(is_changed == TRUE)|>
-  View()
+# 6. Release mgmt ----
 
-# Step 4: Report creation -------
+# Get a release
+release_json <- 'E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/pip_raw_releases.json'
+releases_df <- dlw_list_releases(release_json)
+releases_list <- fromJSON(release_json, simplifyVector = TRUE)
+one_release_df <- releases_list$`20250207_INT`$data
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# OLD VERSION ----
-## Step 1: Scan DLW-RAW and Detect Changes in inventory -----
-new_or_changed_df <- dlw_scan_folder(dlw_folder = folder_time1,
-                                     inventory_file = paste0(pip_in_dlw_dir,
-                                                             "/", "pip_in_dlw_inventory.qs")) # first run would be empty
-
-## Step 2: Validate & Convert to .qs file ----
-validated_df <- dlw_validate_convert(new_or_changed_df = new_or_changed_df,
-                                     inventory_file = paste0(pip_in_dlw_dir,
-                                                             "/", "pip_in_dlw_inventory.qs"),
-                                     validated_folder = pip_in_dlw_dir)
-
-
-
-
-
+# View
+new_pip_raw_inv |> View()
+releases_df
+one_release_df |> View()
 
 
 
