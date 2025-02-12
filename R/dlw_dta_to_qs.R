@@ -1,3 +1,21 @@
+
+#' Convert DLW .dta files to .qs
+#'
+#' @param dlw_raw_folder DLW-RAW folder with .dta files
+#' @param dlw_qs_folder Permanent or temporary folder to store .qs files
+#' @param log_err TRUE/FALSE log errors into .logenv
+#' @param skip_err TRUE/FALSE skip errors (no abort)
+#'
+#' @return NULL
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'  dlw_dta_to_qs(
+#'  dlw_raw_folder = "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/dlw_raw/folder_time1",
+#'  dlw_qs_folder  = "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/dlw_qs"
+#'  }
+#'
 dlw_dta_to_qs <- function(
     dlw_raw_folder,
     dlw_qs_folder,
@@ -141,10 +159,7 @@ dlw_dta_to_qs <- function(
 }
 
 
-
-
-
-# OLD version ----
+# OLD version (no tryCatch) ----
 dlw_dta_to_qs_old <- function(
     dlw_raw_folder,
     dlw_qs_folder
