@@ -40,7 +40,7 @@ pd_cpfw_merge <- function(dt, cpfw) {
   #   lfs <- list(dt)
   # }
 
-  names(lfs) <- sapply(cpfw, `[[`, "cache_id")
+  names(lfs) <- sapply(cpfw, `[[`, "cache_id") #Maybe not needed
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

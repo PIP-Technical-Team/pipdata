@@ -7,6 +7,7 @@
 #'
 #' @examples
 #' pfw  <- pipload::pip_load_aux("pfw")
+#' # dt   <- pipload::pip_load_dlw(survey_id = "BRA_2008_PNAD_v02_M_v04_A_GMD_ALL")
 #'
 #' gd    <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw  <- get_country_pfw(gd, pfw)
@@ -103,13 +104,13 @@ dlw_clean.pipmd <- function(df, ...) {
 
   md <- pip_vars(md)
 
-  # Sort by welfare
-  sortbycol <- c(
-    "welfare",
-    "hhid", # Why hhid if they are character? Should they be numeric?
-    "pid")
+  # Sort by welfare (commented because it gives an error)
+  # sortbycol <- c(
+  #   "welfare",
+  #   "hhid", # Why hhid if they are character? Should they be numeric?
+  #   "pid")
 
-  setorderv(md, sortbycol)
+  # setorderv(md, cols = "welfare")
 
   return(md)
 }
@@ -354,6 +355,10 @@ pip_vars <- function(dt) {
   # get from internal data `pip_var_type`
   pip_vars  <- pip_var_type$pip_vars_pc
   pip_type  <- pip_var_type$pip_vars_pc_class
+
+  # add education to pip_vars
+  pip_vars <- c(pip_vars, "educat4","educat5","literacy")
+  pip_type  <- c(pip_type, "character","character","character")
 
   no_att_vars <- !(pip_vars %in% var_att_svy)
   pip_vars_col <- pip_vars[no_att_vars]
