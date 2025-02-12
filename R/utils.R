@@ -230,3 +230,67 @@ num_vars_to_attr <- function(df, num_var, name_var) {
   c_col <- c(num_var, name_var)
   dt[, !..c_col]
 }
+
+
+piperr <- function(message, call = NULL){
+  cli::cli_abort(message = message,
+                 call = call,
+                 class = c("piperr"))
+}
+
+pipwrn <- function(message, call = NULL){
+  cli::cli_warn(message = message,
+                call = call,
+                class = c("pipwrn"))
+}
+
+pipmsg <- function(message, call = NULL){
+  cli::cli_inform(message = message,
+                  call = call,
+                  class = c("pipmsg"))
+}
+
+
+#' Add warnings or errors to a .logenv
+#'
+#' @param cnd error or warning condition
+#'
+#' @return a message in .logenv
+#' @keywords internal
+add_log <- function(cnd) {
+
+  # cat(
+  #   "[", class(cnd)[[1]], "-", class(cnd)[[2]], "] ",
+  #   cnd$message," for ",
+  #   cnd$link, " Error in fun= ",
+  #   deparse(cnd$call[[1]]), "\n",
+  #   sep = "",
+  #   file = "log.txt", append = TRUE
+  # )
+
+  if (!exists(class(cnd)[[2]], envir = .logenv)) {
+
+    rlang::env_poke(.logenv,
+                    class(cnd)[[2]],
+                    list())
+  }
+
+  old_list <- get(class(cnd)[[2]],
+                  envir = .logenv)
+
+  entry = list(paste0("[Func: ", deparse(cnd$call[[1]]),"] ",
+                      cli::ansi_strip(cnd$message)," for ", cnd$link,
+                      sep = ""))
+
+  names(entry) <- class(cnd)[[1]]
+
+  current_list = append(old_list,
+                        entry)
+
+  assign(class(cnd)[[2]],
+         current_list,
+         envir = .logenv)
+
+  invisible()
+
+}
