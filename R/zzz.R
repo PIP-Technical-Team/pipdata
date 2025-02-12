@@ -6,6 +6,12 @@ pipdata_default_options <- list(
 
 .onLoad <- function(libname, pkgname) {
 
+  # make sure .logenv is exported properly-----
+
+  if (!exists(".logenv", envir = asNamespace(pkgname))) {
+    assign(".logenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
+  }
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Options --------
 
