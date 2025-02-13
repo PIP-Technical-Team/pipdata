@@ -44,6 +44,8 @@ dlw_scan_and_validate <- function(
   ## Otherwise, create an empty tibble with columns:
   ##   (survey_id, pipeline_version, file_hash, pip_file_path, status, date_validated)
 
+  ##  (!!) GC Note: tryCatch potential 1 - file read error ----
+
   old_inv <- if (file.exists(pip_raw_inventory_path)) {
     qread(pip_raw_inventory_path)
   } else {
