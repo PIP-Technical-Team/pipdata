@@ -120,3 +120,7 @@ test_that("Read error aborts if skip_err=FALSE", {
   expect_true(length(read_err_idx) == 1)
 })
 
+
+# GC Note: Save errors need to be figured out, not sure how to simulate them.
+
+
