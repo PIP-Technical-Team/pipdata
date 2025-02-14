@@ -52,7 +52,7 @@ test_that("Usage with update_inventory_list=TRUE", {
 })
 
 # 3. skip_err = FALSE ----
-test_that("skip_err=FALSE => directory creation failure aborts", {
+test_that("skip_err=FALSE + directory creation failure aborts", {
 
   # haven't found a way to simuate this yet..
 })
