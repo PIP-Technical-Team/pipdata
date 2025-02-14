@@ -1,19 +1,18 @@
 #' Clean data for wbpip compatibility (high level)
 #'
 #' @param lf list of dataframe returned by `pd_dlw_clean()`
-#' @inheritParams pd_cpfw_merge
 #'
 #' @return list with data.tables
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)
-#' md   <- pd_split_alt_welfare(md, cpfw)
-#' x    <- pd_dlw_clean(md, cpfw)
-#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
+#' ls   <- pd_cpfw_merge(md, cpfw)
+#' ls_c    <- pd_dlw_clean(ls)
+#' ls_f    <- pd_wbpip_clean(lf = ls_c)
 #' summary(y$weight)
 #'
 #'
@@ -31,53 +30,20 @@
 #' y <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #' y[, unique(area)]
 #' }
-pd_wbpip_clean <- function(lf, cpfw) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+pd_wbpip_clean <- function(lf) {
 
   # Computations -------
-  rl <-
-    tryCatch(
-      expr = {
-        # Your code...
-        if (inherits(lf, "list")) {
-          y <- purrr::map(.x = lf, .f = wbpip_clean)
-        } else {
-          y <- wbpip_clean(lf)
-          y <- list(y)
-        }
 
-        names(y) <- sapply(cpfw, `[[`, "cache_id")
-        y
-      }, # end of expr section
+    # if (inherits(lf, "list")) {
+  rl <- purrr::map(.x = lf, .f = wbpip_clean)
+    # } else {
+    #   y <- wbpip_clean(lf)
+    #   y <- list(y)
+    # }
 
-      error = function(e) {
-        glue("Error: {e$message}")
-      }, # end of error section
+    # names(y) <- sapply(cpfw, `[[`, "cache_id")
 
-      warning = function(w) {
-        glue("Warning: {w$message}")
-      }, # end of warning section
 
-      finally = {
-        # Do this at the end before quitting the tryCatch structure...
-      } # end of finally section
-
-    ) # End of trycatch
 
   # Return -------------
   return(rl)
@@ -142,34 +108,20 @@ wbpip_clean <- function(df, ...) {
 #' }
 wbpip_clean.pipmd <- function(df, ...) {
 
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+  md <- copy(df)
 
   # Computations -------
-  df <- wbpip:::md_clean_data(
-    df,
+  md <- wbpip:::md_clean_data(
+    md,
     welfare = "welfare",
     weight = "weight",
     quiet = TRUE
   )$data
 
-  df <- pipload::as_pipmd(df)
+  # df <- pipload::as_pipmd(df) Not needed because it will repeated
 
   # Return -------------
-  return(invisible(df))
+  return(md)
 
 }
 
@@ -198,22 +150,6 @@ wbpip_clean.pipmd <- function(df, ...) {
 #' y[, unique(area)]
 #' }
 wbpip_clean.pipgd <- function(df, ...) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
 
   # Computations -------
   gd_type <- df[, unique(gd_type)]
