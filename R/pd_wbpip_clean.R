@@ -156,6 +156,7 @@ wbpip_clean.pipgd <- function(df, ...) {
   gd <- copy(df)
 
   gd_type <- attributes(gd)$gd_type$values
+
   # gd_type <- df[, unique(gd_type)]
 
   gd_type <- as.numeric(sub("T0", "", gd_type))
@@ -173,14 +174,16 @@ wbpip_clean.pipgd <- function(df, ...) {
       gd_type = gd_type,
       quiet = TRUE
     )
+
   })
 
   ndf <- rbindlist(l = dl,
                    use.names = TRUE,
                    fill = TRUE)
 
-  # ndf <- pipload::as_pipgd(ndf) # Not needed or it will be repeated
+  # attr(ndf) <- attributes(df)
 
+  # ndf <- pipload::as_pipgd(ndf)
 
   # Return -------------
   return(ndf)

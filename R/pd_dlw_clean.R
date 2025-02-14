@@ -345,11 +345,11 @@ pip_vars <- function(dt) {
                    "survey_year",
                    "welfare_type",
                    "distribution_type",
-                   "cpi_data_level",
-                   "ppp_data_level",
-                   "gdp_data_level",
-                   "pce_data_level",
-                   "pop_data_level",
+                   # "cpi_data_level",
+                   # "ppp_data_level",
+                   # "gdp_data_level",
+                   # "pce_data_level",
+                   # "pop_data_level",
                    "gd_type")
 
   # get from internal data `pip_var_type`
