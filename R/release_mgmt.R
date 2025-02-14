@@ -1,4 +1,4 @@
-# 1. Release management functions  List -----
+# 1. Release management functions -----
 ## List all available releases ----
 #' List DLW releases from a master `.qs` file
 #'
@@ -80,31 +80,110 @@ dlw_list_releases <- function(qs_path) {
 
 
 ## Get a specific release ----
-dlw_get_release <- function(json_path, release_label) {
+#' Retrieve a DLW release data frame from `_release/` folder
+#'
+#' This function looks for a single `.qs` file named
+#' \code{pip_raw_inventory_<release_label>.qs} inside the \code{release_folder}/\code{_release} directory
+#' and returns its data frame content. If the file does not exist, an error is raised.
+#'
+#' @param release_folder Character. Path to the main folder that contains a \code{_release/} subfolder.
+#' @param release_label Character. The label used in the file name, e.g. \code{"20250202_INT"}.
+#'
+#' @return A data frame (the content previously saved for that release).
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' df <- dlw_get_release_folder(
+#'   release_folder = "data",
+#'   release_label  = "20250202_INT"
+#' )
+#' }
+dlw_get_release_folder <- function(
+    release_folder,
+    release_label
+) {
+  # 1. Construct the file path
+  release_dir  <- file.path(release_folder, "_release")
+  release_file <- file.path(release_dir, paste0("pip_raw_inventory_", release_label, ".qs"))
 
-  if (!file.exists(json_path)) {
-    stop("Release file not found: ", json_path)
+  # 2. Check existence
+  if (!file.exists(release_file)) {
+    stop("Release file not found: ", release_file, call. = FALSE)
   }
-  master_list <- fromJSON(json_path, simplifyVector = FALSE)
 
+  # 3. Read the data frame
+  df <- qs::qread(release_file)
+
+  # (Optional) If you expect a data frame, verify:
+  if (!is.data.frame(df)) {
+    stop("File '", release_file, "' did not contain a data frame.", call. = FALSE)
+  }
+
+  return(df)
+}
+
+#' Retrieve a DLW release from the master list `.qs` file
+#'
+#' This function reads a named list of releases in a `.qs` file (the master list),
+#' checks that \code{release_label} exists, and reconstructs the data frame from
+#' the stored row-based structure (\code{$data}). If the release has no rows, it returns
+#' an empty data frame with no columns.
+#'
+#' @param qs_path Character. Path to the `.qs` file storing the named list of releases
+#'   (as created by \code{dlw_store_release(..., update_inventory_list=TRUE)}).
+#' @param release_label Character. Which release to fetch, e.g. \code{"20250202_INT"}.
+#'
+#' @return A data frame containing the rows for the requested release. If no rows,
+#'   returns an empty data frame.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' df <- dlw_get_release_list(
+#'   qs_path       = "data/pip_raw_inventory_releases.qs",
+#'   release_label = "20250202_INT"
+#' )
+#' }
+dlw_get_release_list <- function(
+    qs_path,
+    release_label
+) {
+
+  # 1. Check file existence
+  if (!file.exists(qs_path)) {
+    stop("Master list file not found: ", qs_path, call. = FALSE)
+  }
+
+  # 2. Load the master list (named list of releases)
+  master_list <- qs::qread(qs_path)
+
+  # 3. Check if release_label is in the list
   if (!release_label %in% names(master_list)) {
-    stop("Release label '", release_label, "' not found in file: ", json_path)
+    stop("Release label '", release_label, "' not found in file: ", qs_path, call. = FALSE)
   }
 
+  # 4. Extract the release object
   release_obj <- master_list[[release_label]]
-  row_list <- release_obj$data
+  row_list    <- release_obj$data
+
+  # 5. If no rows, return an empty data frame
   if (length(row_list) == 0) {
-    cli_alert_info("Release '{release_label}' has no rows.")
+    cli::cli_alert_info("Release '{release_label}' has no rows.")
     return(data.frame())
   }
 
-  # each element in 'row_list' is a named list => convert to data.frame
-  df_rows <- lapply(row_list, function(x) as.data.frame(x, stringsAsFactors=FALSE))
-  out_df  <- bind_rows(df_rows)
+  # 6. Each element in row_list is a named list => convert each to a data frame
+  df_rows <- lapply(row_list, function(x) {
+    as.data.frame(x, stringsAsFactors = FALSE)
+  })
+  out_df <- dplyr::bind_rows(df_rows)
 
   return(out_df)
 }
 
+
+## Compare two releases ----
 
 
 # 2. Release simulation functions -----
