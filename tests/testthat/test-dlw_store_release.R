@@ -51,3 +51,43 @@ test_that("Usage with update_inventory_list=TRUE", {
   expect_equal(out_list, inventory_data)
 })
 
+# 3. skip_err = FALSE ----
+test_that("skip_err=FALSE => directory creation failure aborts", {
+
+  # haven't found a way to simuate this yet..
+})
+
+
+# 4. skip_err = TRUE but saving inventory list fails ----
+test_that("skip_err=TRUE => saving inventory list fails => we skip & return NULL", {
+  local_dir <- withr::local_tempdir()
+  # We'll create a directory, but we make pip_raw_releases invalid
+  master_path <- ""
+
+  df <- data.frame(a=1:3)
+
+  # Clear logs
+  if ("piperr" %in% ls(.logenv)) rm("piperr", envir=.logenv)
+
+  out <- dlw_store_release(
+    pip_raw_inventory_df  = df,
+    release_label         = "BAD_SAVE",
+    release_folder        = local_dir,
+    update_inventory_list = TRUE,
+    pip_raw_releases      = master_path,
+    skip_err = TRUE,
+    log_err  = TRUE
+  )
+
+  # Should skip & not throw an error
+  expect_null(out)
+
+  release_file <- file.path(local_dir, "_release", "pip_raw_inventory_BAD_SAVE.qs")
+  expect_true(file.exists(release_file)) # The first step can succeed if the folder is valid
+
+  # But the master list was not saved (master_path = "")
+  pip_logs <- get("piperr", envir=.logenv)
+  idx <- which(names(pip_logs) == "store_release_err")
+  expect_true(length(idx) >= 1)
+  expect_match(pip_logs[[idx]], "Could not save master list ''|No valid file path specified")
+})
