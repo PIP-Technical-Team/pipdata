@@ -152,13 +152,19 @@ wbpip_clean.pipmd <- function(df, ...) {
 wbpip_clean.pipgd <- function(df, ...) {
 
   # Computations -------
-  gd_type <- df[, unique(gd_type)]
+
+  gd <- copy(df)
+
+  gd_type <- attributes(gd)$gd_type$values
+  # gd_type <- df[, unique(gd_type)]
+
   gd_type <- as.numeric(sub("T0", "", gd_type))
 
-  areas <- df[, unique(area)]
+  areas <- gd[, unique(area)]
 
   dl <- lapply(areas, function(a) {
-    dtt <- df[area == a]
+
+    dtt <- gd[area == a]
 
     dtt <- wbpip::gd_clean_data(
       dtt,
@@ -172,7 +178,8 @@ wbpip_clean.pipgd <- function(df, ...) {
   ndf <- rbindlist(l = dl,
                    use.names = TRUE,
                    fill = TRUE)
-  ndf <- pipload::as_pipgd(ndf)
+
+  # ndf <- pipload::as_pipgd(ndf) # Not needed or it will be repeated
 
 
   # Return -------------
