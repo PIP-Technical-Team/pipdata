@@ -1,41 +1,82 @@
 # 1. Release management functions  List -----
 ## List all available releases ----
-dlw_list_releases <- function(json_path) {
+#' List DLW releases from a master `.qs` file
+#'
+#' This function reads a named list of releases from a `.qs` file (the master list
+#' that \code{dlw_store_release()} updates) and extracts each release's label.
+#' It then parses the label to extract a \code{year}, \code{month}, and everything after
+#' the underscore as \code{type} (if present).
+#'
+#' @param qs_path Character. Path to the `.qs` file storing a named list of releases
+#'   (as created by \code{dlw_store_release(..., update_inventory_list=TRUE)}).
+#'
+#' @return A data frame with columns:
+#' \describe{
+#'   \item{\code{label}}{Full release label, e.g. "20250202_INT"}
+#'   \item{\code{year}}{Characters 1-4 of label, e.g. "2025"}
+#'   \item{\code{month}}{Characters 5-6 of label, e.g. "02"}
+#'   \item{\code{type}}{Substring after the underscore, or \code{NA} if none found.}
+#' }
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' dlw_list_releases("pip_raw/pip_raw_inventory_releases.qs")
+#' }
+dlw_list_releases <- function(qs_path) {
 
-  if (!file.exists(json_path)) {
-    cli_alert_warning("No JSON file at '{json_path}'. No releases found.")
-    return(data.frame(label=character(), year=character(), type=character()))
+  # 1. Check if file exists ---
+  if (!file.exists(qs_path)) {
+    cli::cli_alert_warning("No .qs file at '{qs_path}'. No releases found.")
+    return(data.frame(
+      label = character(),
+      year  = character(),
+      month = character(),
+      type  = character(),
+      stringsAsFactors = FALSE
+    ))
   }
-  master_list <- fromJSON(json_path, simplifyVector = FALSE)
 
+  # 2. Read the master list (named list) from .qs ---
+  master_list <- qs::qread(qs_path)
+
+  # 3. Extract the release labels (the names of master_list) ---
   release_labels <- names(master_list)
   if (length(release_labels) == 0) {
-    cli_alert_info("No releases found in '{json_path}'.")
-    return(data.frame(label=character(), year=character(), type=character()))
+    cli::cli_alert_info("No releases found in '{qs_path}'.")
+    return(data.frame(
+      label = character(),
+      year  = character(),
+      month = character(),
+      type  = character(),
+      stringsAsFactors = FALSE
+    ))
   }
 
+  # 4. Build output data frame ---
   out_df <- data.frame(
     label = release_labels,
     stringsAsFactors = FALSE
-  ) %>%
-    rowwise() %>%
-    mutate(
+  ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
       year = substr(label, 1, 4),
       month = substr(label, 5, 6),
       type = {
-        # find the underscore
+        # look for underscore
         uscore_pos <- regexpr("_", label)
         if (uscore_pos > 0) {
-          substr(label, uscore_pos+1, nchar(label))
+          substr(label, uscore_pos + 1, nchar(label))
         } else {
           NA_character_
         }
       }
-    ) %>%
-    ungroup()
+    ) |>
+    dplyr::ungroup()
 
   return(out_df)
 }
+
 
 
 ## Get a specific release ----
