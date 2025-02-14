@@ -1,10 +1,15 @@
 
 # 0. Set-up -----
+library(devtools)
+load_all()
 ## I. Directory with dlw files and the dlw inventory: ----
 dlw_raw_dir <- "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_raw_test"
 
 ## II. Directory with the pip_in_dlw directory: ----
 dlw_to_pip_dir <- "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test"
+
+## III. Note that the pip_raw directory should be emptied before starting each simulation
+## "cycle".
 
 ## III. Dependencies ----
 library(syncdr)
@@ -15,7 +20,6 @@ library(digest)
 library(cli)
 library(tictoc)
 library(dplyr)
-library(jsonlite)
 
 
 # 1. Dynamic folder simulation (trigger) ----
@@ -27,14 +31,14 @@ folder_time1 <- paste0(dlw_raw_dir, "/folder_time1")
 folder_time2 <- paste0(dlw_raw_dir, "/folder_time2")
 folder_time3 <- paste0(dlw_raw_dir, "/folder_time3")
 
-# Create the output folders if they do not exist
-if (!dir.exists(folder_time1)) dir.create(folder_time1)
-if (!dir.exists(folder_time2)) dir.create(folder_time2)
-if (!dir.exists(folder_time2)) dir.create(folder_time3)
+# Create the output folders if they do not exist (needs to be done only first time)
+# if (!dir.exists(folder_time1)) dir.create(folder_time1)
+# if (!dir.exists(folder_time2)) dir.create(folder_time2)
+# if (!dir.exists(folder_time3)) dir.create(folder_time3)
 
-# Copy all files from base_folder
-files_to_copy <- list.files(base_folder, pattern = "\\.dta$", full.names = TRUE)
-file.copy(files_to_copy, folder_time1, overwrite = TRUE)
+# Copy all files from base_folder to folder_time1 (needs to be done only first time)
+# files_to_copy <- list.files(base_folder, pattern = "\\.dta$", full.names = TRUE)
+# file.copy(files_to_copy, folder_time1, overwrite = TRUE)
 
 
 
@@ -201,7 +205,9 @@ simulate_changes_exact <- function(
   )))
 }
 
-
+### This generates folder_time2
+# It is possible to re-run it again with different seed.
+# It will 'reset" folder_time2 in any case.
 simulate_changes_exact(
   folder_time1 = folder_time1,
   folder_time2 = folder_time2,
@@ -212,6 +218,8 @@ simulate_changes_exact(
   seed     = 123
 )
 
+### This generates folder_time3
+# Same is true for this instance.
 simulate_changes_exact(
   folder_time1 = folder_time2,
   folder_time2 = folder_time3,
@@ -248,8 +256,8 @@ dlw_qs_folder  = paste0(dlw_to_pip_dir, "/", "dlw_qs")
 pip_raw_folder = paste0(dlw_to_pip_dir, "/", "pip_raw")
 
 
-## II. folder_time1/folder_time2 ----
-dlw_raw_folder = folder_time1
+## II. folder_time1/folder_time2/folder_time3 ----
+dlw_raw_folder = folder_time1 # Change to other folders for generating proper simulation
 
 
 ## III. Convert .dta files to .qs files -----
@@ -263,25 +271,29 @@ new_pip_raw_inv <- dlw_scan_and_validate(
   pip_raw_inventory_path = paste0(pip_raw_folder, "/pip_raw_inventory.qs"),
 )
 
+
+new_pip_raw_inv |> View() # Have a look, this is what the inventory for a single release looks like.
+
 # 5. Store release ----
 dlw_store_release(
-  release_label         = get_current_release(),
-  pip_raw_inventory_df  = new_pip_raw_inv, # output of dlw_scan_and_validate()
-  pip_raw_releases      = paste0(pip_raw_folder, "/pip_raw_releases.json")
-)
+   pip_raw_inventory_df  = new_pip_raw_inv,
+   release_label         = get_current_release(),
+   release_folder        = pip_raw_folder,
+   update_inventory_list = TRUE,
+   pip_raw_releases      = paste0(pip_raw_folder, "/","pip_raw_inventory_releases.qs"),
+   log_err  = TRUE,
+   skip_err = TRUE
+ )
 
 # 6. Release mgmt ----
 
-# Get a release
-release_json <- 'E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/pip_raw/pip_raw_releases.json'
-releases_df <- dlw_list_releases(release_json)
-releases_list <- fromJSON(release_json, simplifyVector = TRUE)
-one_release_df <- releases_list$`20250207_INT`$data
+release_inventory_path <- paste0(pip_raw_folder, "/","pip_raw_inventory_releases.qs")
 
-# View
-new_pip_raw_inv |> View()
-releases_df
-one_release_df |> View()
+## Get a list of releases ----
+releases_df <- dlw_list_releases(release_inventory_path)
+
+## Get a single release ----
+
 
 
 
