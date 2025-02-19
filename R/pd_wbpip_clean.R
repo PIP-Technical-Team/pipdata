@@ -153,39 +153,58 @@ wbpip_clean.pipgd <- function(df, ...) {
 
   # Computations -------
 
-  gd <- copy(df)
-
-  gd_type <- attributes(gd)$gd_type$values
+  gd_type <- attributes(df)$gd_type$values
 
   # gd_type <- df[, unique(gd_type)]
 
   gd_type <- as.numeric(sub("T0", "", gd_type))
 
-  areas <- gd[, unique(area)]
+  attr <- attributes(df)
 
-  dl <- lapply(areas, function(a) {
+  # areas <- df[, unique(area)]
 
-    dtt <- gd[area == a]
+  # dl <- lapply(areas, function(a) {
+  #
+  #   dtt <- gd[area == a]
+  #
+  #   dtt <- wbpip::gd_clean_data(
+  #     dtt,
+  #     welfare = "welfare",
+  #     population = "weight",
+  #     gd_type = gd_type,
+  #     quiet = TRUE
+  #   )
+  #
+  # })
+  #
+  # ndf <- rbindlist(l = dl,
+  #                  use.names = TRUE,
+  #                  fill = TRUE)
 
-    dtt <- wbpip::gd_clean_data(
-      dtt,
-      welfare = "welfare",
-      population = "weight",
-      gd_type = gd_type,
-      quiet = TRUE
-    )
+  dt <- df |>
+    _[, wbpip::gd_clean_data(
+      .SD,
+    welfare = "welfare",
+    population = "weight",
+    gd_type = gd_type,
+    quiet = TRUE
+  ),
+  by = .(area)]
 
-  })
+  attr_to_add <- attributes(df)[!names(attributes(df)) %in% names(attributes(dt))]
 
-  ndf <- rbindlist(l = dl,
-                   use.names = TRUE,
-                   fill = TRUE)
-
-  # attr(ndf) <- attributes(df)
+  dt <- add_attributes(dt, attr_to_add)
 
   # ndf <- pipload::as_pipgd(ndf)
 
   # Return -------------
   return(ndf)
 
+}
+
+add_attributes <- function(dt, new_attrs) {
+  for (name in names(new_attrs)) {
+    attr(dt, name) <- new_attrs[[name]]
+  }
+  return(dt)
 }
