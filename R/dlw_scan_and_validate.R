@@ -47,9 +47,9 @@ dlw_scan_and_validate <- function(
   ##  (!!) GC Note: tryCatch potential 1 - file read error ----
 
   old_inv <- if (file.exists(pip_raw_inventory_path)) {
-    qread(pip_raw_inventory_path)
+    qs::qread(pip_raw_inventory_path)
   } else {
-    cli_alert_info("No previous pip_raw_inventory; creating empty.")
+    cli::cli_alert_info("No previous pip_raw_inventory; creating empty.")
     tibble::tibble(
       survey_id        = character(),
       pipeline_version = integer(),
@@ -70,12 +70,12 @@ dlw_scan_and_validate <- function(
   }
 
   # 3. Scan .qs in dlw_qs_folder (new_info) ----
-  cli_alert_info("Scanning dlw_qs_folder: {dlw_qs_folder}")
+  cli::cli_alert_info("Scanning dlw_qs_folder: {dlw_qs_folder}")
 
   ## List all .qs files. If none exist, no validation is needed -> return early
   qs_files <- list.files(dlw_qs_folder, pattern="\\.qs$", full.names = TRUE)
   if (length(qs_files) == 0) {
-    cli_alert_info("No .qs in {dlw_qs_folder}; nothing to validate.")
+    cli::cli_alert_info("No .qs in {dlw_qs_folder}; nothing to validate.")
     return(invisible(NULL))
   }
 
@@ -114,7 +114,7 @@ dlw_scan_and_validate <- function(
   all_names <- unique(comp_df$survey_id)
   new_inv   <- vector("list", length(all_names))
 
-  cli_progress_bar("Validating & Versioning", total = length(all_names))
+  cli::cli_progress_bar("Validating & Versioning", total = length(all_names))
 
   # We'll iterate over each unique 'survey_id' in comp_df:
   for (i in seq_along(all_names)) {
@@ -138,7 +138,7 @@ dlw_scan_and_validate <- function(
           dplyr::filter(survey_id==nm, pipeline_version==oldr$pipeline_version) |>
           dplyr::mutate(status="missing", pip_file_path=NA)
       }
-      cli_progress_update()
+      cli::cli_progress_update()
       next
     }
 
@@ -147,15 +147,15 @@ dlw_scan_and_validate <- function(
       # read the .qs file
       qs_path <- file.path(dlw_qs_folder, paste0(nm, ".qs"))
       df <- tryCatch(
-        qread(qs_path),
+        qs::qread(qs_path),
         error = function(e) NULL  # If read fails, 'df' is NULL
       )
 
       # If we can't read the file, we skip it or mark it invalid
       if (is.null(df)) {
-        cli_alert_warning("Cannot read {qs_path}")
+        cli::cli_alert_warning("Cannot read {qs_path}")
         new_inv[[i]] <- NULL
-        cli_progress_update()
+        cli::cli_progress_update()
         next
       }
 
@@ -172,9 +172,9 @@ dlw_scan_and_validate <- function(
       }
       if (!is_valid) {
         ### If validation fails, we do not add it to new_inv
-        cli_alert_danger("Validation failed for {nm}: {fail_reason}")
+        cli::cli_alert_danger("Validation failed for {nm}: {fail_reason}")
         new_inv[[i]] <- NULL
-        cli_progress_update()
+        cli::cli_progress_update()
         next
       }
 
@@ -183,7 +183,7 @@ dlw_scan_and_validate <- function(
       if (st == "new") {
         new_ver <- 1
       } else {
-        ex_vers <- row_i %>% dplyr::filter(!is.na(pipeline_version)) %>% dplyr::pull(pipeline_version)
+        ex_vers <- row_i |> dplyr::filter(!is.na(pipeline_version)) |> dplyr::pull(pipeline_version)
         new_ver <- ifelse(length(ex_vers) == 0, 1, max(ex_vers) + 1)
       }
       vers_str  <- sprintf("v%02d", new_ver)
@@ -191,7 +191,7 @@ dlw_scan_and_validate <- function(
       finalpath <- file.path(pip_raw_folder, finalname)
 
       ## Copy validated file to pip_raw_folder
-      qsave(df, finalpath)
+      qs::qsave(df, finalpath)
 
       ## Add new row to new_inv
       new_inv[[i]] <- tibble::tibble(
@@ -202,11 +202,11 @@ dlw_scan_and_validate <- function(
         status           = st,
         date_validated   = Sys.time()
       )
-      cli_progress_update()
+      cli::cli_progress_update()
     }
   }
 
-  cli_progress_done()
+  cli::cli_progress_done()
 
   ## 5.4 merge new_inv rows into final_inv ----
   ## Combine all new_inv items into a single data frame.
@@ -214,8 +214,8 @@ dlw_scan_and_validate <- function(
     pipload::survey_id_to_vars()
 
   # 6. Save new_inv as the new pip_raw_inventory ----
-  qsave(final_inv, pip_raw_inventory_path)
-  cli_alert_success("Created new pip_raw_inventory at: {pip_raw_inventory_path}")
+  qs::qsave(final_inv, pip_raw_inventory_path)
+  cli::cli_alert_success("Created new pip_raw_inventory at: {pip_raw_inventory_path}")
 
   return(invisible(final_inv))
 }

@@ -12,8 +12,8 @@
 #' @examples
 #' \dontrun{
 #'  dlw_dta_to_qs(
-#'  dlw_raw_folder = "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/dlw_raw/folder_time1",
-#'  dlw_qs_folder  = "E:/PovcalNet/01.personal/wb622077/pipdata_test/dlw_to_pip_test/dlw_qs"
+#'  dlw_raw_folder = "dlw_raw/folder_time1",
+#'  dlw_qs_folder  = "dlw_qs"
 #'  }
 #'
 dlw_dta_to_qs <- function(
