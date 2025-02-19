@@ -293,7 +293,9 @@ release_inventory_path <- paste0(pip_raw_folder, "/","pip_raw_inventory_releases
 releases_df <- dlw_list_releases(release_inventory_path)
 
 ## Get a single release ----
+dlw_get_release_folder(pip_raw_folder, get_current_release()) |> as_tibble()
 
+## Compare releases ----
 
 
 
