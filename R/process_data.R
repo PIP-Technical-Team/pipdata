@@ -51,7 +51,7 @@ process_data.pipmd <- function(df, pfw, ...) {
   cpfw <- get_country_pfw(df, pfw)
   # x    <- pd_dlw_clean(df, cpfw) # Andres version
   x    <- pd_dlw_clean(df)
-  y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
+  y    <- pd_wbpip_clean(lf = x)
 
 
 
@@ -87,7 +87,7 @@ process_data.pipgd <- function(df, pfw, ...) {
   cpfw <- get_country_pfw(df, pfw)
   # x    <- pd_dlw_clean(df, cpfw) # Andres version
   x    <- pd_dlw_clean(df)
-  y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
+  y    <- pd_wbpip_clean(lf = x)
 
 
 

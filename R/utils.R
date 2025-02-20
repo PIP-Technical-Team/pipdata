@@ -303,3 +303,21 @@ add_log <- function(cnd) {
   invisible()
 
 }
+
+#' Add new attributes to data.table
+#'
+#' @param dt data.table which is missing the new attributes
+#' @param new_attrs list with new attributes
+#'
+#' @return data.table
+#' @export
+add_attributes <- function(dt, new_attrs) {
+
+  for (name in names(new_attrs)) {
+
+    attr(dt, name) <- new_attrs[[name]]
+
+  }
+
+  return(dt)
+}

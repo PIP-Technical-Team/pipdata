@@ -151,60 +151,79 @@ wbpip_clean.pipmd <- function(df, ...) {
 #' }
 wbpip_clean.pipgd <- function(df, ...) {
 
-  # Computations -------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Select gd_type --------
 
+  gd_type <- get_gd_type(df)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Clean per area --------
+
+  dt <- area_gd_clean(df, gd_type)
+
+  # Return -------------
+  return(dt)
+
+}
+
+
+#' Find group data type for cleaning
+#'
+#' @param df data.table
+#'
+#' @return data.table
+#' @keywords internal
+get_gd_type <- function(df) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   gd_type <- attributes(df)$gd_type$values
-
-  # gd_type <- df[, unique(gd_type)]
 
   gd_type <- as.numeric(sub("T0", "", gd_type))
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(gd_type)
+
+}
+
+#' Clean group data per area
+#'
+#' @param df data.frame
+#' @param gd_type group data type
+#'
+#' @return data.table
+#' @keywords internal
+area_gd_clean <- function(df, gd_type) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   attr <- attributes(df)
-
-  # areas <- df[, unique(area)]
-
-  # dl <- lapply(areas, function(a) {
-  #
-  #   dtt <- gd[area == a]
-  #
-  #   dtt <- wbpip::gd_clean_data(
-  #     dtt,
-  #     welfare = "welfare",
-  #     population = "weight",
-  #     gd_type = gd_type,
-  #     quiet = TRUE
-  #   )
-  #
-  # })
-  #
-  # ndf <- rbindlist(l = dl,
-  #                  use.names = TRUE,
-  #                  fill = TRUE)
 
   dt <- df |>
     _[, wbpip::gd_clean_data(
       .SD,
-    welfare = "welfare",
-    population = "weight",
-    gd_type = gd_type,
-    quiet = TRUE
-  ),
-  by = .(area)]
+      welfare = "welfare",
+      population = "weight",
+      gd_type = gd_type,
+      quiet = TRUE
+    ),
+    by = .(area)]
 
-  attr_to_add <- attributes(df)[!names(attributes(df)) %in% names(attributes(dt))]
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Assign missing attributes --------
+
+  attr_to_add <- attr[!names(attr) %in% names(attributes(dt))]
 
   dt <- add_attributes(dt, attr_to_add)
 
-  # ndf <- pipload::as_pipgd(ndf)
-
-  # Return -------------
-  return(ndf)
-
-}
-
-add_attributes <- function(dt, new_attrs) {
-  for (name in names(new_attrs)) {
-    attr(dt, name) <- new_attrs[[name]]
-  }
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
+
 }
