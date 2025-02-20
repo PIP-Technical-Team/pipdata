@@ -4,13 +4,10 @@
 \alias{pd_wbpip_clean}
 \title{Clean data for wbpip compatibility (high level)}
 \usage{
-pd_wbpip_clean(lf, cpfw)
+pd_wbpip_clean(lf)
 }
 \arguments{
 \item{lf}{list of dataframe returned by \code{pd_dlw_clean()}}
-
-\item{cpfw}{list (more than one if there are two or more
-welfare types in the survey)}
 }
 \value{
 list with data.tables
@@ -20,12 +17,12 @@ Clean data for wbpip compatibility (high level)
 }
 \examples{
 \dontrun{
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
-md   <- pd_split_alt_welfare(md, cpfw)
-x    <- pd_dlw_clean(md, cpfw)
-y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
+ls   <- pd_cpfw_merge(md, cpfw)
+ls_c    <- pd_dlw_clean(ls)
+ls_f    <- pd_wbpip_clean(lf = ls_c)
 summary(y$weight)
 
 

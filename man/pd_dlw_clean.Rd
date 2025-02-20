@@ -17,6 +17,7 @@ Clean data from datalibweb structure (High level)
 }
 \examples{
 pfw  <- pipload::pip_load_aux("pfw")
+# dt   <- pipload::pip_load_dlw(survey_id = "BRA_2008_PNAD_v02_M_v04_A_GMD_ALL")
 
 gd    <- pipload::pip_load_dlw("CHN", 2015)
 cpfw  <- get_country_pfw(gd, pfw)
