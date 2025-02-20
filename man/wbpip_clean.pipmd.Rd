@@ -18,13 +18,11 @@ data.table
 wbpip_clean method for pipmd class (microdata)
 }
 \examples{
-\dontrun{
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-pfw <- pipload::pip_load_aux("pfw")
+md   <- pipload::pip_load_dlw(country = "PHL", 2012)
+pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
-md   <- pd_split_alt_welfare(md, cpfw)
-x <- pd_dlw_clean(md, cpfw)
-y <- wbpip_clean(x[[1]])
-summary(y$weight)
-}
+ls   <- pd_cpfw_merge(md, cpfw)
+ls_c    <- pd_dlw_clean(ls)
+ls_f    <- wbpip_clean(ls_c[[1]])
+summary(ls_f$weight)
 }
