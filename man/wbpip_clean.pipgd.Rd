@@ -19,6 +19,7 @@ wbpip_clean method for pipgd class (group data)
 }
 \examples{
 gd   <- pipload::pip_load_dlw("CHN", 2015)
+pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(gd, pfw)
 ls   <- pd_cpfw_merge(gd, cpfw)
 ls_c    <- pd_dlw_clean(ls)
