@@ -1,7 +1,6 @@
 #' deflate welfare to add_pip_vars (Higher level)
 #'
 #' @param lf list of dataframes with welfare variable called welfare
-#' @inheritParams pd_cpfw_merge
 #' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
 #' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`
 #' @param  pop dataframe from `pipload::pip_load_aux("pop")`
@@ -21,7 +20,7 @@
 #' x    <- pd_dlw_clean(md, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
-#' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' pd_add_pip_vars(lf = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
@@ -30,7 +29,7 @@
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
-#' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' pd_add_pip_vars(lf = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -38,65 +37,27 @@
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
-#' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' pd_add_pip_vars(lf = y, cpi = cpi, ppp = ppp, pop = pop)
 #' }
-pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+pd_add_pip_vars <- function(lf, cpi, ppp, pop) {
 
   # Computations -------
-  rl <-
-    tryCatch(
-      expr = {
-        # Your code...
-        if (inherits(lf, "list")) {
-          y <- purrr::map2(.x = lf,
-                           .y =  cpfw,
-                           .f = add_pip_vars,
-                           cpi = cpi,
-                           ppp = ppp,
-                           pop = pop)
-        } else {
-          y <- add_pip_vars(df = lf,
-                           cpfw = cpfw,
-                           cpi = cpi,
-                           ppp = ppp,
-                           pop = pop)
-          y <- list(y)
-        }
-        names(y) <- sapply(cpfw, `[[`, "cache_id")
 
-        y
-      }, # end of expr section
-
-      error = function(e) {
-        glue("Error: {e}")
-      }, # end of error section
-
-      warning = function(w) {
-        glue("Warning: {w$message}")
-      }, # end of warning section
-
-      finally = {
-        # Do this at the end before quitting the tryCatch structure...
-      } # end of finally section
-
-    ) # End of trycatch
-
+    # if (inherits(lf, "list")) { # It is always a list by default
+      rl <- purrr::map(.x = lf,
+                       .f = add_pip_vars,
+                       cpi = cpi,
+                       ppp = ppp,
+                       pop = pop)
+    # } else {
+    #   y <- add_pip_vars(df = lf,
+    #                    cpfw = cpfw,
+    #                    cpi = cpi,
+    #                    ppp = ppp,
+    #                    pop = pop)
+    #   y <- list(y)
+    # }
+    # names(y) <- sapply(cpfw, `[[`, "cache_id")
 
   # Return -------------
   return(rl)
@@ -105,7 +66,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 
 
 #' Estimate welfare in PPP values (lower level)
-#' @inheritParams pd_cpfw_merge
+#'
 #' @param  df  dataframe from `pd_wbpip_clean()`
 #' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
 #' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`
@@ -126,7 +87,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(md, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
-#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -134,7 +95,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
-#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -142,25 +103,10 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
-#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpi = cpi, ppp = ppp, pop = pop)
 #' }
-add_pip_vars <- function(df, cpfw, cpi, ppp, pop, ...) {
-  UseMethod("add_pip_vars")
-}
+add_pip_vars <- function(df, cpi, ppp, pop, ...) {
 
-
-#' default S3 method for add_pip_vars
-#'
-#' @inheritParams add_pip_vars
-#'
-#' @return data.table.
-#' @export
-add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
 
   # Defenses -----------
   # if (inherits(df, "data.table")) {
@@ -183,18 +129,6 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
 
   }
 
-
-
-
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
 
   # Computations -------
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
