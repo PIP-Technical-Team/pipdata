@@ -134,13 +134,7 @@ add_pip_vars <- function(df, cpi, ppp, pop, ...) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## reporting level variable --------
 
-  dl_var        <- grep("data_level", names(df), value = TRUE) # data_level vars
-  ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(df, .x))
-  select_var    <- dl_var[which.max(ordered_level)]
-
-  df[, reporting_level := get(select_var)]
-
-  setorder(df, reporting_level)
+  df <- reporting_lvl(df)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflated data --------
@@ -259,6 +253,31 @@ add_pip_vars <- function(df, cpi, ppp, pop, ...) {
 
 }
 
+#' Identify reporting level from data_level variables
+#'
+#' @param dt data.table
+#'
+#' @return data.table with reporting_level variable
+#' @keywords internal
+reporting_lvl <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dl_var        <- grep("data_level", names(dt), value = TRUE) # data_level vars
+  ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(dt, .x))
+  select_var    <- dl_var[which.max(ordered_level)]
+
+  dt[, reporting_level := get(select_var)]
+
+  setorder(dt, reporting_level)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
 
 
 
