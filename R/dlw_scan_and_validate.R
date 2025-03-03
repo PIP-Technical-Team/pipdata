@@ -161,18 +161,38 @@ dlw_scan_and_validate <- function(
 
       ### (!!) Validation ----
       ### Validate with optional user-supplied function (HERE IS WHERE VALIDATION_FN ENTERS)
-      is_valid <- TRUE
-      fail_reason <- NA
-      if (!is.null(validation_fn)) {
-        check <- validation_fn(df)
-        if (!check$is_valid) {
-          is_valid    = FALSE
-          fail_reason = check$reason
-        }
+      # is_valid <- TRUE
+      # fail_reason <- NA
+      # if (!is.null(validation_fn)) {
+      #   check <- validation_fn(df)
+      #   if (!check$is_valid) {
+      #     is_valid    = FALSE
+      #     fail_reason = check$reason
+      #   }
+      # }
+      # if (!is_valid) {
+      #   ### If validation fails, we do not add it to new_inv
+      #   cli::cli_alert_danger("Validation failed for {nm}: {fail_reason}")
+      #   new_inv[[i]] <- NULL
+      #   cli::cli_progress_update()
+      #   next
+      # }
+
+      md_type = sub(".*_(.*)", "\\1", nm)
+
+      if (md_type == "GPWG"){
+        check <- dlw_validation_gpwg(df, nm)
+      } else if (md_type == "GROUP") {
+        check <- md_validation_group(df, nm)
+      } else if (md_type == "BIN") {
+        check <- dlw_validation_bin(df, nm)
       }
-      if (!is_valid) {
-        ### If validation fails, we do not add it to new_inv
-        cli::cli_alert_danger("Validation failed for {nm}: {fail_reason}")
+
+      if (any(check[["type"]] == "error")) {
+
+        check <- check[type == "error", .(message)]
+        cli::cli_alert_danger("Validation failed for {nm} : {check$message}")
+
         new_inv[[i]] <- NULL
         cli::cli_progress_update()
         next
