@@ -146,22 +146,7 @@ add_pip_vars <- function(df, cpi, ppp, pop, ...) {
   # ppp_table <- ppp_table[ppp_default == TRUE]
 
   # Merge survey table with PPP (left join)
-  ppp           <- ppp_to_wide(ppp = ppp)
-  ppp_versions  <- attr(ppp, "ppp_versions")
-  ppp_years     <-
-    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
-    unique() |>
-    sort()
-
-
-
-  df <- joyn::merge(df, ppp,
-                    by         = c("country_code", "ppp_data_level"),
-                    match_type = "m:1",
-                    keep       = "left",
-                    reportvar  = FALSE,
-                    verbose    = FALSE
-  )
+  df <- add_ppp(df,ppp)
 
   # Merge survey table with CPI (left join)
 
@@ -279,7 +264,36 @@ reporting_lvl <- function(dt) {
 
 }
 
+add_ppp <- function(dt, ppp) {
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Merge survey table with PPP (left join)
+  ppp           <- ppp_to_wide(ppp = ppp)
+  ppp_versions  <- attr(ppp, "ppp_versions")
+  ppp_years     <-
+    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
+    unique() |>
+    sort()
+
+
+
+  dt <- joyn::merge(dt, ppp,
+                    by         = c("country_code", "ppp_data_level"),
+                    match_type = "m:1",
+                    keep       = "left",
+                    reportvar  = FALSE,
+                    verbose    = FALSE
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
 
 
 #' Convert PPP data from `pipload` to wide format
@@ -296,31 +310,16 @@ reporting_lvl <- function(dt) {
 ppp_to_wide <- function(ppp) {
 
 #   ____________________________________________________________________________
-#   on.exit                                                                 ####
-  on.exit({
-
-  })
-
-#   ____________________________________________________________________________
 #   Defenses                                                           ####
   if (inherits(ppp, "data.table")) {
     ppp <- copy(ppp)
   } else {
     ppp <- qDT(ppp)
   }
-  stopifnot( exprs = {
 
-    }
-  )
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Identify ppp versions --------
 
-#   ____________________________________________________________________________
-#   Early returns                                                           ####
-  if (FALSE) {
-    return()
-  }
-
-#   ____________________________________________________________________________
-#   Computations                                                            ####
   ppp[,
       ppp_version := {
         x <- paste0("ppp_", ppp_year, "_", release_version, "_", adaptation_version)
@@ -330,12 +329,18 @@ ppp_to_wide <- function(ppp) {
 
   ppp_v <- ppp[, unique(ppp_version)]
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Transfor ppp data.table from long to wide --------
+
   ppp <- dcast(ppp,
                formula = country_code + ppp_data_level ~ ppp_version,
                value.var = "ppp",
   )
-  setattr(ppp, "ppp_versions", ppp_v)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Add all ppp_version to attributes --------
+
+  setattr(ppp, "ppp_versions", ppp_v)
 
 
 #   ____________________________________________________________________________
