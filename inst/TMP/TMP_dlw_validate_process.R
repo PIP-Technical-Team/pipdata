@@ -296,7 +296,3 @@ releases_df <- dlw_list_releases(release_inventory_path)
 dlw_get_release_folder(pip_raw_folder, get_current_release()) |> as_tibble()
 
 ## Compare releases ----
-
-
-
-
