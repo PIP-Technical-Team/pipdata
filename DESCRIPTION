@@ -20,7 +20,9 @@ Imports:
     pipfun (>= 0.0.0.9017),
     pipload (>= 0.2.0.9005),
     purrr,
-    wbpip (>= 0.0.3)
+    wbpip (>= 0.0.3),
+    data.validator,
+    assertr
 Suggests: 
     knitr,
     rmarkdown,
