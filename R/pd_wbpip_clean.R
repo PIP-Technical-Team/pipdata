@@ -189,6 +189,18 @@ area_gd_clean <- function(df, gd_type) {
 
   attr <- attributes(df)
 
+  # gdf <- df # Did speed testing and it was slower than data.table
+  #   dplyr::group_by(area)
+  #
+  # dt_c <- gdf |>
+  #   collapse::fmutate(wbpip::gd_clean_data(.data,
+  #     welfare = "welfare",
+  #     population = "weight",
+  #     gd_type = gd_type,
+  #     quiet = TRUE
+  #   ))|>
+  #   dplyr::ungroup()
+
   dt <- df |>
     _[, wbpip::gd_clean_data(
       .SD,
@@ -198,6 +210,8 @@ area_gd_clean <- function(df, gd_type) {
       quiet = TRUE
     ),
     by = .(area)]
+
+  data.table::setcolorder(dt,"area",after = "gender")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Assign missing attributes --------
