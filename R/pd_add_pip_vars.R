@@ -43,6 +43,9 @@ pd_add_pip_vars <- function(lf, cpi, ppp, pop) {
 
   # Computations -------
 
+  # PPP manipulation
+  ppp           <- ppp_to_wide(ppp = ppp) # Send to before loop starts
+
     # if (inherits(lf, "list")) { # It is always a list by default
       rl <- purrr::map(.x = lf,
                        .f = add_pip_vars,
@@ -134,7 +137,7 @@ add_pip_vars <- function(df, cpi, ppp, pop, ...) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## reporting level variable --------
 
-  df <- reporting_lvl(df)
+  df <- add_rep_lvl(df)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflated data --------
@@ -184,6 +187,12 @@ add_pip_vars <- function(df, cpi, ppp, pop, ...) {
 
 ###  .......................................................
 ###  Check CPI and PPP years                        ####
+
+  ppp_versions  <- attr(ppp, "ppp_versions")
+  ppp_years     <-
+    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
+    unique() |>
+    sort()
 
   if (setequal(cpi_years , ppp_years)) {
     base_years <-  cpi_years # deflate years
@@ -244,16 +253,17 @@ add_pip_vars <- function(df, cpi, ppp, pop, ...) {
 #'
 #' @return data.table with reporting_level variable
 #' @keywords internal
-reporting_lvl <- function(dt) {
+add_rep_lvl <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   dl_var        <- grep("data_level", names(dt), value = TRUE) # data_level vars
   ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(dt, .x))
-  select_var    <- dl_var[which.max(ordered_level)]
+  report_lvl_cpfw <- as.numeric(attributes(dt)$reporting_level)
+  select_var    <- dl_var[ordered_level==report_lvl_cpfw]
 
-  dt[, reporting_level := get(select_var)]
+  dt[, reporting_level := get(select_var[1])]
 
   setorder(dt, reporting_level)
 
@@ -270,18 +280,10 @@ add_ppp <- function(dt, ppp) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Merge survey table with PPP (left join)
-  ppp           <- ppp_to_wide(ppp = ppp)
-  ppp_versions  <- attr(ppp, "ppp_versions")
-  ppp_years     <-
-    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
-    unique() |>
-    sort()
+  ppp_c <- ppp[ppp$country_code==attributes(dt)$country_code$values]
 
-
-
-  dt <- joyn::merge(dt, ppp,
-                    by         = c("country_code", "ppp_data_level"),
+  dt <- joyn::merge(dt, ppp_c,
+                    by         = c("ppp_data_level"), # Eliminate country_code because it is per survey
                     match_type = "m:1",
                     keep       = "left",
                     reportvar  = FALSE,
