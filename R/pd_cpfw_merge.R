@@ -93,7 +93,7 @@ cpfw_merge <- function(dt, cpfw, ...){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Transform unique variables into attributes --------
 
-  dt_f <- col_to_attr(dt_c)
+  dt_f <- col_to_attr(dt_c, cpfw)
 
   return(dt_f)
 
@@ -478,11 +478,11 @@ add_dist_type.pipgd <- function(dt, cpfw) {
 
 #' Transform unique value variable into attributes
 #'
-#' @param dt data.table
+#' @inheritParams cpfw_merge
 #'
 #' @return data.table
 #' @keywords internal
-col_to_attr <- function(dt) {
+col_to_attr <- function(dt, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -500,8 +500,7 @@ col_to_attr <- function(dt) {
                # "gdp_data_level",
                # "pce_data_level",
                # "pop_data_level",
-               "gd_type",
-               "alt_welfare")
+               "gd_type")
 
   vars <- names(dt)
 
@@ -510,6 +509,10 @@ col_to_attr <- function(dt) {
   # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
 
   dt <- all_cols_to_attr(dt, fixed_cols = fixed_vars)
+
+  # Add reporting level from cpfw
+
+  attr(dt, "reporting_level") <- cpfw$reporting_level
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

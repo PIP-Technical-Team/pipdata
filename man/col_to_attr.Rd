@@ -4,10 +4,12 @@
 \alias{col_to_attr}
 \title{Transform unique value variable into attributes}
 \usage{
-col_to_attr(dt)
+col_to_attr(dt, cpfw)
 }
 \arguments{
 \item{dt}{data.table}
+
+\item{cpfw}{data.table with country/survey PFW}
 }
 \value{
 data.table
