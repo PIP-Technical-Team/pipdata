@@ -1,9 +1,9 @@
 #' Deflation of welfare using auxiliary data
 #'
 #' @param lf cleaned DLW surveys from `pd_wbpip_clean`
-#' @param cpi aux cpi
-#' @param ppp aux_ppp
-#' @param pop aux_pop
+#' @param cpi aux_cpi from `pipload::pip_load_aux`
+#' @param ppp aux_ppp from `pipload::pip_load_aux`
+#' @param pop aux_pop from `pipload::pip_load_aux`
 #'
 #' @return list
 #' @export
@@ -28,7 +28,12 @@ pd_deflation <- function(lf, cpi, ppp, pop) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # PPP manipulation
-  ppp           <- ppp_to_wide(ppp = ppp)
+  ppp <- ppp_to_wide(ppp = ppp)
+
+  # CPI manipulation
+  if ("cpi2005_SM21" %in% names(cpi)) {
+    setnames(cpi, "cpi2005_SM21", "cpi2005") # temporal solution
+  }
 
   # deflate per list
   rl <- purrr::map(.x = lf,
@@ -46,13 +51,13 @@ pd_deflation <- function(lf, cpi, ppp, pop) {
 
 #' Deflation of welfare using auxiliary data (lower level)
 #'
-#' @param df data.table of cleaned DLW survey from `wbpip_clean`
+#' @param dt data.table of cleaned DLW survey from `wbpip_clean`
 #' @inheritParams pd_deflation
 #' @param ... extra arguments
 #'
 #' @return data.table
 #' @export
-deflation <- function(df,  cpi, ppp, pop,...) {
+deflation <- function(dt,  cpi, ppp, pop,...) {
   UseMethod("deflation")
 }
 
@@ -61,7 +66,7 @@ deflation <- function(df,  cpi, ppp, pop,...) {
 #' @inheritParams deflation
 #' @return data.table
 #' @export
-deflation.pipmd <- function(df,  cpi, ppp, pop,...) {
+deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -85,22 +90,23 @@ deflation.pipmd <- function(df,  cpi, ppp, pop,...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Add reporting level --------
 
-  df <- add_rep_lvl(df)
+  dt <- add_rep_lvl(dt)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflation --------
 
   ### Merge survey with ppp ---------
-  df <- add_ppp(df, ppp)
+  dt <- add_ppp(dt, ppp)
 
+  ### Merge  ---------
 
-
+  dt <- add_cpi(dt, cpi)
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(TRUE)
+  return(dt)
 
 }
 
@@ -109,7 +115,7 @@ deflation.pipmd <- function(df,  cpi, ppp, pop,...) {
 #' @inheritParams deflation
 #' @return data.table
 #' @export
-deflation.pipgd <- function(df,  cpi, ppp, pop,...) {
+deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -208,7 +214,7 @@ add_rep_lvl <- function(dt) {
 #' Merge survey with PPP
 #'
 #' @param dt data.table of the survey
-#' @param ppp data.table of all ppp
+#' @inheritParams pd.deflation
 #'
 #' @return data.table with specific ppp
 #' @keywords internal
@@ -226,6 +232,57 @@ add_ppp <- function(dt, ppp) {
                     keep       = "left",
                     reportvar  = FALSE,
                     verbose    = FALSE
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Merge survey with CPI
+#'
+#' @param dt
+#' @inheritParams pd.deflation
+#'
+#' @return data.table with all cpi
+#' @keywords internal
+add_cpi <- function(dt, cpi) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  ### Country cpi ---------
+
+  con <- attributes(dt)$country_code$value
+  svy_year <- attributes(dt)$survey_year$value
+  svy_acr <- attributes(dt)$survey_acronym$value
+
+  cpi_c <- cpi[(country_code == con &
+              survey_year == svy_year &
+              survey_acronym == svy_acr)] # Check that is only one value?
+
+  ### Variables and year ---------
+
+  cpi_vars <- grep("^cpi[0-9]{4}$", names(cpi_c), value = TRUE)
+
+  cpi_years <- gsub("cpi([0-9]+)", "\\1", cpi_vars)|> unique() |> sort()
+
+  attr(dt, "cpi_years") <- cpi_years
+
+  cpi_to_keep <- c("cpi_data_level", cpi_vars)
+  cpi_c <- cpi_c[, ..cpi_to_keep]
+
+  ### Join all cpi ---------
+
+  dt <- joyn::merge(dt, cpi_c,
+                    by = "cpi_data_level",
+                    match_type = "m:1",
+                    keep = "left",
+                    reportvar = FALSE,
+                    verbose = FALSE
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
