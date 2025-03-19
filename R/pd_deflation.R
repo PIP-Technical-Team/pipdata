@@ -61,8 +61,6 @@ deflation <- function(df,  cpi, ppp, pop,...) {
 #' @inheritParams deflation
 #' @return data.table
 #' @export
-#'
-#' @examples
 deflation.pipmd <- function(df,  cpi, ppp, pop,...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,8 +109,6 @@ deflation.pipmd <- function(df,  cpi, ppp, pop,...) {
 #' @inheritParams deflation
 #' @return data.table
 #' @export
-#'
-#' @examples
 deflation.pipgd <- function(df,  cpi, ppp, pop,...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
