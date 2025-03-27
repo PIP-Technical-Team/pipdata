@@ -102,6 +102,10 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
   dt <- add_cpi(dt, cpi)
 
+  ### Welfare LCU ---------
+
+  dt <- welfare_lcu(dt)
+
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -285,6 +289,27 @@ add_cpi <- function(dt, cpi) {
                     verbose = FALSE
   )
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Create welfare_lcu variable
+#'
+#' @inheritParams pd_deflation
+#'
+#' @return data.table
+#' @keywords internal
+welfare_lcu <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dt[,
+     welfare_lcu := welfare
+  ]
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
