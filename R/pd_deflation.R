@@ -95,12 +95,9 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflation --------
 
-  ### Merge survey with ppp ---------
-  dt <- add_ppp(dt, ppp)
+  ### Merge survey with ppp and cpi ---------
 
-  ### Merge  ---------
-
-  dt <- add_cpi(dt, cpi)
+  dt <- add_aux(dt, ppp, cpi)
 
   ### Welfare LCU ---------
 
@@ -215,6 +212,57 @@ add_rep_lvl <- function(dt) {
 
 }
 
+#' Add auxiliary data for deflation
+#'
+#' @inheritParams pd_deflate
+#' @return data.table
+#' @keywords internal
+add_aux <- function(dt, ppp ,cpi) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  tryCatch(
+    expr = {
+
+      ### Merge ppp ---------
+
+      dt <- add_ppp(dt, ppp)
+
+      ### Merge cpi ---------
+
+      dt <- add_cpi(dt, cpi)
+
+      ### Check and add base years
+
+      dt <- cpi_ppp_years(dt, ppp)
+
+    },
+    cpi_ppp = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
+
+    }
+
+  )
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
 #' Merge survey with PPP
 #'
 #' @param dt data.table of the survey
@@ -296,6 +344,51 @@ add_cpi <- function(dt, cpi) {
 
 }
 
+#' Identify base years for deflation
+#'
+#' @inheritParams pd_deflation
+#'
+#' @return data.table
+#' @keywords internal
+cpi_ppp_years <- function(dt, ppp) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ppp_versions  <- attr(ppp, "ppp_versions")
+  ppp_years     <-
+    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
+    unique() |>
+    sort()
+
+  cpi_years <- attributes(dt)$cpi_years
+
+  if (setequal(cpi_years , ppp_years)) {
+
+    attr(dt, "base_years") <-  cpi_years # deflate years
+
+  } else {
+    attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
+
+    svy <- attributes(dt)$survey_id$values
+    cli::cli_abort(message = "CPI and PPP years available do NOT match.
+                          Only the intersect will be used: {.field {base_years}}",
+                   class = c("cpi_ppp", "piperr"),
+                   log = log_err,
+                   skip = skip_err,
+                   link =  svy,
+                   call = sys.call())
+
+    }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+
 #' Create welfare_lcu variable
 #'
 #' @inheritParams pd_deflation
@@ -316,3 +409,4 @@ welfare_lcu <- function(dt) {
   return(dt)
 
 }
+
