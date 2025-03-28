@@ -322,7 +322,8 @@ add_cpi <- function(dt, cpi) {
 
   cpi_years <- gsub("cpi([0-9]+)", "\\1", cpi_vars)|> unique() |> sort()
 
-  attr(dt, "cpi_years") <- cpi_years
+  # attr(dt, "cpi_years") <- cpi_years
+  setattr(dt, "cpi_years", cpi_years)
 
   cpi_to_keep <- c("cpi_data_level", cpi_vars)
   cpi_c <- cpi_c[, ..cpi_to_keep]
@@ -365,10 +366,12 @@ cpi_ppp_years <- function(dt, ppp, log_err=TRUE, skip_err=TRUE) {
 
   if (setequal(cpi_years , ppp_years)) {
 
-    attr(dt, "base_years") <-  cpi_years # deflate years
+    # attr(dt, "base_years") <-  cpi_years # deflate years
+    setattr(dt, "base_years",  cpi_years) # deflate years
 
   } else {
-    attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
+    # attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
+    setattr(dt, "base_years",intersect(cpi_years , ppp_years))
 
     svy <- attributes(dt)$survey_id$values
     cli::cli_abort(message = "CPI and PPP years available do NOT match.
