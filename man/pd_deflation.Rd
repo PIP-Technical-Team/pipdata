@@ -9,11 +9,11 @@ pd_deflation(lf, cpi, ppp, pop)
 \arguments{
 \item{lf}{cleaned DLW surveys from \code{pd_wbpip_clean}}
 
-\item{cpi}{aux cpi}
+\item{cpi}{aux_cpi from \code{pipload::pip_load_aux}}
 
-\item{ppp}{aux_ppp}
+\item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
 
-\item{pop}{aux_pop}
+\item{pop}{aux_pop from \code{pipload::pip_load_aux}}
 }
 \value{
 list

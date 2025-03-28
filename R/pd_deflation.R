@@ -214,10 +214,10 @@ add_rep_lvl <- function(dt) {
 
 #' Add auxiliary data for deflation
 #'
-#' @inheritParams pd_deflate
+#' @inheritParams pd_deflation
 #' @return data.table
 #' @keywords internal
-add_aux <- function(dt, ppp ,cpi) {
+add_aux <- function(dt, ppp ,cpi, log_err=TRUE, skip_err=TRUE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -235,7 +235,7 @@ add_aux <- function(dt, ppp ,cpi) {
 
       ### Check and add base years
 
-      dt <- cpi_ppp_years(dt, ppp)
+      dt <- cpi_ppp_years(dt, ppp, log_err, skip_err)
 
     },
     cpi_ppp = function(cnd){
@@ -266,7 +266,7 @@ add_aux <- function(dt, ppp ,cpi) {
 #' Merge survey with PPP
 #'
 #' @param dt data.table of the survey
-#' @inheritParams pd.deflation
+#' @inheritParams pd_deflation
 #'
 #' @return data.table with specific ppp
 #' @keywords internal
@@ -295,8 +295,8 @@ add_ppp <- function(dt, ppp) {
 
 #' Merge survey with CPI
 #'
-#' @param dt
-#' @inheritParams pd.deflation
+#' @param dt survey
+#' @inheritParams pd_deflation
 #'
 #' @return data.table with all cpi
 #' @keywords internal
@@ -350,7 +350,7 @@ add_cpi <- function(dt, cpi) {
 #'
 #' @return data.table
 #' @keywords internal
-cpi_ppp_years <- function(dt, ppp) {
+cpi_ppp_years <- function(dt, ppp, log_err=TRUE, skip_err=TRUE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------

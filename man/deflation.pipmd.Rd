@@ -4,16 +4,16 @@
 \alias{deflation.pipmd}
 \title{Deflation of welfare for micro data}
 \usage{
-\method{deflation}{pipmd}(df, cpi, ppp, pop, ...)
+\method{deflation}{pipmd}(dt, cpi, ppp, pop, ...)
 }
 \arguments{
-\item{df}{data.table of cleaned DLW survey from \code{wbpip_clean}}
+\item{dt}{data.table of cleaned DLW survey from \code{wbpip_clean}}
 
-\item{cpi}{aux cpi}
+\item{cpi}{aux_cpi from \code{pipload::pip_load_aux}}
 
-\item{ppp}{aux_ppp}
+\item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
 
-\item{pop}{aux_pop}
+\item{pop}{aux_pop from \code{pipload::pip_load_aux}}
 
 \item{...}{extra arguments}
 }
