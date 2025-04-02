@@ -72,7 +72,7 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Defenses (??)
+  # Defenses (Make copy -> need to fix)
   fnms <- names(formals())
   fnms <- fnms[!fnms %in% "..."]
 
@@ -90,7 +90,7 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Add reporting level --------
 
-  dt <- add_rep_lvl(dt)
+  dt <- add_rep_lvl(dt) # Maybe not needed with Tefera new aux data.
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflation --------
@@ -103,6 +103,9 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
   dt <- welfare_lcu(dt)
 
+  ### Delfate welfare vector ------
+
+  dt <- deflate_wlf(dt)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -121,7 +124,20 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Defenses (Make copy -> need to fix)
+  fnms <- names(formals())
+  fnms <- fnms[!fnms %in% "..."]
 
+  for (i in seq_along(fnms)) {
+    rr <- get(fnms[[i]])
+    if (inherits(rr, "data.table")) {
+      assign(fnms[i], copy(rr))
+
+    } else {
+      assign(fnms[i], qDT(rr))
+    }
+
+  }
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,14 +161,6 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 #' names(x)
 ppp_to_wide <- function(ppp) {
 
-  #   ____________________________________________________________________________
-  #   Defenses                                                           ####
-  if (inherits(ppp, "data.table")) {
-    ppp <- copy(ppp)
-  } else {
-    ppp <- qDT(ppp)
-  }
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Identify ppp versions --------
 
@@ -166,7 +174,7 @@ ppp_to_wide <- function(ppp) {
   ppp_v <- ppp[, unique(ppp_version)]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Transfor ppp data.table from long to wide --------
+  ## Transfer ppp data.table from long to wide --------
 
   ppp <- dcast(ppp,
                formula = country_code + ppp_data_level ~ ppp_version,
@@ -177,7 +185,6 @@ ppp_to_wide <- function(ppp) {
   ## Add all ppp_version to attributes --------
 
   setattr(ppp, "ppp_versions", ppp_v)
-
 
   #   ____________________________________________________________________________
   #   Return                                                                  ####
@@ -217,13 +224,11 @@ add_rep_lvl <- function(dt) {
 #' @inheritParams pd_deflation
 #' @return data.table
 #' @keywords internal
-add_aux <- function(dt, ppp ,cpi, log_err=TRUE, skip_err=TRUE) {
+add_aux <- function(dt, ppp ,cpi) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  tryCatch(
-    expr = {
 
       ### Merge ppp ---------
 
@@ -235,26 +240,7 @@ add_aux <- function(dt, ppp ,cpi, log_err=TRUE, skip_err=TRUE) {
 
       ### Check and add base years
 
-      dt <- cpi_ppp_years(dt, ppp, log_err, skip_err)
-
-    },
-    cpi_ppp = function(cnd){
-
-      if(cnd$log){ # Log the error
-
-        add_log(cnd)
-
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
-
-    }
-
-  )
+      dt <- cpi_ppp_years(dt, ppp)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -356,33 +342,55 @@ cpi_ppp_years <- function(dt, ppp, log_err=TRUE, skip_err=TRUE) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ppp_versions  <- attr(ppp, "ppp_versions")
-  ppp_years     <-
-    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
-    unique() |>
-    sort()
+  tryCatch(
+    expr = {
 
-  cpi_years <- attributes(dt)$cpi_years
+      ppp_versions  <- attr(ppp, "ppp_versions")
+      ppp_years     <-
+        gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
+        unique() |>
+        sort()
 
-  if (setequal(cpi_years , ppp_years)) {
+      cpi_years <- attributes(dt)$cpi_years
 
-    # attr(dt, "base_years") <-  cpi_years # deflate years
-    setattr(dt, "base_years",  cpi_years) # deflate years
+      if (setequal(cpi_years , ppp_years)) {
 
-  } else {
-    # attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
-    setattr(dt, "base_years",intersect(cpi_years , ppp_years))
+        # attr(dt, "base_years") <-  cpi_years # deflate years
+        data.table::setattr(dt, "base_years",  cpi_years) # deflate years
 
-    svy <- attributes(dt)$survey_id$values
-    cli::cli_abort(message = "CPI and PPP years available do NOT match.
-                          Only the intersect will be used: {.field {base_years}}",
-                   class = c("cpi_ppp", "piperr"),
-                   log = log_err,
-                   skip = skip_err,
-                   link =  svy,
-                   call = sys.call())
+      } else {
+        # attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
+        data.table::setattr(dt, "base_years",intersect(cpi_years , ppp_years))
+
+        svy <- attributes(dt)$survey_id$values
+
+        cli::cli_abort(message = "CPI and PPP years available do NOT match.
+                              Only the intersect will be used: {.field {base_years}}",
+                       class = c("cpi_ppp", "piperr"),
+                       log = log_err,
+                       skip = skip_err,
+                       link =  svy,
+                       call = sys.call())
+
+      }
+    },
+    cpi_ppp = function(cnd){
+
+      if(cnd$log){ # Log the error
+
+        add_log(cnd)
+
+      }
+
+      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
+
+        cli::cli_abort(cnd$message, call = cnd$call)
+
+      }
 
     }
+
+  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -413,3 +421,66 @@ welfare_lcu <- function(dt) {
 
 }
 
+
+#' Deflate welfare vector
+#'
+#' @param dt data.table with welfare LCU
+#'
+#' @return data.table
+#' @keywords internal
+deflate_wlf <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  base_years <- attributes(dt)$base_years
+
+  dt_c <- copy(dt) # Fix copy
+
+  dt_w <- purrr::map(.x = base_years,
+                     .f = get_welfare_ppp,
+                     dt = dt_c)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  return(dt_c)
+
+}
+
+#' Defate welfare variable to PPP values
+#'
+#' @param dt_wlcu data.table with welfare variable called `welfare_lcu`
+#' @param base_year numeric: base year
+#'
+#' @return data.table with welfare in PPP values
+get_welfare_ppp <- function(dt_wlcu, base_year) {
+
+  #   ____________________________________________________________________________
+  #   Computations                                                            ####
+
+  cpiv     <- paste0("cpi", base_year)
+
+  ppp_vars  <- grep("^ppp_[0-9]{4}", names(dt_wlcu), value = TRUE)
+  ppp_pat   <- paste0("^ppp_", base_year)
+  ppp_vars  <- grep(ppp_pat, names(dt_wlcu), value = TRUE)
+
+  welf_vars <- glue("welfare_{ppp_vars}")
+
+  dt_wlcu[,
+     (welf_vars) := lapply(.SD, \(v) {
+       wbpip::deflate_welfare_mean(
+         welfare_mean = welfare_lcu,
+         ppp          = v,
+         cpi          = get(cpiv)
+       )
+     }),
+     .SDcols = ppp_vars]
+
+  dt_wlcu <- dt_wlcu[,
+           ..welf_vars]
+
+
+  #   ____________________________________________________________________________
+  #   Return                                                                  ####
+  return(dt_wlcu)
+}
