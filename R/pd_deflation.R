@@ -107,6 +107,10 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
   dt <- deflate_wlf(dt)
 
+  ### Format vars  ---------
+
+  dt <- char_to_fct(dt)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

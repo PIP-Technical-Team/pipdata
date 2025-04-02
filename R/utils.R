@@ -321,3 +321,22 @@ add_attributes <- function(dt, new_attrs) {
 
   return(dt)
 }
+
+char_to_fct <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  chr_vars <- names(collapse::char_vars(dt))
+
+  dt[,
+     (chr_vars) := lapply(.SD, kit::charToFact),
+     .SDcols = chr_vars
+  ]
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
