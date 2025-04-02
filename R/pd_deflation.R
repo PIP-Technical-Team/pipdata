@@ -107,6 +107,14 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
   dt <- deflate_wlf(dt)
 
+  ### Scale Subnational Population to National accounts (WDI) ----
+
+  if (length(dt[, unique(reporting_level)]) > 1)  { # Needed??
+
+    dt <- adjust_population(dt, pop)
+
+  }
+
   ### Format vars  ---------
 
   dt <- char_to_fct(dt)
@@ -143,11 +151,34 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 
   }
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Add reporting level --------
+
+  dt <- add_rep_lvl(dt) # Maybe not needed with Tefera new aux data.
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Deflation --------
+
+  ### Merge survey with ppp and cpi ---------
+
+  dt <- add_aux(dt, ppp, cpi)
+
+  ### Welfare LCU ---------
+
+  dt <- welfare_lcu(dt)
+
+  ### Delfate welfare vector ------
+
+  dt <- deflate_wlf(dt)
+
+  ### Format vars  ---------
+
+  dt <- char_to_fct(dt)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(TRUE)
+  return(dt)
 
 }
 
