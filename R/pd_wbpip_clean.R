@@ -187,38 +187,36 @@ area_gd_clean <- function(df, gd_type) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  attr <- attributes(df)
+  # attr <- attributes(df)
 
-  # gdf <- df # Did speed testing and it was slower than data.table
-  #   dplyr::group_by(area)
-  #
-  # dt_c <- gdf |>
-  #   collapse::fmutate(wbpip::gd_clean_data(.data,
-  #     welfare = "welfare",
-  #     population = "weight",
-  #     gd_type = gd_type,
-  #     quiet = TRUE
-  #   ))|>
-  #   dplyr::ungroup()
-
-  dt <- df |>
-    _[, wbpip::gd_clean_data(
-      .SD,
+  dt <- df|>
+    collapse::fgroup_by(area)|>
+    collapse::fmutate(wbpip::gd_clean_data(.data,
       welfare = "welfare",
       population = "weight",
       gd_type = gd_type,
       quiet = TRUE
-    ),
-    by = .(area)]
+    ))|>
+    collapse::fungroup()
 
-  data.table::setcolorder(dt,"area",after = "gender")
+  # dt <- df |> # Did speed testing and it was slower than collapse
+  #   _[, wbpip::gd_clean_data(
+  #     .SD,
+  #     welfare = "welfare",
+  #     population = "weight",
+  #     gd_type = gd_type,
+  #     quiet = TRUE
+  #   ),
+  #   by = .(area)]
+  #
+  # data.table::setcolorder(dt,"area",after = "gender")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Assign missing attributes --------
-
-  attr_to_add <- attr[!names(attr) %in% names(attributes(dt))]
-
-  dt <- add_attributes(dt, attr_to_add)
+#
+#   attr_to_add <- attr[!names(attr) %in% names(attributes(dt))]
+#
+#   dt <- add_attributes(dt, attr_to_add)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

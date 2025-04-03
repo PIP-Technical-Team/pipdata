@@ -3,14 +3,14 @@ bench <- microbenchmark::microbenchmark(
   times = 100,
   collapse = {
     dt_c <- df |>
-      dplyr::group_by(area)|>
+      collapse::fgroup_by(area)|>
       collapse::fmutate(wbpip::gd_clean_data(.data,
                                              welfare = "welfare",
                                              population = "weight",
                                              gd_type = gd_type,
                                              quiet = TRUE
       ))|>
-      dplyr::ungroup()
+      collapse::fungroup()
   },
   data.table = {
     dt <- df |>
