@@ -31,14 +31,9 @@ pd_cpfw_merge <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Map survey to cpfw --------
 
-  # if (inherits(lf, "list")) { # Not needed because they are always list
-    lfs <- purrr::map2(.x = lf,
+  lfs <- purrr::map2(.x = lf,
                      .y =  cpfw,
                      .f = cpfw_merge)
-  # } else {
-  #   dt <- cpfw_merge(lf, cpfw[[1]])
-  #   lfs <- list(dt)
-  # }
 
   names(lfs) <- sapply(cpfw, `[[`, "cache_id") #Maybe not needed
 
@@ -71,29 +66,63 @@ pd_cpfw_merge <- function(dt, cpfw) {
 #' l    <- cpfw_merge(md, cpfw[[1]])
 cpfw_merge <- function(dt, cpfw, ...){
 
-  # Create hard copy
-  dt_c <- copy(dt)
+  assign("survey",
+         cpfw$cache_id,
+         envir = .logenv)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Main variables (same for md and gd) --------
-  dt_c <- add_main_vars(dt_c, cpfw)
+  # Clean up
+  on.exit(
+    rm(survey,
+       envir = .logenv)
+  )
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Area (Needed for Domain variables)--------
-  dt_c <- add_area(dt_c)
+  dt_f <- tryCatch(
+    expr = {
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Domain variables (same for md and gd) --------
-  dt_c <- add_dom_vars(dt_c, cpfw)
+      # Create hard copy
+      dt_c <- copy(dt)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Distribution type  (different for md and gd) --------
-  dt_c <- add_dist_type(dt_c, cpfw)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Main variables (same for md and gd) --------
+      dt_c <- add_main_vars(dt_c, cpfw)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Transform unique variables into attributes --------
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Area (Needed for Domain variables)--------
+      dt_c <- add_area(dt_c)
 
-  dt_f <- col_to_attr(dt_c, cpfw)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Domain variables (same for md and gd) --------
+      dt_c <- add_dom_vars(dt_c, cpfw)
+
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Distribution type  (different for md and gd) --------
+      dt_c <- add_dist_type(dt_c, cpfw)
+
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Transform unique variables into attributes --------
+
+      col_to_attr(dt_c, cpfw)
+
+    },
+    error = function(cnd){
+
+      msg <- cat("[Unknown error for survey ", .logenv$survey, "] ", "\n",
+                 "The survey was skipped ", "\n",
+                 sep = "")
+
+      cli::cli_alert_info("msg")
+
+      NA
+
+    },
+    message = function(cnd){
+
+    },
+    warning = function(cnd){
+
+    }
+
+  )
 
   return(dt_f)
 
@@ -114,7 +143,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # computations   ---------
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      variables <- colnames(dt)
+      variables <- colnams(dt)
 
       main_vars <- c("survey_year",
                      "country_code",
