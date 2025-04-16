@@ -36,6 +36,7 @@ pd_cpfw_merge <- function(dt, cpfw) {
                      .f = cpfw_merge)
 
   names(lfs) <- sapply(cpfw, `[[`, "cache_id") #Maybe not needed
+  lfs <- Filter(function(df) !all(is.na(df)), lfs)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -66,13 +67,13 @@ pd_cpfw_merge <- function(dt, cpfw) {
 #' l    <- cpfw_merge(md, cpfw[[1]])
 cpfw_merge <- function(dt, cpfw, ...){
 
-  assign("survey",
+  assign("cache_id",
          cpfw$cache_id,
          envir = .logenv)
 
   # Clean up
   on.exit(
-    rm(survey,
+    rm(cache_id,
        envir = .logenv)
   )
 
@@ -106,19 +107,17 @@ cpfw_merge <- function(dt, cpfw, ...){
     },
     error = function(cnd){
 
-      msg <- cat("[Unknown error for survey ", .logenv$survey, "] ", "\n",
-                 "The survey was skipped ", "\n",
-                 sep = "")
+      cache_id <- c(.logenv$cache_id)
 
-      cli::cli_alert_info("msg")
+      cnd_err <- rlang::catch_cnd(
+        cli::cli_abort(message = "[Unknown error] The survey was skipped",
+                      class = c("Unk_err", "piperr"),
+                      link = cache_id,
+                      call = cnd$call))
 
-      NA
+      add_log(cnd_err)
 
-    },
-    message = function(cnd){
-
-    },
-    warning = function(cnd){
+      return(NA)
 
     }
 
@@ -143,7 +142,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # computations   ---------
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      variables <- colnams(dt)
+      variables <- colnmes(dt)
 
       main_vars <- c("survey_year",
                      "country_code",
