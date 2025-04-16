@@ -142,7 +142,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # computations   ---------
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      variables <- colnmes(dt)
+      variables <- colnames(dt)
 
       main_vars <- c("survey_year",
                      "country_code",

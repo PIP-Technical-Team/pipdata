@@ -4,7 +4,7 @@
 \alias{add_aux}
 \title{Add auxiliary data for deflation}
 \usage{
-add_aux(dt, ppp, cpi, log_err = TRUE, skip_err = TRUE)
+add_aux(dt, ppp, cpi)
 }
 \arguments{
 \item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
