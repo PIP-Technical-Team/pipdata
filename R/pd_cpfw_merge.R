@@ -67,19 +67,6 @@ pd_cpfw_merge <- function(dt, cpfw) {
 #' l    <- cpfw_merge(md, cpfw[[1]])
 cpfw_merge <- function(dt, cpfw, ...){
 
-  assign("cache_id",
-         cpfw$cache_id,
-         envir = .logenv)
-
-  # Clean up
-  on.exit(
-    rm(cache_id,
-       envir = .logenv)
-  )
-
-  dt_f <- tryCatch(
-    expr = {
-
       # Create hard copy
       dt_c <- copy(dt)
 
@@ -102,26 +89,8 @@ cpfw_merge <- function(dt, cpfw, ...){
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Transform unique variables into attributes --------
 
-      col_to_attr(dt_c, cpfw)
+      dt_f <- col_to_attr(dt_c, cpfw)
 
-    },
-    error = function(cnd){
-
-      cache_id <- c(.logenv$cache_id)
-
-      cnd_err <- rlang::catch_cnd(
-        cli::cli_abort(message = "[Unknown error] The survey was skipped",
-                      class = c("Unk_err", "piperr"),
-                      link = cache_id,
-                      call = cnd$call))
-
-      add_log(cnd_err)
-
-      return(NA)
-
-    }
-
-  )
 
   return(dt_f)
 
@@ -293,9 +262,9 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
       }
 
       # Abort if not urban variable
-      if (!(c("urban") %in% colnames(dt))){
+      if (!any(c("urban", "area") %in% colnames(dt))){
 
-        cli::cli_abort(message = "There is no urban variable",
+        cli::cli_abort(message = "There is no urban or area variable",
                        class = c("urb_var", "piperr"),
                        log = log_err,
                        skip = skip_err,
@@ -303,12 +272,21 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
                        call = sys.call())
       }
 
-      # Recode urban to area
+      if(c("urban") %in% colnames(dt)){
+        # Recode urban to area
 
         dt[, area := fcase(urban == 1, "urban",
                            urban == 0, "rural",
                            is.na(urban), "national",
                            default = "")]
+
+      }
+
+      if(c("area") %in% colnames(dt)){
+
+        return(dt)
+      }
+
 
     },
     urb_var = function(cnd){

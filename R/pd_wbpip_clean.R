@@ -163,7 +163,18 @@ get_gd_type <- function(df) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   gd_type <- attributes(df)$gd_type$values
+
+  if(is.null(gd_type)){
+
+    survey_id <- .logenv$survey_id
+
+    cli::cli_abort(message = "There is no gd_type in pfw",
+                   class = c("piperr"),
+                   link = survey_id,
+                   call = sys.call())
+  }
 
   gd_type <- as.numeric(sub("T0", "", gd_type))
 

@@ -18,7 +18,7 @@ get_country_pfw <- function(df, pfw) {
 
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
 
-  pfw <- unq_obs_dt(pfw, keyVar)
+  pfw <- unq_obs_dt(pfw, keyVar) # Eliminate and move higher up in hierarchy
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Filter country PFW --------
@@ -132,16 +132,17 @@ report_lvl <- function(cpfw,
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  dcols <- c(
-    "cpi_domain",
-    "ppp_domain",
-    "gdp_domain",
-    "pce_domain",
-    "pop_domain"
-  )
 
   tryCatch(
     expr = {
+
+      dcols <- c(
+        "cpi_domain",
+        "ppp_domain",
+        "gdp_domain",
+        "pce_domain",
+        "pop_domain"
+      )
 
       cpfw <-
         cpfw[
@@ -159,11 +160,13 @@ report_lvl <- function(cpfw,
 
       if(nrow(cpfw)==0){
 
+        survey_id <- c(.logenv$survey_id)
+
         cli::cli_abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
-                       class = c("no_pfw", "piperr"),
+                       class = c("piperr"),
                        log = log_err,
                        skip = skip_err,
-                       link =  unique(cpfw$link),
+                       link =  survey_id,
                        call = sys.call())
 
       }else if(nrow(cpfw) > 1){
@@ -192,6 +195,21 @@ report_lvl <- function(cpfw,
 
       }
     }
+    # ,
+    #
+    # no_pfw = function(cnd){
+    #
+    #   if(cnd$log){ # Log the error
+    #
+    #     add_log(cnd)
+    #
+    #   }
+    #
+    #   cli::cli_abort(cnd$message,
+    #                  parent = cnd,
+    #                  call = cnd$call)
+    #
+    # }
 
   )
 
