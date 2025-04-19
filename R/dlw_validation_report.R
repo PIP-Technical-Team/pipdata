@@ -4,6 +4,9 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' validation_report <- get_validation_report()
+#' }
 get_validation_report <- function(){
 
   if (!rlang::env_has(.pipdata, "validation_report")){
@@ -12,9 +15,22 @@ get_validation_report <- function(){
 
   } else {
 
-    validation_report <- .pipdata$validation_report[, -c("assertion.id", "call")]
+    validation_report <- .pipdata$validation_report[, -c("assertion.id", "call", "error_df")]
+    # validation_report <- .pipdata$validation_report[, -c("call")]
 
   }
+
+  # extract module type
+  validation_report <-
+    validation_report[, module_type := sub(".*_(.*)", "\\1", table_name)]
+
+  # extract master data version
+  validation_report <-
+    validation_report[, vermast := sub(".*_([^_]+)_M.*", "\\1", table_name)]
+
+  # extract adaptation version
+  validation_report <-
+    validation_report[, veralt  := sub(".*_M_([^_]+)_A.*", "\\1", table_name)]
 
   return(invisible(validation_report))
 
@@ -26,6 +42,9 @@ get_validation_report <- function(){
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' get_data_status()
+#' }
 get_data_status <- function(){
 
   if (!rlang::env_has(.pipdata, "validation_report")){

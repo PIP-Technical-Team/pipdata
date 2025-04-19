@@ -83,7 +83,8 @@ dlw_scan_and_validate <- function(
   ## survey_id is the filename (without extension).
   new_info <- lapply(qs_files, function(f) {
     bn <- tools::file_path_sans_ext(basename(f))
-    h  <- digest::digest(file = f, algo = "md5")
+    #h  <- digest::digest(file = f, algo = "md5")
+    h  <- digest::digest(qs::qread(f), algo = "md5")
     tibble::tibble(survey_id = bn, new_hash = h)
   }) |> dplyr::bind_rows()
 
@@ -183,9 +184,13 @@ dlw_scan_and_validate <- function(
       if (md_type == "GPWG"){
         check <- dlw_validation_gpwg(df, nm)
       } else if (md_type == "GROUP") {
-        check <- md_validation_group(df, nm)
+        check <- dlw_validation_group(df, nm)
       } else if (md_type == "BIN") {
         check <- dlw_validation_bin(df, nm)
+      } else if (md_type == "HIST") {
+        check <- dlw_validation_hist(df, nm)
+      } else {
+        check <- dlw_validation_skip(nm)
       }
 
       if (any(check[["type"]] == "error")) {

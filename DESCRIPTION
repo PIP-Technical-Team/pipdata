@@ -22,7 +22,8 @@ Imports:
     purrr,
     wbpip (>= 0.0.3),
     data.validator,
-    assertr
+    assertr,
+    labelled
 Suggests: 
     knitr,
     rmarkdown,
