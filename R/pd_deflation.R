@@ -413,7 +413,7 @@ cpi_ppp_years <- function(dt, ppp, log_err=TRUE, skip_err=TRUE) {
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 

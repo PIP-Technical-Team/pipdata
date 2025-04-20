@@ -93,7 +93,7 @@ unq_obs_dt <- function(dt,
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 
@@ -185,7 +185,7 @@ report_lvl <- function(cpfw,
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 
@@ -272,8 +272,8 @@ othr_wlf <- function(cpfw,
 
         svy <- unique(cpfw$link)
 
-        cli::cli_inform(message = "More than one type of welfare",
-                       class = c("othr_wlf_inf", "pipinf"),
+        cli::cli_abort(message = "More than one type of welfare",
+                       class = c("othr_wlf_inf", "piperr"),
                        log = log_wrn,
                        link = svy,
                        call = sys.call())
@@ -286,7 +286,7 @@ othr_wlf <- function(cpfw,
 
       if(cnd$log){ # Log the warning
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 
@@ -354,7 +354,7 @@ cache_id <- function(cpfw,
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 

@@ -71,19 +71,21 @@ process_data.pipmd <- function(df, pfw, ...) {
 
       survey_id <- c(.logenv$survey_id)
 
-      if(rlang::cnd_inherits(cnd, "piperr")){
+      # if(rlang::cnd_inherits(cnd, "piperr")){
 
-        cli::cli_alert("The survey {survey_id} was skipped")
+      cli::cli_alert("The survey {survey_id} was skipped")
 
-        return(NA)
-      }
+      #   return(NA)
+      # }
+      #
+      # cnd_err <- rlang::catch_cnd(cli::cli_abort(message = "[Unknown error] The survey was skipped",
+      #                 class = c("Unk_err", "piperr"),
+      #                 link = survey_id,
+      #                 call = cnd$call))
+      #
+      # add_log(cnd_err)
 
-      cnd_err <- rlang::catch_cnd(cli::cli_abort(message = "[Unknown error] The survey was skipped",
-                      class = c("Unk_err", "piperr"),
-                      link = survey_id,
-                      call = cnd$call))
-
-      add_log(cnd_err)
+      log_failure(cnd)
 
       return(NA)
 
@@ -142,21 +144,23 @@ process_data.pipgd <- function(df, pfw, ...) {
 
       survey_id <- c(.logenv$survey_id)
 
-      if(rlang::cnd_inherits(cnd, "piperr")){
+      # if(rlang::cnd_inherits(cnd, "piperr")){
 
-        cli::cli_alert("The survey {survey_id} was skipped")
+      cli::cli_alert("The survey {survey_id} was skipped")
 
-        add_log(cnd)
+      #   add_log(cnd)
+      #
+      #   return(NA)
+      # }
+      #
+      # cnd_err <- rlang::catch_cnd(cli::cli_abort(message = "[Unknown error] The survey was skipped",
+      #                                            class = c("Unk_err", "piperr"),
+      #                                            link = survey_id,
+      #                                            call = cnd$call))
+      #
+      # add_log(cnd_err)
 
-        return(NA)
-      }
-
-      cnd_err <- rlang::catch_cnd(cli::cli_abort(message = "[Unknown error] The survey was skipped",
-                                                 class = c("Unk_err", "piperr"),
-                                                 link = survey_id,
-                                                 call = cnd$call))
-
-      add_log(cnd_err)
+      log_failure(cnd)
 
       return(NA)
 

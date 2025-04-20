@@ -182,10 +182,10 @@ format_wgt <- function(dt, log_wrn = TRUE) {
 
           dt[, weight := 1 / .N]
 
-          svy <- attributes(dt)$survey_id
+          svy <- .logenv$survey_id
 
-          cli::cli_inform(message = "Weight variable missing in DLW",
-                          class = c("mn_wgt_inf", "pipinf"),
+          cli::cli_abort(message = "Weight variable missing in DLW",
+                          class = c("mn_wgt_inf", "piperr"),
                           log = log_wrn,
                           link = svy,
                           call = sys.call())
@@ -197,7 +197,7 @@ format_wgt <- function(dt, log_wrn = TRUE) {
 
       if(cnd$log){ # Log the information
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
     },

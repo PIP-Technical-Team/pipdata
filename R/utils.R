@@ -260,44 +260,42 @@ pipmsg <- function(message, call = NULL){
 }
 
 
-#' Add warnings or errors to a .logenv
+#' Add errors to a .logenv
 #'
-#' @param cnd error or warning condition
+#' @param line line to be added to the log
+#' @param class PIP error or warning class
+#' @param error name of error or warning list
 #'
 #' @return a message in .logenv
 #' @keywords internal
-add_log <- function(cnd) {
+add_log <- function(line, error = NULL, class = "piperr") {
 
-  # cat(
-  #   "[", class(cnd)[[1]], "-", class(cnd)[[2]], "] ",
-  #   cnd$message," for ",
-  #   cnd$link, " Error in fun= ",
-  #   deparse(cnd$call[[1]]), "\n",
-  #   sep = "",
-  #   file = "log.txt", append = TRUE
-  # )
+  # Check if the pip class exists
+  if (!rlang::env_has(class, env = .logenv)) {
 
-  if (!exists(class(cnd)[[2]], envir = .logenv)) {
-
-    rlang::env_poke(.logenv,
-                    class(cnd)[[2]],
-                    list())
+    rlang::env_poke(.logenv, class, list())
   }
 
-  old_list <- get(class(cnd)[[2]],
-                  envir = .logenv)
+  # load list
+  log_list     <- get(class, envir = .logenv)
 
-  entry = list(paste0("[Func: ", deparse(cnd$call[[1]]),"] ",
-                      cli::ansi_strip(cnd$message)," for ", cnd$link,
-                      sep = ""))
+  key <- if (is.null(error)) "unknown errors" else error
 
-  names(entry) <- class(cnd)[[1]]
+  # Check if the error name already exists
+  if (key %in% names(log_list)) {
 
-  current_list = append(old_list,
-                        entry)
+    svy <- .logenv$survey_id
 
-  assign(class(cnd)[[2]],
-         current_list,
+    log_list[[key]] <- append(log_list[[key]], list(line))
+
+  } else {
+
+    log_list[[key]] <- list(line)
+
+  }
+
+  assign(class,
+         log_list,
          envir = .logenv)
 
   invisible()
@@ -339,4 +337,31 @@ char_to_fct <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
 
+}
+
+find_condition <- function(cnd, class) {
+  while (!is.null(cnd)) {
+    if (inherits(cnd, class)) return(cnd)
+    cnd <- cnd$parent
+  }
+  NULL
+}
+
+log_failure <- function(e) {
+
+  ts <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+
+  root <- find_condition(e, "piperr")
+
+  if (!is.null(root)) {
+    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(conditionMessage(root)), root$link)
+    add_log(line, error =  deparse(root$call[[1]]), class = "piperr")
+
+  } else {
+    line <- sprintf("[%s] %s", ts, conditionMessage(e))
+    add_log(line)
+
+  }
+
+  return(NULL)
 }

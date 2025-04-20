@@ -125,8 +125,8 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
         miss_vars <- main_vars[!(main_vars %in% variables)]
 
-       cli::cli_inform(message = "Main variable{?s} {miss_vars} missing in DLW",
-                      class = c("mn_var_inf", "pipinf"),
+       cli::cli_abort(message = "Main variable{?s} {miss_vars} missing in DLW",
+                      class = c("mn_var_inf", "piperr"),
                       log = log_wrn,
                       link = svy,
                       call = sys.call())
@@ -138,7 +138,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
       if(cnd$log){ # Log the information
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
     },
@@ -218,7 +218,7 @@ add_area.pipmd <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 
@@ -293,7 +293,7 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 
@@ -354,7 +354,7 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
       if(cnd$log){ # Log the error
 
-        add_log(cnd)
+        log_failure(cnd)
 
       }
 
