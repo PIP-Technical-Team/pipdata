@@ -43,10 +43,17 @@ process_data.pipmd <- function(df, pfw, ...) {
          envir = .logenv)
   })
 
-  # Add country code variable
+  # Add country code variable (small fix)
   if("countrycode" %in% names(df)){
     df$country_code <- df$countrycode
   }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Unique obs per pfw --------
+
+  keyVar <- c("country_code", "surveyid_year", "survey_acronym")
+
+  pfw <- unq_obs_dt(pfw, keyVar)
 
   # Computations -------
   y <- tryCatch(
@@ -134,5 +141,61 @@ process_data.default <- function(df, ...) {
 
   cli::cli_alert("no PIP method for this data. Returning same object")
   return(invisible(df))
+
+}
+
+#' Find unique values in PFW according to some key variables
+#'
+#' @param dt data.table or data.frame
+#' @param keyVar character vector with variables to determine unique observations
+#'
+#' @return data.table or data.frame
+#' @export
+#'
+#' @examples
+#' pfw <- pipload::pip_load_aux("pfw")
+#' keyVar <- c("country_code", "surveyid_year", "survey_acronym")
+#' unq_obs_dt(pfw, keyVar)
+unq_obs_dt <- function(dt,
+                       keyVar) {
+
+  tryCatch(
+
+    expr = {
+
+      if(uniqueN(dt, by = keyVar) != nrow(dt)){
+
+        dt_d <- dt[duplicated(dt, by = keyVar)]
+        n_rep <- nrow(dt_d)
+
+        # msg <- cli::format_inline("There {?is/are} {n_rep} duplicates in `pfw`", )
+        #
+        # piperr(message = msg,
+        #        name = "dup_pfw")
+
+        cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
+                       class = c("dup_pfw", "piperr"),
+                       link =  unique(dt_d$link),
+                       call = sys.call())
+      }
+
+    },
+
+    dup_pfw = function(cnd){
+
+      log_failure(cnd)
+
+    },
+
+    finally = {
+
+      dt <- unique(dt, by = keyVar) # eliminate duplicates
+
+    }
+
+  )
+
+
+  return(dt)
 
 }
