@@ -1,8 +1,7 @@
 #' Merge country/survey PFW info with dataliweb survey data
 #'
 #' @param dt DLW country/survey data
-#' @param cpfw list (more than one if there are two or more
-#' welfare types in the survey)
+#' @param pfw PFW
 #'
 #' @return list
 #' @export
@@ -11,17 +10,20 @@
 #'
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
-#' l    <- pd_cpfw_merge(md, cpfw)
+#' l    <- pd_cpfw_merge(md, pfw)
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' l    <- pd_cpfw_merge(gd, cpfw)
-pd_cpfw_merge <- function(dt, cpfw) {
+#' l    <- pd_cpfw_merge(gd, pfw)
+pd_cpfw_merge <- function(dt, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## PFW for specific country --------
+
+  cpfw <- get_country_pfw(dt, pfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Split alternative welfare --------

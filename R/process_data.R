@@ -48,22 +48,15 @@ process_data.pipmd <- function(df, pfw, ...) {
     df$country_code <- df$countrycode
   }
 
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
   # Computations -------
   y <- tryCatch(
     expr = {
 
-      cpfw <- get_country_pfw(df, pfw)
+      ls_cpfw <- pd_cpfw_merge(df, pfw)
 
-      ls_cpfw <- pd_cpfw_merge(df, cpfw)
+      ls_clean  <- pd_dlw_clean(ls_cpfw)
 
-      x  <- pd_dlw_clean(ls_cpfw)
-
-      pd_wbpip_clean(lf = x)
+      pd_wbpip_clean(ls_clean)
 
     },
 
@@ -71,19 +64,7 @@ process_data.pipmd <- function(df, pfw, ...) {
 
       survey_id <- c(.logenv$survey_id)
 
-      # if(rlang::cnd_inherits(cnd, "piperr")){
-
       cli::cli_alert("The survey {survey_id} was skipped")
-
-      #   return(NA)
-      # }
-      #
-      # cnd_err <- rlang::catch_cnd(cli::cli_abort(message = "[Unknown error] The survey was skipped",
-      #                 class = c("Unk_err", "piperr"),
-      #                 link = survey_id,
-      #                 call = cnd$call))
-      #
-      # add_log(cnd_err)
 
       log_failure(cnd)
 
@@ -116,27 +97,19 @@ process_data.pipgd <- function(df, pfw, ...) {
        envir = .logenv)
   })
 
-
   if("countrycode" %in% names(df)){
     df$country_code <- df$countrycode
   }
 
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
   # Computations -------
-  y <- tryCatch(
+  res <- tryCatch(
     expr = {
 
-      cpfw <- get_country_pfw(df, pfw)
+      ls_cpfw <- pd_cpfw_merge(df, pfw)
 
-      ls_cpfw <- pd_cpfw_merge(df, cpfw)
+      ls_clean  <- pd_dlw_clean(ls_cpfw)
 
-      x  <- pd_dlw_clean(ls_cpfw)
-
-      pd_wbpip_clean(lf = x)
+      pd_wbpip_clean(ls_clean)
 
     },
 
@@ -144,21 +117,7 @@ process_data.pipgd <- function(df, pfw, ...) {
 
       survey_id <- c(.logenv$survey_id)
 
-      # if(rlang::cnd_inherits(cnd, "piperr")){
-
       cli::cli_alert("The survey {survey_id} was skipped")
-
-      #   add_log(cnd)
-      #
-      #   return(NA)
-      # }
-      #
-      # cnd_err <- rlang::catch_cnd(cli::cli_abort(message = "[Unknown error] The survey was skipped",
-      #                                            class = c("Unk_err", "piperr"),
-      #                                            link = survey_id,
-      #                                            call = cnd$call))
-      #
-      # add_log(cnd_err)
 
       log_failure(cnd)
 
@@ -168,7 +127,7 @@ process_data.pipgd <- function(df, pfw, ...) {
   )
 
   # Return -------------
-  return(invisible(y))
+  return(invisible(res))
 
 }
 

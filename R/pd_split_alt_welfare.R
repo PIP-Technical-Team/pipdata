@@ -18,31 +18,21 @@
 #' df   <- pd_split_alt_welfare(md, cpfw)
 pd_split_alt_welfare <- function(df, cpfw) {
 
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
   # Computations -------
 
-  welfare_type <- cpfw[[1]]$wt
+  welf_type <- cpfw[[1]]$wt
 
   df[,
-     welfare_type := welfare_type
+     welfare_type := welf_type
       ]
 
   ## One data frame ------
 
-  if (length(cpfw)  == 1) {
+  if (length(cpfw)== 1) {
 
     l <- list(df)
     names(l) <- cpfw[[1]]$cache_id
+
     return(l)
 
   }
