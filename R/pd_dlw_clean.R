@@ -99,6 +99,12 @@ dlw_clean.pipmd <- function(df, ...) {
   ## Gender
   md <- recode_gndr(md)
 
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Wbpip clean (need to updata) --------
+
+  md <- wbpip_clean(md)
+
 #   ____________________________________________________________________________
 #   Final formatting                                                        ####
 
@@ -141,14 +147,19 @@ dlw_clean.pipgd <- function(df, ...) {
 
   # NEED TO CHECK FORMATTING TO WELFARE AND WEIGHT IN WBPIP!
 
+  # sorting
+  varsort <- c("area", "welfare") # Why area in group and not in micro?
+  setorderv(gd, varsort)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Wbpip clean (need to updata) --------
+
+  gd <- wbpip_clean(gd)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------
 
   gd <- pip_vars(gd)
-
-  # sorting
-  varsort <- c("area", "welfare") # Why area in group and not in micro?
-  setorderv(gd, varsort)
 
   return(gd)
 }

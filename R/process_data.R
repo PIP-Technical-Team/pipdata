@@ -54,9 +54,7 @@ process_data.pipmd <- function(df, pfw, ...) {
 
       ls_cpfw <- pd_cpfw_merge(df, pfw)
 
-      ls_clean  <- pd_dlw_clean(ls_cpfw)
-
-      pd_wbpip_clean(ls_clean)
+      pd_dlw_clean(ls_cpfw)
 
     },
 
@@ -107,9 +105,7 @@ process_data.pipgd <- function(df, pfw, ...) {
 
       ls_cpfw <- pd_cpfw_merge(df, pfw)
 
-      ls_clean  <- pd_dlw_clean(ls_cpfw)
-
-      pd_wbpip_clean(ls_clean)
+      pd_dlw_clean(ls_cpfw)
 
     },
 
