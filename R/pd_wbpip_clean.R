@@ -32,16 +32,7 @@ pd_wbpip_clean <- function(lf) {
 
   # Computations -------
 
-    # if (inherits(lf, "list")) {
   rl <- purrr::map(.x = lf, .f = wbpip_clean)
-    # } else {
-    #   y <- wbpip_clean(lf)
-    #   y <- list(y)
-    # }
-
-    # names(y) <- sapply(cpfw, `[[`, "cache_id")
-
-
 
   # Return -------------
   return(rl)
@@ -112,8 +103,6 @@ wbpip_clean.pipmd <- function(df, ...) {
     quiet = TRUE
   )$data
 
-  # df <- pipload::as_pipmd(df) Not needed because it will repeated
-
   # Return -------------
   return(md)
 
@@ -168,12 +157,15 @@ get_gd_type <- function(df) {
 
   if(is.null(gd_type)){
 
-    survey_id <- .logenv$survey_id
+    piperr(message = "There is no gd_type in pfw",
+           name = "skip")
 
-    cli::cli_abort(message = "There is no gd_type in pfw",
-                   class = c("piperr"),
-                   link = survey_id,
-                   call = sys.call())
+    # survey_id <- .logenv$survey_id
+    #
+    # cli::cli_abort(message = "There is no gd_type in pfw",
+    #                class = c("piperr"),
+    #                link = survey_id,
+    #                call = sys.call())
   }
 
   gd_type <- as.numeric(sub("T0", "", gd_type))
@@ -198,8 +190,6 @@ area_gd_clean <- function(df, gd_type) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # attr <- attributes(df)
-
   dt <- df|>
     collapse::fgroup_by(area)|>
     collapse::fmutate(wbpip::gd_clean_data(.data,
@@ -209,25 +199,6 @@ area_gd_clean <- function(df, gd_type) {
       quiet = TRUE
     ))|>
     collapse::fungroup()
-
-  # dt <- df |> # Did speed testing and it was slower than collapse
-  #   _[, wbpip::gd_clean_data(
-  #     .SD,
-  #     welfare = "welfare",
-  #     population = "weight",
-  #     gd_type = gd_type,
-  #     quiet = TRUE
-  #   ),
-  #   by = .(area)]
-  #
-  # data.table::setcolorder(dt,"area",after = "gender")
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Assign missing attributes --------
-#
-#   attr_to_add <- attr[!names(attr) %in% names(attributes(dt))]
-#
-#   dt <- add_attributes(dt, attr_to_add)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

@@ -24,14 +24,8 @@ pd_dlw_clean <- function(ls) {
 
   # Computations -------
 
-    # if (inherits(ls, "list")) {  # Not needed because they are always list
       rl <- purrr::map(.x = ls,
                        .f = dlw_clean)
-    # } else {
-    #   rl <- dlw_clean(ls)
-    #   rl <- list(rl)
-    # }
-
 
   # Return -------------
   return(rl)
@@ -170,7 +164,7 @@ dlw_clean.pipgd <- function(df, ...) {
 #'
 #' @return data.table
 #' @keywords internal
-format_wgt <- function(dt, log_wrn = TRUE) {
+format_wgt <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Clean weight variable   ---------
@@ -193,24 +187,24 @@ format_wgt <- function(dt, log_wrn = TRUE) {
 
           dt[, weight := 1 / .N]
 
-          svy <- .logenv$survey_id
+          piperr(message = "Weight variable missing in DLW",
+                 name = "mn_wgt_inf")
 
-          cli::cli_abort(message = "Weight variable missing in DLW",
-                          class = c("mn_wgt_inf", "piperr"),
-                          log = log_wrn,
-                          link = svy,
-                          call = sys.call())
+          # svy <- .logenv$survey_id
+          #
+          # cli::cli_abort(message = "Weight variable missing in DLW",
+          #                 class = c("mn_wgt_inf", "piperr"),
+          #                 log = log_wrn,
+          #                 link = svy,
+          #                 call = sys.call())
 
         }
       }
     },
     mn_wgt_inf = function(cnd){
 
-      if(cnd$log){ # Log the information
+      log_failure(cnd)
 
-        log_failure(cnd)
-
-      }
     },
     finally={
 
@@ -356,11 +350,6 @@ pip_vars <- function(dt) {
                    "survey_year",
                    "welfare_type",
                    "distribution_type",
-                   # "cpi_data_level",
-                   # "ppp_data_level",
-                   # "gdp_data_level",
-                   # "pce_data_level",
-                   # "pop_data_level",
                    "gd_type")
 
   # get from internal data `pip_var_type`
@@ -368,8 +357,8 @@ pip_vars <- function(dt) {
   pip_type  <- pip_var_type$pip_vars_pc_class
 
   # add education to pip_vars
-  pip_vars <- c(pip_vars, "educat4","educat5","literacy")
-  pip_type  <- c(pip_type, "character","character","character")
+  # pip_vars <- c(pip_vars, "educat4","educat5","literacy")
+  # pip_type  <- c(pip_type, "character","character","character")
 
   no_att_vars <- !(pip_vars %in% var_att_svy)
   pip_vars_col <- pip_vars[no_att_vars]

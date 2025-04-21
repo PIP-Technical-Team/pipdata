@@ -48,15 +48,13 @@ process_data.pipmd <- function(df, pfw, ...) {
     df$country_code <- df$countrycode
   }
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Unique obs per pfw --------
-
+  # Unique obs per pfw --------
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-
   pfw <- unq_obs_dt(pfw, keyVar)
 
+
   # Computations -------
-  y <- tryCatch(
+  res <- tryCatch(
     expr = {
 
       ls_cpfw <- pd_cpfw_merge(df, pfw)
@@ -80,7 +78,7 @@ process_data.pipmd <- function(df, pfw, ...) {
 
 
   # Return -------------
-  return(invisible(y))
+  return(res)
 
 }
 
@@ -130,7 +128,7 @@ process_data.pipgd <- function(df, pfw, ...) {
   )
 
   # Return -------------
-  return(invisible(res))
+  return(res)
 
 }
 
@@ -168,15 +166,15 @@ unq_obs_dt <- function(dt,
         dt_d <- dt[duplicated(dt, by = keyVar)]
         n_rep <- nrow(dt_d)
 
-        # msg <- cli::format_inline("There {?is/are} {n_rep} duplicates in `pfw`", )
-        #
-        # piperr(message = msg,
-        #        name = "dup_pfw")
+        msg <- cli::cli_format("There {?is/are} {n_rep} duplicates in PFW")
 
-        cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
-                       class = c("dup_pfw", "piperr"),
-                       link =  unique(dt_d$link),
-                       call = sys.call())
+        piperr(message = msg,
+               name = "dup_pfw")
+
+        # cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
+        #                class = c("dup_pfw", "piperr"),
+        #                link =  unique(dt_d$link),
+        #                call = sys.call())
       }
 
     },

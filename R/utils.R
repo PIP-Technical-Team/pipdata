@@ -231,33 +231,29 @@ num_vars_to_attr <- function(df, num_var, name_var) {
   dt[, !..c_col]
 }
 
-# piperr <- function(message){
-#   err <- structure(
-#     list(
-#       message = message
-#     ),
-#     class = c("piperr","error","condition")
-#   )
-#   stop(err)
-# }
 
-piperr <- function(message, call = NULL){
+piperr <- function(message, name = "skip"){
+
+  svy <- .logenv$survey_id
+
   cli::cli_abort(message = message,
-                 call = call,
-                 class = c("piperr"))
+                 class = c(name, "piperr"),
+                 link =  svy,
+                 call = sys.call(sys.parent()))
+
 }
 
-pipwrn <- function(message, call = NULL){
-  cli::cli_warn(message = message,
-                call = call,
-                 class = c("pipwrn"))
-}
-
-pipmsg <- function(message, call = NULL){
-  cli::cli_inform(message = message,
-                  call = call,
-                class = c("pipmsg"))
-}
+# pipwrn <- function(message, call = NULL){
+#   cli::cli_warn(message = message,
+#                 call = call,
+#                  class = c("pipwrn"))
+# }
+#
+# pipmsg <- function(message, call = NULL){
+#   cli::cli_inform(message = message,
+#                   call = call,
+#                 class = c("pipmsg"))
+# }
 
 
 #' Add errors to a .logenv
@@ -354,7 +350,7 @@ log_failure <- function(e) {
   root <- find_condition(e, "piperr")
 
   if (!is.null(root)) {
-    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(conditionMessage(root)), root$link)
+    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(root$message), root$link)
     add_log(line, error =  deparse(root$call[[1]]), class = "piperr")
 
   } else {

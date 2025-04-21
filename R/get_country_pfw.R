@@ -49,9 +49,7 @@ get_country_pfw <- function(df, pfw) {
 #'
 #' @return data.table
 #' @keywords internal
-report_lvl <- function(cpfw,
-                       log_err = TRUE,
-                       skip_err = TRUE) {
+report_lvl <- function(cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -84,56 +82,38 @@ report_lvl <- function(cpfw,
 
       if(nrow(cpfw)==0){
 
-        survey_id <- c(.logenv$survey_id)
+        # survey_id <- c(.logenv$survey_id)
 
-        cli::cli_abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
-                       class = c("piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  survey_id,
-                       call = sys.call())
+        piperr(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
+               name = "skip")
+
+        # cli::cli_abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
+        #                class = c("piperr"),
+        #                log = log_err,
+        #                skip = skip_err,
+        #                link =  survey_id,
+        #                call = sys.call())
 
       }else if(nrow(cpfw) > 1){
 
-        cli::cli_abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
-                       class = c("unq_pfw", "piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  unique(cpfw$link),
-                       call = sys.call())
+        piperr(message = "PFW is not unique for country, surveyid year, and survey_acronym",
+               name = "unq_pfw")
+#
+#         cli::cli_abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
+#                        class = c("unq_pfw", "piperr"),
+#                        log = log_err,
+#                        skip = skip_err,
+#                        link =  unique(cpfw$link),
+#                        call = sys.call())
       }
 
     },
 
     unq_pfw = function(cnd){
 
-      if(cnd$log){ # Log the error
-
         log_failure(cnd)
 
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
     }
-    # ,
-    #
-    # no_pfw = function(cnd){
-    #
-    #   if(cnd$log){ # Log the error
-    #
-    #     add_log(cnd)
-    #
-    #   }
-    #
-    #   cli::cli_abort(cnd$message,
-    #                  parent = cnd,
-    #                  call = cnd$call)
-    #
-    # }
 
   )
 
@@ -152,8 +132,7 @@ report_lvl <- function(cpfw,
 #'
 #' @return data.table
 #' @keywords internal
-othr_wlf <- function(cpfw,
-                     log_wrn = TRUE) {
+othr_wlf <- function(cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -194,13 +173,16 @@ othr_wlf <- function(cpfw,
 
       if(nrow(cpfw)>1){
 
-        svy <- unique(cpfw$link)
+        piperr(message = "More than one type of welfare",
+               name = "othr_wlf_inf")
 
-        cli::cli_abort(message = "More than one type of welfare",
-                       class = c("othr_wlf_inf", "piperr"),
-                       log = log_wrn,
-                       link = svy,
-                       call = sys.call())
+        # svy <- unique(cpfw$link)
+        #
+        # cli::cli_abort(message = "More than one type of welfare",
+        #                class = c("othr_wlf_inf", "piperr"),
+        #                log = log_wrn,
+        #                link = svy,
+        #                call = sys.call())
 
       }
 
@@ -208,11 +190,7 @@ othr_wlf <- function(cpfw,
 
     othr_wlf_inf = function(cnd){
 
-      if(cnd$log){ # Log the warning
-
         log_failure(cnd)
-
-      }
 
     }
 
@@ -233,9 +211,7 @@ othr_wlf <- function(cpfw,
 #' @return data.table
 #' @keywords internal
 cache_id <- function(cpfw,
-                     module,
-                     log_err = TRUE,
-                     skip_err = TRUE) {
+                     module) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -264,29 +240,23 @@ cache_id <- function(cpfw,
 
       if(any(cpfw$wt=="")){
 
-        cli::cli_abort(message = "Welfare type is undefined",
-                       class = c("no_wlf_tp", "piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  unique(cpfw$link),
-                       call = sys.call())
+        piperr(message = "Welfare type is undefined",
+               name = "no_wlf_tp")
+
+        # cli::cli_abort(message = "Welfare type is undefined",
+        #                class = c("no_wlf_tp", "piperr"),
+        #                log = log_err,
+        #                skip = skip_err,
+        #                link =  unique(cpfw$link),
+        #                call = sys.call())
       }
 
     },
 
     no_wlf_tp = function(cnd){
 
-      if(cnd$log){ # Log the error
-
         log_failure(cnd)
 
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
     }
   )
 

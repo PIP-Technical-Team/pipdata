@@ -37,8 +37,8 @@ pd_cpfw_merge <- function(dt, pfw) {
                      .y =  cpfw,
                      .f = cpfw_merge)
 
-  names(lfs) <- sapply(cpfw, `[[`, "cache_id") #Maybe not needed
-  lfs <- Filter(function(df) !all(is.na(df)), lfs)
+  # names(lfs) <- sapply(cpfw, `[[`, "cache_id") #Maybe not needed
+  # lfs <- Filter(function(df) !all(is.na(df)), lfs)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -105,7 +105,7 @@ cpfw_merge <- function(dt, cpfw, ...){
 #' @return data.table
 #'
 #' @keywords internal
-add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
+add_main_vars <- function(dt, cpfw) {
 
   tryCatch(
     expr = {
@@ -123,26 +123,29 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 
       if(any(!(main_vars %in% variables))){
 
-        svy <- unique(cpfw$link)
+        # svy <- unique(cpfw$link)
 
         miss_vars <- main_vars[!(main_vars %in% variables)]
 
-       cli::cli_abort(message = "Main variable{?s} {miss_vars} missing in DLW",
-                      class = c("mn_var_inf", "piperr"),
-                      log = log_wrn,
-                      link = svy,
-                      call = sys.call())
+        miss_vars <- cli::cli_vec(miss_vars)
+
+        msg <- cli::cli_format("Main variable{?s} {miss_vars} missing")
+
+        piperr(message = msg,
+               name = "mn_var_inf")
+
+       # cli::cli_abort(message = "Main variable{?s} {miss_vars} missing in DLW",
+       #                class = c("mn_var_inf", "piperr"),
+       #                log = log_wrn,
+       #                link = svy,
+       #                call = sys.call())
       }
 
     },
 
     mn_var_inf = function(cnd){
 
-      if(cnd$log){ # Log the information
-
         log_failure(cnd)
-
-      }
     },
 
     finally = {
@@ -178,7 +181,7 @@ add_main_vars <- function(dt, cpfw, log_wrn = TRUE) {
 #'
 #' @return data.table
 #' @keywords internal
-add_area <- function(dt, cpfw...) {
+add_area <- function(dt) {
   UseMethod("add_area")
 }
 
@@ -188,7 +191,7 @@ add_area <- function(dt, cpfw...) {
 #'
 #' @return data.table
 #' @keywords internal
-add_area.pipmd <- function(dt, log_err = TRUE, skip_err = TRUE) {
+add_area.pipmd <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -200,12 +203,15 @@ add_area.pipmd <- function(dt, log_err = TRUE, skip_err = TRUE) {
       # Abort if not urban variable
       if (!(c("urban") %in% colnames(dt))){
 
-        cli::cli_abort(message = "There is no urban variable",
-                       class = c("urb_var", "piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  unique(dt$survey_id),
-                       call = sys.call())
+        piperr(message =  "There is no urban variable",
+               name = "urb_var")
+
+#         cli::cli_abort(message = "There is no urban variable",
+#                        class = c("urb_var", "piperr"),
+#                        log = log_err,
+#                        skip = skip_err,
+#                        link =  unique(dt$survey_id),
+#                        call = sys.call())
       }
 
       # Recode urban to area
@@ -218,17 +224,7 @@ add_area.pipmd <- function(dt, log_err = TRUE, skip_err = TRUE) {
     },
     urb_var = function(cnd){
 
-      if(cnd$log){ # Log the error
-
-        log_failure(cnd)
-
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
+      log_failure(cnd)
 
       dt[, area := ""]
 
@@ -248,7 +244,7 @@ add_area.pipmd <- function(dt, log_err = TRUE, skip_err = TRUE) {
 #'
 #' @return data.table
 #' @keywords internal
-add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
+add_area.pipgd <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -266,12 +262,15 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
       # Abort if not urban variable
       if (!any(c("urban", "area") %in% colnames(dt))){
 
-        cli::cli_abort(message = "There is no urban or area variable",
-                       class = c("urb_var", "piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  unique(dt$survey_id),
-                       call = sys.call())
+        piperr(message = "There is no urban or area variable",
+               name = "urb_var")
+
+        # cli::cli_abort(message = "There is no urban or area variable",
+        #                class = c("urb_var", "piperr"),
+        #                log = log_err,
+        #                skip = skip_err,
+        #                link =  unique(dt$survey_id),
+        #                call = sys.call())
       }
 
       if(c("urban") %in% colnames(dt)){
@@ -293,17 +292,7 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
     },
     urb_var = function(cnd){
 
-      if(cnd$log){ # Log the error
-
-        log_failure(cnd)
-
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
+      log_failure(cnd)
 
       dt[, area := ""]
 
@@ -323,7 +312,7 @@ add_area.pipgd <- function(dt, log_err = TRUE, skip_err = TRUE) {
 #'
 #' @return data.table
 #' @keywords internal
-add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
+add_dom_vars <- function(dt, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Level and domain variables    ---------
@@ -338,33 +327,28 @@ add_dom_vars <- function(dt, cpfw, log_err = TRUE, skip_err = TRUE) {
 
       if(any(!(domain_vars %in% names(cpfw)))){
 
-        svy <- unique(cpfw$link)
+        # svy <- unique(cpfw$link)
 
         miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
 
-        cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
-                       class = c("dom_var", "piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  svy,
-                       call = sys.call())
+        msg <- cli::cli_format("Domain variable{?s} {miss_vars} missing in country PFW")
+
+        piperr(message = msg,
+               name = "dom_var")
+
+        # cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
+        #                class = c("dom_var", "piperr"),
+        #                log = log_err,
+        #                skip = skip_err,
+        #                link =  svy,
+        #                call = sys.call())
 
       }
 
     },
     dom_var = function(cnd){
 
-      if(cnd$log){ # Log the error
-
         log_failure(cnd)
-
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
 
     },
     finally = {
@@ -503,11 +487,6 @@ col_to_attr <- function(dt, cpfw) {
                "survey_year",
                "welfare_type",
                "distribution_type",
-               # "cpi_data_level",
-               # "ppp_data_level",
-               # "gdp_data_level",
-               # "pce_data_level",
-               # "pop_data_level",
                "gd_type")
 
   vars <- names(dt)
