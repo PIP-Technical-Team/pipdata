@@ -1,74 +1,32 @@
-# Example
+# Test of
 library(devtools)
 load_all()
 
-# Load svy data
-set.seed(51089)
-n <- 10
-path <- "//tsclient/Y/DLW-QS"
+#----- Temporary load of svy data -----
+
+# Set parameters
+path <- "//tsclient/Y/DLW-QS" # Path to DLW-QS
+n <- 20 # Number of random surveys loaded
+
+# Load inventory
 inv  <- pipload::pip_load_dlw_inventory()
+
+# Sample files
+set.seed(51089)
+
 selected   <- sample(1:nrow(inv), n)
 inv_smp <- inv[selected,]
 
-file_dta <- basename(inv_smp$fullname)
-file_qs <- sub("\\.dta$", ".qs", file_dta)
-file_qs <- sort(file_qs)
-
-ls_svy     <- lapply(1:n, \(x) qs::qread(file.path(path, file_qs[x])))
-
-## Order inv_smp
-
-inv_smp <- inv_smp |>
-  dplyr::mutate(file_dta = basename(fullname))
-
-inv_smp <- inv_smp[order(file_dta),]
+# Load survey data
+ls <- valid_dlw_load(inv_smp, path)
 
 # Load Aux data
-
 pfw  <- pipload::pip_load_aux("pfw")
 
 # Process data
 
-#--------- Mock-up pipload functions ---------
-
-data_to_dt <- function(x, y) {
-
-  # df <- haven::read_dta(x)
-  df <- x
-  df$survey_id <- y
-
-  #--------- leaving just the 'label' attribute ---------
-  nn  <- names(df)
-  for (j in seq_along(nn)) {
-
-    ats       <- attributes(df[[j]])
-    atsn      <- names(ats)
-    to_remove <- atsn[!grepl("label", atsn)]
-
-    for (i in seq_along(to_remove)) {
-      attr(df[[j]], to_remove[i]) <- NULL
-    }
-
-  }
-
-  #--------- Survey ID and its components ---------
-
-  df <- pipload::survey_id_to_vars(df)
-
-  ### Add class ---------
-  df <- pipload::as_pip(df)
-
-  return(df)
-}
-
-poss_data_to_df <- purrr::possibly(.f = data_to_dt,
-                                   otherwise = NULL)
-
 #--------- Run pipdata functions -----
 
-ls <- purrr::map2(.x = ls_svy,
-                  .y = as.list(inv_smp$survey_id),
-                  .f = poss_data_to_df)
 
 results <- lapply(ls,
                   process_data,
