@@ -457,31 +457,25 @@ cpi_ppp_years <- function(dt, ppp, log_err=TRUE, skip_err=TRUE) {
         # attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
         data.table::setattr(dt, "base_years",intersect(cpi_years , ppp_years))
 
-        svy <- attributes(dt)$survey_id$values
-
-        cli::cli_abort(message = "CPI and PPP years available do NOT match.
+        piperr(message = "CPI and PPP years available do NOT match.
                               Only the intersect will be used: {.field {base_years}}",
-                       class = c("cpi_ppp", "piperr"),
-                       log = log_err,
-                       skip = skip_err,
-                       link =  svy,
-                       call = sys.call())
+               name = "cpi_ppp")
+
+        # svy <- attributes(dt)$survey_id$values
+        #
+        # cli::cli_abort(message = "CPI and PPP years available do NOT match.
+        #                       Only the intersect will be used: {.field {base_years}}",
+        #                class = c("cpi_ppp", "piperr"),
+        #                log = log_err,
+        #                skip = skip_err,
+        #                link =  svy,
+        #                call = sys.call())
 
       }
     },
     cpi_ppp = function(cnd){
 
-      if(cnd$log){ # Log the error
-
         log_failure(cnd)
-
-      }
-
-      if(!cnd$skip){ # Abort if you don't want to skip, but after logging
-
-        cli::cli_abort(cnd$message, call = cnd$call)
-
-      }
 
     }
 

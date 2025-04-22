@@ -6,23 +6,20 @@ load_all()
 
 # Set parameters
 path <- "//tsclient/Y/DLW-OUTPUT" # Path to DLW-QS
-n <- 20 # Number of random surveys loaded
+n    <- 20 # Number of random surveys loaded
 
 # Load inventory
 # inv  <- pipload::pip_load_dlw_inventory()
-inv <- qs::qread(file.path(path,"_Inventory/_release/pip_raw_inventory_20250417_INT.qs"))
-inv$fullname <- file.path(path,basename(inv$pip_file_path))
+inv          <- qs::qread(file.path(path, "_Inventory/_release/pip_raw_inventory_20250417_INT.qs"))
+inv$fullname <- file.path(path, basename(inv$pip_file_path))
 
 # Sample files
 set.seed(51089)
-
 selected   <- sample(1:nrow(inv), n)
-inv_smp <- inv[selected,]
+inv_smp    <- inv[selected,]
 
-# Load survey data
+# Load data
 ls <- valid_dlw_load(inv_smp, path)
-
-# Load Aux data
 pfw  <- pipload::pip_load_aux("pfw")
 
 # pfw_all  <- qs::qread("cpi_pop_gdp_ppp_pfw.qs")
@@ -32,7 +29,6 @@ pfw  <- pipload::pip_load_aux("pfw")
 #--------- Run pipdata functions -----
 
 # Process data
-
 results <- lapply(ls,
                   process_data,
                   pfw = pfw)
@@ -41,7 +37,6 @@ results <- lapply(ls,
 clean_res <- Filter(Negate(is.na), results)
 
 # Deflation
-
 ppp  <- pipload::pip_load_aux("ppp")
 cpi  <- pipload::pip_load_aux("cpi")
 pop  <- pipload::pip_load_aux("pop")
