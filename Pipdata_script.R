@@ -5,11 +5,13 @@ load_all()
 #----- Temporary load of svy data -----
 
 # Set parameters
-path <- "//tsclient/Y/DLW-QS" # Path to DLW-QS
+path <- "//tsclient/Y/DLW-OUTPUT" # Path to DLW-QS
 n <- 20 # Number of random surveys loaded
 
 # Load inventory
-inv  <- pipload::pip_load_dlw_inventory()
+# inv  <- pipload::pip_load_dlw_inventory()
+inv <- qs::qread(file.path(path,"_Inventory/_release/pip_raw_inventory_20250417_INT.qs"))
+inv$fullname <- file.path(path,basename(inv$pip_file_path))
 
 # Sample files
 set.seed(51089)
@@ -22,6 +24,10 @@ ls <- valid_dlw_load(inv_smp, path)
 
 # Load Aux data
 pfw  <- pipload::pip_load_aux("pfw")
+
+# pfw_all  <- qs::qread("cpi_pop_gdp_ppp_pfw.qs")
+# pfw_all <- pfw_all[order(country_code,year),]
+# pfw_ur <- pfw_all[pfw_all$reporting_level!="national",]
 
 #--------- Run pipdata functions -----
 
