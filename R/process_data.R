@@ -65,11 +65,11 @@ process_data.pipmd <- function(df, pfw, ...) {
 
     error = function(cnd){
 
+      log_failure(cnd)
+
       survey_id <- c(.logenv$survey_id)
 
       cli::cli_alert("The survey {survey_id} was skipped")
-
-      log_failure(cnd)
 
       return(NA)
 
@@ -103,6 +103,10 @@ process_data.pipgd <- function(df, pfw, ...) {
   if("countrycode" %in% names(df)){
     df$country_code <- df$countrycode
   }
+
+  # Unique obs per pfw --------
+  keyVar <- c("country_code", "surveyid_year", "survey_acronym")
+  pfw <- unq_obs_dt(pfw, keyVar)
 
   # Computations -------
   res <- tryCatch(

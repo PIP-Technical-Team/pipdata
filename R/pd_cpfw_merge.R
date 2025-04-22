@@ -119,24 +119,23 @@ add_main_vars <- function(dt, cpfw) {
                      "country_code",
                      "welfare_type")
 
+      vars <- main_vars[!(main_vars %in% variables)]
+
       # Inform what country/surveys are missing a main variable
 
-      if(any(!(main_vars %in% variables))){
+      if(length(vars)>0){
 
         # svy <- unique(cpfw$link)
 
-        miss_vars <- main_vars[!(main_vars %in% variables)]
+        vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
 
-        miss_vars <- cli::cli_vec(miss_vars)
-
-        msg <- cli::cli_format("Main variable{?s} {miss_vars} missing")
+        msg <- cli::cli_format("Main variable{?s} {vars} missing")
 
         piperr(message = msg,
                name = "mn_var_inf")
 
-       # cli::cli_abort(message = "Main variable{?s} {miss_vars} missing in DLW",
+       # cli::cli_abort(message = "Main variable{?s} {vars} missing in DLW",
        #                class = c("mn_var_inf", "piperr"),
-       #                log = log_wrn,
        #                link = svy,
        #                call = sys.call())
       }

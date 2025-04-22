@@ -232,14 +232,18 @@ num_vars_to_attr <- function(df, num_var, name_var) {
 }
 
 
-piperr <- function(message, name = "skip"){
+piperr <- function(message,
+                   name = "skip",
+                   call = rlang::caller_env(),
+                   ...){
 
   svy <- .logenv$survey_id
 
-  cli::cli_abort(message = message,
+  rlang::abort(message = message,
                  class = c(name, "piperr"),
                  link =  svy,
-                 call = sys.call(sys.parent()))
+                 call = call,
+               use_cli_format = TRUE)
 
 }
 
@@ -279,8 +283,6 @@ add_log <- function(line, error = NULL, class = "piperr") {
 
   # Check if the error name already exists
   if (key %in% names(log_list)) {
-
-    svy <- .logenv$survey_id
 
     log_list[[key]] <- append(log_list[[key]], list(line))
 
@@ -350,12 +352,12 @@ log_failure <- function(e) {
   root <- find_condition(e, "piperr")
 
   if (!is.null(root)) {
-    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(root$message), root$link)
+    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(conditionMessage(root)), root$link)
     add_log(line, error =  deparse(root$call[[1]]), class = "piperr")
 
   } else {
-    line <- sprintf("[%s] %s", ts, conditionMessage(e))
-    add_log(line)
+    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(conditionMessage(e)), deparse(conditionCall(e)))
+    add_log(line, error = deparse(e$call[[1]]), class = "unk_err")
 
   }
 
