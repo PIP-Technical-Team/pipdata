@@ -23,16 +23,15 @@ Deflation of welfare using auxiliary data
 }
 \examples{
 \dontrun{
+pfw <- pipload::pip_load_aux("pfw")
 ppp  <- pipload::pip_load_aux("ppp")
 cpi  <- pipload::pip_load_aux("cpi")
 pop  <- pipload::pip_load_aux("pop")
 
-gd   <- pipload::pip_load_dlw("ARE", 2019)
-cpfw <- get_country_pfw(gd, pfw)
-gd   <- pd_split_alt_welfare(gd, cpfw)
+gd   <- pipload::pip_load_dlw("CHN", 2015)
+ls   <- pd_cpfw_merge(gd, pfw)
 x    <- pd_dlw_clean(gd)
-y    <- pd_wbpip_clean(x)
 
-pd_deflation(y, cpi = cpi, ppp = ppp, pop = pop)
+pd_deflation(x, cpi = cpi, ppp = ppp, pop = pop)
 }
 }

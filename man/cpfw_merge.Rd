@@ -19,15 +19,3 @@ data.table
 \description{
 Merge country/survey PFW with dataliweb survey data
 }
-\examples{
-
-pfw <- pipload::pip_load_aux("pfw")
-
-gd   <- pipload::pip_load_dlw("CHN", 2015)
-cpfw <- get_country_pfw(gd, pfw)
-l    <- cpfw_merge(gd, cpfw[[1]])
-
-md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-cpfw <- get_country_pfw(md, pfw)
-l    <- cpfw_merge(md, cpfw[[1]])
-}

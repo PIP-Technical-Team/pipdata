@@ -17,17 +17,14 @@ Clean data from datalibweb structure (High level)
 }
 \examples{
 pfw  <- pipload::pip_load_aux("pfw")
-# dt   <- pipload::pip_load_dlw(survey_id = "BRA_2008_PNAD_v02_M_v04_A_GMD_ALL")
 
 gd    <- pipload::pip_load_dlw("CHN", 2015)
-cpfw  <- get_country_pfw(gd, pfw)
-ls    <- pd_cpfw_merge(gd, cpfw)
+ls    <- pd_cpfw_merge(gd, pfw)
 lf    <- pd_dlw_clean(ls)
 names(lf)
 
 md    <- pipload::pip_load_dlw(country = "PHL", 2012)
-cpfw  <- get_country_pfw(md, pfw)
-ls    <- pd_cpfw_merge(md, cpfw)
+ls    <- pd_cpfw_merge(md, pfw)
 lf    <- pd_dlw_clean(ls)
 names(lf)
 }

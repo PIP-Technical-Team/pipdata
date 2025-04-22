@@ -4,7 +4,7 @@
 \alias{add_dom_vars}
 \title{Add Domain variables}
 \usage{
-add_dom_vars(dt, cpfw, log_err = TRUE, skip_err = TRUE)
+add_dom_vars(dt, cpfw)
 }
 \arguments{
 \item{dt}{data.table}

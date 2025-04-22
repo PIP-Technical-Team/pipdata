@@ -4,16 +4,10 @@
 \alias{report_lvl}
 \title{Add reporting level variable to country PFW}
 \usage{
-report_lvl(cpfw, log_err = TRUE, skip_err = TRUE)
+report_lvl(cpfw)
 }
 \arguments{
 \item{cpfw}{data.table with country Price Framework}
-
-\item{log_err}{boolean TRUE or FALSE if the error of duplicates should be added
-to the log}
-
-\item{skip_err}{boolean TRUE or FALSE if we want to skip the abort when finding
-the duplicates error}
 }
 \value{
 data.table

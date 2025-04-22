@@ -17,10 +17,3 @@ data.table
 \description{
 Clean group data from Datalibweb original file
 }
-\examples{
-pfw <- pipload::pip_load_aux("pfw")
-gd   <- pipload::pip_load_dlw("CHN", 2015)
-cpfw <- get_country_pfw(gd, pfw)
-ls    <- pd_cpfw_merge(gd, cpfw)
-dlw_clean(ls[[1]])
-}

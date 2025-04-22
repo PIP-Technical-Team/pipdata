@@ -45,7 +45,6 @@ get_country_pfw <- function(df, pfw) {
 #' Add reporting level variable to country PFW
 #'
 #' @param cpfw data.table with country Price Framework
-#' @inheritParams unq_obs_dt
 #'
 #' @return data.table
 #' @keywords internal

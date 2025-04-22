@@ -4,7 +4,7 @@
 \alias{add_area.pipgd}
 \title{Recode urban to area for group data}
 \usage{
-\method{add_area}{pipgd}(dt, log_err = TRUE, skip_err = TRUE)
+\method{add_area}{pipgd}(dt)
 }
 \arguments{
 \item{dt}{data.table}

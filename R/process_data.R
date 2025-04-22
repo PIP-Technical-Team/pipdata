@@ -11,7 +11,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
@@ -19,7 +18,6 @@
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' process_data(md, pfw)
-#' }
 process_data <- function(df, pfw, ...) {
   UseMethod("process_data")
 

@@ -7,7 +7,6 @@
 #' @export
 #'
 #' @examples
-#'
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' l    <- pd_cpfw_merge(md, pfw)
@@ -55,18 +54,6 @@ pd_cpfw_merge <- function(dt, pfw) {
 #'
 #' @return data.table
 #' @export
-#'
-#' @examples
-#'
-#' pfw <- pipload::pip_load_aux("pfw")
-#'
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' l    <- cpfw_merge(gd, cpfw[[1]])
-#'
-#' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
-#' l    <- cpfw_merge(md, cpfw[[1]])
 cpfw_merge <- function(dt, cpfw, ...){
 
       # Create hard copy

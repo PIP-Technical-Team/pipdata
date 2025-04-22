@@ -4,7 +4,7 @@
 \alias{add_area}
 \title{Recode urban to area (lower level, S3 methods)}
 \usage{
-add_area(dt, cpfw...)
+add_area(dt)
 }
 \arguments{
 \item{dt}{data.table}

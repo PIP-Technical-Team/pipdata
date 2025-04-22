@@ -4,7 +4,7 @@
 \alias{add_main_vars}
 \title{Add metadata variables to country/survey}
 \usage{
-add_main_vars(dt, cpfw, log_wrn = TRUE)
+add_main_vars(dt, cpfw)
 }
 \arguments{
 \item{dt}{data.table}

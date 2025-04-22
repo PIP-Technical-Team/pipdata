@@ -4,7 +4,7 @@
 \alias{othr_wlf}
 \title{Duplicate country PFW if there are two types of welfare}
 \usage{
-othr_wlf(cpfw, log_wrn = TRUE)
+othr_wlf(cpfw)
 }
 \arguments{
 \item{cpfw}{country PFW data.table}

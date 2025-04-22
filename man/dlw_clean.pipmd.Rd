@@ -17,10 +17,3 @@ data.table
 \description{
 Clean micro data from Datalibweb original file
 }
-\examples{
-pfw <- pipload::pip_load_aux("pfw")
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-cpfw <- get_country_pfw(md, pfw)
-ls    <- pd_cpfw_merge(md, cpfw)
-dlw_clean(ls[[1]])
-}

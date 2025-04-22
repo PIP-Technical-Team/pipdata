@@ -17,15 +17,3 @@ data.table
 \description{
 Clean data from datalibweb structure (lower level, S3 methods)
 }
-\examples{
-gd  <- pipload::pip_load_dlw("CHN", 2015)
-pfw <- pipload::pip_load_aux("pfw")
-cpfw <- get_country_pfw(gd, pfw)
-ls    <- pd_cpfw_merge(gd, cpfw)
-dlw_clean(ls[[1]])
-
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-cpfw <- get_country_pfw(md, pfw)
-ls    <- pd_cpfw_merge(md, cpfw)
-dlw_clean(ls[[1]])
-}

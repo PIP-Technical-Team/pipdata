@@ -234,17 +234,24 @@ num_vars_to_attr <- function(df, num_var, name_var) {
 }
 
 
+#' Customized PIP error
+#'
+#' @param message message
+#' @param name name assigned to the error. When "skip"
+#' @param call parent call
+#' @param ...
+#'
+#' @return error
+#' @keywords internal
 piperr <- function(message,
-                   name = "skip",
-                   call = rlang::caller_env(),
-                   ...){
+                   name = "skip"){
 
   svy <- .logenv$survey_id
 
   rlang::abort(message = message,
-                 class = c(name, "piperr"),
-                 link =  svy,
-                 call = call,
+               class = c(name, "piperr"),
+               id =  svy,
+               call = sys.call(sys.parent()),
                use_cli_format = TRUE)
 
 }
@@ -339,14 +346,13 @@ char_to_fct <- function(dt) {
 
 }
 
-find_condition <- function(cnd, class) {
-  while (!is.null(cnd)) {
-    if (inherits(cnd, class)) return(cnd)
-    cnd <- cnd$parent
-  }
-  NULL
-}
 
+#' Log the error
+#'
+#' @param e condition from the error
+#'
+#' @return NULL
+#' @keywords internal
 log_failure <- function(e) {
 
   ts <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
@@ -354,7 +360,7 @@ log_failure <- function(e) {
   root <- find_condition(e, "piperr")
 
   if (!is.null(root)) {
-    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(conditionMessage(root)), root$link)
+    line <- sprintf("[%s] %s for %s", ts, cli::ansi_strip(conditionMessage(root)), root$id)
     add_log(line, error =  deparse(root$call[[1]]), class = "piperr")
 
   } else {
@@ -364,4 +370,13 @@ log_failure <- function(e) {
   }
 
   return(NULL)
+}
+
+
+find_condition <- function(cnd, class) {
+  while (!is.null(cnd)) {
+    if (inherits(cnd, class)) return(cnd)
+    cnd <- cnd$parent
+  }
+  NULL
 }

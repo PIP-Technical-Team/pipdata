@@ -4,7 +4,7 @@
 \alias{cache_id}
 \title{Create cache ID for country PFW}
 \usage{
-cache_id(cpfw, module, log_err = TRUE, skip_err = TRUE)
+cache_id(cpfw, module)
 }
 \arguments{
 \item{cpfw}{country PFW data.table}

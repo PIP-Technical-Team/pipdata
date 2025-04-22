@@ -4,7 +4,7 @@
 \alias{add_area.pipmd}
 \title{Recode urban to area for micro data}
 \usage{
-\method{add_area}{pipmd}(dt, log_err = TRUE, skip_err = TRUE)
+\method{add_area}{pipmd}(dt)
 }
 \arguments{
 \item{dt}{data.table}
