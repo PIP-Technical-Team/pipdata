@@ -27,6 +27,7 @@ pd_deflation <- function(lf, cpi, ppp, pop) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   # PPP manipulation
   ppp <- ppp_to_wide(ppp = ppp)
 
@@ -87,42 +88,72 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
   }
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Add reporting level --------
+  ### Small fix ---------
+  dt_c <- copy(dt)
 
-  dt <- add_rep_lvl(dt) # Maybe not needed with Tefera new aux data.
+  assign("survey_id",
+         attributes(dt_c)$survey_id$values,
+         envir = .logenv)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Deflation --------
+  # on.exit ------------
+  on.exit({
+    rm(survey_id,
+       envir = .logenv)
+  })
 
-  ### Merge survey with ppp and cpi ---------
+  dt_f <- tryCatch(
+    expr = {
 
-  dt <- add_aux(dt, ppp, cpi)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Add reporting level --------
 
-  ### Welfare LCU ---------
+      dt_c <- add_rep_lvl(dt_c) # Maybe not needed with Tefera new aux data.
 
-  dt <- welfare_lcu(dt)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Deflation --------
 
-  ### Delfate welfare vector ------
+      ### Merge survey with ppp and cpi ---------
 
-  dt <- deflate_wlf(dt)
+      dt_c <- add_aux(dt_c, ppp, cpi)
 
-  ### Scale Subnational Population to National accounts (WDI) ----
+      ### Welfare LCU ---------
 
-  if (length(dt[, unique(reporting_level)]) > 1)  { # Needed??
+      dt_c <- welfare_lcu(dt_c)
 
-    dt <- adjust_population(dt, pop)
+      ### Delfate welfare vector ------
 
-  }
+      dt_c <- deflate_wlf(dt_c)
 
-  ### Format vars  ---------
+      ### Scale Subnational Population to National accounts (WDI) ----
 
-  dt <- char_to_fct(dt)
+      if (length(dt_c[, unique(reporting_level)]) > 1)  { # Needed??
+
+        dt_c <- adjust_population(dt_c, pop)
+
+      }
+
+      ### Format vars  ---------
+
+      char_to_fct(dt_c)
+    },
+
+    error = function(cnd){
+
+      survey_id <- c(.logenv$survey_id)
+
+      cli::cli_alert("The survey {survey_id} was skipped")
+
+      log_failure(cnd)
+
+      NA
+
+    }
+  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
+  return(dt_f)
 
 }
 
@@ -151,34 +182,63 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 
   }
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Add reporting level --------
+  ### Small fix ---------
+  dt_c <- copy(dt)
 
-  dt <- add_rep_lvl(dt) # Maybe not needed with Tefera new aux data.
+  assign("survey_id",
+         attributes(dt_c)$survey_id$values,
+         envir = .logenv)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Deflation --------
+  # on.exit ------------
+  on.exit({
+    rm(survey_id,
+       envir = .logenv)
+  })
 
-  ### Merge survey with ppp and cpi ---------
+  dt_f <- tryCatch(
+    expr = {
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Add reporting level --------
 
-  dt <- add_aux(dt, ppp, cpi)
+      dt_c <- add_rep_lvl(dt_c) # Maybe not needed with Tefera new aux data.
 
-  ### Welfare LCU ---------
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Deflation --------
 
-  dt <- welfare_lcu(dt)
+      ### Merge survey with ppp and cpi ---------
 
-  ### Delfate welfare vector ------
+      dt_c <- add_aux(dt_c, ppp, cpi)
 
-  dt <- deflate_wlf(dt)
+      ### Welfare LCU ---------
 
-  ### Format vars  ---------
+      dt_c <- welfare_lcu(dt_c)
 
-  dt <- char_to_fct(dt)
+      ### Delfate welfare vector ------
+
+      dt_c <- deflate_wlf(dt_c)
+
+      ### Format vars  ---------
+
+      char_to_fct(dt_c)
+    },
+
+    error = function(cnd){
+
+      survey_id <- c(.logenv$survey_id)
+
+      cli::cli_alert("The survey {survey_id} was skipped")
+
+      log_failure(cnd)
+
+      NA
+
+    }
+  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
+  return(dt_f)
 
 }
 

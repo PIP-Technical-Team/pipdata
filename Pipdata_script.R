@@ -50,3 +50,6 @@ delfated <- lapply(clean_res, pd_deflation,
                          cpi = cpi,
                          ppp = ppp,
                          pop = pop)
+
+# Print errors
+.logenv$piperr
