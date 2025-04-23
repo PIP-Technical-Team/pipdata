@@ -116,7 +116,7 @@ add_main_vars <- function(dt, cpfw) {
 
         vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
 
-        msg <- cli::cli_format("Main variable{?s} {vars} missing")
+        msg <- cli::format_error("Main variable{?s} {vars} missing")
 
         piperr(message = msg,
                name = "mn_var_inf")
@@ -317,7 +317,9 @@ add_dom_vars <- function(dt, cpfw) {
 
         miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
 
-        msg <- cli::cli_format("Domain variable{?s} {miss_vars} missing in country PFW")
+        miss_vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
+
+        msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
 
         piperr(message = msg,
                name = "dom_var")

@@ -293,7 +293,7 @@ add_log <- function(line, error = NULL, class = "piperr") {
   # Check if the error name already exists
   if (key %in% names(log_list)) {
 
-    log_list[[key]] <- append(log_list[[key]][[1]], line)
+    log_list[[key]][[1]] <- append(log_list[[key]][[1]], line)
 
   } else {
 

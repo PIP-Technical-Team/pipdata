@@ -174,7 +174,7 @@ unq_obs_dt <- function(dt,
         dt_d <- dt[duplicated(dt, by = keyVar)]
         n_rep <- nrow(dt_d)
 
-        msg <- cli::cli_format("There {?is/are} {n_rep} duplicates in PFW")
+        msg <- cli::format_error("There {?is/are} {n_rep} duplicates in PFW")
 
         piperr(message = msg,
                name = "dup_pfw")

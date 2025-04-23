@@ -21,7 +21,11 @@ inv_smp    <- inv[selected,]
 # Load data
 ls <- valid_dlw_load(inv_smp, path)
 pfw  <- pipload::pip_load_aux("pfw")
+ppp  <- pipload::pip_load_aux("ppp")
+cpi  <- pipload::pip_load_aux("cpi")
+pop  <- pipload::pip_load_aux("pop")
 
+# Merge aux file
 # pfw_all  <- qs::qread("cpi_pop_gdp_ppp_pfw.qs")
 # pfw_all <- pfw_all[order(country_code,year),]
 # pfw_ur <- pfw_all[pfw_all$reporting_level!="national",]
@@ -37,10 +41,6 @@ results <- lapply(ls,
 clean_res <- Filter(Negate(is.na), results)
 
 # Deflation
-ppp  <- pipload::pip_load_aux("ppp")
-cpi  <- pipload::pip_load_aux("cpi")
-pop  <- pipload::pip_load_aux("pop")
-
 delfated <- lapply(clean_res, pd_deflation,
                          cpi = cpi,
                          ppp = ppp,
