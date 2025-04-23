@@ -29,11 +29,14 @@ process_data <- function(df, pfw, ...) {
 #' @export
 #' @rdname process_data
 process_data.pipmd <- function(df, pfw, ...) {
-  cli::cli_alert_info("Using microdata method")
+
+  svy <- unique(df$survey_id)
 
   assign("survey_id",
-         unique(df$survey_id),
+         svy,
          envir = .logenv)
+
+  cli::cli_alert_info("Using microdata method for {svy}")
 
   # on.exit ------------
   on.exit({
@@ -86,11 +89,14 @@ process_data.pipmd <- function(df, pfw, ...) {
 #' @export
 #' @rdname process_data
 process_data.pipgd <- function(df, pfw, ...) {
-  cli::cli_alert_info("Using group data method")
+
+  svy <- unique(df$survey_id)
 
   assign("survey_id",
-         unique(df$survey_id),
+         svy,
          envir = .logenv)
+
+  cli::cli_alert_info("Using group method for {svy}")
 
   # on.exit ------------
   on.exit({

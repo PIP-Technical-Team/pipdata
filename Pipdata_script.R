@@ -14,7 +14,7 @@ inv          <- qs::qread(file.path(path, "_Inventory/_release/pip_raw_inventory
 inv$fullname <- file.path(path, basename(inv$pip_file_path))
 
 # Sample files
-set.seed(51089)
+set.seed(1089)
 selected   <- sample(1:nrow(inv), n)
 inv_smp    <- inv[selected,]
 
@@ -48,3 +48,4 @@ delfated <- lapply(clean_res, pd_deflation,
 
 # Print errors
 .logenv$piperr
+.logenv$unk_err
