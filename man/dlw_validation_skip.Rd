@@ -4,7 +4,7 @@
 \alias{dlw_validation_skip}
 \title{Non-validate module information}
 \usage{
-dlw_validation_skip(svy_id)
+dlw_validation_skip(dlw_data, svy_id)
 }
 \arguments{
 \item{svy_id}{name of the data}

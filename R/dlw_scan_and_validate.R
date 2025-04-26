@@ -190,7 +190,7 @@ dlw_scan_and_validate <- function(
       } else if (md_type == "HIST") {
         check <- dlw_validation_hist(df, nm)
       } else {
-        check <- dlw_validation_skip(nm)
+        check <- dlw_validation_skip(df, nm)
       }
 
       if (any(check[["type"]] == "error")) {

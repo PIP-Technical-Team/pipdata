@@ -24,6 +24,10 @@ get_validation_report <- function(){
   validation_report <-
     validation_report[, module_type := sub(".*_(.*)", "\\1", table_name)]
 
+  validation_report <-
+    validation_report[, module_type := fifelse(module_type %in% c("GPWG", "GROUP", "BIN", "HIST"),
+                                               module_type, "OTHER")]
+
   # extract master data version
   validation_report <-
     validation_report[, vermast := sub(".*_([^_]+)_M.*", "\\1", table_name)]

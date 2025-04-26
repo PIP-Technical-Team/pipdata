@@ -23,7 +23,10 @@ dlw_validation_gpwg <- function(dlw_data, svy_id){
 
   # subset numeric variables
 
-  num_var_list <- df_var_list[grep("year$|welfare$|weight$|hsize$|
+  # num_var_list <- df_var_list[grep("year$|welfare$|weight$|hsize$|
+  #                                  welfshprosperity$", df_var_list)]
+
+  num_var_list <- df_var_list[grep("^year$|welfare$|weight$|hsize$|
                                    welfshprosperity$", df_var_list)]
 
   # threshold to validate availability of data/variable
@@ -263,7 +266,7 @@ dlw_validation_bin <- function(dlw_data, svy_id){
   df_var_list <- colnames(dlw_data)
 
   # subset numeric variables
-  num_var_list <- df_var_list[grep("year$|welfare$|weight$|share$", df_var_list)]
+  num_var_list <- df_var_list[grep("^year$|welfare$|weight$|share$", df_var_list)]
 
   # subset character variables
   chr_var_list <- df_var_list[grep("code$|verm$|vera$|^region|^country", df_var_list)]
@@ -367,7 +370,7 @@ dlw_validation_hist <- function(dlw_data, svy_id){
   df_var_list <- colnames(dlw_data)
 
   # subset numeric variables
-  num_var_list <- df_var_list[grep("urban$|year$|welfare$|weight$|
+  num_var_list <- df_var_list[grep("urban$|^year$|welfare$|weight$|
                                    hsize$|datayear$|type$", df_var_list)]
 
   # subset character variables
@@ -450,6 +453,7 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 
 #' Non-validate module information
 #'
+#' @param dlw_data a raw data in qs format
 #' @param svy_id name of the data
 #'
 #' @returns an empty data.frame
@@ -458,34 +462,63 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 #' @examples
 #' \dontrun{
 #' dlw_validation_skip(
+#'   dlw_data = "data/dlw_qs",
 #'   svy_id = survey_id
 #' )
 #' }
-dlw_validation_skip <- function(svy_id){
+dlw_validation_skip <- function(dlw_data, svy_id){
 
-  err_t <- data.table(
-    table_name  = svy_id,
-    assertion.id = NA,
-    description = NA,
-    num.violations = numeric(),
-    message     = "DATA IS NOT VALIDATE",
-    type        = "skipped",
-    call        = NA,
-    error_df    =  I(list())
-   )
+  stopifnot("Data data is not loaded" = !is.null(dlw_data))
+
+  df_var_list <- colnames(dlw_data)
+  report   <- data_validation_report()
+
+  validate(dlw_data, name = svy_id)  |>
+    verify(nrow(dlw_data) > 0, description = "Data should not blank") |>
+    # verify(num_row_NAs, df_var_list, description = "Rows shouldn't be missing") |>
+    add_results(report)
+
+  validation_record <- get_results(report, unnest = FALSE) |>
+    setDT()
+
+  err_t <- validation_record[, .(table_name, message, type)]
 
   if (!rlang::env_has(.pipdata, "validation_report")){
 
-    rlang::env_poke(.pipdata, "validation_report", err_t)
+    rlang::env_poke(.pipdata, "validation_report", validation_record)
 
   } else {
 
-    compiled_result <- rbind(.pipdata$validation_report, err_t, ignore.attr=TRUE)
+    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
     rlang::env_poke(.pipdata, "validation_report", compiled_result)
 
     cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
 
   }
+
+  # err_t <- data.table(
+  #   table_name  = svy_id,
+  #   assertion.id = NA,
+  #   description = NA,
+  #   num.violations = numeric(),
+  #   message     = "DATA IS NOT VALIDATE",
+  #   type        = "skipped",
+  #   call        = NA,
+  #   error_df    =  I(list())
+  #  )
+
+  # if (!rlang::env_has(.pipdata, "validation_report")){
+  #
+  #   rlang::env_poke(.pipdata, "validation_report", err_t)
+  #
+  # } else {
+  #
+  #   compiled_result <- rbind(.pipdata$validation_report, err_t, ignore.attr=TRUE)
+  #   rlang::env_poke(.pipdata, "validation_report", compiled_result)
+  #
+  #   cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
+  #
+  # }
 
   return(invisible(err_t))
 
