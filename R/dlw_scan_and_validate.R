@@ -10,6 +10,7 @@
 #'   (versioned) will be placed.
 #' @param pip_raw_inventory_path Character. Path where the pip_raw_inventory.qs
 #'   file is stored (or will be created if missing).
+#' @param validation_report_path Character. Path to validation report
 #' @param validation_fn Function or NULL. A user-supplied validation function
 #'   that takes a data.frame and returns a list like \code{list(is_valid=TRUE/FALSE, reason="<error message>")}.
 #'
@@ -35,9 +36,17 @@ dlw_scan_and_validate <- function(
     dlw_qs_folder,
     pip_raw_folder,
     pip_raw_inventory_path,
+    validation_report_path,
     validation_fn = NULL
 ) {
 
+  # set-up a release
+  pipfun::get_wrk_release()
+
+  pipfun::log_info("Starting scan and validate raw data (in .qs format)", name = "pipdata_log")#,
+           # logmeta = list(dlw_qs_folder = dlw_qs_folder,
+           #                pip_raw_folder = pip_raw_folder,
+           #                pip_raw_inventory_path = pip_raw_inventory_path))
 
   # 1. Load or create pip_raw_inventory.qs (old_inv) ----
   ## If pip_raw_inventory_path exists, read it into 'old_inv'.
@@ -147,9 +156,19 @@ dlw_scan_and_validate <- function(
     if (st == "new" || st == "changed") {
       # read the .qs file
       qs_path <- file.path(dlw_qs_folder, paste0(nm, ".qs"))
+      # df <- tryCatch(
+      #   qs::qread(qs_path),
+      #   error = function(e) NULL  # If read fails, 'df' is NULL
+      # )
+
       df <- tryCatch(
         qs::qread(qs_path),
-        error = function(e) NULL  # If read fails, 'df' is NULL
+        error = function(e) {
+          pipfun::log_error("Failed to load data",
+                            name = "pipdata_log",
+                            logmeta = list(error = e$message))
+          NULL
+        } # If read fails, 'df' is NULL
       )
 
       # If we can't read the file, we skip it or mark it invalid
@@ -240,7 +259,22 @@ dlw_scan_and_validate <- function(
 
   # 6. Save new_inv as the new pip_raw_inventory ----
   qs::qsave(final_inv, pip_raw_inventory_path)
+
   cli::cli_alert_success("Created new pip_raw_inventory at: {pip_raw_inventory_path}")
+
+  # 7. Save validation report ----
+  valid_report <- get_validation_report()
+
+  qs::qsave(valid_report, validation_report_path)
+
+  cli::cli_alert_success("Validation report is saved at: {validation_report_path}")
+
+  pipfun::log_info("End of scan and validate raw data (in .qs format) and generating inventory file",
+                   name = "pipdata_log",
+                   logmeta = list(n = nrow(final_inv)))
+
+  # pipfun::log_info("Scanning, validating and generating inventory file completed", name = "pipdata_log",
+  #          logmeta = list(n = nrow(final_inv)))
 
   return(invisible(final_inv))
 }

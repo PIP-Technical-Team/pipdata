@@ -22,6 +22,10 @@ dlw_dta_to_qs <- function(
     log_err  = TRUE,
     skip_err = TRUE
 ) {
+
+  # set-up a release
+  pipfun::get_wrk_release()
+
   # 1. Record start time ------
   start_time <- Sys.time()
 

@@ -17,13 +17,14 @@ Imports:
     fs,
     glue,
     joyn,
-    pipfun (>= 0.0.0.9017),
+    pipfun (>= 0.2.0),
     pipload (>= 0.2.0.9005),
     purrr,
     wbpip (>= 0.0.3),
     data.validator,
     assertr,
-    labelled
+    labelled,
+    DT
 Suggests: 
     knitr,
     rmarkdown,

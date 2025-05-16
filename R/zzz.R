@@ -12,6 +12,9 @@ pipdata_default_options <- list(
     assign(".logenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
   }
 
+  # initiate logging
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Options --------
 

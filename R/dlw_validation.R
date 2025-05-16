@@ -16,6 +16,9 @@
 #' }
 dlw_validation_gpwg <- function(dlw_data, svy_id){
 
+  # set-up a release
+  pipfun::get_wrk_release()
+
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
   # get variable names
@@ -137,6 +140,9 @@ dlw_validation_gpwg <- function(dlw_data, svy_id){
 #' )
 #' }
 dlw_validation_group <- function(dlw_data, svy_id){
+
+  # set-up a release
+  pipfun::get_wrk_release()
 
   stopifnot("Data is not loaded" = !is.null(dlw_data))
 
@@ -260,6 +266,9 @@ dlw_validation_group <- function(dlw_data, svy_id){
 #' }
 dlw_validation_bin <- function(dlw_data, svy_id){
 
+  # set-up a release
+  pipfun::get_wrk_release()
+
   stopifnot("Data is not loaded" = !is.null(dlw_data))
 
   # get variable names
@@ -365,6 +374,9 @@ dlw_validation_bin <- function(dlw_data, svy_id){
 #' }
 dlw_validation_hist <- function(dlw_data, svy_id){
 
+  # set-up a release
+  pipfun::get_wrk_release()
+
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
   # get variable names
   df_var_list <- colnames(dlw_data)
@@ -468,6 +480,9 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 #' }
 dlw_validation_skip <- function(dlw_data, svy_id){
 
+  # set-up a release
+  pipfun::get_wrk_release()
+
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
   df_var_list <- colnames(dlw_data)
@@ -496,30 +511,6 @@ dlw_validation_skip <- function(dlw_data, svy_id){
 
   }
 
-  # err_t <- data.table(
-  #   table_name  = svy_id,
-  #   assertion.id = NA,
-  #   description = NA,
-  #   num.violations = numeric(),
-  #   message     = "DATA IS NOT VALIDATE",
-  #   type        = "skipped",
-  #   call        = NA,
-  #   error_df    =  I(list())
-  #  )
-
-  # if (!rlang::env_has(.pipdata, "validation_report")){
-  #
-  #   rlang::env_poke(.pipdata, "validation_report", err_t)
-  #
-  # } else {
-  #
-  #   compiled_result <- rbind(.pipdata$validation_report, err_t, ignore.attr=TRUE)
-  #   rlang::env_poke(.pipdata, "validation_report", compiled_result)
-  #
-  #   cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-  #
-  # }
-
   return(invisible(err_t))
 
 }
@@ -540,6 +531,9 @@ dlw_validation_skip <- function(dlw_data, svy_id){
 #' )
 #' }
 is_character <-  function(val, col_name){
+  # set-up a release
+  pipfun::get_wrk_release()
+
   expr = bquote(is.character(.(val)[[.(col_name)]]))
   validate_if(val, eval(expr), description = glue::glue("{col_name} is character"))
 }
@@ -560,6 +554,10 @@ is_character <-  function(val, col_name){
 #' )
 #' }
 is_numeric <- function(val, col_name){
+
+  # set-up a release
+  pipfun::get_wrk_release()
+
   expr = bquote(is.numeric(.(val)[[.(col_name)]]))
   validate_if(val, eval(expr), description = glue::glue("{col_name} is numeric"))
 }
@@ -582,6 +580,9 @@ is_numeric <- function(val, col_name){
 #' }
 check_urban <- function(val, col_name){
 
+  # set-up a release
+  pipfun::get_wrk_release()
+
   # extract unique URBAN values
   urban_info <- unique(val[[col_name]])
 
@@ -597,3 +598,4 @@ check_urban <- function(val, col_name){
     error_fun = warning_append
   )
 }
+
