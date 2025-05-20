@@ -1,4 +1,6 @@
-valid_dlw_load <- function(inv, path) {
+valid_dlw_load <- function(inv,
+                           folder = "DLW-OUTPUT/",
+                           path = file.path(Sys.getenv("PIP_ROOT_DIR"), folder)) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -6,11 +8,12 @@ valid_dlw_load <- function(inv, path) {
 
   # Order alphabetically
   file_dta <- basename(inv$fullname)
-  file_qs <- sub("\\.dta$", ".qs", file_dta)
-  file_qs <- sort(file_qs)
+  file_qs  <- sub("\\.dta$", ".qs", file_dta)
+  file_qs  <- sort(file_qs)
 
   # Load survey files
-  ls_svy     <- lapply(1:n, \(x) qs::qread(file.path(path, file_qs[x])))
+  n      <- length(file_qs)
+  ls_svy <- lapply(1:n, \(x) qs::qread(file.path(path, file_qs[x])))
 
   poss_data_to_df <- purrr::possibly(.f = data_to_dt,
                                      otherwise = NULL)
