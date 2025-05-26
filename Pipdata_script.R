@@ -1,29 +1,43 @@
-# Test of
+# Test of pipdata functions
+
+#----- Load libraries and set release---
+
 library(devtools)
 load_all()
 
-#----- Temporary load of svy data -----
+pipfun::setup_working_release("20250203")
 
-# Set parameters
-path <- "//tsclient/Y/DLW-OUTPUT" # Path to DLW-QS
-n    <- 20 # Number of random surveys loaded
+
+#----- Temporary load of svy data -----
 
 # Load inventory
 # inv  <- pipload::pip_load_dlw_inventory()
-inv          <- qs::qread(file.path(path, "_Inventory/_release/pip_raw_inventory_20250417_INT.qs"))
-inv$fullname <- file.path(path, basename(inv$pip_file_path))
+inv          <- qs::qread(file.path(Sys.getenv("PIP_ROOT_DIR"),"DLW-OUTPUT/_Inventory/_release/pip_raw_inventory_20250203_TEST.qs"))
+inv$fullname <- file.path(path, basename(inv$pip_file_path)) # We need to change
+
+
+inv_aux <- valid_aux_load(in)
+inv_aux$pfw |>
+  # collapse::fsubset(variable == "cpi" )|>
+  collapse::fselect(country_code, year, survey_acronym, variable, diff)|>
+  collapse::funique()
+
+# val_rep <-  qs::qread(file.path(path, "_Inventory/_release/validation_report.qs"))
 
 # Sample files
 set.seed(1089)
+n    <- 20 # Number of random surveys loaded
 selected   <- sample(1:nrow(inv), n)
 inv_smp    <- inv[selected,]
 
 # Load data
-ls <- valid_dlw_load(inv_smp, path)
-pfw  <- pipload::pip_load_aux("pfw")
-ppp  <- pipload::pip_load_aux("ppp")
-cpi  <- pipload::pip_load_aux("cpi")
-pop  <- pipload::pip_load_aux("pop")
+ls <- valid_dlw_load(inv_smp) # Change folder name if it changes
+# pfw  <- pipload::pip_load_aux("pfw")
+pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),"PIP_ingestion_pipeline_V2"))
+# ppp  <- pipload::pip_load_aux("ppp")
+# cpi  <- pipload::pip_load_aux("cpi")
+# pop  <- pipload::pip_load_aux("pop")
+# gdo  <- pipload::pip_load_aux("gdp")
 
 # Merge aux file
 # pfw_all  <- qs::qread("cpi_pop_gdp_ppp_pfw.qs")
@@ -35,16 +49,16 @@ pop  <- pipload::pip_load_aux("pop")
 # Process data
 results <- lapply(ls,
                   process_data,
-                  pfw = pfw)
+                  pfw = pfw_aux)
 
-# Clean NA results
-clean_res <- Filter(Negate(is.na), results)
-
-# Deflation
-delfated <- lapply(clean_res, pd_deflation,
-                         cpi = cpi,
-                         ppp = ppp,
-                         pop = pop)
+# # Clean NA results
+# clean_res <- Filter(Negate(is.na), results)
+#
+# # Deflation
+# delfated <- lapply(clean_res, pd_deflation,
+#                          cpi = cpi,
+#                          ppp = ppp,
+#                          pop = pop)
 
 # Print errors
 .logenv$piperr
