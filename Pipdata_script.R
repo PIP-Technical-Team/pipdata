@@ -15,13 +15,6 @@ pipfun::setup_working_release("20250203")
 inv          <- qs::qread(file.path(Sys.getenv("PIP_ROOT_DIR"),"DLW-OUTPUT/_Inventory/_release/pip_raw_inventory_20250203_TEST.qs"))
 inv$fullname <- file.path(path, basename(inv$pip_file_path)) # We need to change
 
-
-inv_aux <- valid_aux_load(in)
-inv_aux$pfw |>
-  # collapse::fsubset(variable == "cpi" )|>
-  collapse::fselect(country_code, year, survey_acronym, variable, diff)|>
-  collapse::funique()
-
 # val_rep <-  qs::qread(file.path(path, "_Inventory/_release/validation_report.qs"))
 
 # Sample files
@@ -30,8 +23,11 @@ n    <- 20 # Number of random surveys loaded
 selected   <- sample(1:nrow(inv), n)
 inv_smp    <- inv[selected,]
 
+aux <- valid_aux_load() # It gives a list of the surveys to be updated
+
 # Load data
-ls <- valid_dlw_load(inv_smp) # Change folder name if it changes
+ls  <- valid_dlw_load(inv_smp) # Change folder name if it changes
+
 # pfw  <- pipload::pip_load_aux("pfw")
 pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),"PIP_ingestion_pipeline_V2"))
 # ppp  <- pipload::pip_load_aux("ppp")
