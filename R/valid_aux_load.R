@@ -8,6 +8,8 @@ valid_aux_load <- function(measure = c("cpi", "ppp","gdp","pfw","pop"),
   # measure = c("cpi", "ppp","gdp","pfw","pop")
   # maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),"PIP_ingestion_pipeline_V2")
 
+  # Load data or load changes
+
   changes <- pipaux::inventory_aux_changes(measures = measure,
                                            maindir = maindir)
 
