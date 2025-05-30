@@ -55,8 +55,7 @@ process_data.pipmd <- function(df, pfw, ...) {
                       message = cnd$message,
                       name = "pipdata_log",
                       output = NA,
-                      logmeta = list(survey = survey_id,
-                                     status = "The survey was skipped"))
+                      logmeta = list(status = "The survey was skipped"))
 
       }
   )

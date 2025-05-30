@@ -6,7 +6,7 @@ pipdata_default_options <- list(
 
 .onLoad <- function(libname, pkgname) {
 
-  pipfun::log_init("pipdata_log") # Maybe do it per release?
+  pipfun::log_init("pipdata_log", overwrite = TRUE) # Maybe do it per release?
 
   # make sure .logenv is exported properly-----
 
