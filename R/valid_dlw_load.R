@@ -1,31 +1,29 @@
 valid_dlw_load <- function(inv,
                            folder = "DLW-OUTPUT/",
-                           path = file.path(Sys.getenv("PIP_ROOT_DIR"), folder)) {
+                           path = fs::path(Sys.getenv("PIP_ROOT_DIR"), folder)) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Order alphabetically
-  file_dta <- basename(inv$fullname)
-  file_qs  <- sub("\\.dta$", ".qs", file_dta)
-  file_qs  <- sort(file_qs)
+
+  inv <- inv |>
+    collapse::fmutate(file_qs = fs::path_file(pip_file_path))
+
+  setorder(inv, file_qs)
+
+  # Check what aux has changed
+  # inv_aux <- valid_aux_load() # It gives a list of the surveys to be updated
 
   # Load survey files
-  n      <- length(file_qs)
-  ls_svy <- lapply(1:n, \(x) qs::qread(file.path(path, file_qs[x])))
+  n      <- length(inv$file_qs)
+  ls_svy <- lapply(1:n, \(x) qs::qread(fs::path(path, inv$file_qs[x])))
+
+  # Some data from inventory to data frame
 
   poss_data_to_df <- purrr::possibly(.f = data_to_dt,
                                      otherwise = NULL)
-
-  # Order sampled inventory to get same survey_id
-
-  inv <- inv |>
-    dplyr::mutate(file_dta = basename(fullname))
-
-  inv <- inv[order(file_dta),]
-
-  # Some data from inventory to data frame
 
   ls <- purrr::map2(.x = ls_svy,
                     .y = as.list(inv$survey_id),

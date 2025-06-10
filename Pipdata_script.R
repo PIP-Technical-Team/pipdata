@@ -5,40 +5,42 @@
 library(devtools)
 load_all()
 
-pipfun::setup_working_release("20250203")
+release <- "20250203"
+pipfun::setup_working_release(release)
 
 #----- Temporary load data -----
 
-# Load inventory from validated DLW
-
-folder <- "DLW-OUTPUT1"
-
+# Load inventory from validated DLW:
 # inv  <- pipload::pip_load_dlw_inventory()
-inv          <- qs::qread(file.path(Sys.getenv("PIP_ROOT_DIR"),folder, "/_Inventory/_release/pip_raw_inventory_20250203_TEST.qs"))
-inv$fullname <- file.path(Sys.getenv("PIP_ROOT_DIR"),folder, basename(inv$pip_file_path)) # Small fix for now
+
+folder <- "DLW-OUTPUT"
+# inv_files <- fs::dir_ls(fs::path(Sys.getenv("PIP_ROOT_DIR"),folder,"/_Inventory/_release"))
+name_inv <- "pip_raw_inventory_20250203_TEST.qs"
+
+inv   <- qs::qread(fs::path(Sys.getenv("PIP_ROOT_DIR"),
+                                   folder,
+                                   "/_Inventory/_release",
+                                   name_inv))
+
+# Check validation report:
 # val_rep <-  qs::qread(file.path(path, "_Inventory/_release/validation_report.qs"))
 
-# Sample files for now
-set.seed(1089)
-n    <- 20 # Number of random surveys loaded
-selected   <- sample(1:nrow(inv), n)
-inv_smp    <- inv[selected,]
+# Create mock changes for the inventory
+inv_to_be_cleaned <- m_inv_load(inv)
 
-# Load data (just sample)
-ls  <- valid_dlw_load(inv_smp) # Change folder name if it changes
+# Load data
+ls  <- valid_dlw_load(inv_to_be_cleaned)
 
-# Create aux attributes
-
+# Load PFW
+pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),
+                                                       "PIP_ingestion_pipeline_V2"))
 
 # aux_pfw_key -> creates reporting level variable
 # pfw  <- pipload::pip_load_aux("pfw")
-pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),"PIP_ingestion_pipeline_V2"))
 # ppp  <- pipload::pip_load_aux("ppp")
 # cpi  <- pipload::pip_load_aux("cpi")
 # pop  <- pipload::pip_load_aux("pop")
 # gdo  <- pipload::pip_load_aux("gdp")
-
-# aux <- valid_aux_load() # It gives a list of the surveys to be updated
 
 #--------- Run pipdata functions -----
 
@@ -46,8 +48,6 @@ pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"
 results <- lapply(ls,
                   process_data,
                   pfw = pfw_aux)
-
-
 
 
 # # Clean NA results
@@ -59,6 +59,3 @@ results <- lapply(ls,
 #                          ppp = ppp,
 #                          pop = pop)
 
-# Print errors
-.logenv$piperr
-.logenv$unk_err
