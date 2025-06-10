@@ -12,24 +12,13 @@ pipfun::setup_working_release(release)
 
 # Load inventory from validated DLW:
 # inv  <- pipload::pip_load_dlw_inventory()
-
-folder <- "DLW-OUTPUT"
-# inv_files <- fs::dir_ls(fs::path(Sys.getenv("PIP_ROOT_DIR"),folder,"/_Inventory/_release"))
-name_inv <- "pip_raw_inventory_20250203_TEST.qs"
-
-inv   <- qs::qread(fs::path(Sys.getenv("PIP_ROOT_DIR"),
-                                   folder,
-                                   "/_Inventory/_release",
-                                   name_inv))
+inv <- m_inv_load()
 
 # Check validation report:
 # val_rep <-  qs::qread(file.path(path, "_Inventory/_release/validation_report.qs"))
 
-# Create mock changes for the inventory
-inv_to_be_cleaned <- m_inv_load(inv)
-
 # Load data
-ls  <- valid_dlw_load(inv_to_be_cleaned)
+ls  <- valid_dlw_load(inv)
 
 # Load PFW
 pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),

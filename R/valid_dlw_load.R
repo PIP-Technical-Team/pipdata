@@ -6,6 +6,9 @@ valid_dlw_load <- function(inv,
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  # Create mock changes for the inventory (Temporal)
+  inv <- m_inv_filter(inv) # For now is a mock function
+
   # Order alphabetically
 
   inv <- inv |>
