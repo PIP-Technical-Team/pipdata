@@ -30,11 +30,21 @@ process_data <- function(df, pfw, ...) {
 #' @rdname process_data
 process_data.pipmd <- function(df, pfw, ...) {
 
+  # on.exit ------------
+  on.exit({
+    rm(survey_id,
+       envir = .logenv)
+  })
+
   svy <- unique(df$survey_id)
 
   assign("survey_id",
          svy,
          envir = .pipdataenv)
+
+  assign("survey_id",
+         svy,
+         envir = .logenv) # For now
 
 
   # Computations -------
@@ -47,6 +57,21 @@ process_data.pipmd <- function(df, pfw, ...) {
 
     },
 
+    piperr = function(cnd){
+
+      survey_id <- c(.pipdataenv$survey_id)
+
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      output = NA,
+                      args = list(error = class(cnd)[2],
+                                     survey = survey_id,
+                                     status = "The survey was skipped"))
+
+    },
+
     error = function(cnd){
 
       survey_id <- c(.pipdataenv$survey_id)
@@ -54,8 +79,11 @@ process_data.pipmd <- function(df, pfw, ...) {
       pipfun::log_add(event = "error",
                       message = cnd$message,
                       name = "pipdata_log",
+                      .trace = cnd$call,
                       output = NA,
-                      logmeta = list(status = "The survey was skipped"))
+                      logmeta = list(error = "unknown_error",
+                                     survey = survey_id,
+                                     status = "The survey was skipped"))
 
       }
   )
@@ -73,23 +101,25 @@ process_data.pipmd <- function(df, pfw, ...) {
 #' @rdname process_data
 process_data.pipgd <- function(df, pfw, ...) {
 
-  svy <- unique(df$survey_id)
-
-  assign("survey_id",
-         svy,
-         envir = .logenv)
-
-  cli::cli_alert_info("Using group method for {svy}")
-
   # on.exit ------------
   on.exit({
     rm(survey_id,
        envir = .logenv)
   })
 
-  if("countrycode" %in% names(df)){
-    df$country_code <- df$countrycode
-  }
+  svy <- unique(df$survey_id)
+
+  assign("survey_id",
+         svy,
+         envir = .pipdataenv)
+
+  assign("survey_id",
+         svy,
+         envir = .logenv) # For now
+
+  # if("countrycode" %in% names(df)){
+  #   df$country_code <- df$countrycode
+  # }
 
   # Unique obs per pfw --------
   keyVar <- c("country_code", "surveyid_year", "survey_acronym")
@@ -105,15 +135,33 @@ process_data.pipgd <- function(df, pfw, ...) {
 
     },
 
+    piperr = function(cnd){
+
+      survey_id <- c(.pipdataenv$survey_id)
+
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      output = NA,
+                      args = list(error = class(cnd)[2],
+                                  survey = survey_id,
+                                  status = "The survey was skipped"))
+
+    },
+
     error = function(cnd){
 
-      survey_id <- c(.logenv$survey_id)
+      survey_id <- c(.pipdataenv$survey_id)
 
-      cli::cli_alert("The survey {survey_id} was skipped")
-
-      log_failure(cnd)
-
-      return(NA)
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      output = NA,
+                      logmeta = list(error = "unknown_error",
+                                     survey = survey_id,
+                                     status = "The survey was skipped"))
 
     }
   )
@@ -157,10 +205,13 @@ unq_obs_dt <- function(dt,
         dt_d <- dt[duplicated(dt, by = keyVar)]
         n_rep <- nrow(dt_d)
 
-        msg <- cli::format_error("There {?is/are} {n_rep} duplicates in PFW")
+        cli::cli_abort("There {?is/are} {n_rep} duplicates in PFW",
+                       class = c("piperr","dup_pfw"))
 
-        piperr(message = msg,
-               name = "dup_pfw")
+        # msg <- cli::format_error("There {?is/are} {n_rep} duplicates in PFW")
+        #
+        # piperr(message = msg,
+        #        name = "dup_pfw")
 
         # cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
         #                class = c("dup_pfw", "piperr"),
@@ -170,20 +221,24 @@ unq_obs_dt <- function(dt,
 
     },
 
-    dup_pfw = function(cnd){
+    piperr = function(cnd){
 
-      log_failure(cnd)
+      survey_id <- c(.pipdataenv$survey_id)
 
-    },
+      dt <- unique(dt, by = keyVar)
 
-    finally = {
-
-      dt <- unique(dt, by = keyVar) # eliminate duplicates
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      output = dt,
+                      args = list(error = class(cnd)[2],
+                                  survey = survey_id,
+                                  status = "The survey was skipped"))
 
     }
 
   )
-
 
   return(dt)
 
