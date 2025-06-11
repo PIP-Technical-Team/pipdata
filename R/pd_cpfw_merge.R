@@ -94,9 +94,6 @@ cpfw_merge <- function(dt, cpfw, ...){
 #' @keywords internal
 add_main_vars <- function(dt, cpfw) {
 
-  tryCatch(
-    expr = {
-
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # computations   ---------
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,29 +109,20 @@ add_main_vars <- function(dt, cpfw) {
 
       if(length(vars)>0){
 
-        # svy <- unique(cpfw$link)
+        survey_id <- c(.pipdataenv$survey_id)
 
         vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
 
         msg <- cli::format_error("Main variable{?s} {vars} missing")
 
-        piperr(message = msg,
-               name = "mn_var_inf")
 
-       # cli::cli_abort(message = "Main variable{?s} {vars} missing in DLW",
-       #                class = c("mn_var_inf", "piperr"),
-       #                link = svy,
-       #                call = sys.call())
+        pipfun::log_add(event = "info",
+                        message = msg,
+                        name = "pipdata_log",
+                        args = list(info = "mn_var_inf",
+                                    survey = survey_id))
+
       }
-
-    },
-
-    mn_var_inf = function(cnd){
-
-        log_failure(cnd)
-    },
-
-    finally = {
 
       # Add variables if missing
 
@@ -149,10 +137,6 @@ add_main_vars <- function(dt, cpfw) {
 
              }
            })]
-
-    }
-
-  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -183,14 +167,22 @@ add_area.pipmd <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  tryCatch(
-    expr = {
+  # Abort if not urban variable
+  if (!(c("urban") %in% colnames(dt))){
 
-      # Abort if not urban variable
-      if (!(c("urban") %in% colnames(dt))){
+    survey_id <- c(.pipdataenv$survey_id)
 
-        piperr(message =  "There is no urban variable",
-               name = "urb_var")
+    pipfun::log_add(event = "info",
+                    message = "There is no urban variable",
+                    name = "pipdata_log",
+                    args = list(info = "urb_var",
+                                survey = survey_id))
+
+    # cli::cli_abort(message =  "There is no urban variable",
+    #                class = c("piperr", "urb_var"))
+
+    # piperr(message =  "There is no urban variable",
+    #        name = "urb_var")
 
 #         cli::cli_abort(message = "There is no urban variable",
 #                        class = c("urb_var", "piperr"),
@@ -198,24 +190,18 @@ add_area.pipmd <- function(dt) {
 #                        skip = skip_err,
 #                        link =  unique(dt$survey_id),
 #                        call = sys.call())
-      }
 
-      # Recode urban to area
+    dt[, area := ""]
 
-        dt[, area := fcase(urban == 1, "urban",
+    return(dt)
+  }
+
+  # Recode urban to area
+
+  dt[, area := fcase(urban == 1, "urban",
                            urban == 0, "rural",
                            is.na(urban), "",
                            default = "")]
-
-    },
-    urb_var = function(cnd){
-
-      log_failure(cnd)
-
-      dt[, area := ""]
-
-    }
-  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -236,54 +222,53 @@ add_area.pipgd <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  tryCatch(
-    expr = {
+  if (c("subnatid") %in% colnames(dt)){
 
-      if (c("subnatid") %in% colnames(dt)){
+    setnames(dt, "subnatid", "subnatid1")
 
-        setnames(dt, "subnatid", "subnatid1")
-
-      }
-
-      # Abort if not urban variable
-      if (!any(c("urban", "area") %in% colnames(dt))){
-
-        piperr(message = "There is no urban or area variable",
-               name = "urb_var")
-
-        # cli::cli_abort(message = "There is no urban or area variable",
-        #                class = c("urb_var", "piperr"),
-        #                log = log_err,
-        #                skip = skip_err,
-        #                link =  unique(dt$survey_id),
-        #                call = sys.call())
-      }
-
-      if(c("urban") %in% colnames(dt)){
-        # Recode urban to area
-
-        dt[, area := fcase(urban == 1, "urban",
-                           urban == 0, "rural",
-                           is.na(urban), "national",
-                           default = "")]
-
-      }
-
-      if(c("area") %in% colnames(dt)){
-
-        return(dt)
-      }
+  }
 
 
-    },
-    urb_var = function(cnd){
+  # Abort if not urban variable
+  if (!any(c("urban", "area") %in% colnames(dt))){
 
-      log_failure(cnd)
+    # piperr(message = "There is no urban or area variable",
+    #        name = "urb_var")
 
-      dt[, area := ""]
+    # cli::cli_abort(message = "There is no urban or area variable",
+    #                class = c("urb_var", "piperr"),
+    #                log = log_err,
+    #                skip = skip_err,
+    #                link =  unique(dt$survey_id),
+    #                call = sys.call())
 
-    }
-  )
+    survey_id <- c(.pipdataenv$survey_id)
+
+    pipfun::log_add(event = "info",
+                    message = "There is no urban or area variable",
+                    name = "pipdata_log",
+                    args = list(info = "urb_var",
+                                survey = survey_id))
+
+    dt[, area := ""]
+
+    return(dt)
+  }
+
+  if(c("area") %in% colnames(dt)){
+
+    return(dt)
+  }
+
+  if(c("urban") %in% colnames(dt)){
+    # Recode urban to area
+
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "national",
+                       default = "")]
+
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -304,67 +289,57 @@ add_dom_vars <- function(dt, cpfw) {
   # Level and domain variables    ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  tryCatch(
-    expr = {
+  pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
+  data_level_vars  <- glue("{pref}_data_level")
+  domain_vars      <- glue("{pref}_domain")
 
-      pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-      data_level_vars  <- glue("{pref}_data_level")
-      domain_vars      <- glue("{pref}_domain")
+  if(any(!(domain_vars %in% names(cpfw)))){
 
-      if(any(!(domain_vars %in% names(cpfw)))){
+    miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
+    miss_vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
+    msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
 
-        # svy <- unique(cpfw$link)
+    # piperr(message = msg,
+    #        name = "dom_var")
 
-        miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
+    survey_id <- c(.pipdataenv$survey_id)
 
-        miss_vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
+    pipfun::log_add(event = "info",
+                    message = msg,
+                    name = "pipdata_log",
+                    args = list(info = "dom_var",
+                                survey = survey_id))
 
-        msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
+    # cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
+    #                class = c("dom_var", "piperr"),
+    #                log = log_err,
+    #                skip = skip_err,
+    #                link =  svy,
+    #                call = sys.call())
 
-        piperr(message = msg,
-               name = "dom_var")
+  }
 
-        # cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
-        #                class = c("dom_var", "piperr"),
-        #                log = log_err,
-        #                skip = skip_err,
-        #                link =  svy,
-        #                call = sys.call())
+  data_level_vars  <- data_level_vars[(domain_vars %in% names(cpfw))]
+  domain_vars  <- domain_vars[(domain_vars %in% names(cpfw))]
+  trows <- nrow(dt)
 
-      }
+  dt[,
+     (data_level_vars) :=
+       lapply(domain_vars, \(x) {
 
-    },
-    dom_var = function(cnd){
+         if (cpfw[[x]] == 1) {
 
-        log_failure(cnd)
+           y <- rep("national", times = trows)
 
-    },
-    finally = {
+         } else if (cpfw[[x]] == 2) {
+           y <-  area
+         } else {
+           y <-  as.character()
+         }
+         y
 
-      data_level_vars  <- data_level_vars[(domain_vars %in% names(cpfw))]
-      domain_vars  <- domain_vars[(domain_vars %in% names(cpfw))]
-      trows <- nrow(dt)
-
-      dt[,
-         (data_level_vars) :=
-           lapply(domain_vars, \(x) {
-
-             if (cpfw[[x]] == 1) {
-
-               y <- rep("national", times = trows)
-
-             } else if (cpfw[[x]] == 2) {
-               y <-  area
-             } else {
-               y <-  as.character()
-             }
-             y
-
-           })
-      ]
-
-    }
-  )
+       })
+  ]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
