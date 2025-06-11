@@ -141,9 +141,6 @@ format_wgt <- function(dt) {
   # Clean weight variable   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  tryCatch(
-    expr = {
-
       variables <- colnames(dt)
 
       if (!c("weight") %in% variables) {
@@ -158,8 +155,15 @@ format_wgt <- function(dt) {
 
           dt[, weight := 1 / .N]
 
-          piperr(message = "Weight variable missing in DLW",
-                 name = "mn_wgt_inf")
+          pipfun::log_add(event = "warning",
+                          message = "Weight variable missing in DLW",
+                          name = "pipdata_log",
+                          args = list(warning = "mn_wgt_inf",
+                                      survey = survey_id)
+                          )
+
+          # piperr(message = "Weight variable missing in DLW",
+          #        name = "mn_wgt_inf")
 
           # svy <- .logenv$survey_id
           #
@@ -171,18 +175,9 @@ format_wgt <- function(dt) {
 
         }
       }
-    },
-    mn_wgt_inf = function(cnd){
-
-      log_failure(cnd)
-
-    },
-    finally={
 
       dt[, weight := as.double(weight)]
 
-    }
-  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

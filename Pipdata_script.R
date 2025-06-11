@@ -21,8 +21,9 @@ inv <- m_inv_load()
 ls  <- valid_dlw_load(inv)
 
 # Load PFW
-pfw_aux  <- pipaux::load_aux("pfw", maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),
-                                                       "PIP_ingestion_pipeline_V2"))
+pfw_aux  <- pipaux::load_aux("pfw",
+                             maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),
+                                                "PIP_ingestion_pipeline_V2")) # From Rossana's instructions
 
 # aux_pfw_key -> creates reporting level variable
 # pfw  <- pipload::pip_load_aux("pfw")
@@ -48,3 +49,6 @@ results <- lapply(ls,
 #                          ppp = ppp,
 #                          pop = pop)
 
+pipfun::log_filter(name = "pipdata_log")
+pipfun::log_save(name = "pipdata_log", path = "log.qs")
+log <- qs::qread("log.qs")
