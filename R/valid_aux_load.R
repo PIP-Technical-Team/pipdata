@@ -1,60 +1,52 @@
 valid_aux_load <- function(measure = c("cpi", "ppp","gdp","pfw","pop"),
-                           maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),"PIP_ingestion_pipeline_V2")) {
+                           load = "inventory") {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if(load == "inventory"){
 
-  # measure = c("cpi", "ppp","gdp","pfw","pop")
-  # maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),"PIP_ingestion_pipeline_V2")
+    # Load changes
 
-  # Load data or load changes
+    changes <- pipaux::compare_aux_releases(measure = measure)
 
-  changes <- pipaux::inventory_aux_changes(measures = measure,
-                                           maindir = maindir)
+    # Identify unique countries and years
 
-  inv_aux   <- qs::qread(file.path(maindir, "aux_data/20250203_TEST/aux_inv_list.qs"))
+    unique <- collapse::rapply2d(changes, check_unique)
 
+    # Create data.frame with inventory of changes
 
-  poss_aux_to_df <- purrr::possibly(.f = aux_to_dt,
-                                     otherwise = NULL)
+    final <- collapse::unlist2d(unique, idcols = c("measure", "changes"))
 
-  vec <- names(inv_aux)
+    return(final)
 
-  ls <- purrr::imap(.x = inv_aux,
-                    .f = poss_aux_to_df)
+  }else if(load == "data.frame"){
+
+    poss_aux_to_df <- purrr::possibly(.f = pipload::pip_load_aux,
+                                      otherwise = NULL)
+
+    ls <- purrr::map(.x = measure,
+                      .f = poss_aux_to_df)
+
+    return(ls)
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(ls)
+  return(invisible(TRUE))
 
 }
 
-aux_to_dt <- function(aux,
-                      name) {
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+check_unique <- function(x){
 
-  ### Load aux data ---------
-  # df <- pipload::pip_load_aux(name)
+  if(all(c("country_code", "year") %in% colnames(x))){
 
-  ### If not changes ---------
-  if(is.null(aux)){
-    return(NULL)
+    unique_values <- unique(x[, .(country_code, year)])
+
+    return(unique_values)
   }
 
-  ### Identify survey_id ---------
-  svy_update <- aux |>
-    # collapse::fsubset(variable == "cpi" )|>
-    collapse::fselect(country_code, year, survey_acronym)|>
-    collapse::funique()
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(svy_update)
-
+  return(NULL)
 }
