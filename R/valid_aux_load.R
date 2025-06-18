@@ -8,7 +8,8 @@ valid_aux_load <- function(measure = c("cpi", "ppp","gdp","pfw","pop"),
 
     # Load changes
 
-    changes <- pipaux::compare_aux_releases(measure = measure)
+    # changes <- pipaux::compare_aux_releases(measure = measure)
+    changes <- m_compare_aux_release()
 
     # Identify unique countries and years
 
