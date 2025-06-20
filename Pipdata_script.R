@@ -21,23 +21,24 @@ inv <- m_inv_load()
 ls  <- valid_dlw_load(inv)
 
 # Load PFW
-pfw_aux  <- pipaux::load_aux("pfw",
-                             maindir = fs::path(Sys.getenv("PIP_ROOT_DIR"),
-                                                "PIP_ingestion_pipeline_V2")) # From Rossana's instructions
+pfw  <- pipload::pip_load_aux("pfw")
 
-# aux_pfw_key -> creates reporting level variable
-# pfw  <- pipload::pip_load_aux("pfw")
-# ppp  <- pipload::pip_load_aux("ppp")
-# cpi  <- pipload::pip_load_aux("cpi")
-# pop  <- pipload::pip_load_aux("pop")
-# gdo  <- pipload::pip_load_aux("gdp")
 
 #--------- Run pipdata functions -----
 
 # Process data
 results <- lapply(ls,
                   process_data,
-                  pfw = pfw_aux)
+                  pfw = pfw)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Load aux data --------
+
+ppp  <- pipload::pip_load_aux("ppp")
+cpi  <- pipload::pip_load_aux("cpi")
+pop  <- pipload::pip_load_aux("pop")
+gdp  <- pipload::pip_load_aux("gdp")
 
 
 # # Clean NA results

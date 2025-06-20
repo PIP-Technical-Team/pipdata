@@ -1,27 +1,40 @@
 valid_dlw_load <- function(inv,
-                           folder = "DLW-OUTPUT/",
-                           path = fs::path(Sys.getenv("PIP_ROOT_DIR"), folder)) {
+                           measure = c("cpi", "ppp","pfw","pop"),
+                           path = fs::path(Sys.getenv("PIP_ROOT_DIR"), "DLW-OUTPUT/")) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  if(!is.data.table(inv)){
+    inv <- data.table::data.table(inv)
+  }
+
+  # Check what aux has changed
+  changes_aux <- valid_aux_load(measure = measure, load = "inventory")
+
+  # Temporary fix
+  names(changes_aux)[names(changes_aux) == "year"] <- "surveyid_year"
+
+  inv_aux <- filter_aux_inv(changes_aux = changes_aux[, c("country_code","surveyid_year")],
+                 inv = inv)
+
   # Create mock changes for the inventory (Temporal)
-  inv <- m_inv_filter(inv) # For now is a mock function
+  inv_svy <- m_inv_filter(inv) # For now is a mock function
+
+  # Bind with inventory from aux changes
+  inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
 
   # Order alphabetically
 
-  inv <- inv |>
+  inv_to_clean <- inv_to_clean |>
     collapse::fmutate(file_qs = fs::path_file(pip_file_path))
 
-  setorder(inv, file_qs)
-
-  # Check what aux has changed
-  # inv_aux <- valid_aux_load() # It gives a list of the surveys to be updated
+  setorder(inv_to_clean, file_qs)
 
   # Load survey files
-  n      <- length(inv$file_qs)
-  ls_svy <- lapply(1:n, \(x) qs::qread(fs::path(path, inv$file_qs[x])))
+  n      <- length(inv_to_clean$file_qs)
+  ls_svy <- lapply(1:n, \(x) qs::qread(fs::path(path, inv_to_clean$file_qs[x])))
 
   # Some data from inventory to data frame
 
@@ -29,7 +42,7 @@ valid_dlw_load <- function(inv,
                                      otherwise = NULL)
 
   ls <- purrr::map2(.x = ls_svy,
-                    .y = as.list(inv$survey_id),
+                    .y = as.list(inv_to_clean$survey_id),
                     .f = poss_data_to_df)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,4 +79,59 @@ data_to_dt <- function(x, y) {
   df <- pipload::as_pip(df)
 
   return(df)
+}
+
+filter_aux_inv <- function(inv,
+                           changes_aux) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Temporary fix
+
+  max_year <- max(inv[!is.na(inv$surveyid_year),c("surveyid_year")])
+
+  changes_aux <- changes_aux[changes_aux$surveyid_year<=max_year,]
+
+  # Merge inventory with aux changes
+
+  inv_aux  <- merge(inv,
+                    changes_aux,
+                    by = c("country_code", "surveyid_year"))
+
+  # Choose last version
+
+  inv_aux <-
+    inv_aux[,
+            # Get max master version and filter
+            maxmast := vermast == max(vermast),
+            by = .(country_code, surveyid_year, survey_acronym, module, tool)
+    ][
+      maxmast == 1
+    ][,
+      # Get max veralt version and filter
+      maxalt := veralt == max(veralt),
+      by = .(country_code, surveyid_year, survey_acronym, module, tool)
+    ][
+      maxalt == 1
+    ][,
+      # Get max veralt version and filter
+      maxpip := pipeline_version == max(pipeline_version),
+      by = .(country_code, surveyid_year, survey_acronym, module, tool)
+    ][
+      maxpip == 1
+    ][,
+      c("maxalt",  "maxmast", "maxpip") := NULL
+    ][
+      status == "same"
+    ][
+      module %in% c("GPWG", "GROUP", "BIN", "ALL" , "HIST")
+    ]
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(inv_aux)
+
 }

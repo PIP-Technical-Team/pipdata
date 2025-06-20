@@ -34,7 +34,7 @@ process_data.pipmd <- function(df, pfw, ...) {
   on.exit({
     rm(survey_id,
        envir = .logenv)
-  })
+  }) # For now
 
   svy <- unique(df$survey_id)
 

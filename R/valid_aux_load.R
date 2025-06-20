@@ -1,4 +1,4 @@
-valid_aux_load <- function(measure = c("cpi", "ppp","gdp","pfw","pop"),
+valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
                            load = "inventory") {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
