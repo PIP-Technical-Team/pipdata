@@ -19,6 +19,9 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     final <- collapse::unlist2d(unique, idcols = c("measure", "changes"))
 
+    # Temporary fix
+    names(final)[names(final) == "year"] <- "surveyid_year"
+
     return(final)
 
   }else if(load == "data.frame"){
@@ -40,11 +43,11 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 }
 
 
-check_unique <- function(x){
+check_unique <- function(x, var = c("country_code", "year")){
 
-  if(all(c("country_code", "year") %in% colnames(x))){
+  if(all(var %in% colnames(x))){
 
-    unique_values <- unique(x[, .(country_code, year)])
+    unique_values <- unique(x[, ..var])
 
     return(unique_values)
   }
