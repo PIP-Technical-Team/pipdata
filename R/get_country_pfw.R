@@ -16,11 +16,11 @@ get_country_pfw <- function(df, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Filter country PFW --------
 
-  uvl <- uniq_vars_to_list(df)  #list with unique values for survey
+  # uvl <- uniq_vars_to_list(df)  #list with unique values for survey
 
-  cpfw <- pfw[ country_code     == uvl$country_code
-               & surveyid_year  == uvl$surveyid_year
-               & survey_acronym == uvl$survey_acronym]
+  cpfw <- pfw[ country_code     == attributes(df)$country_code
+               & surveyid_year  == attributes(df)$surveyid_year
+               & survey_acronym == attributes(df)$survey_acronym]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Add reporting level  --------
@@ -35,7 +35,7 @@ get_country_pfw <- function(df, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create cache ID   ---------
 
-  cpfw <- cache_id(cpfw, uvl$module)
+  cpfw <- cache_id(cpfw, attributes(df)$module)
 
   # Return -------------
   return(cpfw)
@@ -85,7 +85,7 @@ report_lvl <- function(cpfw) {
       }else if(nrow(cpfw) > 1){
 
         rlang::abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
-                     class = c("piperr"),
+                     class = c("piperr", "no_unq_pfw"),
                      use_cli_format = TRUE)
 
       }
