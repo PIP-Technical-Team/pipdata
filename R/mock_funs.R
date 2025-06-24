@@ -29,10 +29,31 @@ m_inv_filter <- function(inv,
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   set.seed(seed)
 
-  selected   <- sample(1:nrow(inv), n) # Needs to be changed to filter by status
-  inv_smp    <- inv[selected,]
+  # selected   <- sample(1:nrow(inv), n) # Needs to be changed to filter by status
+  # inv_smp    <- inv[selected,]
+
+  inv_smp <- inv[module %in% c("ALL", "GPWG", "HIST", "GROUP", "BIN")]
+  inv_smp <- inv_smp[,.SD[sample(.N, min(floor(n/5), .N))], by = module]
+
+  ## Add Philipines and China
+  inv_phl12 <- inv[inv$country_code == "PHL" & inv$surveyid_year == 2012,]
+
+  inv_phl94 <- inv[inv$country_code == "PHL" & inv$surveyid_year == 1994,]
+
+  inv_chn11 <- inv[inv$country_code == "CHN" & inv$surveyid_year == 2011, ]
+
+  inv_othr <- rbind(inv_phl12, inv_phl94, inv_chn11, fill = TRUE)
+
+  inv_othr <- last_ver_inv(inv_othr)
+
+  # Bind lists
+
+  inv_smp <- rbind(inv_smp, inv_othr)
+
+  inv_smp <- unique(inv_smp)
 
   # Randomly assign names to a new variable
+
   inv_smp[, status := sample(options, .N, replace = TRUE)]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

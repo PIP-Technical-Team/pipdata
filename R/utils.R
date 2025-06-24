@@ -380,3 +380,43 @@ find_condition <- function(cnd, class) {
   }
   NULL
 }
+
+
+last_ver_inv <- function(inv) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  inv <-
+    inv[,
+            # Get max master version and filter
+            maxmast := vermast == max(vermast),
+            by = .(country_code, surveyid_year, survey_acronym, module, tool)
+    ][
+      maxmast == 1
+    ][,
+      # Get max veralt version and filter
+      maxalt := veralt == max(veralt),
+      by = .(country_code, surveyid_year, survey_acronym, module, tool)
+    ][
+      maxalt == 1
+    ][,
+      # Get max veralt version and filter
+      maxpip := pipeline_version == max(pipeline_version),
+      by = .(country_code, surveyid_year, survey_acronym, module, tool)
+    ][
+      maxpip == 1
+    ][,
+      c("maxalt",  "maxmast", "maxpip") := NULL
+    ][
+      status == "same"
+    ][
+      module %in% c("GPWG", "GROUP", "BIN", "ALL" , "HIST")
+    ]
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(inv)
+
+}

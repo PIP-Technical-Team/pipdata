@@ -16,7 +16,7 @@ valid_dlw_load <- function(inv,
   inv_aux <- filter_aux_inv(changes_aux = changes_aux, inv = inv)
 
   # Create mock changes for the inventory (Temporal)
-  inv_svy <- m_inv_filter(inv) # For now is a mock function
+  inv_svy <- m_inv_filter(inv, seed = 1089) # For now is a mock function
 
   # Bind with inventory from aux changes
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
@@ -65,6 +65,12 @@ data_to_dt <- function(dt, survey_id) {
 
   dt <- pipload::as_pip(dt)
 
+  # Temporary fix
+
+  dt <- dt[,
+    module := NULL
+  ]
+
   return(dt)
 }
 
@@ -89,32 +95,7 @@ filter_aux_inv <- function(inv,
 
   # Choose last version
 
-  inv_aux <-
-    inv_aux[,
-            # Get max master version and filter
-            maxmast := vermast == max(vermast),
-            by = .(country_code, surveyid_year, survey_acronym, module, tool)
-    ][
-      maxmast == 1
-    ][,
-      # Get max veralt version and filter
-      maxalt := veralt == max(veralt),
-      by = .(country_code, surveyid_year, survey_acronym, module, tool)
-    ][
-      maxalt == 1
-    ][,
-      # Get max veralt version and filter
-      maxpip := pipeline_version == max(pipeline_version),
-      by = .(country_code, surveyid_year, survey_acronym, module, tool)
-    ][
-      maxpip == 1
-    ][,
-      c("maxalt",  "maxmast", "maxpip") := NULL
-    ][
-      status == "same"
-    ][
-      module %in% c("GPWG", "GROUP", "BIN", "ALL" , "HIST")
-    ]
+  inv_aux <- last_ver_inv(inv_aux)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
