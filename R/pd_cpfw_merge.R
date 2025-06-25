@@ -127,7 +127,8 @@ add_main_att <- function(dt, cpfw) {
 
   for (x in att_missing) {
 
-    attr(dt, x) <- cpfw[[x]][[1]]
+    # attr(dt, x) <- cpfw[[x]][[1]]
+    data.table::setattr(dt, x, cpfw[[x]][[1]])
 
   }
 
@@ -203,7 +204,7 @@ add_main_vars <- function(dt, cpfw) {
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @keywords internal
+#' @export
 add_area <- function(dt) {
   UseMethod("add_area")
 }
@@ -213,7 +214,7 @@ add_area <- function(dt) {
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @keywords internal
+#' @exportS3Method pipdata::add_area
 add_area.pipmd <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,40 +222,25 @@ add_area.pipmd <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Abort if not urban variable
-  if (!(c("urban") %in% colnames(dt))){
+  if (!any(c("urban", "area") %in% colnames(dt))){
 
-    survey_id <- c(.pipdataenv$survey_id)
-
-    pipfun::log_add(event = "info",
-                    message = "There is no urban variable",
-                    name = "pipdata_log",
-                    args = list(info = "urb_var",
-                                survey = survey_id))
-
-    # cli::cli_abort(message =  "There is no urban variable",
-    #                class = c("piperr", "urb_var"))
-
-    # piperr(message =  "There is no urban variable",
-    #        name = "urb_var")
-
-#         cli::cli_abort(message = "There is no urban variable",
-#                        class = c("urb_var", "piperr"),
-#                        log = log_err,
-#                        skip = skip_err,
-#                        link =  unique(dt$survey_id),
-#                        call = sys.call())
+    rlang::inform(message = "There is no urban variable",
+                  class = c("pipinf", "urb_var"))
 
     dt[, area := ""]
 
     return(dt)
+
+  }else if(c("urban") %in% colnames(dt)){
+
+    # Recode urban to area
+
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "",
+                       default = "")]
+
   }
-
-  # Recode urban to area
-
-  dt[, area := fcase(urban == 1, "urban",
-                           urban == 0, "rural",
-                           is.na(urban), "",
-                           default = "")]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -268,7 +254,7 @@ add_area.pipmd <- function(dt) {
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @keywords internal
+#' @exportS3Method pipdata::add_area
 add_area.pipgd <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -285,35 +271,15 @@ add_area.pipgd <- function(dt) {
   # Abort if not urban variable
   if (!any(c("urban", "area") %in% colnames(dt))){
 
-    # piperr(message = "There is no urban or area variable",
-    #        name = "urb_var")
-
-    # cli::cli_abort(message = "There is no urban or area variable",
-    #                class = c("urb_var", "piperr"),
-    #                log = log_err,
-    #                skip = skip_err,
-    #                link =  unique(dt$survey_id),
-    #                call = sys.call())
-
-    survey_id <- c(.pipdataenv$survey_id)
-
-    pipfun::log_add(event = "info",
-                    message = "There is no urban or area variable",
-                    name = "pipdata_log",
-                    args = list(info = "urb_var",
-                                survey = survey_id))
+    rlang::inform(message = "There is no urban or area variable",
+                  class = c("pipinf", "urb_var"))
 
     dt[, area := ""]
 
     return(dt)
-  }
 
-  if(c("area") %in% colnames(dt)){
+  }else if(c("urban") %in% colnames(dt)){
 
-    return(dt)
-  }
-
-  if(c("urban") %in% colnames(dt)){
     # Recode urban to area
 
     dt[, area := fcase(urban == 1, "urban",
