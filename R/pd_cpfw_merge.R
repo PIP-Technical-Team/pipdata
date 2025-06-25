@@ -22,12 +22,16 @@ pd_cpfw_merge <- function(dt, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## PFW for specific country --------
 
+  # dt <- find_dt_with_attribute(ls, attr_name = "country_code", attr_value = "PHL")[[3]]
+
   cpfw <- get_country_pfw(dt, pfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Split alternative welfare --------
+  ## Split data.table for alternative welfare --------
 
   lf   <- pd_split_alt_welfare(dt, cpfw)
+
+  # dt <- lf[[1]]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Map survey to cpfw --------
@@ -36,7 +40,6 @@ pd_cpfw_merge <- function(dt, pfw) {
                      .y =  cpfw,
                      .f = cpfw_merge)
 
-  # names(lfs) <- sapply(cpfw, `[[`, "cache_id") #Maybe not needed
   # lfs <- Filter(function(df) !all(is.na(df)), lfs)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,7 +64,7 @@ cpfw_merge <- function(dt, cpfw, ...){
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Main variables (same for md and gd) --------
-      dt_c <- add_main_vars(dt_c, cpfw)
+      dt_c <- add_main_att(dt_c, cpfw)
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Area (Needed for Domain variables)--------
@@ -82,6 +85,56 @@ cpfw_merge <- function(dt, cpfw, ...){
 
 
   return(dt_f)
+
+}
+
+#' Add metadata as attributes to data.table
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#'
+#' @keywords internal
+add_main_att <- function(dt, cpfw) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  att <- names(attributes(dt))
+
+  main_attr <- c("survey_year",
+                 "country_code",
+                 "welfare_type")
+
+  att_missing <- main_attr[!(main_attr %in% att)]
+
+  # Inform what country/surveys are missing a main variable
+  # (it might not be necessary)
+
+  if(length(att_missing)>0){
+
+    vars <- cli::cli_vec(att_missing, list("vec-trunc" = 3))
+
+    msg <- cli::format_error("Main variable{?s} {vars} missing")
+
+    rlang::inform(message = msg,
+                  class = c("pipinf", "mn_var_inf"),
+                  use_cli_format = TRUE)
+
+  }
+
+  # Add variables if missing
+
+  for (x in att_missing) {
+
+    attr(dt, x) <- cpfw[[x]][[1]]
+
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 
 }
 
