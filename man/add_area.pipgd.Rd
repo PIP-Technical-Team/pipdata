@@ -15,4 +15,3 @@ data.table
 \description{
 Recode urban to area for group data
 }
-\keyword{internal}

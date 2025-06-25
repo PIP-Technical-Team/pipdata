@@ -2,19 +2,29 @@
 % Please edit documentation in R/get_country_pfw.R
 \name{cache_id}
 \alias{cache_id}
-\title{Create cache ID for country PFW}
+\title{Duplicate country PFW if there are two types of welfare}
 \usage{
-cache_id(cpfw, module)
+cache_id(att, cpfw)
 }
 \arguments{
+\item{att}{survey attributes}
+
 \item{cpfw}{country PFW data.table}
 
-\item{module}{survey module}
+\item{log_wrn}{boolean value for logging warning in log.txt}
 }
 \value{
 data.table
+
+data.table
 }
 \description{
-Create cache ID for country PFW
+Duplicate country PFW if there are two types of welfare
 }
+\keyword{Create}
+\keyword{ID}
+\keyword{PFW}
+\keyword{cache}
+\keyword{country}
+\keyword{for}
 \keyword{internal}

@@ -4,10 +4,10 @@
 \alias{pd_split_alt_welfare}
 \title{Split data based on alternative welfare}
 \usage{
-pd_split_alt_welfare(df, cpfw)
+pd_split_alt_welfare(dt, cpfw)
 }
 \arguments{
-\item{df}{data frame with group data, loaded with \code{pipload::pip_load_dlw()}}
+\item{dt}{data table loaded with \code{pipload::pip_load_dlw()}}
 
 \item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
 It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in

@@ -15,4 +15,3 @@ data.table
 \description{
 Recode urban to area (lower level, S3 methods)
 }
-\keyword{internal}
