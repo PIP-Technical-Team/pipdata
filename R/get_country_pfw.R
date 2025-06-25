@@ -11,16 +11,18 @@
 #' pfw <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("PHL", 2012)
 #' cpfw <- get_country_pfw(gd, pfw)
-get_country_pfw <- function(df, pfw) {
+get_country_pfw <- function(dt, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Filter country PFW --------
 
   # uvl <- uniq_vars_to_list(df)  #list with unique values for survey
 
-  cpfw <- pfw[ country_code     == attributes(df)$country_code
-               & surveyid_year  == attributes(df)$surveyid_year
-               & survey_acronym == attributes(df)$survey_acronym]
+  att <- attributes(dt)
+
+  cpfw <- pfw[ country_code     == att$country_code
+               & surveyid_year  == att$surveyid_year
+               & survey_acronym == att$survey_acronym]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Add reporting level  --------
@@ -30,12 +32,13 @@ get_country_pfw <- function(df, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Check other welfare type --------
 
-  cpfw <- othr_wlf(cpfw)
+  # cpfw <- othr_wlf(cpfw) # Not needed because it is already on the pfw
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create cache ID   ---------
 
-  cpfw <- cache_id(cpfw, attributes(df)$module)
+  cpfw <- cache_id(cpfw =  cpfw,
+                   att = att)
 
   # Return -------------
   return(cpfw)
@@ -76,18 +79,25 @@ report_lvl <- function(cpfw) {
           .SDcols = dcols
         ]
 
+      n_cpfw_wt <- length(unique(cpfw$welfare_type))
+
       if(nrow(cpfw)==0){
 
         rlang::abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
                      class = c("piperr","info_pfw"),
                      use_cli_format = TRUE)
 
-      }else if(nrow(cpfw) > 1){
+      }else if(nrow(cpfw) > 1 & n_cpfw_wt ==1){
 
         rlang::abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
                      class = c("piperr", "no_unq_pfw"),
                      use_cli_format = TRUE)
 
+      }else if(nrow(cpfw)>1){
+
+        rlang::inform(message = "More than one type of welfare",
+                     class = c("pipinf", "othr_wlf_inf"),
+                     use_cli_format = TRUE)
       }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,98 +115,101 @@ report_lvl <- function(cpfw) {
 #'
 #' @return data.table
 #' @keywords internal
-othr_wlf <- function(cpfw) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-      cpfw[,
-           is_alt_welf := FALSE
-      ]
-
-      if (cpfw$oth_welfare1_type != "") {
-
-        cpfw_alt <- copy(cpfw)
-
-        cpfw_alt[
-          ,
-          welfare_type := fcase(
-            grepl("^([Cc])", oth_welfare1_type), "consumption",
-            grepl("^([Ii])", oth_welfare1_type), "income",
-            default = ""
-          )
-        ][
-          ,
-          oth_welfare1_type := NULL # remove variable
-        ][
-          ,
-          is_alt_welf := TRUE
-        ]
-
-
-        cpfw <- rbindlist(l         =  list(cpfw, cpfw_alt),
-                          use.names = TRUE,
-                          fill      = TRUE)
-
-      }
-
-      if(nrow(cpfw)>1){
-
-        rlang::abort(message = "More than one type of welfare",
-                     class = c("piperr", "othr_wlf_inf"),
-                     use_cli_format = TRUE)
-      }
-
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(cpfw)
-
-}
+# othr_wlf <- function(cpfw) {
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # computations   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#       cpfw[,
+#            is_alt_welf := FALSE
+#       ]
+#
+#       if (cpfw$oth_welfare1_type != "") {
+#
+#         cpfw_alt <- copy(cpfw)
+#
+#         cpfw_alt[
+#           ,
+#           welfare_type := fcase(
+#             grepl("^([Cc])", oth_welfare1_type), "consumption",
+#             grepl("^([Ii])", oth_welfare1_type), "income",
+#             default = ""
+#           )
+#         ][
+#           ,
+#           oth_welfare1_type := NULL # remove variable
+#         ][
+#           ,
+#           is_alt_welf := TRUE
+#         ]
+#
+#
+#         cpfw <- rbindlist(l         =  list(cpfw, cpfw_alt),
+#                           use.names = TRUE,
+#                           fill      = TRUE)
+#
+#       }
+#
+#       if(nrow(cpfw)>1){
+#
+#         rlang::abort(message = "More than one type of welfare",
+#                      class = c("piperr", "othr_wlf_inf"),
+#                      use_cli_format = TRUE)
+#       }
+#
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Return   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   return(cpfw)
+#
+# }
 
 #' Create cache ID for country PFW
 #'
 #' @param cpfw country PFW data.table
-#' @param module survey module
+#' @param att survey attributes
 #'
 #' @return data.table
 #' @keywords internal
-cache_id <- function(cpfw,
-                     module) {
+cache_id <- function(att,
+                     cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      cpfw[
-        ,
-        wt := fcase(
-          welfare_type == "income", "INC",
-          welfare_type == "consumption", "CON",
-          default = ""
-        )
-      ][
-        ,
-        cache_id := paste(country_code,
-                          surveyid_year,
-                          survey_acronym,
-                          paste0("D", reporting_level),
-                          wt,
-                          module,
-                          sep = "_"
-        )
-      ]
+  cpfw[
+    ,
+    wt := fcase(
+      welfare_type == "income", "INC",
+      welfare_type == "consumption", "CON",
+      default = ""
+    )
+  ][
+    ,
+    cache_id := paste(att$country_code,
+                      att$surveyid_year,
+                      att$survey_acronym,
+                      paste0("D", reporting_level),
+                      wt,
+                      att$module,
+                      sep = "_"
+    )
+  ]
 
-      if(any(cpfw$wt=="")){
+  if(any(cpfw$wt=="")){
 
-        rlang::abort(message = "Welfare type is undefined",
-                     class = c("piperr", "no_wlf_tp"),
-                     use_cli_format = TRUE)
+    rlang::abort(message = "Welfare type is undefined",
+                 class = c("piperr", "no_wlf_tp"),
+                 use_cli_format = TRUE)
 
-      }
+  }
 
+  cpfw[,
+    wt := NULL
+  ]
 
   cpfw <- split(cpfw, by = "cache_id")
 

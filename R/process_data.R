@@ -56,7 +56,20 @@ process_data.pipmd <- function(df, pfw, ...) {
       pd_dlw_clean(ls_cpfw)
 
     },
+    pipinf = function(cnd){
 
+      survey_id <- c(.pipdataenv$survey_id)
+
+      pipfun::log_add(event = "info",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      output = NA,
+                      args = list(error = class(cnd)[2],
+                                  survey = survey_id,
+                                  status = "The survey was skipped"))
+
+    },
     piperr = function(cnd){
 
       survey_id <- c(.pipdataenv$survey_id)
