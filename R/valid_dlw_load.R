@@ -83,6 +83,8 @@ filter_aux_inv <- function(inv,
 
   # Temporary fix
 
+  names(changes_aux)[names(changes_aux) == "year"] <- "surveyid_year"
+
   max_year <- max(inv[!is.na(inv$surveyid_year),c("surveyid_year")])
 
   changes_aux <- changes_aux[changes_aux$surveyid_year<=max_year,]
