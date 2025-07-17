@@ -12,6 +12,9 @@
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' cpfw <- get_country_pfw(md, pfw)

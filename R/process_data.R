@@ -11,6 +11,9 @@
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
@@ -203,6 +206,9 @@ process_data.default <- function(df, ...) {
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' pfw <- pipload::pip_load_aux("pfw")
 #' keyVar <- c("country_code", "surveyid_year", "survey_acronym")
 #' unq_obs_dt(pfw, keyVar)

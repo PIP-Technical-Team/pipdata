@@ -23,6 +23,8 @@ deflate welfare to add_pip_vars (Higher level)
 }
 \examples{
 \dontrun{
+release <- "20250203"
+pipfun::setup_working_release(release)
 ppp  <- pipload::pip_load_aux("ppp")
 cpi  <- pipload::pip_load_aux("cpi")
 pop  <- pipload::pip_load_aux("pop")

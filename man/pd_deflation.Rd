@@ -23,6 +23,9 @@ Deflation of welfare using auxiliary data
 }
 \examples{
 \dontrun{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 pfw <- pipload::pip_load_aux("pfw")
 ppp  <- pipload::pip_load_aux("ppp")
 cpi  <- pipload::pip_load_aux("cpi")

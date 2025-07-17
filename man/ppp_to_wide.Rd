@@ -16,6 +16,9 @@ data.table with PPP values to wide format based on versioning
 Convert PPP data from \code{pipload} to wide format
 }
 \examples{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 ppp <-  pipload::pip_load_aux("ppp")
 x   <-  ppp_to_wide(ppp)
 names(x)

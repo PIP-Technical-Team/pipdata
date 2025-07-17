@@ -1,3 +1,16 @@
+
+#' Retrieve the inventory of aux files that changed from previous release or vintage
+#'
+#' @param measure measure of auxiliary files to compare
+#' @param compare either `release`, `vintage` or `all`
+#'
+#' @return list
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' valid_aux_load()
+#' }
 valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
                            compare = "all") {
 
@@ -56,18 +69,6 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     }
 
-    # unique_vintage <- collapse::rapply2d(changes_vintage, function(x) purrr::map2(x, measure, check_unique))
-    #
-    # # Create data.frame with inventory of changes
-    #
-    # final_vintage <- collapse::unlist2d(unique_vintage, idcols = c("measure", "changes"))
-    #
-    # if(compare %in% c("release")){
-    #
-    #   return(final_vintage)
-    #
-    # }
-
   }
 
   if(compare %in% c("all")){
@@ -89,6 +90,18 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
 }
 
+#' Clean output from compare_aux_releases and compare_aux_vintages
+#'
+#' @param changes output from `pipaux::compare_aux_releases` or `pipaux::compare_aux_vintages`
+#'
+#' @return list
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' changes_vintage <- pipaux::compare_aux_vintages(measure = measure, verbose = FALSE)
+#' cln_chngs <- cln_changes(changes_vintage)
+#' }
 cln_changes <- function(changes) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,6 +130,15 @@ cln_changes <- function(changes) {
 }
 
 
+#' Check unique values in aux changes
+#'
+#' According to the aux key, this function selects the unique values.
+#'
+#' @param x data.frame with aux changes for specific aux file
+#' @param name name of the measure or auxiliary file
+#'
+#' @return data.frame
+#' @keywords internal
 check_unique <- function(x, name = attributes(x)$id){
 
   if(name == "cpi"){ # Fix while we add as attributes

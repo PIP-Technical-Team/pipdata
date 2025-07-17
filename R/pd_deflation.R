@@ -10,6 +10,9 @@
 #'
 #' @examples
 #' \dontrun{
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' pfw <- pipload::pip_load_aux("pfw")
 #' ppp  <- pipload::pip_load_aux("ppp")
 #' cpi  <- pipload::pip_load_aux("cpi")
@@ -250,6 +253,9 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' ppp <-  pipload::pip_load_aux("ppp")
 #' x   <-  ppp_to_wide(ppp)
 #' names(x)

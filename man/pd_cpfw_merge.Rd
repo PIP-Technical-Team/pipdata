@@ -18,6 +18,9 @@ list
 Merge country/survey PFW info with dataliweb survey data
 }
 \examples{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 pfw  <- pipload::pip_load_aux("pfw")
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
 l    <- pd_cpfw_merge(md, pfw)
