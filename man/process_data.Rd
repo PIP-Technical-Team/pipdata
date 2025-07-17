@@ -37,8 +37,10 @@ pipfun::setup_working_release(release)
 pfw <- pipload::pip_load_aux("pfw")
 
 gd  <- pipload::pip_load_dlw("CHN", 2015)
+gd  <- pipdata:::m_svy_id_to_att(gd)
 process_data(gd, pfw)
 
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+md  <- pipdata:::m_svy_id_to_att(md)
 process_data(md, pfw)
 }

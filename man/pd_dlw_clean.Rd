@@ -22,11 +22,13 @@ pipfun::setup_working_release(release)
 pfw  <- pipload::pip_load_aux("pfw")
 
 gd    <- pipload::pip_load_dlw("CHN", 2015)
+gd  <- pipdata:::m_svy_id_to_att(gd)
 ls    <- pd_cpfw_merge(gd, pfw)
 lf    <- pd_dlw_clean(ls)
 names(lf)
 
 md    <- pipload::pip_load_dlw(country = "PHL", 2012)
+md  <- pipdata:::m_svy_id_to_att(md)
 ls    <- pd_cpfw_merge(md, pfw)
 lf    <- pd_dlw_clean(ls)
 names(lf)

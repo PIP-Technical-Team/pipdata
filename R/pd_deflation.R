@@ -253,12 +253,14 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
 #'
 #' ppp <-  pipload::pip_load_aux("ppp")
 #' x   <-  ppp_to_wide(ppp)
 #' names(x)
+#' }
 ppp_to_wide <- function(ppp) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

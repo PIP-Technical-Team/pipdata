@@ -25,6 +25,7 @@ release <- "20250203"
 pipfun::setup_working_release(release)
 
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
+md  <- pipdata:::m_svy_id_to_att(md)
 pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
 df   <- pd_split_alt_welfare(md, cpfw)

@@ -3,25 +3,33 @@ valid_dlw_load <- function(inv,
                            path = fs::path(Sys.getenv("PIP_ROOT_DIR"), "DLW-OUTPUT/")) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
+  # Defenses   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   if(!is.data.table(inv)){
     inv <- data.table::data.table(inv)
   }
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   # Check what aux has changed
+
   changes_aux <- valid_aux_load(measure = measure)
 
   inv_aux <- filter_aux_inv(changes_aux = changes_aux, inv = inv)
 
   # Create mock changes for the inventory (Temporal)
+
   inv_svy <- m_inv_filter(inv, seed = 1089) # For now is a mock function
 
   # Bind with inventory from aux changes
+
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
 
   # Order alphabetically
+
   inv_to_clean <- inv_to_clean |>
     collapse::fmutate(file_qs = fs::path_file(pip_file_path))
 
