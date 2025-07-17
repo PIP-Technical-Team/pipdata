@@ -420,3 +420,12 @@ last_ver_inv <- function(inv) {
   return(inv)
 
 }
+
+find_dt_with_attribute <- function(lst, attr_name, attr_value) {
+  Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
+}
+
+id_as_att <- function(dt, id_lst) {
+  attr(dt, "id") <- id_lst # Add the id as an attribute
+  return(dt)
+}

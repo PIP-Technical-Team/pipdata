@@ -11,7 +11,7 @@ valid_dlw_load <- function(inv,
   }
 
   # Check what aux has changed
-  changes_aux <- valid_aux_load(measure = measure, load = "inventory")
+  changes_aux <- valid_aux_load(measure = measure)
 
   inv_aux <- filter_aux_inv(changes_aux = changes_aux, inv = inv)
 
