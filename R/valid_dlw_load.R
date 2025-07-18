@@ -42,10 +42,12 @@ valid_dlw_load <- function(inv,
   ls_svy <- lapply(1:length(inv_to_clean$pip_file_path),
                    \(x) qs::qread(inv_to_clean$pip_file_path[x]))
 
+  names(ls_svy) <- inv_to_clean$survey_id
+
   # Add data from inventory to attributes of data table and add pip class
 
   ls <- purrr::map2(.x = ls_svy,
-                    .y = as.list(inv_to_clean$survey_id),
+                    .y = names(ls_svy),
                     .f = data_to_dt)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -249,6 +251,7 @@ survey_id_to_attr <- function(dt, survey_id) {
   if("year" %in% names(dt)){
 
     year <- unique(dt$year)
+    year <- purrr::discard(year, is.na)
     surveyid_year <- attributes(dt)$surveyid_year
 
     if(surveyid_year!=year){
