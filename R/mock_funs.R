@@ -40,7 +40,7 @@ m_inv_filter <- function(inv,
 
   inv_phl94 <- inv[inv$country_code == "PHL" & inv$surveyid_year == 1994,]
 
-  inv_chn11 <- inv[inv$country_code == "CHN" & inv$surveyid_year == 2011, ]
+  inv_chn11 <- inv[inv$country_code == "CHN" & inv$surveyid_year == 2011,]
 
   inv_othr <- rbind(inv_phl12, inv_phl94, inv_chn11, fill = TRUE)
 

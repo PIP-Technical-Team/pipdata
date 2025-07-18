@@ -382,16 +382,15 @@ find_condition <- function(cnd, class) {
 }
 
 
-last_ver_inv <- function(inv) {
+last_ver_inv <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  inv <-
-    inv[,
-            # Get max master version and filter
-            maxmast := vermast == max(vermast),
-            by = .(country_code, surveyid_year, survey_acronym, module, tool)
+  dt <- dt[,
+      # Get max master version and filter
+      maxmast := vermast == max(vermast),
+      by = .(country_code, surveyid_year, survey_acronym, module, tool)
     ][
       maxmast == 1
     ][,
@@ -401,13 +400,13 @@ last_ver_inv <- function(inv) {
     ][
       maxalt == 1
     ][,
-      # Get max veralt version and filter
+      # Get max pip version and filter
       maxpip := pipeline_version == max(pipeline_version),
       by = .(country_code, surveyid_year, survey_acronym, module, tool)
     ][
       maxpip == 1
     ][,
-      c("maxalt",  "maxmast", "maxpip") := NULL
+      c("maxmast","maxalt","maxpip") := NULL
     ][
       status == "same"
     ][
@@ -417,7 +416,7 @@ last_ver_inv <- function(inv) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(inv)
+  return(dt)
 
 }
 
@@ -426,6 +425,8 @@ find_dt_with_attribute <- function(lst, attr_name, attr_value) {
 }
 
 id_as_att <- function(dt, id_lst) {
-  attr(dt, "id") <- id_lst # Add the id as an attribute
+  # Add the id as an attribute
+  # attr(dt, "id") <- id_lst
+  data.table::setattr(dt, "id", id_lst)
   return(dt)
 }
