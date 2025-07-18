@@ -18,7 +18,7 @@ valid_dlw_load <- function(inv,
 
   changes_aux <- valid_aux_load(measure = measure)
 
-  inv_aux <- filter_aux_inv(changes_aux = changes_aux, inv = inv)
+  inv_aux <- lapply(changes_aux, filter_aux_inv, inv = inv)
 
   # Create mock changes for the inventory (Temporal)
 
@@ -89,13 +89,15 @@ filter_aux_inv <- function(inv,
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Temporary fix
+  # Fix year variable
 
-  names(changes_aux)[names(changes_aux) == "year"] <- "surveyid_year"
+  changes <- lapply(changes_aux[[1]], fix_year_var)
+
+  # Temporary fix to test data from Rossana
 
   max_year <- max(inv[!is.na(inv$surveyid_year),c("surveyid_year")])
 
-  changes_aux <- changes_aux[changes_aux$surveyid_year<=max_year,]
+  changes <- lapply(changes, \(x) x[x$surveyid_year<=max_year,])
 
   # Merge inventory with aux changes
 
@@ -221,5 +223,39 @@ survey_id_to_attr <- function(dt, survey_id) {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
+
+}
+
+fix_year_var <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Select variable names that contain the word "year"
+  year_var <- grep("year", attributes(dt)$names, value = TRUE)
+
+  if(length(year_var) > 1){
+
+    cli::cli_abort("The auxiliary keys has more than one variable related to `year`")
+
+  }
+
+  # Subset the data.table with the selected variables and make them unique
+
+  selected_vars <- c("country_code",year_var)
+
+  dt_selected <- unique(dt[, ..selected_vars])
+
+  if(year_var != "surveyid_year"){
+
+    names(dt_selected)[names(dt_selected) == year_var] <- "surveyid_year"
+
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt_selected)
 
 }
