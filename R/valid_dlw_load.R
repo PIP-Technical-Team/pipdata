@@ -50,6 +50,10 @@ valid_dlw_load <- function(inv,
                     .y = names(ls_svy),
                     .f = data_to_dt)
 
+  # Filter NULL surveys
+
+  ls <- purrr::discard(ls, is.null)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,7 +118,7 @@ data_to_dt <- function(dt, survey_id) {
                                   survey = survey_id,
                                   status = "The survey was skipped"))
 
-      c("piperror")
+      NULL
 
     },
 
@@ -130,7 +134,7 @@ data_to_dt <- function(dt, survey_id) {
                                      survey = survey_id,
                                      status = "The survey was skipped"))
 
-      c("error")
+      NULL
 
     }
 
