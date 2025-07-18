@@ -7,18 +7,23 @@ valid_dlw_load <- function(inv,
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   if(!is.data.table(inv)){
-    inv <- data.table::data.table(inv)
+    inv <- data.table::as.data.table(inv)
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Check what aux has changed
+  # Load changes in aux files
 
-  changes_aux <- valid_aux_load(measure = measure)
+  changes_aux <- valid_aux_load(measure = measure,
+                                compare = "all")
 
-  inv_aux <- lapply(changes_aux, filter_aux_inv, inv = inv)
+  ls_inv_aux <- lapply(changes_aux, filter_aux_inv, inv = inv)
+
+  # Join release and vintage changes and select unique surveys
+
+  inv_aux <- unique(data.table::rbindlist(ls_inv_aux))
 
   # Create mock changes for the inventory (Temporal)
 
@@ -30,19 +35,14 @@ valid_dlw_load <- function(inv,
 
   # Order alphabetically
 
-  inv_to_clean <- inv_to_clean |>
-    collapse::fmutate(file_qs = fs::path_file(pip_file_path))
-
-  setorder(inv_to_clean, file_qs)
+  setorder(inv_to_clean, survey_id)
 
   # Load survey files
-  n      <- length(inv_to_clean$file_qs)
-  ls_svy <- lapply(1:n, \(x) qs::qread(fs::path(path, inv_to_clean$file_qs[x])))
 
-  # Add data from inventory to data frame
+  ls_svy <- lapply(1:length(inv_to_clean$pip_file_path),
+                   \(x) qs::qread(inv_to_clean$pip_file_path[x]))
 
-  # poss_data_to_dt <- purrr::possibly(.f = data_to_dt,
-  #                                    otherwise = NULL)
+  # Add data from inventory to attributes of data table and add pip class
 
   ls <- purrr::map2(.x = ls_svy,
                     .y = as.list(inv_to_clean$survey_id),
@@ -57,29 +57,84 @@ valid_dlw_load <- function(inv,
 
 data_to_dt <- function(dt, survey_id) {
 
-  if(!is.data.table(dt)){
-    dt <- data.table::as.data.table(dt)
-  }
+  # on.exit ------------
+  on.exit({
+    rm(survey_id,
+       envir = .logenv)
+  }) # For now
 
-  #--------- leaving just the 'label' attribute ---------
+  assign("survey_id",
+         survey_id,
+         envir = .pipdataenv)
 
-  dt <- only_labels(dt)
+  assign("survey_id",
+         survey_id,
+         envir = .logenv) # For now
 
-  #--------- Survey ID and its components ---------
+  res <- tryCatch(
+    expr = {
 
-  dt <- survey_id_to_attr(dt, survey_id)
+      #--------- defenses --------------------------
 
-  #--------- Add class ---------
+      if(!is.data.table(dt)){
+        dt <- data.table::as.data.table(dt)
+      }
 
-  dt <- pipload::as_pip(dt)
+      #--------- leaving just the 'label' attribute ---------
 
-  # Temporary fix
+      dt <- only_labels(dt)
 
-  dt <- dt[,
-    module := NULL
-  ]
+      #--------- Survey ID and its components ---------
 
-  return(dt)
+      dt <- survey_id_to_attr(dt, survey_id)
+
+      #--------- Add class ---------
+
+      dt <- pipload::as_pip(dt)
+
+      # Temporary fix
+
+      dt[,
+               module := NULL
+      ]
+
+    },
+
+    piperr = function(cnd){
+
+      survey_id <- c(.pipdataenv$survey_id)
+
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      args = list(error = class(cnd)[2],
+                                  survey = survey_id,
+                                  status = "The survey was skipped"))
+
+      c("piperror")
+
+    },
+
+    error = function(cnd){
+
+      survey_id <- c(.pipdataenv$survey_id)
+
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      logmeta = list(error = "unknown_error",
+                                     survey = survey_id,
+                                     status = "The survey was skipped"))
+
+      c("error")
+
+    }
+
+  )
+
+  return(res)
 }
 
 filter_aux_inv <- function(inv,
@@ -91,23 +146,28 @@ filter_aux_inv <- function(inv,
 
   # Fix year variable
 
-  changes <- lapply(changes_aux[[1]], fix_year_var)
+  changes <- lapply(changes_aux, fix_year_var)
+
+  # Row bind and select unique values from all aux files
+
+  changes <- unique(rbindlist(changes, fill = TRUE))
 
   # Temporary fix to test data from Rossana
 
-  max_year <- max(inv[!is.na(inv$surveyid_year),c("surveyid_year")])
+  max_year <- max(inv[!is.na(inv$surveyid_year),]$surveyid_year)
 
-  changes <- lapply(changes, \(x) x[x$surveyid_year<=max_year,])
+  changes <- changes[changes$surveyid_year<=max_year,]
 
   # Merge inventory with aux changes
 
-  inv_aux  <- merge(inv,
-                    changes_aux[, c("country_code","surveyid_year")],
-                    by = c("country_code", "surveyid_year"))
+  inv_aux  <- joyn::inner_join(inv, changes,
+                              relationship = "many-to-one",
+                              verbose = FALSE,
+                              by = c("country_code", "surveyid_year"))
 
-  # Choose last version
+  # Choose last version (avoid message -> check issue of data.table)
 
-  inv_aux <- last_ver_inv(inv_aux)
+  inv_aux <- suppressWarnings(last_ver_inv(inv_aux))
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -147,12 +207,6 @@ survey_id_to_attr <- function(dt, survey_id) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  # Defenses -----------
-  stopifnot(exprs = {
-    data.table::is.data.table(dt)
-  }
-  )
 
   # Computations -------
 
@@ -198,9 +252,12 @@ survey_id_to_attr <- function(dt, survey_id) {
     surveyid_year <- attributes(dt)$surveyid_year
 
     if(surveyid_year!=year){
-      cli::cli_abort("Year variables in DLW survey different from survey_id year in inventory.
+
+      rlang::abort("Year variables in DLW survey different from survey_id year in inventory.
                      {cli::col_blue('Surveyid_year added to attributes')}",
-                     class = c("piperr","yr_wrng"))
+                   class = c("piperr","yr_wrng"),
+                   use_cli_format = TRUE)
+
     }
   }
 
