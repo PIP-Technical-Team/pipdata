@@ -75,7 +75,7 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Combine if all changes are considered
 
-    unique_all <- as.list(unique_release, unique_vintage)
+    unique_all <- list(unique_release, unique_vintage)
 
     names(unique_all) <- c("release", "vintage")
 
@@ -107,6 +107,10 @@ cln_changes <- function(changes) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Remove difference in columns
+
+  changes <- changes[!names(changes) %in% "diff_cols"]
 
   # Row bind lists
 
