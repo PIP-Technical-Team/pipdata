@@ -108,13 +108,13 @@ cln_changes <- function(changes) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Remove difference in columns
+  # Remove list for difference in columns
 
-  changes <- changes[!names(changes) %in% "diff_cols"]
+  changes <- lapply(changes, \(x) x[!names(x) %in% "diff_cols"])
 
   # Row bind lists
 
-  changes <- suppressWarnings(lapply(changes, \(x) rbindlist(x, idcol = "changes", fill = TRUE)))
+  changes <- lapply(changes, \(x) rbindlist(x, idcol = "changes", fill = TRUE))
 
   # Eliminate Null values
 
