@@ -297,11 +297,35 @@ fix_year_var <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Select variable names that contain the word "year"
+
   year_var <- grep("year", attributes(dt)$names, value = TRUE)
+
+  # Temporal fix
+
+  if(any(year_var %in% c("cpi_year"))){ # NEED TO FIX CPI
+
+    setnames(dt, old = c("reporting_level", "survey_year", "survey_acronym"), new = c("survey_year", "survey_acronym", "reporting_level"))
+
+    dt[, year := floor(as.numeric(survey_year))]
+
+    year_var <- grep("year", attributes(dt)$names, value = TRUE)
+  }
 
   if(length(year_var) > 1){
 
-    cli::cli_abort("The auxiliary keys has more than one variable related to `year`")
+    if(any(year_var %in% c("year"))){
+
+      year_var <-  "year"
+
+    }else if(any(year_var %in% c("surveyid_year"))){
+
+      year_var <-  "surveyid_year"
+
+    }else{
+
+      cli::cli_abort("The auxiliary keys has more than one variable related to `year` and none are `surveyid_year`")
+
+      }
 
   }
 
@@ -310,6 +334,8 @@ fix_year_var <- function(dt) {
   selected_vars <- c("country_code",year_var)
 
   dt_selected <- unique(dt[, ..selected_vars])
+
+  # Change name of year variable to match
 
   if(year_var != "surveyid_year"){
 
