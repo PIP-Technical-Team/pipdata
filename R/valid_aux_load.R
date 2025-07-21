@@ -35,7 +35,11 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Clean changes
 
-    changes_release <- cln_changes(changes_release)
+    changes_release <- lapply(changes_release, cln_changes)
+
+    # Eliminate Null values
+
+    changes_release <- purrr::keep(changes_release, ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0)
 
     # Identify unique
 
@@ -57,7 +61,11 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Clean changes
 
-    changes_vintage <- cln_changes(changes_vintage)
+    changes_vintage <- lapply(changes_vintage, cln_changes)
+
+    # Eliminate Null values
+
+    changes_vintage <- purrr::keep(changes_vintage, ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0)
 
     # Identify unique
 
@@ -110,26 +118,21 @@ cln_changes <- function(changes) {
 
   # Remove list for difference in columns
 
-  changes <- lapply(changes, \(x) x[!names(x) %in% "diff_cols"])
+  cln_chngs <- changes[!names(changes) %in% "diff_cols"]
 
   # Row bind lists
 
-  changes <- lapply(changes, \(x) rbindlist(x, idcol = "changes", fill = TRUE))
+  cln_chngs <- data.table::rbindlist(cln_chngs, idcol = "changes", fill = TRUE)
 
-  # Eliminate Null values
+  # Add key as attribute
 
-  changes <- purrr::keep(changes, ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0)
-
-  # Add measure name/id as attribute
-
-  changes <- purrr::map2(.x = changes,
-                         .y = names(changes),
-                         .f = id_as_att)
+  key <- attributes(changes)$key_cols
+  data.table::setattr(cln_chngs, "key_cols", key)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(changes)
+  return(cln_chngs)
 
 }
 
@@ -139,29 +142,29 @@ cln_changes <- function(changes) {
 #' According to the aux key, this function selects the unique values.
 #'
 #' @param x data.frame with aux changes for specific aux file
-#' @param name name of the measure or auxiliary file
+#' @param key variables that define difference
 #'
 #' @return data.frame
 #' @keywords internal
-check_unique <- function(x, name = attributes(x)$id){
+check_unique <- function(x, key = attributes(x)$key_cols){
 
-  if(name == "cpi"){ # Fix while we add as attributes
-
-    key <- c("country_code", "cpi_year", "reporting_level", "survey_year", "survey_acronym")
-
-  }else if(name == "ppp"){
-
-    key <- c("country_code", "reporting_level", "ppp_year")
-
-  }else if(name == "pop"){
-
-    key <- c("country_code", "reporting_level", "year")
-
-  }else if(name == "pfw"){
-
-    key <- c("country_code", "surveyid_year", "welfare_type")
-
-  }
+  # if(name == "cpi"){ # Fix while we add as attributes
+  #
+  #   key <- c("country_code", "cpi_year", "reporting_level", "survey_year", "survey_acronym")
+  #
+  # }else if(name == "ppp"){
+  #
+  #   key <- c("country_code", "reporting_level", "ppp_year")
+  #
+  # }else if(name == "pop"){
+  #
+  #   key <- c("country_code", "reporting_level", "year")
+  #
+  # }else if(name == "pfw"){
+  #
+  #   key <- c("country_code", "surveyid_year", "welfare_type")
+  #
+  # }
 
   if(all(key %in% colnames(x))){
 
