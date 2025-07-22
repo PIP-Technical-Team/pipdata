@@ -487,6 +487,6 @@ unq_obs_dt <- function(dt,
   #
   # )
 
-  return(TRUE)
+  return(dt)
 
 }

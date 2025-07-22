@@ -61,7 +61,7 @@ report_lvl <- function(cpfw) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      dcols <- c(
+      dcols <- c( # We need to include to sysdata
         "cpi_domain",
         "ppp_domain",
         "gdp_domain",
@@ -93,7 +93,7 @@ report_lvl <- function(cpfw) {
 
       }else if(nrow(cpfw) > 1 & n_cpfw_wt ==1){
 
-        rlang::abort(message = "PFW is not unique for country, surveyid year, and survey_acronym",
+        rlang::abort(message = "PFW is not unique for country, surveyid year, survey_acronym and welfare_type",
                      class = c("piperr", "no_unq_pfw"),
                      use_cli_format = TRUE)
 
