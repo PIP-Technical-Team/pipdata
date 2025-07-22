@@ -66,16 +66,12 @@ data_to_dt <- function(dt, survey_id) {
   # on.exit ------------
   on.exit({
     rm(survey_id,
-       envir = .logenv)
+       envir = .pipdataenv)
   }) # For now
 
   assign("survey_id",
          survey_id,
          envir = .pipdataenv)
-
-  assign("survey_id",
-         survey_id,
-         envir = .logenv) # For now
 
   res <- tryCatch(
     expr = {
@@ -114,7 +110,7 @@ data_to_dt <- function(dt, survey_id) {
                       message = cnd$message,
                       name = "pipdata_log",
                       .trace = cnd$call,
-                      args = list(error = class(cnd)[2],
+                      logmeta = list(error = class(cnd)[2],
                                   survey = survey_id,
                                   status = "The survey was skipped"))
 
@@ -241,6 +237,7 @@ survey_id_to_attr <- function(dt, survey_id) {
   attr(dt, "surveyid_year") <- as.numeric(attributes(dt)$surveyid_year)
   attr(dt, "M")       <- NULL
   attr(dt, "A")       <- NULL
+  attr(dt, "survey_id") <- survey_id
 
   # Add gd_type
 

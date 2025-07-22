@@ -160,10 +160,12 @@ format_wgt <- function(dt) {
 
           dt[, weight := 1 / .N]
 
+          survey_id <- .pipdataenv$survey_id
+
           pipfun::log_add(event = "warning",
                           message = "Weight variable missing in DLW",
                           name = "pipdata_log",
-                          args = list(warning = "mn_wgt_inf",
+                          logmeta = list(warning = "mn_wgt_inf",
                                       survey = survey_id)
                           )
 

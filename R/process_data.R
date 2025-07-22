@@ -36,21 +36,20 @@ process_data <- function(df, pfw, ...) {
 process_data.pipmd <- function(df, pfw, ...) {
 
   # on.exit ------------
-  on.exit({
-    rm(survey_id,
-       envir = .logenv)
-  }) # For now
+  # on.exit({
+  #   rm(survey_id,
+  #      envir = .pipdataenv)
+  # }) # For now
 
-  svy <- unique(df$survey_id)
+  svy <- attributes(df)$survey_id
 
   assign("survey_id",
          svy,
          envir = .pipdataenv)
 
-  assign("survey_id",
-         svy,
-         envir = .logenv) # For now
-
+  if("countrycode" %in% names(df)){
+    df$country_code <- df$countrycode
+  }
 
   # Computations -------
   res <- tryCatch(
@@ -61,20 +60,6 @@ process_data.pipmd <- function(df, pfw, ...) {
       pd_dlw_clean(ls_cpfw)
 
     },
-    pipinf = function(cnd){
-
-      survey_id <- c(.pipdataenv$survey_id)
-
-      pipfun::log_add(event = "info",
-                      message = cnd$message,
-                      name = "pipdata_log",
-                      .trace = cnd$call,
-                      output = NA,
-                      args = list(error = class(cnd)[2],
-                                  survey = survey_id,
-                                  status = "The survey was skipped"))
-
-    },
     piperr = function(cnd){
 
       survey_id <- c(.pipdataenv$survey_id)
@@ -83,10 +68,11 @@ process_data.pipmd <- function(df, pfw, ...) {
                       message = cnd$message,
                       name = "pipdata_log",
                       .trace = cnd$call,
-                      output = NA,
-                      args = list(error = class(cnd)[2],
+                      logmeta = list(error = class(cnd)[2],
                                      survey = survey_id,
                                      status = "The survey was skipped"))
+
+      NULL
 
     },
 
@@ -98,10 +84,11 @@ process_data.pipmd <- function(df, pfw, ...) {
                       message = cnd$message,
                       name = "pipdata_log",
                       .trace = cnd$call,
-                      output = NA,
                       logmeta = list(error = "unknown_error",
                                      survey = survey_id,
                                      status = "The survey was skipped"))
+
+      NULL
 
       }
   )
@@ -120,28 +107,20 @@ process_data.pipmd <- function(df, pfw, ...) {
 process_data.pipgd <- function(df, pfw, ...) {
 
   # on.exit ------------
-  on.exit({
-    rm(survey_id,
-       envir = .logenv)
-  })
+  # on.exit({
+  #   rm(survey_id,
+  #      envir = .pipdataenv)
+  # })
 
-  svy <- unique(df$survey_id)
+  svy <- attributes(df)$survey_id
 
   assign("survey_id",
          svy,
          envir = .pipdataenv)
 
-  assign("survey_id",
-         svy,
-         envir = .logenv) # For now
-
-  # if("countrycode" %in% names(df)){
-  #   df$country_code <- df$countrycode
-  # }
-
-  # Unique obs per pfw --------
-  keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-  pfw <- unq_obs_dt(pfw, keyVar)
+  if("countrycode" %in% names(df)){
+    df$country_code <- df$countrycode
+  }
 
   # Computations -------
   res <- tryCatch(
@@ -161,10 +140,11 @@ process_data.pipgd <- function(df, pfw, ...) {
                       message = cnd$message,
                       name = "pipdata_log",
                       .trace = cnd$call,
-                      output = NA,
-                      args = list(error = class(cnd)[2],
+                      logmeta = list(error = class(cnd)[2],
                                   survey = survey_id,
                                   status = "The survey was skipped"))
+
+      NULL
 
     },
 
@@ -176,10 +156,11 @@ process_data.pipgd <- function(df, pfw, ...) {
                       message = cnd$message,
                       name = "pipdata_log",
                       .trace = cnd$call,
-                      output = NA,
                       logmeta = list(error = "unknown_error",
                                      survey = survey_id,
                                      status = "The survey was skipped"))
+
+      NULL
 
     }
   )
@@ -194,73 +175,7 @@ process_data.pipgd <- function(df, pfw, ...) {
 #' @rdname process_data
 process_data.default <- function(df, ...) {
 
-  cli::cli_alert("no PIP method for this data. Returning same object")
-  return(invisible(df))
-
-}
-
-#' Find unique values in PFW according to some key variables
-#'
-#' @param dt data.table or data.frame
-#' @param keyVar character vector with variables to determine unique observations
-#'
-#' @return data.table or data.frame
-#' @export
-#'
-#' @examples
-#' release <- "20250203"
-#' pipfun::setup_working_release(release)
-#'
-#' pfw <- pipload::pip_load_aux("pfw")
-#' keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-#' unq_obs_dt(pfw, keyVar)
-unq_obs_dt <- function(dt,
-                       keyVar) {
-
-  tryCatch(
-
-    expr = {
-
-      if(uniqueN(dt, by = keyVar) != nrow(dt)){
-
-        dt_d <- dt[duplicated(dt, by = keyVar)]
-        n_rep <- nrow(dt_d)
-
-        cli::cli_abort("There {?is/are} {n_rep} duplicates in PFW",
-                       class = c("piperr","dup_pfw"))
-
-        # msg <- cli::format_error("There {?is/are} {n_rep} duplicates in PFW")
-        #
-        # piperr(message = msg,
-        #        name = "dup_pfw")
-
-        # cli::cli_abort(message = "There {?is/are} {n_rep} duplicates in `pfw`",
-        #                class = c("dup_pfw", "piperr"),
-        #                link =  unique(dt_d$link),
-        #                call = sys.call())
-      }
-
-    },
-
-    piperr = function(cnd){
-
-      survey_id <- c(.pipdataenv$survey_id)
-
-      dt <- unique(dt, by = keyVar)
-
-      pipfun::log_add(event = "error",
-                      message = cnd$message,
-                      name = "pipdata_log",
-                      .trace = cnd$call,
-                      output = dt,
-                      args = list(error = class(cnd)[2],
-                                  survey = survey_id,
-                                  status = "The survey was skipped"))
-
-    }
-
-  )
-
-  return(dt)
+  cli::cli_alert("no PIP method for this data. Returning NULL")
+  return(NULL)
 
 }

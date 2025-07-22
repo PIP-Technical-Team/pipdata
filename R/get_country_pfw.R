@@ -99,9 +99,13 @@ report_lvl <- function(cpfw) {
 
       }else if(nrow(cpfw)>1){
 
-        rlang::inform(message = "More than one value for country/year PFW",
-                     class = c("pipinf", "othr_wlf_inf"),
-                     use_cli_format = TRUE)
+        survey_id <- c(.pipdataenv$survey_id)
+
+        pipfun::log_add(event = "info",
+                        message = "More than one value for country/year PFW",
+                        name = "pipdata_log",
+                        logmeta = list(info = "othr_wlf_inf",
+                                    survey = survey_id))
       }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

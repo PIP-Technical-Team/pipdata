@@ -420,13 +420,73 @@ last_ver_inv <- function(dt) {
 
 }
 
-find_dt_with_attribute <- function(lst, attr_name, attr_value) {
-  Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
-}
+# find_dt_with_attribute <- function(lst, attr_name, attr_value) {
+#   Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
+# }
+#
+# id_as_att <- function(dt, id_lst) {
+#   # Add the id as an attribute
+#   # attr(dt, "id") <- id_lst
+#   data.table::setattr(dt, "id", id_lst)
+#   return(dt)
+# }
 
-id_as_att <- function(dt, id_lst) {
-  # Add the id as an attribute
-  # attr(dt, "id") <- id_lst
-  data.table::setattr(dt, "id", id_lst)
-  return(dt)
+#' Find unique values in PFW according to some key variables
+#'
+#' @param dt data.table or data.frame
+#' @param keyVar character vector with variables to determine unique observations
+#'
+#' @return data.table or data.frame
+#' @export
+#'
+#' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
+#' pfw <- pipload::pip_load_aux("pfw")
+#' keyVar <- c("country_code", "surveyid_year", "survey_acronym")
+#' unq_obs_dt(pfw, keyVar)
+unq_obs_dt <- function(dt,
+                       keyVar) {
+
+  # tryCatch(
+  #
+  #   expr = {
+
+      if(uniqueN(dt, by = keyVar) != nrow(dt)){
+
+        dt_d <- dt[duplicated(dt, by = keyVar)]
+        n_rep <- nrow(dt_d)
+
+        cli::cli_abort("There {?is/are} {n_rep} duplicates in PFW",
+                       class = c("piperr","dup_pfw"))
+      }
+
+  #   },
+  #
+  #   piperr = function(cnd){
+  #
+  #     survey_id <- c(.pipdataenv$survey_id)
+  #
+  #     pipfun::log_add(event = "error",
+  #                     message = cnd$message,
+  #                     name = "pipdata_log",
+  #                     .trace = cnd$call,
+  #                     logmeta = list(error = class(cnd)[2],
+  #                                    survey = survey_id,
+  #                                    status = "The survey was skipped"))
+  #
+  #
+  #   },
+  #
+  #   finally = {
+  #
+  #      unique(dt, by = keyVar)
+  #
+  #   }
+  #
+  # )
+
+  return(TRUE)
+
 }

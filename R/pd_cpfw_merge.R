@@ -118,13 +118,17 @@ add_main_att <- function(dt, cpfw) {
 
   if(length(att_missing)>0){
 
+    survey_id <- c(.pipdataenv$survey_id)
+
     vars <- cli::cli_vec(att_missing, list("vec-trunc" = 3))
 
     msg <- cli::format_error("Main variable{?s} {vars} missing")
 
-    rlang::inform(message = msg,
-                  class = c("pipinf", "mn_var_inf"),
-                  use_cli_format = TRUE)
+    pipfun::log_add(event = "info",
+                    message = msg,
+                    name = "pipdata_log",
+                    logmeta = list(info = "mn_var_inf",
+                                   survey = survey_id))
 
   }
 
@@ -174,11 +178,10 @@ add_main_vars <- function(dt, cpfw) {
 
         msg <- cli::format_error("Main variable{?s} {vars} missing")
 
-
         pipfun::log_add(event = "info",
                         message = msg,
                         name = "pipdata_log",
-                        args = list(info = "mn_var_inf",
+                        logmeta = list(info = "mn_var_inf",
                                     survey = survey_id))
 
       }
@@ -229,8 +232,13 @@ add_area.pipmd <- function(dt) {
   # Abort if not urban variable
   if (!any(c("urban", "area") %in% colnames(dt))){
 
-    rlang::inform(message = "There is no urban variable",
-                  class = c("pipinf", "urb_var"))
+    survey_id <- c(.pipdataenv$survey_id)
+
+    pipfun::log_add(event = "info",
+                    message = "There is no urban variable",
+                    name = "pipdata_log",
+                    logmeta = list(info = "urb_var",
+                                survey = survey_id))
 
     dt[, area := ""]
 
@@ -276,8 +284,13 @@ add_area.pipgd <- function(dt) {
   # Abort if not urban variable
   if (!any(c("urban", "area") %in% colnames(dt))){
 
-    rlang::inform(message = "There is no urban or area variable",
-                  class = c("pipinf", "urb_var"))
+    survey_id <- c(.pipdataenv$survey_id)
+
+    pipfun::log_add(event = "info",
+                    message = "There is no urban or area variable",
+                    name = "pipdata_log",
+                    logmeta = list(info = "urb_var",
+                                survey = survey_id))
 
     dt[, area := ""]
 
@@ -331,7 +344,7 @@ add_dom_vars <- function(dt, cpfw) {
     pipfun::log_add(event = "info",
                     message = msg,
                     name = "pipdata_log",
-                    args = list(info = "dom_var",
+                    logmeta = list(info = "dom_var",
                                 survey = survey_id))
 
     # cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
