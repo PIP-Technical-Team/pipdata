@@ -1,5 +1,5 @@
 valid_dlw_load <- function(inv,
-                           measure = c("cpi", "ppp","pfw","pop"),
+                           aux_measures = c("cpi", "ppp","pfw","pop"),
                            path = fs::path(Sys.getenv("PIP_ROOT_DIR"), "DLW-OUTPUT/")) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,7 +16,7 @@ valid_dlw_load <- function(inv,
 
   # Load changes in aux files
 
-  changes_aux <- valid_aux_load(measure = measure,
+  changes_aux <- valid_aux_load(measure = aux_measures,
                                 compare = "all")
 
   ls_inv_aux <- lapply(changes_aux, filter_aux_inv, inv = inv)
