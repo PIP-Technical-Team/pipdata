@@ -27,16 +27,12 @@ pd_cpfw_merge <- function(dt, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## PFW for specific country --------
 
-  # dt <- find_dt_with_attribute(ls, attr_name = "country_code", attr_value = "PHL")[[3]]
-
   cpfw <- get_country_pfw(dt, pfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Split data.table for alternative welfare --------
 
   lf   <- pd_split_alt_welfare(dt, cpfw)
-
-  # dt <- lf[[1]]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Map survey to cpfw --------
@@ -107,7 +103,7 @@ add_main_att <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   att <- names(attributes(dt))
 
-  main_attr <- c("survey_year",
+  main_attr <- c("surveyid_year", # Check if survey_year is necessary from pfw
                  "country_code",
                  "welfare_type")
 
@@ -155,57 +151,57 @@ add_main_att <- function(dt, cpfw) {
 #' @return data.table
 #'
 #' @keywords internal
-add_main_vars <- function(dt, cpfw) {
-
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      # computations   ---------
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      variables <- colnames(dt)
-
-      main_vars <- c("survey_year",
-                     "country_code",
-                     "welfare_type")
-
-      vars <- main_vars[!(main_vars %in% variables)]
-
-      # Inform what country/surveys are missing a main variable
-
-      if(length(vars)>0){
-
-        survey_id <- c(.pipdataenv$survey_id)
-
-        vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
-
-        msg <- cli::format_error("Main variable{?s} {vars} missing")
-
-        pipfun::log_add(event = "info",
-                        message = msg,
-                        name = "pipdata_log",
-                        logmeta = list(info = "mn_var_inf",
-                                    survey = survey_id))
-
-      }
-
-      # Add variables if missing
-
-      dt[, (main_vars) :=
-           lapply(main_vars, \(x) {
-
-             if (!(x %in% variables)) {
-               cpfw[[x]]
-
-             } else {
-               dt[[x]]
-
-             }
-           })]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-
-}
+# add_main_vars <- function(dt, cpfw) {
+#
+#       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       # computations   ---------
+#       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       variables <- colnames(dt)
+#
+#       main_vars <- c("survey_year",
+#                      "country_code",
+#                      "welfare_type")
+#
+#       vars <- main_vars[!(main_vars %in% variables)]
+#
+#       # Inform what country/surveys are missing a main variable
+#
+#       if(length(vars)>0){
+#
+#         survey_id <- c(.pipdataenv$survey_id)
+#
+#         vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
+#
+#         msg <- cli::format_error("Main variable{?s} {vars} missing")
+#
+#         pipfun::log_add(event = "info",
+#                         message = msg,
+#                         name = "pipdata_log",
+#                         logmeta = list(info = "mn_var_inf",
+#                                     survey = survey_id))
+#
+#       }
+#
+#       # Add variables if missing
+#
+#       dt[, (main_vars) :=
+#            lapply(main_vars, \(x) {
+#
+#              if (!(x %in% variables)) {
+#                cpfw[[x]]
+#
+#              } else {
+#                dt[[x]]
+#
+#              }
+#            })]
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Return   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   return(dt)
+#
+# }
 
 #' Recode urban to area (lower level, S3 methods)
 #'
@@ -336,9 +332,6 @@ add_dom_vars <- function(dt, cpfw) {
     miss_vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
     msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
 
-    # piperr(message = msg,
-    #        name = "dom_var")
-
     survey_id <- c(.pipdataenv$survey_id)
 
     pipfun::log_add(event = "info",
@@ -346,13 +339,6 @@ add_dom_vars <- function(dt, cpfw) {
                     name = "pipdata_log",
                     logmeta = list(info = "dom_var",
                                 survey = survey_id))
-
-    # cli::cli_abort(message = "Domain variable{?s} {miss_vars} missing in country `pfw`",
-    #                class = c("dom_var", "piperr"),
-    #                log = log_err,
-    #                skip = skip_err,
-    #                link =  svy,
-    #                call = sys.call())
 
   }
 
@@ -410,11 +396,13 @@ add_dist_type.pipmd <- function(dt, cpfw) {
 
     if (cpfw$use_imputed == 1) {
 
-      dt[, distribution_type := "imputed"]
+      # dt[, distribution_type := "imputed"]
+      setattr(dt, "distribution_type", "imputed")
 
     }else {
 
-      dt[, distribution_type := "micro"]
+      # dt[, distribution_type := "micro"]
+      setattr(dt, "distribution_type", "micro")
 
     }
 
@@ -436,30 +424,50 @@ add_dist_type.pipgd <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create distribution_type   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  dt[,
-       distribution_type := {
+  # dt[,
+  #      distribution_type := {
+  #
+  #        if (cpfw$pop_domain == 1) {
+  #
+  #          y <- "group"
+  #
+  #        } else if (cpfw$pop_domain ==  2) {
+  #
+  #          larea <- length(unique(area))
+  #
+  #          if (larea %in% c(0, 1)) {
+  #            y <- "group"
+  #          } else {
+  #            y <- "aggregate"
+  #          }
+  #
+  #        } else {
+  #          y <- ""
+  #        }
+  #        y
+  #
+  #      }
+  #   ]
 
-         if (cpfw$pop_domain == 1) {
+  if (cpfw$pop_domain == 1) {
 
-           y <- "group"
+    dist_type <- "group"
 
-         } else if (cpfw$pop_domain ==  2) {
+  } else if (cpfw$pop_domain ==  2) {
 
-           larea <- length(unique(area))
+    larea <- length(unique(dt$area))
 
-           if (larea %in% c(0, 1)) {
-             y <- "group"
-           } else {
-             y <- "aggregate"
-           }
+    if (larea %in% c(0, 1)) {
+      dist_type <- "group"
+    } else {
+      dist_type <- "aggregate"
+    }
 
-         } else {
-           y <- ""
-         }
-         y
+  } else {
+    dist_type <- ""
+  }
 
-       }
-    ]
+  setattr(dt, "distribution_type", dist_type)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -480,18 +488,12 @@ col_to_attr <- function(dt, cpfw) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  var_att_svy <- c("country_code", # We can add this to the internal data
-               "survey_id",
-               "surveyid_year",
-               "survey_acronym",
-               "survey_year",
-               "welfare_type",
-               "distribution_type",
-               "gd_type")
+  pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
+  data_level_vars  <- glue("{pref}_data_level")
 
   vars <- names(dt)
 
-  fixed_vars <- vars[!(vars %in% var_att_svy)]
+  fixed_vars <- vars[!(vars %in% data_level_vars)]
 
   # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
 
@@ -499,7 +501,7 @@ col_to_attr <- function(dt, cpfw) {
 
   # Add reporting level from cpfw
 
-  attr(dt, "reporting_level") <- cpfw$reporting_level
+  setattr(dt, "reporting_level", cpfw$reporting_level)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
