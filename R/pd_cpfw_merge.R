@@ -137,6 +137,10 @@ add_main_att <- function(dt, cpfw) {
 
   }
 
+  # Add reporting level from cpf
+
+  setattr(dt, "reporting_level", cpfw$reporting_level)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -323,8 +327,9 @@ add_dom_vars <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-  data_level_vars  <- glue("{pref}_data_level")
   domain_vars      <- glue("{pref}_domain")
+
+  ## Check domain vars exist
 
   if(any(!(domain_vars %in% names(cpfw)))){
 
@@ -332,37 +337,98 @@ add_dom_vars <- function(dt, cpfw) {
     miss_vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
     msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
 
-    survey_id <- c(.pipdataenv$survey_id)
-
-    pipfun::log_add(event = "info",
-                    message = msg,
-                    name = "pipdata_log",
-                    logmeta = list(info = "dom_var",
-                                survey = survey_id))
-
+    rlang::abort(message = msg,
+                 class = "piperr", "dom_var")
   }
 
-  data_level_vars  <- data_level_vars[(domain_vars %in% names(cpfw))]
-  domain_vars  <- domain_vars[(domain_vars %in% names(cpfw))]
-  trows <- nrow(dt)
+  ## Create data_level attributes
 
-  dt[,
-     (data_level_vars) :=
-       lapply(domain_vars, \(x) {
+  data_level_vars <- glue("{pref}_data_level")
 
-         if (cpfw[[x]] == 1) {
+  same_rep_lvl <- cpfw[, .SD, .SDcols = domain_vars] == cpfw$reporting_level
 
-           y <- rep("national", times = trows)
+  if(all(same_rep_lvl)){ # If reporting_level is equal to domain variables
 
-         } else if (cpfw[[x]] == 2) {
-           y <-  area
-         } else {
-           y <-  as.character()
-         }
-         y
+    # CPI and PPP variable cannot mismatch
 
-       })
-  ]
+    if(cpfw$cpi_domain_var!=cpfw$ppp_domain_var){
+
+      rlang::abort(message = "There is a mismatch on the cpi_domain_var or ppp_domain_var",
+                   class = c("piperr", "cpi_ppp_var"))
+
+    }
+
+
+    dt <- lapply(data_level_vars, function(x){
+
+    if(cpfw$reporting_level == 1){ # CASE 1: They are all national
+
+        setattr(dt, x, "national")
+
+    }else if(cpfw$reporting_level == 2){
+
+      if(cpfw$cpi_domain_var=="urban"){ # CASE 2: The cpi and ppp domain variable is "urban"
+
+          setattr(dt, x, "area") # Name of the variable to use will be area
+
+      }else if(cpfw$cpi_domain_var!="urban"){ # CASE 3: The cpi and ppp domain variable is different than "urban"
+
+          setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
+      }
+
+    }else{
+
+        setattr(dt, x, as.character()) # CASE 4: There is no value for the reporting level
+    }
+
+    setattr(dt, "aux_data_levels", "same")
+
+    })
+
+
+  }else if(any(same_rep_lvl==FALSE)){ # If reporting_level is different to any domain variables
+
+
+    dt <- lapply(1:length(domain_vars), function(x){
+
+      dom_var <- domain_vars[x]
+      dta_var <- data_level_vars[x]
+
+      if (cpfw[[dom_var]] == 1) {
+
+        setattr(dt, dta_var, "national" ) # CASE 1: If domain variable is 1, then national
+
+      }else if (cpfw[[dom_var]] == 2) {
+
+        if(dom_var %in% c("cpi_domain","ppp_domain")){
+
+          if(cpfw$cpi_domain_var == "urban" & cpfw$ppp_domain_var == "urban"){
+
+            setattr(dt, dta_var, "area") # CASE 2: If domain variable is cpi or ppp, and the domain_var is "urban", use area
+
+          }else if(cpfw$cpi_domain_var != "urban"){
+
+            setattr(dt, dta_var, cpfw$cpi_domain_var) # CASE 3: If domain variable is cpi or ppp, and the domain_var is not "urban", use domain_var
+
+          }
+
+        }else{
+
+          setattr(dt, dta_var, "area") # CASE 4: For all other domain_var we use area (Need to check if this is correct)
+
+        }
+
+      }else{
+
+        setattr(dt, dta_var, as.character()) # CASE 5: There is no value for domain variable
+
+      }
+
+    })
+
+    setattr(dt, "aux_data_levels", "different")
+
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -489,7 +555,6 @@ col_to_attr <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-  data_level_vars  <- glue("{pref}_data_level")
 
   vars <- names(dt)
 
@@ -498,10 +563,6 @@ col_to_attr <- function(dt, cpfw) {
   # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
 
   dt <- all_cols_to_attr(dt, fixed_cols = fixed_vars)
-
-  # Add reporting level from cpfw
-
-  setattr(dt, "reporting_level", cpfw$reporting_level)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
