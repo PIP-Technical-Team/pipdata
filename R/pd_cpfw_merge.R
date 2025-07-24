@@ -68,8 +68,8 @@ cpfw_merge <- function(dt, cpfw, ...){
       dt_c <- add_main_att(dt_c, cpfw)
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Area (Needed for Domain variables)--------
-      dt_c <- add_area(dt_c)
+      ## Area --------
+      dt_c <- add_area(dt_c) # It can be moved to cleaning
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Domain variables (same for md and gd) --------
@@ -77,12 +77,12 @@ cpfw_merge <- function(dt, cpfw, ...){
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Distribution type  (different for md and gd) --------
-      dt_c <- add_dist_type(dt_c, cpfw)
+      dt_f <- add_dist_type(dt_c, cpfw)
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Transform unique variables into attributes --------
 
-      dt_f <- col_to_attr(dt_c, cpfw)
+      # dt_f <- col_to_attr(dt_c, tst)
 
 
   return(dt_f)
@@ -334,7 +334,7 @@ add_dom_vars <- function(dt, cpfw) {
   if(any(!(domain_vars %in% names(cpfw)))){
 
     miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
-    miss_vars <- cli::cli_vec(vars, list("vec-trunc" = 3))
+    miss_vars <- cli::cli_vec(miss_vars, list("vec-trunc" = 3))
     msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
 
     rlang::abort(message = msg,
@@ -359,37 +359,36 @@ add_dom_vars <- function(dt, cpfw) {
     }
 
 
-    dt <- lapply(data_level_vars, function(x){
+    for (x in data_level_vars) {
 
-    if(cpfw$reporting_level == 1){ # CASE 1: They are all national
+      if (cpfw$reporting_level == 1) { # CASE 1: They are all national
 
         setattr(dt, x, "national")
 
-    }else if(cpfw$reporting_level == 2){
+      } else if (cpfw$reporting_level == 2) {
 
-      if(cpfw$cpi_domain_var=="urban"){ # CASE 2: The cpi and ppp domain variable is "urban"
+        if (cpfw$cpi_domain_var == "urban") { # CASE 2: The cpi and ppp domain variable is "urban"
 
           setattr(dt, x, "area") # Name of the variable to use will be area
 
-      }else if(cpfw$cpi_domain_var!="urban"){ # CASE 3: The cpi and ppp domain variable is different than "urban"
+        } else if (cpfw$cpi_domain_var != "urban") { # CASE 3: The cpi and ppp domain variable is different than "urban"
 
           setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
-      }
+        }
 
-    }else{
+      } else {
 
         setattr(dt, x, as.character()) # CASE 4: There is no value for the reporting level
+      }
     }
 
     setattr(dt, "aux_data_levels", "same")
-
-    })
 
 
   }else if(any(same_rep_lvl==FALSE)){ # If reporting_level is different to any domain variables
 
 
-    dt <- lapply(1:length(domain_vars), function(x){
+    for(x in 1:length(domain_vars)){
 
       dom_var <- domain_vars[x]
       dta_var <- data_level_vars[x]
@@ -424,7 +423,7 @@ add_dom_vars <- function(dt, cpfw) {
 
       }
 
-    })
+    }
 
     setattr(dt, "aux_data_levels", "different")
 
@@ -442,18 +441,18 @@ add_dom_vars <- function(dt, cpfw) {
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @keywords internal
-add_dist_type <- function(dt, cpfw...) {
+#' @export
+add_dist_type <- function(dt, cpfw) {
   UseMethod("add_dist_type")
 }
 
 
-#' Add distribution type
+#' Add distribution type micro
 #'
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @keywords internal
+#' @export
 add_dist_type.pipmd <- function(dt, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -479,12 +478,12 @@ add_dist_type.pipmd <- function(dt, cpfw) {
 
 }
 
-#' Add distribution type
+#' Add distribution type group
 #'
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @keywords internal
+#' @export
 add_dist_type.pipgd <- function(dt, cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -548,25 +547,25 @@ add_dist_type.pipgd <- function(dt, cpfw) {
 #'
 #' @return data.table
 #' @keywords internal
-col_to_attr <- function(dt, cpfw) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-
-  vars <- names(dt)
-
-  fixed_vars <- vars[!(vars %in% data_level_vars)]
-
-  # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
-
-  dt <- all_cols_to_attr(dt, fixed_cols = fixed_vars)
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-
-}
+# col_to_attr <- function(dt, cpfw) {
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # computations   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#   pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
+#
+#   vars <- names(dt)
+#
+#   fixed_vars <- vars[!(vars %in% data_level_vars)]
+#
+#   # Use Zander functions (NEED TO FIX TO USE PIPLOAD)
+#
+#   dt <- all_cols_to_attr(dt, fixed_cols = fixed_vars)
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Return   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   return(dt)
+#
+# }
