@@ -420,9 +420,9 @@ last_ver_inv <- function(dt) {
 
 }
 
-# find_dt_with_attribute <- function(lst, attr_name, attr_value) {
-#   Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
-# }
+find_dt_with_attribute <- function(lst, attr_name, attr_value) {
+  Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
+}
 #
 # id_as_att <- function(dt, id_lst) {
 #   # Add the id as an attribute
@@ -444,7 +444,7 @@ last_ver_inv <- function(dt) {
 #' pipfun::setup_working_release(release)
 #'
 #' pfw <- pipload::pip_load_aux("pfw")
-#' keyVar <- c("country_code", "surveyid_year", "survey_acronym")
+#' keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
 #' unq_obs_dt(pfw, keyVar)
 unq_obs_dt <- function(dt,
                        keyVar) {

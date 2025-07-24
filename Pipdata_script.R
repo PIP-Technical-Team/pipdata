@@ -14,15 +14,16 @@ pipfun::setup_working_release(release)
 # inv  <- pipload::pip_load_dlw_inventory()
 inv <- m_inv_load()
 
-# Check validation report:
-# val_rep <-  qs::qread(file.path(path, "_Inventory/_release/validation_report.qs"))
-
 # Load data
-ls  <- valid_dlw_load(inv)
+ls  <- valid_dlw_load(inv,
+                      aux_measures = c("pfw", "ppp", "cpi", "pop"))
 
 # Load PFW
 pfw  <- pipload::pip_load_aux("pfw")
 
+# Check for unique obs per pfw --------
+keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
+pfw <- unq_obs_dt(pfw, keyVar)
 
 #--------- Run pipdata functions -----
 
@@ -31,6 +32,8 @@ results <- lapply(ls,
                   process_data,
                   pfw = pfw)
 
+# Check if list has attributes with specific names
+# dt <- find_dt_with_attribute(ls, attr_name = "country_code", attr_value = "PHL")[[3]]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Load aux data --------

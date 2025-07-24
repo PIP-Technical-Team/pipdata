@@ -2,7 +2,7 @@
 % Please edit documentation in R/pd_cpfw_merge.R
 \name{add_area}
 \alias{add_area}
-\title{Recode urban to area (lower level, S3 methods)}
+\title{Add metadata variables to country/survey}
 \usage{
 add_area(dt)
 }
@@ -11,7 +11,18 @@ add_area(dt)
 }
 \value{
 data.table
+
+data.table
 }
 \description{
-Recode urban to area (lower level, S3 methods)
+Add metadata variables to country/survey
 }
+\keyword{(lower}
+\keyword{Recode}
+\keyword{S3}
+\keyword{area}
+\keyword{internal}
+\keyword{level,}
+\keyword{methods)}
+\keyword{to}
+\keyword{urban}

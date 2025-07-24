@@ -7,10 +7,10 @@
 get_country_pfw(dt, pfw)
 }
 \arguments{
+\item{dt}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
+
 \item{pfw}{data frame with Price framework data, loaded with
 \code{pipload::pip_load_aux("pfw")}}
-
-\item{df}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
 }
 \value{
 list of data.tables

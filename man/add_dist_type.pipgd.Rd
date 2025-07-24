@@ -2,7 +2,7 @@
 % Please edit documentation in R/pd_cpfw_merge.R
 \name{add_dist_type.pipgd}
 \alias{add_dist_type.pipgd}
-\title{Add distribution type}
+\title{Add distribution type group}
 \usage{
 \method{add_dist_type}{pipgd}(dt, cpfw)
 }
@@ -15,6 +15,5 @@
 data.table
 }
 \description{
-Add distribution type
+Add distribution type group
 }
-\keyword{internal}

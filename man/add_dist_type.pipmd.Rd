@@ -2,7 +2,7 @@
 % Please edit documentation in R/pd_cpfw_merge.R
 \name{add_dist_type.pipmd}
 \alias{add_dist_type.pipmd}
-\title{Add distribution type}
+\title{Add distribution type micro}
 \usage{
 \method{add_dist_type}{pipmd}(dt, cpfw)
 }
@@ -15,6 +15,5 @@
 data.table
 }
 \description{
-Add distribution type
+Add distribution type micro
 }
-\keyword{internal}

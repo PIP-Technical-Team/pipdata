@@ -4,12 +4,12 @@
 \alias{check_unique}
 \title{Check unique values in aux changes}
 \usage{
-check_unique(x, name = attributes(x)$id)
+check_unique(x, key = attributes(x)$key_cols)
 }
 \arguments{
 \item{x}{data.frame with aux changes for specific aux file}
 
-\item{name}{name of the measure or auxiliary file}
+\item{key}{variables that define difference}
 }
 \value{
 data.frame

@@ -4,10 +4,12 @@
 \alias{add_dist_type}
 \title{Add distribution type (lower level, S3 methods)}
 \usage{
-add_dist_type(dt, cpfw...)
+add_dist_type(dt, cpfw)
 }
 \arguments{
 \item{dt}{data.table}
+
+\item{cpfw}{data.table with country/survey PFW}
 }
 \value{
 data.table
@@ -15,4 +17,3 @@ data.table
 \description{
 Add distribution type (lower level, S3 methods)
 }
-\keyword{internal}
