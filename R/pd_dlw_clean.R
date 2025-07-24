@@ -85,12 +85,12 @@ dlw_clean.pipmd <- function(df, ...) {
 #   ____________________________________________________________________________
 #   Final formatting                                                        ####
 
-  md <- pip_vars(md)
+  # md <- pip_vars(md)
 
   # Sort by welfare (commented because it gives an error)
   # sortbycol <- c(
   #   "welfare",
-  #   "hhid", # Why hhid if they are character? Should they be numeric?
+  #   "hhid",
   #   "pid")
 
   # setorderv(md, cols = "welfare")
@@ -129,7 +129,7 @@ dlw_clean.pipgd <- function(df, ...) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------
 
-  gd <- pip_vars(gd)
+  # gd <- pip_vars(gd)
 
   return(gd)
 }
@@ -168,17 +168,6 @@ format_wgt <- function(dt) {
                           logmeta = list(warning = "mn_wgt_inf",
                                       survey = survey_id)
                           )
-
-          # piperr(message = "Weight variable missing in DLW",
-          #        name = "mn_wgt_inf")
-
-          # svy <- .logenv$survey_id
-          #
-          # cli::cli_abort(message = "Weight variable missing in DLW",
-          #                 class = c("mn_wgt_inf", "piperr"),
-          #                 log = log_wrn,
-          #                 link = svy,
-          #                 call = sys.call())
 
         }
       }
@@ -311,52 +300,52 @@ recode_gndr <- function(dt) {
 #' @return data.table
 #'
 #' @keywords internal
-pip_vars <- function(dt) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Add missing pip variables   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  var_att_svy <- c("country_code", # We can add this to the internal data
-                   "survey_id",
-                   "surveyid_year",
-                   "survey_acronym",
-                   "survey_year",
-                   "welfare_type",
-                   "distribution_type",
-                   "gd_type")
-
-  # get from internal data `pip_var_type`
-  pip_vars  <- pip_var_type$pip_vars_pc
-  pip_type  <- pip_var_type$pip_vars_pc_class
-
-  # add education to pip_vars
-  # pip_vars <- c(pip_vars, "educat4","educat5","literacy")
-  # pip_type  <- c(pip_type, "character","character","character")
-
-  no_att_vars <- !(pip_vars %in% var_att_svy)
-  pip_vars_col <- pip_vars[no_att_vars]
-  pip_type_col <- pip_type[no_att_vars]
-
-  miss_ind  <- !(pip_vars_col %in% names(dt))
-  miss_vars <- pip_vars_col[miss_ind]
-  miss_type <- pip_type_col[miss_ind]
-
-  miss_type <- glue("as.{miss_type}")
-
-  dt[,
-     (miss_vars) := lapply(miss_type, \(x) get(x)())]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Final Formatting   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  # order columns in correct order
-  setcolorder(dt, pip_vars_col)
-  dt <- dt[, .SD, .SDcols = pip_vars_col]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-
-}
+# pip_vars <- function(dt) {
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Add missing pip variables   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   var_att_svy <- c("country_code", # We can add this to the internal data
+#                    "survey_id",
+#                    "surveyid_year",
+#                    "survey_acronym",
+#                    "survey_year",
+#                    "welfare_type",
+#                    "distribution_type",
+#                    "gd_type")
+#
+#   # get from internal data `pip_var_type`
+#   pip_vars  <- pip_var_type$pip_vars_pc
+#   pip_type  <- pip_var_type$pip_vars_pc_class
+#
+#   # add education to pip_vars
+#   # pip_vars <- c(pip_vars, "educat4","educat5","literacy")
+#   # pip_type  <- c(pip_type, "character","character","character")
+#
+#   no_att_vars <- !(pip_vars %in% var_att_svy)
+#   pip_vars_col <- pip_vars[no_att_vars]
+#   pip_type_col <- pip_type[no_att_vars]
+#
+#   miss_ind  <- !(pip_vars_col %in% names(dt))
+#   miss_vars <- pip_vars_col[miss_ind]
+#   miss_type <- pip_type_col[miss_ind]
+#
+#   miss_type <- glue("as.{miss_type}")
+#
+#   dt[,
+#      (miss_vars) := lapply(miss_type, \(x) get(x)())]
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Final Formatting   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#   # order columns in correct order
+#   setcolorder(dt, pip_vars_col)
+#   dt <- dt[, .SD, .SDcols = pip_vars_col]
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Return   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   return(dt)
+#
+# }
