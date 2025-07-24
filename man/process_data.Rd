@@ -2,24 +2,14 @@
 % Please edit documentation in R/process_data.R
 \name{process_data}
 \alias{process_data}
-\alias{process_data.pipmd}
-\alias{process_data.pipgd}
-\alias{process_data.default}
-\title{PD: process data. Source: datalibweb}
+\title{Process datalibweb data: merge PFW data and clean variables}
 \usage{
 process_data(df, pfw, ...)
-
-\method{process_data}{pipmd}(df, pfw, ...)
-
-\method{process_data}{pipgd}(df, pfw, ...)
-
-\method{process_data}{default}(df, ...)
 }
 \arguments{
-\item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{dataframe loaded with \code{valid_dlw_load}}
 
-\item{pfw}{dataframe with Price Framework data loaded with
-\code{pipload::pip_load_aux("pfw")}}
+\item{pfw}{PFW}
 
 \item{...}{other parameters}
 }
@@ -27,8 +17,7 @@ process_data(df, pfw, ...)
 data.table
 }
 \description{
-process datalibweb data. Use S3 method to identify whether the data is
-microdata, groupdata or imputed data
+Process datalibweb data: merge PFW data and clean variables
 }
 \examples{
 release <- "20250203"
