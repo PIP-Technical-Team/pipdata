@@ -3,8 +3,7 @@
 #'
 #' @param dlw_raw_folder DLW-RAW folder with .dta files
 #' @param dlw_qs_folder Permanent or temporary folder to store .qs files
-#' @param log_err TRUE/FALSE log errors into .logenv
-#' @param skip_err TRUE/FALSE skip errors (no abort)
+#' @param log TRUE/FALSE default value is `TRUE`
 #'
 #' @return NULL
 #' @export
@@ -13,18 +12,26 @@
 #' \dontrun{
 #'  dlw_dta_to_qs(
 #'  dlw_raw_folder = "dlw_raw/folder_time1",
-#'  dlw_qs_folder  = "dlw_qs"
+#'  dlw_qs_folder  = "dlw_qs")
 #'  }
 #'
 dlw_dta_to_qs <- function(
     dlw_raw_folder,
     dlw_qs_folder,
-    log_err  = TRUE,
-    skip_err = TRUE
+    log  = TRUE
 ) {
 
   # set-up a release
   pipfun::get_wrk_release()
+
+  if (log) {
+
+    # capturing arguments in the log file
+    pipfun::log_add("info", "Convert dta raw into qs format",
+                    name = "pipdata_log",
+                    args = list(dlw_raw_folder = dlw_raw_folder,
+                                dlw_qs_folder = dlw_qs_folder))
+  }
 
   # 1. Record start time ------
   start_time <- Sys.time()
@@ -34,12 +41,19 @@ dlw_dta_to_qs <- function(
 
   # 2a. Abort if no .dta files found ----
   if (length(dta_files) == 0) {
-    cli::cli_abort(
-      sprintf("No .dta files found in '%s'. Nothing to convert.", dlw_raw_folder),
-      class = c("no_dlw_files", "piperr"),
-      call  = sys.call()
-    )
 
+    if (log){
+
+      pipfun::log_add("error", "No .dta files are found",
+                      name = "pipdata_log",
+                      logmeta = list(dta_files = 0))
+    }
+
+    cli::cli_abort(
+      sprintf("No .dta files found in '%s'. Nothing to convert.", dlw_raw_folder)#,
+      # class = c("no_dlw_files", "piperr"),
+      # call  = sys.call()
+    )
   }
 
   # 3. Make sure QS folder exists ore create -------
@@ -60,6 +74,16 @@ dlw_dta_to_qs <- function(
   )
 
   # 6. Loop over each .dta file -----
+
+  if (log){
+
+    pipfun::log_add("info", "Read .dta files convert them to .qs",
+                    name = "pipdata_log",
+                    logmeta = list(raw_folder = dlw_raw_folder,
+                                   qs_folder  = dlw_qs_folder))
+  }
+
+
   for (f in dta_files) {
 
     base_no_ext <- tools::file_path_sans_ext(basename(f))
@@ -72,13 +96,18 @@ dlw_dta_to_qs <- function(
         df <- tryCatch(
           expr = haven::read_dta(f),
           error = function(e) {
-            # 1) dta_read_err
+
+            pipfun::log_add("error", "Could not read .dta file",
+                            name = "pipdata_log",
+                            logmeta = list(dta_file_name = basename(f)))
+
+            # # 1) dta_read_err
             cli::cli_abort(
-              message = paste0("Could not read '", basename(f), "'"),
-              class   = c("dta_read_err", "piperr"),
-              log     = log_err,
-              skip    = skip_err,
-              call    = quote(read_dta(f))
+              message = paste0("Could not read '", basename(f), "'")#,
+              # class   = c("dta_read_err", "piperr"),
+              # log     = log_err,
+              # skip    = skip_err,
+              # call    = quote(read_dta(f))
             )
           }
         )
@@ -86,11 +115,11 @@ dlw_dta_to_qs <- function(
 
         if (!inherits(df, "data.frame")) {
           cli::cli_abort(
-            message = paste("Invalid data frame returned for", f),
-            class   = c("dta_read_err", "piperr"),
-            log     = log_err,
-            skip    = skip_err,
-            call    = quote(read_dta(f))
+            message = paste("Invalid data frame returned for", f)#,
+            # class   = c("dta_read_err", "piperr"),
+            # log     = log_err,
+            # skip    = skip_err,
+            # call    = quote(read_dta(f))
           )
         }
 
@@ -99,53 +128,73 @@ dlw_dta_to_qs <- function(
           expr = qs::qsave(df, out_path),
           error = function(e) {
             # 2) Raise a custom error for "dta_save_err"
+            pipfun::log_add("error", "Could not save data to .qs format",
+                            name = "pipdata_log",
+                            logmeta = list(qs_file_name = basename(out_path)))
+
             cli::cli_abort(
-              message = paste0("Could not save '", basename(out_path),"'"),
-              class   = c("dta_save_err", "piperr"),
-              log     = log_err,
-              skip    = skip_err,
-              call    = quote(qsave(df, out_path))
+              message = paste0("Could not save '", basename(out_path),"'")#,
+              # class   = c("dta_save_err", "piperr"),
+              # log     = log_err,
+              # skip    = skip_err,
+              # call    = quote(qsave(df, out_path))
             )
           }
         )
       },
 
-      # Handler for "dta_read_err"
-      dta_read_err = function(cnd) {
-        if (isTRUE(cnd$log)) {
-          add_log(cnd)
-        }
-        if (!isTRUE(cnd$skip)) {
-          # re-throw => abort everything
-          cli::cli_abort(cnd$message, call = cnd$call)
-        } else {
-          # skip => show warning => move on
-          cli::cli_alert_warning(sprintf(
-            "Skipping file '%s' due to read error. Original error: %s",
-            basename(f), cnd$message
-          ))
-        }
-      },
+      # # Handler for "dta_read_err"
+      # dta_read_err = function(cnd) {
+      #   if (isTRUE(cnd$log)) {
+      #     add_log(cnd)
+      #   }
+      #   if (!isTRUE(cnd$skip)) {
+      #     # re-throw => abort everything
+      #     cli::cli_abort(cnd$message, call = cnd$call)
+      #   } else {
+      #     # skip => show warning => move on
+      #     cli::cli_alert_warning(sprintf(
+      #       "Skipping file '%s' due to read error. Original error: %s",
+      #       basename(f), cnd$message
+      #     ))
+      #   }
+      # },
+      #
+      error = function(cnd){
 
-      # Handler for "dta_save_err"
-      dta_save_err = function(cnd) {
-        if (isTRUE(cnd$log)) {
-          add_log(cnd)
-        }
-        if (!isTRUE(cnd$skip)) {
-          # re-throw => abort everything
-          cli::cli_abort(cnd$message, call = cnd$call)
-        } else {
-          # skip => show warning => move on
-          cli::cli_alert_warning(sprintf(
-            "Skipping file '%s' because it could not be saved. Original error: %s",
-            basename(f), cnd$message
-          ))
-        }
+        cli::cli_alert_warning(sprintf(
+          "Skipping file '%s' because it could not be saved or read the files.",
+          basename(f)))
+
       }
+
+      # # Handler for "dta_save_err"
+      # dta_save_err = function(cnd) {
+      #   if (isTRUE(cnd$log)) {
+      #     add_log(cnd)
+      #   }
+      #   if (!isTRUE(cnd$skip)) {
+      #     # re-throw => abort everything
+      #     cli::cli_abort(cnd$message, call = cnd$call)
+      #   } else {
+      #     # skip => show warning => move on
+      #     cli::cli_alert_warning(sprintf(
+      #       "Skipping file '%s' because it could not be saved. Original error: %s",
+      #       basename(f), cnd$message
+      #     ))
+      #   }
+      # }
     )
 
     cli::cli_progress_update()
+  }
+
+  if (log){
+
+    pipfun::log_add("info", "Completed converting datasets from .dta to .qs format",
+                    name = "pipdata_log",
+                    logmeta = list(raw_folder = dlw_raw_folder,
+                                   qs_folder  = dlw_qs_folder))
   }
 
   # Done processing all files

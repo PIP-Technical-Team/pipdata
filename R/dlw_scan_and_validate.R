@@ -11,8 +11,7 @@
 #' @param pip_raw_inventory_path Character. Path where the pip_raw_inventory.qs
 #'   file is stored (or will be created if missing).
 #' @param validation_report_path Character. Path to validation report
-#' @param validation_fn Function or NULL. A user-supplied validation function
-#'   that takes a data.frame and returns a list like \code{list(is_valid=TRUE/FALSE, reason="<error message>")}.
+#' @param log TRUE/FALSE default value is `TRUE`
 #'
 #' @return Invisibly returns the updated pip_raw_inventory as a data.frame.
 #' @export
@@ -22,14 +21,7 @@
 #' dlw_scan_and_validate(
 #'   dlw_qs_folder = "data/dlw_qs",
 #'   pip_raw_folder = "data/pip_raw",
-#'   pip_raw_inventory_path = "data/pip_raw_inventory.qs",
-#'   validation_fn = function(df) {
-#'     # example: check if df has > 0 rows
-#'     if (nrow(df) < 1) {
-#'       return(list(is_valid=FALSE, reason="Empty dataset"))
-#'     }
-#'     list(is_valid=TRUE, reason=NA)
-#'   }
+#'   pip_raw_inventory_path = "data/pip_raw_inventory.qs"
 #' )
 #' }
 dlw_scan_and_validate <- function(
@@ -37,16 +29,22 @@ dlw_scan_and_validate <- function(
     pip_raw_folder,
     pip_raw_inventory_path,
     validation_report_path,
-    validation_fn = NULL
+    log  = TRUE
 ) {
 
   # set-up a release
   pipfun::get_wrk_release()
 
-  pipfun::log_info("Starting scan and validate raw data (in .qs format)", name = "pipdata_log")#,
-           # logmeta = list(dlw_qs_folder = dlw_qs_folder,
-           #                pip_raw_folder = pip_raw_folder,
-           #                pip_raw_inventory_path = pip_raw_inventory_path))
+
+  if (log) {
+
+    pipfun::log_add("info", "Start validate and generate DLW PIP data",
+                    name = "pipdata_log",
+                    args = list(dlw_qs_folder = dlw_qs_folder,
+                                pip_raw_folder = pip_raw_folder,
+                                pip_raw_inventory_path = pip_raw_inventory_path,
+                                validation_report_path = validation_report_path))
+  }
 
   # 1. Load or create pip_raw_inventory.qs (old_inv) ----
   ## If pip_raw_inventory_path exists, read it into 'old_inv'.
@@ -57,6 +55,24 @@ dlw_scan_and_validate <- function(
 
   old_inv <- if (file.exists(pip_raw_inventory_path)) {
     qs::qread(pip_raw_inventory_path)
+
+    if (log){
+
+      tryCatch(
+        qs::qread(pip_raw_inventory_path),
+        error = function(e) {
+          pipfun::log_add("error", "Failed to load inventory file",
+                          name = "pipdata_log",
+                          logmeta = list(error = e$message))
+
+          NULL
+        }
+      )
+    } else {
+      qs::qread(pip_raw_inventory_path)
+    }
+
+
   } else {
     cli::cli_alert_info("No previous pip_raw_inventory; creating empty.")
     tibble::tibble(
@@ -164,9 +180,10 @@ dlw_scan_and_validate <- function(
       df <- tryCatch(
         qs::qread(qs_path),
         error = function(e) {
-          pipfun::log_error("Failed to load data",
-                            name = "pipdata_log",
-                            logmeta = list(error = e$message))
+          pipfun::log_add("error", "Failed to load data in .qs format",
+                          name = "pipdata_log",
+                          logmeta = list(error = e$message))
+
           NULL
         } # If read fails, 'df' is NULL
       )
@@ -180,24 +197,6 @@ dlw_scan_and_validate <- function(
       }
 
       ### (!!) Validation ----
-      ### Validate with optional user-supplied function (HERE IS WHERE VALIDATION_FN ENTERS)
-      # is_valid <- TRUE
-      # fail_reason <- NA
-      # if (!is.null(validation_fn)) {
-      #   check <- validation_fn(df)
-      #   if (!check$is_valid) {
-      #     is_valid    = FALSE
-      #     fail_reason = check$reason
-      #   }
-      # }
-      # if (!is_valid) {
-      #   ### If validation fails, we do not add it to new_inv
-      #   cli::cli_alert_danger("Validation failed for {nm}: {fail_reason}")
-      #   new_inv[[i]] <- NULL
-      #   cli::cli_progress_update()
-      #   next
-      # }
-
       md_type = sub(".*_(.*)", "\\1", nm)
 
       if (md_type == "GPWG"){
@@ -208,6 +207,12 @@ dlw_scan_and_validate <- function(
         check <- dlw_validation_bin(df, nm)
       } else if (md_type == "HIST") {
         check <- dlw_validation_hist(df, nm)
+      } else if (md_type == "ALL") {
+        check <- dlw_validation_all(df, nm)
+      } else if (md_type == "ASPIRE") {
+        check <- dlw_validation_aspire(df, nm)
+      } else if (md_type == "L") {
+        check <- dlw_validation_l(df, nm)
       } else {
         check <- dlw_validation_skip(df, nm)
       }
@@ -237,16 +242,46 @@ dlw_scan_and_validate <- function(
       ## Copy validated file to pip_raw_folder
       qs::qsave(df, finalpath)
 
+      ## file path in the inventory file
+      finalpath_inv <- file.path(Sys.getenv("PIP_ROOT_DIR"), "DLW-OUTPUT", finalname)
+
+      ## Copy validated file to pip_raw_folder
+      # qs::qsave(df, finalpath)
+
       ## Add new row to new_inv
-      new_inv[[i]] <- tibble::tibble(
-        survey_id        = nm,
-        pipeline_version = new_ver,
-        file_hash        = row_i$new_hash[1],
-        pip_file_path    = finalpath,
-        status           = st,
-        date_validated   = Sys.time()
-      )
+      # new_inv[[i]] <- tibble::tibble(
+      #   survey_id        = nm,
+      #   pipeline_version = new_ver,
+      #   file_hash        = row_i$new_hash[1],
+      #   pip_file_path    = finalpath_inv,
+      #   status           = st,
+      #   date_validated   = Sys.time()
+      # )
+      # cli::cli_progress_update()
+
+      if (st == "changed"){
+
+        new_inv[[i]] <- old_inv |>
+          dplyr::filter(survey_id==nm) |>
+          dplyr::mutate(pipeline_version = new_ver,
+                        file_hash        = row_i$new_hash[1],
+                        pip_file_path    = finalpath_inv,
+                        status           = st,
+                        date_validated   = Sys.time())
+      } else {
+
+        new_inv[[i]] <- tibble::tibble(
+          survey_id        = nm,
+          pipeline_version = new_ver,
+          file_hash        = row_i$new_hash[1],
+          pip_file_path    = finalpath_inv,
+          status           = st,
+          date_validated   = Sys.time()
+        )
+      }
+
       cli::cli_progress_update()
+
     }
   }
 
@@ -257,24 +292,103 @@ dlw_scan_and_validate <- function(
   final_inv <- dplyr::bind_rows(new_inv) |>
     pipload::survey_id_to_vars()
 
-  # 6. Save new_inv as the new pip_raw_inventory ----
-  qs::qsave(final_inv, pip_raw_inventory_path)
+  # 6. Save new_inv as the new pip_raw_inventory -------------------------------
+  # qs::qsave(final_inv, pip_raw_inventory_path)
+  # cli::cli_alert_success("Created new pip_raw_inventory at: {pip_raw_inventory_path}")
+  if (is.null(pip_raw_inventory_path)) {
 
-  cli::cli_alert_success("Created new pip_raw_inventory at: {pip_raw_inventory_path}")
+    cli::cli_alert_danger("Inventory file is not generated")
 
-  # 7. Save validation report ----
+    if (log) {
+
+      pipfun::log_add("error", "Inventory file is not generated",
+                      name = "pipdata_log")
+    }
+
+
+  } else {
+
+    qs::qsave(final_inv, pip_raw_inventory_path)
+
+    cli::cli_alert_success("Inventory file is saved at: {pip_raw_inventory_path}")
+
+    if (log) {
+
+      pipfun::log_add("info", "Inventory file is saved",
+                      name = "pipdata_log")#,
+                      #logmeta = list(saved_at = pip_raw_inventory_path))
+    }
+
+  }
+
+  # 7. Save validation report --------------------------------------------------
+  # generate validation report
   valid_report <- get_validation_report()
 
-  qs::qsave(valid_report, validation_report_path)
+  # # qs::qsave(valid_report, validation_report_path)
+  # # cli::cli_alert_success("Validation report is saved at: {validation_report_path}")
 
-  cli::cli_alert_success("Validation report is saved at: {validation_report_path}")
+  if (is.null(valid_report)) {
 
-  pipfun::log_info("End of scan and validate raw data (in .qs format) and generating inventory file",
-                   name = "pipdata_log",
-                   logmeta = list(n = nrow(final_inv)))
+    cli::cli_alert_danger("Validation report data is not compiled")
 
-  # pipfun::log_info("Scanning, validating and generating inventory file completed", name = "pipdata_log",
-  #          logmeta = list(n = nrow(final_inv)))
+    if (log) {
+
+      pipfun::log_add("error", "Validation report is not available to save",
+                      name = "pipdata_log")
+    }
+
+
+  } else {
+
+    # survey names in validation data
+    valid_all_names <- unique(valid_report$table_name)
+
+    # load validation report if it exists for the release
+    if (file.exists(validation_report_path)) {
+
+      if (log){
+
+        old_valid <- tryCatch(
+          qs::qread(validation_report_path),
+          error = function(e) {
+            pipfun::log_add("error", "Failed to load validation report file",
+                            name = "pipdata_log",
+                            logmeta = list(error = e$message))
+
+            NULL
+          }
+        )
+        # cli::cli_alert_danger("Failed to load validation report file")
+
+      } else {
+
+        old_valid <- qs::qread(validation_report_path)
+
+      }
+
+      old_valid <- old_valid[!(table_name %in% valid_all_names), ]
+      valid_report <- old_valid |> dplyr::bind_rows(valid_report)
+    }
+
+    qs::qsave(valid_report, validation_report_path)
+    cli::cli_alert_success("Validation report is saved at: {validation_report_path}")
+    if (log) {
+
+      pipfun::log_add("info", "Validation report is saved",
+                      name = "pipdata_log")#,
+                      # logmeta = list(saved_at = validation_report_path))
+    }
+  }
+
+ # -----------------------------------------------------------------------------
+  if (log) {
+
+    pipfun::log_add("info", "End validating and generating DLW PIP data",
+                    name = "pipdata_log")
+                    # logmeta = list(n = nrow(final_inv)))
+  }
+
 
   return(invisible(final_inv))
 }

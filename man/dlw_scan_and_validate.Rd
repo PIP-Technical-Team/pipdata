@@ -8,7 +8,8 @@ dlw_scan_and_validate(
   dlw_qs_folder,
   pip_raw_folder,
   pip_raw_inventory_path,
-  validation_fn = NULL
+  validation_report_path,
+  log = TRUE
 )
 }
 \arguments{
@@ -20,8 +21,9 @@ dlw_scan_and_validate(
 \item{pip_raw_inventory_path}{Character. Path where the pip_raw_inventory.qs
 file is stored (or will be created if missing).}
 
-\item{validation_fn}{Function or NULL. A user-supplied validation function
-that takes a data.frame and returns a list like \code{list(is_valid=TRUE/FALSE, reason="<error message>")}.}
+\item{validation_report_path}{Character. Path to validation report}
+
+\item{log}{TRUE/FALSE default value is \code{TRUE}}
 }
 \value{
 Invisibly returns the updated pip_raw_inventory as a data.frame.
@@ -37,14 +39,7 @@ updating the inventory with the new file information.
 dlw_scan_and_validate(
   dlw_qs_folder = "data/dlw_qs",
   pip_raw_folder = "data/pip_raw",
-  pip_raw_inventory_path = "data/pip_raw_inventory.qs",
-  validation_fn = function(df) {
-    # example: check if df has > 0 rows
-    if (nrow(df) < 1) {
-      return(list(is_valid=FALSE, reason="Empty dataset"))
-    }
-    list(is_valid=TRUE, reason=NA)
-  }
+  pip_raw_inventory_path = "data/pip_raw_inventory.qs"
 )
 }
 }

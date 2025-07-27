@@ -4,16 +4,14 @@
 \alias{dlw_dta_to_qs}
 \title{Convert DLW .dta files to .qs}
 \usage{
-dlw_dta_to_qs(dlw_raw_folder, dlw_qs_folder, log_err = TRUE, skip_err = TRUE)
+dlw_dta_to_qs(dlw_raw_folder, dlw_qs_folder, log = TRUE)
 }
 \arguments{
 \item{dlw_raw_folder}{DLW-RAW folder with .dta files}
 
 \item{dlw_qs_folder}{Permanent or temporary folder to store .qs files}
 
-\item{log_err}{TRUE/FALSE log errors into .logenv}
-
-\item{skip_err}{TRUE/FALSE skip errors (no abort)}
+\item{log}{TRUE/FALSE default value is \code{TRUE}}
 }
 \description{
 Convert DLW .dta files to .qs
@@ -22,7 +20,7 @@ Convert DLW .dta files to .qs
 \dontrun{
  dlw_dta_to_qs(
  dlw_raw_folder = "dlw_raw/folder_time1",
- dlw_qs_folder  = "dlw_qs"
+ dlw_qs_folder  = "dlw_qs")
  }
 
 }

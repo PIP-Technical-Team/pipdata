@@ -24,7 +24,9 @@ Imports:
     data.validator,
     assertr,
     labelled,
-    DT
+    DT,
+    dlw,
+    pins
 Suggests: 
     knitr,
     rmarkdown,

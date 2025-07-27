@@ -1,5 +1,4 @@
 
-
 pipdata_default_options <- list(
   pipdata.verbose  = TRUE
 )
