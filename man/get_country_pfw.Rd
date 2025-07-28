@@ -4,10 +4,10 @@
 \alias{get_country_pfw}
 \title{Get Country Price framework  data based on PFW and DLW data info}
 \usage{
-get_country_pfw(df, pfw)
+get_country_pfw(dt, pfw)
 }
 \arguments{
-\item{df}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
+\item{dt}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
 
 \item{pfw}{data frame with Price framework data, loaded with
 \code{pipload::pip_load_aux("pfw")}}
@@ -19,7 +19,11 @@ list of data.tables
 Get Country Price framework  data based on PFW and DLW data info
 }
 \examples{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 pfw <- pipload::pip_load_aux("pfw")
-gd   <- pipload::pip_load_dlw("CHN", 2015)
+gd   <- pipload::pip_load_dlw("PHL", 2012)
+gd  <- pipdata:::m_svy_id_to_att(gd)
 cpfw <- get_country_pfw(gd, pfw)
 }
