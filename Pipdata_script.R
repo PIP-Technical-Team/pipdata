@@ -11,8 +11,7 @@ pipfun::setup_working_release(release)
 #----- Temporary load data -----
 
 # Load inventory from validated DLW:
-# inv  <- pipload::pip_load_dlw_inventory()
-inv <- m_inv_load()
+inv <- pipdata_load_report(report_type = "inventory")
 
 # Load data
 ls  <- valid_dlw_load(inv,

@@ -388,6 +388,8 @@ last_ver_inv <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dt <- copy(dt)
+
   dt <- dt[,
       # Get max master version and filter
       maxmast := vermast == max(vermast),
@@ -409,7 +411,7 @@ last_ver_inv <- function(dt) {
     ][,
       c("maxmast","maxalt","maxpip") := NULL
     ][
-      status == "same"
+      status == "valid"
     ][
       module %in% c("GPWG", "GROUP", "BIN", "ALL" , "HIST")
     ]

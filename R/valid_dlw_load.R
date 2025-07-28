@@ -1,12 +1,9 @@
 valid_dlw_load <- function(inv,
-                           aux_measures = c("cpi", "ppp","pfw","pop"),
-                           path = fs::path(Sys.getenv("PIP_ROOT_DIR"), "DLW-OUTPUT/")) {
+                           aux_measures = c("cpi", "ppp","pfw","pop")) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  aux_measures <- match.arg(aux_measures)
 
   if(!is.data.table(inv)){
     inv <- data.table::as.data.table(inv)
@@ -15,6 +12,9 @@ valid_dlw_load <- function(inv,
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Temporal fix because it is a list for now
+  inv <- inv[, pin_version := NULL]
 
   # Load changes in aux files
 
@@ -41,8 +41,12 @@ valid_dlw_load <- function(inv,
 
   # Load survey files
 
-  ls_svy <- lapply(1:length(inv_to_clean$pip_file_path),
-                   \(x) qs::qread(inv_to_clean$pip_file_path[x]))
+  pip_board <- pipdata_pin_board()
+
+  board <- pins::board_folder(pip_board)
+
+  ls_svy <- lapply(1:length(inv_to_clean$pins_folder),
+                  \(x) pip_load(board, inv_to_clean$pins_folder[x]))
 
   names(ls_svy) <- inv_to_clean$survey_id
 
@@ -171,7 +175,7 @@ filter_aux_inv <- function(inv,
 
   # Choose last version (avoid message -> check issue of data.table)
 
-  inv_aux <- suppressWarnings(last_ver_inv(inv_aux))
+  inv_aux <- last_ver_inv(inv_aux)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
