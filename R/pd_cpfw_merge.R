@@ -103,8 +103,8 @@ add_main_att <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   att <- names(attributes(dt))
 
-  main_attr <- c("surveyid_year", # Check if survey_year is necessary from pfw
-                 "country_code",
+  main_attr <- c("country_code",
+                 "surveyid_year", # Check if survey_year is necessary from pfw
                  "welfare_type")
 
   att_missing <- main_attr[!(main_attr %in% att)]

@@ -6,6 +6,8 @@ valid_dlw_load <- function(inv,
   # Defenses   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  aux_measures <- match.arg(aux_measures)
+
   if(!is.data.table(inv)){
     inv <- data.table::as.data.table(inv)
   }
@@ -296,17 +298,6 @@ fix_year_var <- function(dt) {
   # Select variable names that contain the word "year"
 
   year_var <- grep("year", attributes(dt)$names, value = TRUE)
-
-  # Temporal fix
-
-  if(any(year_var %in% c("cpi_year"))){ # NEED TO FIX CPI
-
-    setnames(dt, old = c("reporting_level", "survey_year", "survey_acronym"), new = c("survey_year", "survey_acronym", "reporting_level"))
-
-    dt[, year := floor(as.numeric(survey_year))]
-
-    year_var <- grep("year", attributes(dt)$names, value = TRUE)
-  }
 
   if(length(year_var) > 1){
 
