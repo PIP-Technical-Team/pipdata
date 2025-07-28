@@ -1,12 +1,9 @@
 
-
 pipdata_default_options <- list(
   pipdata.verbose  = TRUE
 )
 
 .onLoad <- function(libname, pkgname) {
-
-  pipfun::log_init("pipdata_log", overwrite = TRUE) # Maybe do it per release?
 
   # make sure .logenv is exported properly-----
 
@@ -14,11 +11,16 @@ pipdata_default_options <- list(
     assign(".logenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
   }
 
+
+  # initiate logging
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
   # make sure .pipdataenv is exported properly-----
 
   if (!exists(".pipdataenv", envir = asNamespace(pkgname))) {
     assign(".pipdataenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
   }
+
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Options --------

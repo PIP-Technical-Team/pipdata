@@ -233,7 +233,6 @@ num_vars_to_attr <- function(df, num_var, name_var) {
   dt[, !..c_col]
 }
 
-
 #' Customized PIP error
 #'
 #' @param message message
@@ -303,11 +302,13 @@ add_log <- function(line, error = NULL, class = "piperr") {
 
   assign(class,
          log_list,
+
          envir = .logenv)
 
   invisible()
 
 }
+
 
 #' Add new attributes to data.table
 #'
@@ -490,3 +491,4 @@ unq_obs_dt <- function(dt,
   return(dt)
 
 }
+
