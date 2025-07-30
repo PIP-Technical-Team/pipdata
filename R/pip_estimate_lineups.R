@@ -137,14 +137,14 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
             # weights scaled by ratio of ref year and svy year pop
             #         to make relative to reference year
             # weights adj by rel dist to get weighted average of population at ref year
-            weight_refy = weight * (reporting_pop / svy_pop) * # "adjust to WDI population" --> Andres, your comment
+            weight = weight * (reporting_pop / svy_pop) * # "adjust to WDI population" --> Andres, your comment
               relative_distance#,
             # ref year weights divided by number of imputations
             #      this should sum to population amount
-            #weight_refy_adj = weight_refy / n_imp
+            #weight_refy_adj = weight / n_imp
     ) |>
     fungroup() |>
-    fmutate(welfare_refy = welfare_ppp * mult_factor)
+    fmutate(welfare = welfare_ppp * mult_factor)
 
   if (any(diff(df$survey_year) < 0) &
       !any(diff(df_svy$survey_year) < 0)) {
@@ -223,7 +223,6 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
        "surveyid_year",
        "mult_factor",
        "welfare_ppp",
-       "weight",
        "reporting_level")) <- NULL
 
   df
@@ -242,40 +241,40 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
 get_dist_stats <- function(df) {
 
   # min
-  min <- fmin(df$welfare_refy,
+  min <- fmin(df$welfare,
               g = df$reporting_level) |>
     as.list()
 
   # max
-  max <- fmax(df$welfare_refy,
+  max <- fmax(df$welfare,
               g = df$reporting_level) |>
     as.list()
 
   # mean
-  mean <- fmean(x = df$welfare_refy,
-                w = df$weight_refy,
+  mean <- fmean(x = df$welfare,
+                w = df$weight,
                 g = df$reporting_level) |>
     as.list()
 
   # median
-  median <- fmedian(x = df$welfare_refy,
-                    w = df$weight_refy,
+  median <- fmedian(x = df$welfare,
+                    w = df$weight,
                     g = df$reporting_level) |>
     as.list()
 
   # gini
   gini <- sapply(df$reporting_level |> funique(),
                  FUN = \(x) {
-                   wbpip::md_compute_gini(welfare = df$welfare_refy[df$reporting_level == x],
-                                          weight  = df$weight_refy[df$reporting_level == x])
+                   wbpip::md_compute_gini(welfare = df$welfare[df$reporting_level == x],
+                                          weight  = df$weight[df$reporting_level == x])
                  }) |>
     as.list()
 
   # mld
   mld <- sapply(df$reporting_level |> funique(),
                 FUN = \(x) {
-                  wbpip::md_compute_mld(welfare = df$welfare_refy[df$reporting_level == x],
-                                        weight  = df$weight_refy[df$reporting_level == x],
+                  wbpip::md_compute_mld(welfare = df$welfare[df$reporting_level == x],
+                                        weight  = df$weight[df$reporting_level == x],
                                         mean    = mean$x)
                 }) |>
     as.list()
@@ -283,8 +282,8 @@ get_dist_stats <- function(df) {
   # polarization
   pol <- sapply(df$reporting_level |> funique(),
                 FUN = \(x) {
-                  wbpip::md_compute_polarization(welfare = df$welfare_refy[df$reporting_level == x],
-                                                 weight  = df$weight_refy[df$reporting_level == x],
+                  wbpip::md_compute_polarization(welfare = df$welfare[df$reporting_level == x],
+                                                 weight  = df$weight[df$reporting_level == x],
                                                  gini    = gini[[x]],
                                                  mean    = mean[[x]],
                                                  median  = median[[x]])
