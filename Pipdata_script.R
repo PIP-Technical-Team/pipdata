@@ -13,21 +13,22 @@ pipfun::setup_working_release(release)
 # Load inventory from validated DLW:
 inv <- pipdata_load_report(report_type = "inventory")
 
+inv_to_clean  <- valid_dlw_load(inv,
+                                aux_measures = c("pfw", "ppp", "cpi", "pop"))
 # Load data
-ls  <- valid_dlw_load(inv,
-                      aux_measures = c("pfw", "ppp", "cpi", "pop"))
+svys <- pip_load(inv_to_clean)
 
 # Load PFW
 pfw  <- pipload::pip_load_aux("pfw")
 
 # Check for unique obs per pfw --------
-keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
-pfw <- unq_obs_dt(pfw, keyVar)
+# keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
+# pfw <- unq_obs_dt(pfw, keyVar)
 
 #--------- Run pipdata functions -----
 
 # Process data
-results <- lapply(ls,
+results <- lapply(svys,
                   process_data,
                   pfw = pfw)
 
