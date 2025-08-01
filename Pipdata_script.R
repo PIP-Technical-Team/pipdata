@@ -16,7 +16,7 @@ inv <- pipdata_load_report(report_type = "inventory")
 inv_to_clean  <- valid_dlw_load(inv,
                                 aux_measures = c("pfw", "ppp", "cpi", "pop"))
 # Load data
-svys <- pip_load(inv_to_clean)
+svys <- inv_dlw_load(inv_to_clean)
 
 # Load PFW
 pfw  <- pipload::pip_load_aux("pfw")

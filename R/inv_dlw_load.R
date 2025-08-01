@@ -1,10 +1,10 @@
-pip_load <- function(inv) {
+inv_dlw_load <- function(inv) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Load survey files
+  # Load survey files (It will change to loading function)
 
   pip_board <- pipdata_pin_board()
 
@@ -39,7 +39,7 @@ data_to_dt <- function(dt, survey_id) {
   on.exit({
     rm(survey_id,
        envir = .pipdataenv)
-  }) # For now
+  })
 
   assign("survey_id",
          survey_id,
