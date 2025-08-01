@@ -61,6 +61,10 @@ dlw_clean.pipmd <- function(df, ...) {
   # hard copy
   md <- copy(df)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Area --------
+  md <- add_area(md)
+
   ## clean weight variable
   md <- format_wgt(md)
 
@@ -114,6 +118,10 @@ dlw_clean.pipgd <- function(df, ...) {
 
   # hard copy
   gd <- copy(df)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Area --------
+  gd <- add_area(gd)
 
   # NEED TO CHECK FORMATTING TO WELFARE AND WEIGHT IN WBPIP!
 
@@ -293,6 +301,114 @@ recode_gndr <- function(dt) {
   return(dt)
 
 }
+
+#' Recode urban to area (lower level, S3 methods)
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @export
+add_area <- function(dt) {
+  UseMethod("add_area")
+}
+
+#' Recode urban to area for micro data
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @exportS3Method pipdata::add_area
+add_area.pipmd <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Abort if not urban variable
+  if (!any(c("urban", "area") %in% colnames(dt))){
+
+    survey_id <- c(.pipdataenv$survey_id)
+
+    pipfun::log_add(event = "info",
+                    message = "There is no urban variable",
+                    name = "pipdata_log",
+                    logmeta = list(info = "urb_var",
+                                   survey = survey_id))
+
+    dt[, area := ""]
+
+    return(dt)
+
+  }else if(c("urban") %in% colnames(dt)){
+
+    # Recode urban to area
+
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "",
+                       default = "")]
+
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Recode urban to area for group data
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @exportS3Method pipdata::add_area
+add_area.pipgd <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  if (c("subnatid") %in% colnames(dt)){
+
+    setnames(dt, "subnatid", "subnatid1")
+
+  }
+
+
+  # Abort if not urban variable
+  if (!any(c("urban", "area") %in% colnames(dt))){
+
+    survey_id <- c(.pipdataenv$survey_id)
+
+    pipfun::log_add(event = "info",
+                    message = "There is no urban or area variable",
+                    name = "pipdata_log",
+                    logmeta = list(info = "urb_var",
+                                   survey = survey_id))
+
+    dt[, area := ""]
+
+    return(dt)
+
+  }else if(c("urban") %in% colnames(dt)){
+
+    # Recode urban to area
+
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "national",
+                       default = "")]
+
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
 
 #' Final formating of pip variables
 #'

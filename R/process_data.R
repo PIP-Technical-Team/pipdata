@@ -23,10 +23,10 @@
 process_data <- function(df, pfw, ...) {
 
   # on.exit ------------
-  # on.exit({
-  #   rm(survey_id,
-  #      envir = .pipdataenv)
-  # }) # For now
+  on.exit({
+    rm(survey_id,
+       envir = .pipdataenv)
+  })
 
   svy <- attributes(df)$survey_id
 
@@ -34,16 +34,14 @@ process_data <- function(df, pfw, ...) {
          svy,
          envir = .pipdataenv)
 
-  if("countrycode" %in% names(df)){
-    df$country_code <- df$countrycode
-  }
-
   # Computations -------
   res <- tryCatch(
     expr = {
 
+      # Merge country PFW information
       ls_cpfw <- pd_cpfw_merge(df, pfw)
 
+      # Clean main variables
       pd_dlw_clean(ls_cpfw)
 
     },
