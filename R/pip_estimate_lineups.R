@@ -360,9 +360,7 @@ aux_data <- function(cde,
                      reporting_level,
                      dl_aux,
                      df_refy,
-                     all             = TRUE,
-                     filter_aux_data = FALSE,
-                     py              = 2021) {
+                     py = 2021) {
 
   stopifnot(py %in% c(2011, 2017, 2021))
   output <- list()
@@ -371,14 +369,15 @@ aux_data <- function(cde,
   # PCE
   output[["pce"]] <-
     dl_aux$pce[country_code == cde,
-               yr] |>
+               ..yr] |>
     as.numeric()
 
 
   # POP
+  tempvs  <- c("data_level",
+               yr)
   temp    <- dl_aux$pop[country_code == cde,
-                       c("data_level",
-                         yr)]
+                        ..tempvs]
   result <- setNames(as.list(temp[[yr]]),
                      temp$data_level)
   output[["pop"]] <-
@@ -388,23 +387,24 @@ aux_data <- function(cde,
   output[["gdp"]] <-
     dl_aux$gdp[country_code == cde &
                data_level   == reporting_level,
-             yr] |>
+               ..yr] |>
     funique() |>
     as.numeric()
 
   # PPP
-  vars   <- c("data_level", paste(py))
+  tempvs   <- c("data_level", paste(py))
   temp    <- dl_aux$ppp[country_code == cde,
-                       ..vars]
-  result <- setNames(as.list(temp[[vars[2]]]),
+                        ..tempvs]
+  result <- setNames(as.list(temp[[tempvs[2]]]),
                      temp$data_level)
   output[["ppp"]] <-
     result
 
   # CPI
+  tempvs  <- c("data_level",
+               yr)
   temp    <- dl_aux$cpi[country_code == cde,
-                        c("data_level",
-                          yr)]
+                        ..tempvs]
   result <- setNames(as.list(temp[[yr]]),
                      temp$data_level)
   output[["cpi"]] <-
