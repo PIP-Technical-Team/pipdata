@@ -62,33 +62,33 @@ write_multiple_refy_dist <-
     py <- strsplit(gls$vintage_dir, "_")[[1]][2]
 
     # Select surveys for CPIs
-    vars <-
-      grep("cpi",
-           names(dl_aux$cpi),
-           value = TRUE)
-
-    dl_aux$cpi <-
-      dl_aux$cpi |>
-      fselect(c(vars,
-                "country_code",
-                "survey_acronym",
-                "survey_year")) |>
-      funique() |>
-      joyn::joyn(y = df_refy |>
-                   fselect(survey_acronym,
-                           survey_year,
-                           country_code,
-                           cpi_data_level) |>
-                   funique(),
-                 by = c("survey_acronym",
-                        "survey_year",
-                        "country_code",
-                        "cpi_data_level"),
-                 match_type     = "1:1",
-                 keep           = "inner",
-                 y_vars_to_keep = FALSE,
-                 reportvar      = FALSE,
-                 verbose        = FALSE)
+    # vars <-
+    #   grep("cpi",
+    #        names(dl_aux$cpi),
+    #        value = TRUE)
+    #
+    # dl_aux$cpi <-
+    #   dl_aux$cpi |>
+    #   fselect(c(vars,
+    #             "country_code",
+    #             "survey_acronym",
+    #             "survey_year")) |>
+    #   funique() |>
+    #   joyn::joyn(y = df_refy |>
+    #                fselect(survey_acronym,
+    #                        survey_year,
+    #                        country_code,
+    #                        cpi_data_level) |>
+    #                funique(),
+    #              by = c("survey_acronym",
+    #                     "survey_year",
+    #                     "country_code",
+    #                     "cpi_data_level"),
+    #              match_type     = "1:1",
+    #              keep           = "inner",
+    #              y_vars_to_keep = FALSE,
+    #              reportvar      = FALSE,
+    #              verbose        = FALSE)
 
     lapply(cli::cli_progress_along(cntry_refy,
                                    total = length(cntry_refy)),
