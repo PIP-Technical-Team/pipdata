@@ -90,6 +90,7 @@ write_multiple_refy_dist <-
     #              reportvar      = FALSE,
     #              verbose        = FALSE)
 
+    print("start progress")
     lapply(cli::cli_progress_along(cntry_refy,
                                    total = length(cntry_refy)),
            FUN = \(i) {
