@@ -315,7 +315,8 @@ get_dist_stats <- function(df) {
 add_aux_data_attr <- function(df,
                               dl_aux,
                               df_refy,
-                              filter_aux_data = FALSE) {
+                              filter_aux_data = FALSE,
+                              py              = 2021) {
 
   code <- attr(x = df,
                which = "country_code")
@@ -330,17 +331,7 @@ add_aux_data_attr <- function(df,
                             dl_aux          = dl_aux,
                             all             = TRUE,
                             filter_aux_data = filter_aux_data,
-                            py              = 2017)
-
-  aux_data_list <-
-    c(aux_data_list,
-      aux_data(cde             = code,
-               yr              = year,
-               reporting_level = reporting_level,
-               dl_aux          = dl_aux,
-               all             = FALSE,
-               filter_aux_data = filter_aux_data,
-               py              = 2011))
+                            py              = py)
 
   attr(df,
        "aux_data") <- aux_data_list
@@ -369,9 +360,9 @@ aux_data <- function(cde,
                      reporting_level,
                      dl_aux,
                      df_refy,
-                     all = TRUE,
+                     all             = TRUE,
                      filter_aux_data = FALSE,
-                     py = 2017) {
+                     py              = 2021) {
 
   stopifnot(py %in% c(2011, 2017))
   output <- list()

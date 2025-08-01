@@ -58,6 +58,9 @@ write_multiple_refy_dist <-
            gls,
            dl_aux) {
 
+    # ppp year
+    py <- strsplit(gls$vintage_dir, "_")[[1]][2]
+
     # Select surveys for CPIs
     vars <-
       grep("cpi",
@@ -103,7 +106,8 @@ write_multiple_refy_dist <-
                                                               gls        = gls) |>
                                          add_aux_data_attr(dl_aux          = dl_aux,
                                                            df_refy         = df_refy,
-                                                           filter_aux_data = TRUE) |>
+                                                           filter_aux_data = TRUE,
+                                                           py              = py) |>
                                          write_refy_dist(path = path))
                     }
              )
