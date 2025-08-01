@@ -364,106 +364,51 @@ aux_data <- function(cde,
                      filter_aux_data = FALSE,
                      py              = 2021) {
 
-  stopifnot(py %in% c(2011, 2017))
+  stopifnot(py %in% c(2011, 2017, 2021))
   output <- list()
+  yr     <- as.character(yr)
 
-  if (filter_aux_data) {
-    vars     <- c("ppp_year", "release_version", "adaptation_version")
-    ppp_v    <- unique(dl_aux$ppp[, ..vars], by = vars)
-    data.table::setnames(x = ppp_v,
-                         old = c("release_version", "adaptation_version"),
-                         new = c("ppp_rv", "ppp_av"))
-
-    # max release version
-    m_rv <- ppp_v[ppp_year == py, max(ppp_rv)]
-
-    # max adaptation year
-    m_av <- ppp_v[ppp_year == py & ppp_rv == m_rv,
-                  max(ppp_av)]
+  # PCE
+  output[["pce"]] <-
+    dl_aux$pce[country_code == cde,
+               yr] |>
+    as.numeric()
 
 
-    ppp <- dl_aux$ppp[ppp_year == py
-                      & release_version    == m_rv
-                      & adaptation_version == m_av
-    ][,
-      ppp_default := TRUE] |>
-      copy()
-  } else {
-    ppp <- dl_aux$ppp
-  }
-
-  # CPI
-  reporting_level <- as.character(reporting_level)
-  cpi <-
-    sapply(reporting_level,
-           \(x){
-             p <- dl_aux$cpi |>
-               fsubset(country_code == cde &
-                         cpi_year   == yr &
-                         cpi_data_level %in% c(x),
-                       get(paste0("cpi", py))) |>
-               as.numeric()
-           },
-           simplify  = FALSE,
-           USE.NAMES = TRUE)
-
-  output[[paste0("cpi", py)]] <- cpi
-
-  # PPP
-  output[[paste0("ppp", py)]] <-
-    sapply(reporting_level,
-           \(x){
-             p <- ppp |>
-               fsubset(country_code == cde &
-                         ppp_data_level %in% c(x),
-                       ppp) |>
-               as.numeric()
-           },
-           simplify  = FALSE,
-           USE.NAMES = TRUE)
+  # POP
+  temp    <- dl_aux$pop[country_code == cde,
+                       c("data_level",
+                         yr)]
+  result <- setNames(as.list(temp[[yr]]),
+                     temp$data_level)
+  output[["pop"]] <-
+    result
 
   # GDP
-  if (isTRUE(all)) {
-    output[["gdp"]] <-
-      dl_aux$gdp |>
-      fsubset(country_code     == cde &
-                year           == yr &
-                gdp_data_level %in% reporting_level,
-              gdp) |>
-      funique() |>
-      as.numeric()
+  output[["gdp"]] <-
+    dl_aux$gdp[country_code == cde &
+               data_level   == reporting_level,
+             yr] |>
+    funique() |>
+    as.numeric()
 
+  # PPP
+  vars   <- c("data_level", paste(py))
+  temp    <- dl_aux$ppp[country_code == cde,
+                       ..vars]
+  result <- setNames(as.list(temp[[vars[2]]]),
+                     temp$data_level)
+  output[["ppp"]] <-
+    result
 
-    # GDM - group data
-
-    # CP
-
-    # NPL
-
-    # PCE
-    output[["pce"]] <-
-      dl_aux$pce |>
-      fsubset(country_code == cde &
-                year       == yr,
-              pce) |>
-      funique() |>
-      as.numeric()
-
-    # POP
-    output[["pop"]] <-
-      sapply(reporting_level,
-             \(x){
-               p <- dl_aux$pop  |>
-                 fsubset(country_code == cde &
-                           year       == yr &
-                           pop_data_level %in% c(x),
-                         pop) |>
-                 as.numeric()
-               p
-             },
-             simplify  = FALSE,
-             USE.NAMES = TRUE)
-  }
+  # CPI
+  temp    <- dl_aux$cpi[country_code == cde,
+                        c("data_level",
+                          yr)]
+  result <- setNames(as.list(temp[[yr]]),
+                     temp$data_level)
+  output[["cpi"]] <-
+    result
 
   # return
   output
