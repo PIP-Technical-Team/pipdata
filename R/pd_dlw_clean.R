@@ -324,6 +324,12 @@ add_area.pipmd <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  if (c("subnatid") %in% colnames(dt)){
+
+    setnames(dt, "subnatid", "subnatid1")
+
+  }
+
   # Abort if not urban variable
   if (!any(c("urban", "area") %in% colnames(dt))){
 
@@ -368,12 +374,6 @@ add_area.pipgd <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  if (c("subnatid") %in% colnames(dt)){
-
-    setnames(dt, "subnatid", "subnatid1")
-
-  }
 
 
   # Abort if not urban variable

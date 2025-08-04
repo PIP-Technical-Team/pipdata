@@ -263,7 +263,10 @@ add_dom_vars <- function(dt, cpfw) {
 
         } else if (cpfw$cpi_domain_var != "urban") { # CASE 3: The cpi and ppp domain variable is different than "urban"
 
-          setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
+          rlang::abort(message = "The cpi domain variable is different than urban",
+                       class = c("piperr","cpi_dom_var"))
+
+          # setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
         }
 
       } else {
@@ -297,7 +300,10 @@ add_dom_vars <- function(dt, cpfw) {
 
           }else if(cpfw$cpi_domain_var != "urban"){
 
-            setattr(dt, dta_var, cpfw$cpi_domain_var) # CASE 3: If domain variable is cpi or ppp, and the domain_var is not "urban", use domain_var
+            rlang::abort(message = "The cpi domain variable is different than urban",
+                         class = c("piperr","cpi_dom_var"))
+
+            # setattr(dt, dta_var, cpfw$cpi_domain_var) # CASE 3: If domain variable is cpi or ppp, and the domain_var is not "urban", use domain_var
 
           }
 
