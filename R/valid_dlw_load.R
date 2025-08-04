@@ -1,5 +1,5 @@
 valid_dlw_load <- function(inv,
-                           aux_measures = c("cpi", "ppp","pfw","pop")) {
+                           aux_measures = c("pfw")) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -73,11 +73,16 @@ filter_aux_inv <- function(inv,
   inv_aux  <- joyn::inner_join(inv, changes,
                               relationship = "many-to-one",
                               verbose = FALSE,
-                              by = c("country_code", "surveyid_year"))
+                              by = c("country_code", "surveyid_year"),
+                              reportvar = FALSE)
 
-  # Choose last version (avoid message -> check issue of data.table)
+  # Choose last version if not empty
 
-  inv_aux <- last_ver_inv(inv_aux)
+  if(!(nrow(inv_aux) == 0)){
+
+    inv_aux <- last_ver_inv(inv_aux)
+
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
