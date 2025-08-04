@@ -14,9 +14,9 @@ pipfun::setup_working_release(release)
 inv <- pipdata_load_report(report_type = "inventory")
 
 inv_to_clean  <- valid_dlw_load(inv,
-                                aux_measures = c("pfw", "ppp", "cpi", "pop"))
+                                aux_measures = c("pfw"))
 # Load data
-svys <- inv_dlw_load(inv_to_clean)
+# svys <- inv_dlw_load(inv_to_clean)
 
 # Load PFW
 pfw  <- pipload::pip_load_aux("pfw")
@@ -28,9 +28,19 @@ pfw  <- pipload::pip_load_aux("pfw")
 #--------- Run pipdata functions -----
 
 # Process data
-results <- lapply(svys,
+inv_ls <- split(inv_to_clean,
+                seq_len(nrow(inv_to_clean)))
+
+results <- purrr::map(inv_ls,
                   process_data,
                   pfw = pfw)
+
+names(results) <- inv_to_clean$survey_id
+
+# Name survey_id
+
+
+
 
 # Check if list has attributes with specific names
 # dt <- find_dt_with_attribute(ls, attr_name = "country_code", attr_value = "PHL")[[3]]
@@ -43,15 +53,14 @@ cpi  <- pipload::pip_load_aux("cpi")
 pop  <- pipload::pip_load_aux("pop")
 gdp  <- pipload::pip_load_aux("gdp")
 
+valid_dlw_load(inv,
+               aux_measures = c("pfw"))
 
-# # Clean NA results
-# clean_res <- Filter(Negate(is.na), results)
-#
 # # Deflation
-# delfated <- lapply(clean_res, pd_deflation,
-#                          cpi = cpi,
-#                          ppp = ppp,
-#                          pop = pop)
+delfated <- lapply(results, pd_deflation,
+                         cpi = cpi,
+                         ppp = ppp,
+                         pop = pop)
 
 pipfun::log_filter(name = "pipdata_log")
 pipfun::log_save(name = "pipdata_log", path = "log.qs")

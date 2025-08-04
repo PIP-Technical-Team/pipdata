@@ -10,43 +10,47 @@ inv_dlw_load <- function(inv) {
 
   board <- pins::board_folder(pip_board)
 
-  ls_svy <- lapply(1:length(inv$pins_folder),
-                   \(x) pins::pin_read(board = board,
-                                       name = inv$pins_folder[x]))
+  # ls_svy <- lapply(1:length(inv$pins_folder),
+  #                  \(x) pins::pin_read(board = board,
+  #                                      name = inv$pins_folder[x]))
+  #
+  # names(ls_svy) <- inv$survey_id
 
-  names(ls_svy) <- inv$survey_id
+  dt <- pins::pin_read(board = board, name = inv$pins_folder)
 
   # Add data from inventory to attributes of data table and add pip class
 
-  ls <- purrr::map2(.x = ls_svy,
-                    .y = names(ls_svy),
-                    .f = data_to_dt)
+  # ls <- purrr::map2(.x = ls_svy,
+  #                   .y = names(ls_svy),
+  #                   .f = data_to_dt)
+
+  dt <- data_to_dt(dt,inv$survey_id)
 
   # Filter NULL surveys
 
-  ls <- purrr::discard(ls, is.null)
+  # ls <- purrr::discard(ls, is.null)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(ls)
+  return(dt)
 
 }
 
 data_to_dt <- function(dt, survey_id) {
 
-  # on.exit ------------
-  on.exit({
-    rm(survey_id,
-       envir = .pipdataenv)
-  })
-
-  assign("survey_id",
-         survey_id,
-         envir = .pipdataenv)
-
-  res <- tryCatch(
-    expr = {
+  # # on.exit ------------
+  # on.exit({
+  #   rm(survey_id,
+  #      envir = .pipdataenv)
+  # })
+  #
+  # assign("survey_id",
+  #        survey_id,
+  #        envir = .pipdataenv)
+  #
+  # res <- tryCatch(
+    # expr = {
 
       #--------- defenses --------------------------
 
@@ -71,44 +75,44 @@ data_to_dt <- function(dt, survey_id) {
       dt[,
          module := NULL
       ]
+#
+#     },
+#
+#     piperr = function(cnd){
+#
+#       survey_id <- c(.pipdataenv$survey_id)
+#
+#       pipfun::log_add(event = "error",
+#                       message = cnd$message,
+#                       name = "pipdata_log",
+#                       .trace = cnd$call,
+#                       logmeta = list(error = class(cnd)[2],
+#                                      survey = survey_id,
+#                                      status = "The survey was skipped"))
+#
+#       NULL
+#
+#     },
+#
+#     error = function(cnd){
+#
+#       survey_id <- c(.pipdataenv$survey_id)
+#
+#       pipfun::log_add(event = "error",
+#                       message = cnd$message,
+#                       name = "pipdata_log",
+#                       .trace = cnd$call,
+#                       logmeta = list(error = "unknown_error",
+#                                      survey = survey_id,
+#                                      status = "The survey was skipped"))
+#
+#       NULL
+#
+#     }
 
-    },
+  # )
 
-    piperr = function(cnd){
-
-      survey_id <- c(.pipdataenv$survey_id)
-
-      pipfun::log_add(event = "error",
-                      message = cnd$message,
-                      name = "pipdata_log",
-                      .trace = cnd$call,
-                      logmeta = list(error = class(cnd)[2],
-                                     survey = survey_id,
-                                     status = "The survey was skipped"))
-
-      NULL
-
-    },
-
-    error = function(cnd){
-
-      survey_id <- c(.pipdataenv$survey_id)
-
-      pipfun::log_add(event = "error",
-                      message = cnd$message,
-                      name = "pipdata_log",
-                      .trace = cnd$call,
-                      logmeta = list(error = "unknown_error",
-                                     survey = survey_id,
-                                     status = "The survey was skipped"))
-
-      NULL
-
-    }
-
-  )
-
-  return(res)
+  return(dt)
 }
 
 only_labels <- function(dt) {

@@ -1,6 +1,6 @@
 #' Process datalibweb data: merge PFW data and clean variables
 #'
-#' @param df dataframe loaded with `valid_dlw_load`
+#' @param inv inventory with survey_id and pins folder
 #' @param pfw PFW
 #' @param ...  other parameters
 #'
@@ -20,7 +20,7 @@
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' md  <- pipdata:::m_svy_id_to_att(md)
 #' process_data(md, pfw)
-process_data <- function(df, pfw, ...) {
+process_data <- function(inv, pfw, ...) {
 
   # on.exit ------------
   on.exit({
@@ -28,7 +28,7 @@ process_data <- function(df, pfw, ...) {
        envir = .pipdataenv)
   })
 
-  svy <- attributes(df)$survey_id
+  svy <- inv$survey_id
 
   assign("survey_id",
          svy,
@@ -38,11 +38,16 @@ process_data <- function(df, pfw, ...) {
   res <- tryCatch(
     expr = {
 
+      # Load file
+      df <- inv_dlw_load(inv)
+
       # Merge country PFW information
       ls_cpfw <- pd_cpfw_merge(df, pfw)
 
       # Clean main variables
-      pd_dlw_clean(ls_cpfw)
+      ls_clean <- pd_dlw_clean(ls_cpfw)
+
+      ls_clean
 
     },
     piperr = function(cnd){
