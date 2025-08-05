@@ -359,6 +359,10 @@ aux_data <- function(cde,
                      df_refy,
                      py = 2021) {
 
+  # if (!exists("aux_data_checks", .GlobalEnv)) {
+  #   assign(x     = "aux_data_checks",
+  #          envir = .GlobalEnv)
+  # }
 
   if (length(yr) > 1) cli::cli_alert_warning("reporting year non-unique")
   if (length(cde) > 1) cli::cli_alert_warning("country code non-unique")
@@ -367,10 +371,17 @@ aux_data <- function(cde,
   output <- list()
   yr     <- as.character(yr)
   # PCE
-  output[["pce"]] <-
-    dl_aux$pce[country_code == cde,
-               ..yr] |>
-    as.numeric()
+  result <- dl_aux$pce[country_code == cde,
+             ..yr]
+  if (result |> unlist() |> is.na() |> all()) {
+    output[["pce"]] <- NA
+    #aux_data_checks
+  } else {
+    output[["pce"]] <-
+      result |>
+      as.numeric()
+  }
+
 
 
   # POP
