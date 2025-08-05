@@ -107,7 +107,6 @@ write_multiple_refy_dist <-
                                                               gls        = gls) |>
                                          add_aux_data_attr(dl_aux          = dl_aux,
                                                            df_refy         = df_refy,
-                                                           filter_aux_data = TRUE,
                                                            py              = py) |>
                                          write_refy_dist(path = path))
                     }

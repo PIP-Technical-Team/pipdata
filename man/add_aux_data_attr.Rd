@@ -4,7 +4,7 @@
 \alias{add_aux_data_attr}
 \title{Add auxiliary data as attribute to estimated lineup data}
 \usage{
-add_aux_data_attr(df, dl_aux, df_refy, filter_aux_data = FALSE)
+add_aux_data_attr(df, dl_aux, df_refy, py = 2021)
 }
 \arguments{
 \item{df}{data frame of estimated lineups - output of \link{get_refy_distributions}}
@@ -13,7 +13,7 @@ add_aux_data_attr(df, dl_aux, df_refy, filter_aux_data = FALSE)
 
 \item{df_refy}{data frame: reference year data}
 
-\item{filter_aux_data}{logical: should the aux data list be filtered or not? Default is FALSE, which is means data has been pre-filtered to make appropriate selections.}
+\item{py}{numeric: PPP year. Default is 2017}
 }
 \value{
 data frame with added attributes

@@ -347,8 +347,6 @@ add_aux_data_attr <- function(df,
 #' @param reporting_level character: national, rural, urban
 #' @param dl_aux list: auxiliary data
 #' @param df_refy data frame: reference year data
-#' @param all logical: whether all aux data should be included. Default is TRUE. If FALSE, then GDP, PCE, and POP are excluded
-#' @param filter_aux_data logical: should the aux data list be filtered or not? Default is FALSE, which is means data has been pre-filtered to make appropriate selections.
 #' @param py numeric: PPP year. Default is 2017
 #'
 #' @return list

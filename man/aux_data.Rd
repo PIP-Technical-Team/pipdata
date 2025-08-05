@@ -4,16 +4,7 @@
 \alias{aux_data}
 \title{Prepare auxiliary data for attributes to be extracted for country-reference-year}
 \usage{
-aux_data(
-  cde,
-  yr,
-  reporting_level,
-  dl_aux,
-  df_refy,
-  all = TRUE,
-  filter_aux_data = FALSE,
-  py = 2017
-)
+aux_data(cde, yr, reporting_level, dl_aux, df_refy, py = 2021)
 }
 \arguments{
 \item{cde}{character: country code}
@@ -25,10 +16,6 @@ aux_data(
 \item{dl_aux}{list: auxiliary data}
 
 \item{df_refy}{data frame: reference year data}
-
-\item{all}{logical: whether all aux data should be included. Default is TRUE. If FALSE, then GDP, PCE, and POP are excluded}
-
-\item{filter_aux_data}{logical: should the aux data list be filtered or not? Default is FALSE, which is means data has been pre-filtered to make appropriate selections.}
 
 \item{py}{numeric: PPP year. Default is 2017}
 }
