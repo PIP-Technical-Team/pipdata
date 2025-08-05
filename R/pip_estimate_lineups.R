@@ -358,13 +358,13 @@ aux_data <- function(cde,
                      df_refy,
                      py = 2021) {
 
-  stopifnot(py %in% c(2011, 2017, 2021))
-  output <- list()
-  yr     <- as.character(yr)
 
   if (length(yr) > 1) cli::cli_alert_warning("reporting year non-unique")
   if (length(cde) > 1) cli::cli_alert_warning("country code non-unique")
   if (length(reporting_level) > 1) cli::cli_alert_warning("reporting level non-unique")
+  stopifnot(py %in% c(2011, 2017, 2021))
+  output <- list()
+  yr     <- as.character(yr)
   # PCE
   output[["pce"]] <-
     dl_aux$pce[country_code == cde,
