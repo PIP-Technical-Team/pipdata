@@ -374,16 +374,13 @@ aux_data <- function(cde,
   result <- dl_aux$pce[country_code == cde,
              ..yr]
   if (result |> unlist() |> is.na() |> all()) {
-    output[["pce"]] <- NA
     print("pce NA")
-    #aux_data_checks
-  } else {
-    output[["pce"]] <-
-      result |>
-      as.numeric()
   }
-
-
+  output[["pce"]] <-
+    result  |>
+    unlist() |>
+    unname() |>
+    funique()
 
   # POP
   tempvs  <- c("data_level",
