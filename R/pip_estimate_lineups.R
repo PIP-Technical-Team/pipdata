@@ -315,8 +315,7 @@ get_dist_stats <- function(df) {
 add_aux_data_attr <- function(df,
                               dl_aux,
                               df_refy,
-                              filter_aux_data = FALSE,
-                              py              = 2021) {
+                              py = 2021) {
 
   code <- attr(x = df,
                which = "country_code")
@@ -329,8 +328,7 @@ add_aux_data_attr <- function(df,
                             yr              = year,
                             reporting_level = reporting_level,
                             dl_aux          = dl_aux,
-                            all             = TRUE,
-                            filter_aux_data = filter_aux_data,
+                            df_refy         = df_refy,
                             py              = py)
 
   attr(df,
