@@ -375,6 +375,7 @@ aux_data <- function(cde,
              ..yr]
   if (result |> unlist() |> is.na() |> all()) {
     output[["pce"]] <- NA
+    print("pce NA")
     #aux_data_checks
   } else {
     output[["pce"]] <-
