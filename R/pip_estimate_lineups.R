@@ -321,8 +321,9 @@ add_aux_data_attr <- function(df,
                which = "country_code")
   year <- attr(x = df,
                which = "reporting_year")
-  reporting_level <- attr(x = df,
-                          which = "reporting_level_rows")$reporting_level
+  reporting_level <- attr(x     = df,
+                          which = "reporting_level_rows")$reporting_level |>
+    funique()
 
   aux_data_list <- aux_data(cde             = code,
                             yr              = year,
@@ -385,7 +386,7 @@ aux_data <- function(cde,
   # GDP
   output[["gdp"]] <-
     dl_aux$gdp[country_code == cde &
-               data_level   == reporting_level,
+               data_level   %in% reporting_level,
                ..yr] |>
     funique() |>
     as.numeric()
