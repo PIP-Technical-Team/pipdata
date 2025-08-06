@@ -5,18 +5,17 @@ pd_aux_attr <- function(clean_data,
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Add attributes already in dt
+  # Add attributes already in surveys
 
-  aux_attr <- lapply(clean_data,\(y){
-
-    svy <- lapply(y,\(x){
+  aux_attr <- collapse::rapply2d(clean_data,\(x){
 
       ls <- attributes(x)
       ls[!names(ls) %in% c("row.names", "notes")]
 
-      })
-
     })
+
+  # Avoid survey name
+  aux_attr <- purrr::flatten(aux_attr)
 
   # Add aux data as attributes
 
@@ -33,33 +32,9 @@ pd_aux_attr <- function(clean_data,
     keys <- c(keys, "surveyid_year")
   }
 
-  dt <- aux_attr[[1]][[1]]
+  aux_attr <- lapply(aux_attr, add_cpi_attr,
+                     cpi = cpi, keys = keys)
 
-  id <- dt[names(dt) %in% keys]
-
-  # Fix reporting  (Temporal)
-  if("reporting_level" %in% names(dt)){
-    id$reporting_level <- dt$cpi_data_level
-    # id <- c(id, "cpi_data_level" = dt$cpi_data_level)
-  }
-
-  # Filter cpi
-  filtered_cpi <- cpi|>
-    collapse::fsubset(country_code == id$country_code &
-                      year == id$surveyid_year &
-                      survey_acronym == id$survey_acronym &
-                      reporting_level == id$reporting_level)
-
-  # Create attributes
-  ### Variables and year ---------
-
-  cpi_vars <- grep("^cpi_[0-9]{4}$", names(filtered_cpi), value = TRUE)
-
-  cpi_years <- gsub("cpi([0-9]+)", "\\1", cpi_vars)|> unique() |> sort()
-
-  setattr(dt, "cpi_years", cpi_years)
-
-  unique_values <- lapply(filtered_cpi[, .SD, .SDcols = c("cpi_year", "cpi_value")], unique)
 
   ## PPP
   ppp  <- pipload::pip_load_aux("ppp")
@@ -81,5 +56,41 @@ pd_aux_attr <- function(clean_data,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(TRUE)
+
+}
+
+add_cpi_attr <- function(ls,
+                         cpi,
+                         keys) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Find the keys in survey
+  id <- ls[names(ls) %in% keys]
+
+  # Fix reporting  (Temporal)
+  if("reporting_level" %in% names(ls)){
+    id$reporting_level <- ls$cpi_data_level
+  }
+
+  # Filter survey cpi
+  filtered_cpi <- cpi|>
+    collapse::fsubset(country_code == id$country_code &
+                        year == id$surveyid_year &
+                        survey_acronym == id$survey_acronym &
+                        reporting_level == id$reporting_level)
+
+  # Create attributes
+  cpi_attr <- split(filtered_cpi$cpi_value,
+                    filtered_cpi$cpi_year)
+
+  # Add to other attributes
+  ls <- append(ls, list("cpi" = cpi_attr))
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(ls)
 
 }
