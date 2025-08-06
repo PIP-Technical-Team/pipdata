@@ -11,21 +11,21 @@ pipfun::setup_working_release(release)
 #----- Temporary load data -----
 
 # Load inventory from validated DLW:
-inv <- pipdata_load_report(report_type = "inventory")
+inv <- pidpata_dlw_gmd_inv()
 
 inv_to_clean  <- valid_dlw_load(inv,
                                 aux_measures = c("pfw"))
-# Load data
-# svys <- inv_dlw_load(inv_to_clean)
 
-# Load PFW
-pfw  <- pipload::pip_load_aux("pfw")
+
 
 # Check for unique obs per pfw --------
 # keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
 # pfw <- unq_obs_dt(pfw, keyVar)
 
 #--------- Run pipdata functions -----
+
+# Load PFW
+pfw  <- pipload::pip_load_aux("pfw")
 
 # Process data
 inv_ls <- split(inv_to_clean,
@@ -37,30 +37,19 @@ results <- purrr::map(inv_ls,
 
 names(results) <- inv_to_clean$survey_id
 
-# Name survey_id
+# Create metadata
 
+metadata <- pd_aux_attr()
 
+# Save results and metadata
 
-
-# Check if list has attributes with specific names
-# dt <- find_dt_with_attribute(ls, attr_name = "country_code", attr_value = "PHL")[[3]]
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Load aux data --------
-
-ppp  <- pipload::pip_load_aux("ppp")
-cpi  <- pipload::pip_load_aux("cpi")
-pop  <- pipload::pip_load_aux("pop")
-gdp  <- pipload::pip_load_aux("gdp")
-
-valid_dlw_load(inv,
-               aux_measures = c("pfw"))
+# Create or Update inventory
 
 # # Deflation
-delfated <- lapply(results, pd_deflation,
-                         cpi = cpi,
-                         ppp = ppp,
-                         pop = pop)
+# delfated <- lapply(results, pd_deflation,
+#                          cpi = cpi,
+#                          ppp = ppp,
+#                          pop = pop)
 
 pipfun::log_filter(name = "pipdata_log")
 pipfun::log_save(name = "pipdata_log", path = "log.qs")
