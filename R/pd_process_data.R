@@ -1,3 +1,28 @@
+pd_process_data <- function(inv_to_clean) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Load PFW
+  pfw  <- pipload::pip_load_aux("pfw")
+
+  # Process data
+  inv_ls <- split(inv_to_clean,
+                  seq_len(nrow(inv_to_clean)))
+
+  results <- purrr::map(inv_ls,
+                        process_data,
+                        pfw = pfw)
+
+  names(results) <- inv_to_clean$survey_id
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(results)
+
+}
+
 #' Process datalibweb data: merge PFW data and clean variables
 #'
 #' @param inv inventory with survey_id and pins folder
