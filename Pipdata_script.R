@@ -30,7 +30,12 @@ metadata <- pd_aux_attr(clean_data = clean_data,
 
 #--------- Save clean_data and metadata------
 
+versions_data <- save_pip_data(clean_data,
+                               board = "pip_data")
 
+
+versions_metadata <- save_pip_data(metadata,
+                               board = "pip_metadata")
 
 # Create or Update inventory
 
