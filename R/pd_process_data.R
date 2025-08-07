@@ -4,7 +4,7 @@ pd_process_data <- function(inv_to_clean) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load PFW
-  pfw  <- pipload::pip_load_aux("pfw")
+  pfw  <- pipload::pip_load_aux("pfw", verbose = FALSE)
 
   # Process data
   inv_ls <- split(inv_to_clean,

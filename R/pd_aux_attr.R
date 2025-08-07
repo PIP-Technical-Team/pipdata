@@ -27,7 +27,7 @@ pd_aux_attr <- function(clean_data,
 
   if("cpi" %in% aux_measures){
 
-    cpi  <- pipload::pip_load_aux("cpi")
+    cpi  <- pipload::pip_load_aux("cpi", verbose = FALSE)
     keys <- attributes(cpi)$aux_key
 
     aux_attr <- lapply(aux_attr, add_cpi_attr,
@@ -39,7 +39,7 @@ pd_aux_attr <- function(clean_data,
 
   if("ppp" %in% aux_measures){
 
-    ppp  <- pipload::pip_load_aux("ppp")
+    ppp  <- pipload::pip_load_aux("ppp", verbose = FALSE)
     keys <- attributes(ppp)$aux_key
 
     aux_attr <- lapply(aux_attr, add_ppp_attr,

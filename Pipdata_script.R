@@ -6,7 +6,7 @@ library(devtools)
 load_all()
 
 release <- "20250203"
-pipfun::setup_working_release(release)
+pipfun::setup_working_release(release, verbose = FALSE)
 
 
 # Load inventory from validated DLW:
@@ -39,12 +39,8 @@ versions_metadata <- save_pip_data(metadata,
 
 # Create or Update inventory
 
-inv_dlw_vrs <- inv[, .(dlw_version = unlist(pin_version)[[1]]),
-                   by = survey_id]
-
-inv_to_clean <- inv_to_clean |>
-  joyn::left_join(inv_dlw_vrs, by = "survey_id",
-                  reportvar = FALSE)
+inv_to_clean <- fix_inv(inv = pidpata_dlw_gmd_inv(),
+                        inv_to_clean = inv_to_clean)
 
 update_pip_inventory(inv_to_clean          = inv_to_clean,
                      clean_data            = clean_data,
@@ -56,3 +52,4 @@ update_pip_inventory(inv_to_clean          = inv_to_clean,
 # pipfun::log_filter(name = "pipdata_log")
 # pipfun::log_save(name = "pipdata_log", path = "log.qs")
 # log <- qs::qread("log.qs")
+

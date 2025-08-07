@@ -95,3 +95,25 @@ m_svy_id_to_att <- function(dt) {
   return(dt)
 
 }
+
+
+fix_inv <- function(inv,
+                    inv_to_clean) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  inv_dlw_vrs <- inv[, .(dlw_version = unlist(pin_version)[[1]]),
+                     by = survey_id]
+
+  inv_to_clean <- inv_to_clean |>
+    joyn::left_join(inv_dlw_vrs, by = "survey_id",
+                    reportvar = FALSE,
+                    verbose = FALSE)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(inv_to_clean)
+
+}

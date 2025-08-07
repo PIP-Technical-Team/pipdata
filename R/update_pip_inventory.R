@@ -22,14 +22,17 @@ update_pip_inventory <- function(inv_to_clean,
   vrs <- vrs_dt |>
     joyn::left_join(vrs_mdt, by = "pip_id",
                     suffix = c("_data","_metadata"),
-                    reportvar = FALSE)
+                    reportvar = FALSE,
+                    verbose = FALSE)
 
   pip_inv <- pip_inv |>
     joyn::left_join(vrs, by = "pip_id",
-                    reportvar = FALSE)|>
+                    reportvar = FALSE,
+                    verbose = FALSE)|>
     joyn::left_join(inv_to_clean, by = "survey_id",
                     relationship = "many-to-one",
-                    reportvar = FALSE)
+                    reportvar = FALSE,
+                    verbose = FALSE)
 
   board <- pipfun::get_pins_boards()$pip_inventory
 
@@ -44,6 +47,6 @@ update_pip_inventory <- function(inv_to_clean,
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(pip_inv)
+  return(invisible(TRUE))
 
 }
