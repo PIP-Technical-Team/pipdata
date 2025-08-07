@@ -36,17 +36,18 @@ update_pip_inventory <- function(inv_to_clean,
 
   board <- pipfun::get_pins_boards()$pip_inventory
 
-  inv_name <- paste("pip_inv_",format(Sys.time(), "%Y%m%d_%H_%M_%S"), sep = "")
+  # inv_name <- paste("pip_inv_",format(Sys.time(), "%Y%m%d"), sep = "")
 
   pins::pin_write(board                 = board,
                    x                     = pip_inv,
-                   name                  = inv_name,
+                   name                  = "pip_inventory",
                    force_identical_write = FALSE,
-                   type                  = "qs")
+                   type                  = "qs",
+                  versioned              = TRUE )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(invisible(TRUE))
+  return(pip_inv)
 
 }

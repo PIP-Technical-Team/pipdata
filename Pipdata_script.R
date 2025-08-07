@@ -8,7 +8,6 @@ load_all()
 release <- "20250203"
 pipfun::setup_working_release(release, verbose = FALSE)
 
-
 # Load inventory from validated DLW:
 inv <- pidpata_dlw_gmd_inv()
 
@@ -22,6 +21,8 @@ clean_data <- pd_process_data(inv_to_clean)
 
 #--------- Validate -----------
 
+#valid_inv    <- pip_validation(clean_data)
+#valid_data   <- valid_clean_data(valid_inv)
 
 #--------- Create metadata-----
 
@@ -42,10 +43,10 @@ versions_metadata <- save_pip_data(metadata,
 inv_to_clean <- fix_inv(inv = pidpata_dlw_gmd_inv(),
                         inv_to_clean = inv_to_clean)
 
-update_pip_inventory(inv_to_clean          = inv_to_clean,
-                     clean_data            = clean_data,
-                     pins_versions_data     = versions_data,
-                     pins_versions_metadata = versions_metadata)
+new_pip_inv <- update_pip_inventory(inv_to_clean          = inv_to_clean,
+                                    clean_data            = clean_data,
+                                    pins_versions_data     = versions_data,
+                                    pins_versions_metadata = versions_metadata)
 
 
 # Check log
