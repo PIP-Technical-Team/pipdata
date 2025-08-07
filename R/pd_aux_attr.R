@@ -1,5 +1,5 @@
 pd_aux_attr <- function(clean_data,
-                        aux_measures) {
+                        aux_measures = c("cpi","ppp")) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -25,37 +25,46 @@ pd_aux_attr <- function(clean_data,
 
   ## CPI
 
-  cpi  <- pipload::pip_load_aux("cpi")
-  keys <- attributes(cpi)$aux_key
+  if("cpi" %in% aux_measures){
 
-  if("year" %in% keys){
-    keys <- c(keys, "surveyid_year")
+    cpi  <- pipload::pip_load_aux("cpi")
+    keys <- attributes(cpi)$aux_key
+
+    aux_attr <- lapply(aux_attr, add_cpi_attr,
+                       cpi = cpi, keys = keys)
+
   }
 
-  aux_attr <- lapply(aux_attr, add_cpi_attr,
-                     cpi = cpi, keys = keys)
-
-
   ## PPP
-  ppp  <- pipload::pip_load_aux("ppp")
+
+  if("ppp" %in% aux_measures){
+
+    ppp  <- pipload::pip_load_aux("ppp")
+    keys <- attributes(ppp)$aux_key
+
+    aux_attr <- lapply(aux_attr, add_ppp_attr,
+                       ppp = ppp, keys = keys)
+  }
+
+  # Set base years
+
 
   ## POP
-
-  pop  <- pipload::pip_load_aux("pop")
-
-
-  ## GDP
-
-  gdp  <- pipload::pip_load_aux("gdp")
-
-  ## PCE
-
-  pce  <- pipload::pip_load_aux("pce")
+#
+#   pop  <- pipload::pip_load_aux("pop")
+#
+#   ## GDP
+#
+#   gdp  <- pipload::pip_load_aux("gdp")
+#
+#   ## PCE
+#
+#   pce  <- pipload::pip_load_aux("pce")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(TRUE)
+  return(aux_attr)
 
 }
 
@@ -66,7 +75,12 @@ add_cpi_attr <- function(ls,
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   # Find the keys in survey
+  if("year" %in% keys){
+    keys <- c(keys, "surveyid_year")
+  }
+
   id <- ls[names(ls) %in% keys]
 
   # Fix reporting  (Temporal)
@@ -87,6 +101,48 @@ add_cpi_attr <- function(ls,
 
   # Add to other attributes
   ls <- append(ls, list("cpi" = cpi_attr))
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(ls)
+
+}
+
+add_ppp_attr <- function(ls,
+                         ppp,
+                         keys) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Find the keys in survey
+  id <- ls[names(ls) %in% keys]
+
+  # Fix reporting  (Temporal)
+  if("reporting_level" %in% names(ls)){
+    id$reporting_level <- ls$ppp_data_level
+  }
+
+  # Add ppp_version
+  ppp[,
+      ppp_version := {
+        x <- paste0("ppp_", ppp_year, "_", release_version, "_", adaptation_version)
+        x <- gsub("_v", "_0", x )
+      }
+  ]
+
+  # Filter survey ppp
+  filtered_ppp <- ppp|>
+    collapse::fsubset(country_code == id$country_code &
+                      reporting_level == id$reporting_level)
+
+  # Create attributes
+  ppp_attr <- split(filtered_ppp$ppp,
+                    filtered_ppp$ppp_version)
+
+  # Add to other attributes
+  ls <- append(ls, list("ppp" = ppp_attr))
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
