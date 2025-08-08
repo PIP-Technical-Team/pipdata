@@ -364,8 +364,8 @@ load_dist_stats <- function(country_code,
 #'
 #' @examples
 #' \dontrun{
-#' zaf_dist_stats <- load_dist_stats("ZAF", 2020)
-#' col_dist_stats <- load_dist_stats("COL", 2015)
+#' zaf_dist_stats <- load_dt_dist_stats("ZAF", 2020)
+#' col_dist_stats <- load_dt_dist_stats("COL", 2015)
 #' }
 load_dt_dist_stats <- function(country_code,
                                year,
@@ -378,6 +378,52 @@ load_dt_dist_stats <- function(country_code,
   all_attr$dt_dist_stats
 
 }
+
+
+
+
+#' Load dist stat attributes for all countries in [full_list]
+#' and output a data table
+#'
+#' @param full_list list: each element is another list containing
+#'                   country_code scalar (e.g. "ZAF") and year vector
+#'                   (e.g.`c(2001, 2002, 2003)`). If there are four countries,
+#'                   the `length(cntry_refy) = 4`, one for each country with its
+#'                   year vector.
+#' @param path path to save the output - "P:\03.pip\lineup_distributions\output-lineup-ref-years"
+#'
+#' @return data table of dist stats
+#' @export
+#'
+#' @examples
+load_full_dt_dist_stats <- function(full_list,
+                                    path = Sys.getenv("PIP_LINEUPS_DIR")) {
+
+
+  outlist <-
+    lapply(full_list,
+           FUN = function(x) {
+
+             cn <- x$country_code
+
+             cnlist <-
+               lapply(x$year,
+                      FUN = function(y) {
+                        load_dt_dist_stats("ZAF",
+                                           y,
+                                           path = path)
+                      })
+             cnlist <- rowbind(cnlist)
+
+             cnlist
+
+           })
+
+  rowbind(outlist)
+
+}
+
+
 
 
 
