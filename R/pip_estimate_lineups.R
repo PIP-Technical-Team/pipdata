@@ -196,28 +196,25 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
                                                      "class",
                                                      ".internal.selfref",
                                                      names(attributes(df))))])
-
-  df <- vars_to_attr(df, "n_imp")
-  attr(df,
-       "survey_year_rows")    <- survey_year_rows
-
-
-
-  df <- df |>
-    vars_to_attr(var = c("country_code",
-                         "survey_acronym",
-                         "survey_year"))
-
+  # Add dist stats to attributes
   dist_stats <- get_dist_stats(df = df)
   attr(df,
        "dist_stats") <- dist_stats$dist_stats
   attr(df,
        "dt_dist_stats") <- dist_stats$dt_dist
 
+  # Add columns to attributes
+  df <- vars_to_attr(df, "n_imp")
+  attr(df,
+       "survey_year_rows")    <- survey_year_rows
+  df <- df |>
+    vars_to_attr(var = c("country_code",
+                         "survey_acronym",
+                         "survey_year"))
   attr(df,
        "reporting_level_rows") <- reporting_level_rows
 
-
+  # rm cols
   gv(df,
      c("svy_pop",
        "relative_distance",
