@@ -182,6 +182,13 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
     list(reporting_level = as.character(reporting_level_rows$reporting_level),
          rows            = reporting_level_rows$rows)
 
+  # Add dist stats to attributes
+  dist_stats <- get_dist_stats(df = df)
+  attr(df,
+       "dist_stats") <- dist_stats$dist_stats
+  attr(df,
+       "dt_dist_stats") <- dist_stats$dt_dist
+
   # Make welfare type an attribute
   df <-
     df |>
@@ -196,12 +203,7 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
                                                      "class",
                                                      ".internal.selfref",
                                                      names(attributes(df))))])
-  # Add dist stats to attributes
-  dist_stats <- get_dist_stats(df = df)
-  attr(df,
-       "dist_stats") <- dist_stats$dist_stats
-  attr(df,
-       "dt_dist_stats") <- dist_stats$dt_dist
+
 
   # Add columns to attributes
   df <- vars_to_attr(df, "n_imp")
