@@ -82,7 +82,7 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
       #"welfare_type",
       #"income_group_code",
       #"survey_year",
-      "reporting_year",
+      #"reporting_year",
       "survey_id",
       #"cache_id",
       "wb_region_code",
@@ -183,7 +183,12 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
          rows            = reporting_level_rows$rows)
 
   # Add dist stats to attributes
+  print("before dist stats")
+  print(head(df))
+  print(colnames(df))
+  print("--------------------------------")
   dist_stats <- get_dist_stats(df = df)
+  print("after dist stats")
   attr(df,
        "dist_stats") <- dist_stats$dist_stats
   attr(df,
@@ -212,7 +217,8 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
   df <- df |>
     vars_to_attr(var = c("country_code",
                          "survey_acronym",
-                         "survey_year"))
+                         "survey_year",
+                         "reporting_year"))
   attr(df,
        "reporting_level_rows") <- reporting_level_rows
 
