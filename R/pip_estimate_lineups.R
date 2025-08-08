@@ -210,7 +210,9 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
 
   dist_stats <- get_dist_stats(df = df)
   attr(df,
-       "dist_stats") <- dist_stats
+       "dist_stats") <- dist_stats$dist_stats
+  attr(df,
+       "dt_dist_stats") <- dist_stats$dt_dist
 
   attr(df,
        "reporting_level_rows") <- reporting_level_rows
@@ -229,79 +231,251 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
 
 }
 
-
+#
+#
+#
+#
+# get_dist_stats <- function(df) {
+#
+#   # min
+#   min <- fmin(df$welfare,
+#               g = df$reporting_level) |>
+#     as.list()
+#
+#   # max
+#   max <- fmax(df$welfare,
+#               g = df$reporting_level) |>
+#     as.list()
+#
+#   # mean
+#   mean <- fmean(x = df$welfare,
+#                 w = df$weight,
+#                 g = df$reporting_level) |>
+#     as.list()
+#
+#   # median
+#   median <- fmedian(x = df$welfare,
+#                     w = df$weight,
+#                     g = df$reporting_level) |>
+#     as.list()
+#
+#   # gini
+#   gini <- sapply(df$reporting_level |> funique(),
+#                  FUN = \(x) {
+#                    wbpip::md_compute_gini(welfare = df$welfare[df$reporting_level == x],
+#                                           weight  = df$weight[df$reporting_level == x])
+#                  }) |>
+#     as.list()
+#
+#   # mld
+#   mld <- sapply(df$reporting_level |> funique(),
+#                 FUN = \(x) {
+#                   wbpip::md_compute_mld(welfare = df$welfare[df$reporting_level == x],
+#                                         weight  = df$weight[df$reporting_level == x],
+#                                         mean    = mean$x)
+#                 }) |>
+#     as.list()
+#
+#   # polarization
+#   pol <- sapply(df$reporting_level |> funique(),
+#                 FUN = \(x) {
+#                   wbpip::md_compute_polarization(welfare = df$welfare[df$reporting_level == x],
+#                                                  weight  = df$weight[df$reporting_level == x],
+#                                                  gini    = gini[[x]],
+#                                                  mean    = mean[[x]],
+#                                                  median  = median[[x]])
+#                 }) |>
+#     as.list()
+#
+#   # results
+#   dist_stats <- list(min          = min,
+#                      max          = max,
+#                      mean         = mean,
+#                      median       = median,
+#                      gini         = gini,
+#                      mld          = mld,
+#                      polarization = pol)
+#   dist_stats
+#
+#   # data.table
+#   # rplev <- funique(df$reporting_level)
+#   # cc    <- funique(df$country_code)
+#   # ry    <- funique(df$reporting_year)
+#   # dt_dist <- data.table(country_code    = cc,
+#   #                       reporting_year  = ry,
+#   #                       reporting_level = rplev)
+#   # print(dt_dist)
+#   # print(dist_stats$polarization |>
+#   #         qDT())# |>
+#   #         #pivot()) #|>
+#   #         # fmutate(reporting_level = as.character(variable),
+#   #         #         polarization    = value) |>
+#   #         # fselect(reporting_level,
+#   #         #         polarization))
+#   # dt_dist <- joyn::left_join(dt_dist,
+#   #                            dist_stats$polarization |>
+#   #                              qDT() |>
+#   #                              pivot() |>
+#   #                              fmutate(reporting_level = as.character(variable),
+#   #                                      polarization    = value) |>
+#   #                              fselect(reporting_level,
+#   #                                      polarization),
+#   #                            by           = c("reporting_level"),
+#   #                            relationship = "one-to-one",
+#   #                            reportvar    = F) |>
+#   #   joyn::left_join(dist_stats$mean |>
+#   #                     qDT() |>
+#   #                     pivot() |>
+#   #                     fmutate(reporting_level = as.character(variable),
+#   #                                      mean    = value) |>
+#   #                     fselect(reporting_level,
+#   #                             mean),
+#   #                   by           = c("reporting_level"),
+#   #                   relationship = "one-to-one",
+#   #                   reportvar    = F) |>
+#   #   joyn::left_join(dist_stats$median |>
+#   #                              qDT() |>
+#   #                              pivot() |>
+#   #                              fmutate(reporting_level = as.character(variable),
+#   #                                      median    = value) |>
+#   #                              fselect(reporting_level,
+#   #                                      median),
+#   #                    by           = c("reporting_level"),
+#   #                    relationship = "one-to-one",
+#   #                    reportvar    = F) |>
+#   #   joyn::left_join( dist_stats$gini |>
+#   #                              qDT() |>
+#   #                              pivot() |>
+#   #                              fmutate(reporting_level = as.character(variable),
+#   #                                      gini    = value) |>
+#   #                              fselect(reporting_level,
+#   #                                      gini),
+#   #                    by           = c("reporting_level"),
+#   #                    relationship = "one-to-one",
+#   #                    reportvar    = F) |>
+#   #   joyn::left_join(dist_stats$mld |>
+#   #                              qDT() |>
+#   #                              pivot() |>
+#   #                              fmutate(reporting_level = as.character(variable),
+#   #                                      mld    = value) |>
+#   #                              fselect(reporting_level,
+#   #                                      mld),
+#   #                   by           = c("reporting_level"),
+#   #                   relationship = "one-to-one",
+#   #                   reportvar    = F)
+#   #
+#   #
+#   # list(dist_stats,
+#   #      dt_dist)
+#
+# }
 
 
 #' Distribution statistics of lineup distribution
 #'
 #' @param df data frame: output of [get_refy_distributions]
 #'
-#' @return list with distributional statistics
+#' @return list with:
+#' - dist_stats: original list of distributional stats
+#' - dt_stats: a data.table with flattened statistics
 #' @export
 get_dist_stats <- function(df) {
 
-  # min
-  min <- fmin(df$welfare,
-              g = df$reporting_level) |>
-    as.list()
+  # Ensure necessary columns exist
+  if (!all(c("reporting_level", "welfare", "weight", "country_code", "reporting_year") %in% names(df))) {
+    stop("df must contain columns: reporting_level, welfare, weight, country_code, reporting_year")
+  }
 
-  # max
-  max <- fmax(df$welfare,
-              g = df$reporting_level) |>
-    as.list()
+  # Extract grouping levels
+  levels <- funique(df$reporting_level)
 
-  # mean
-  mean <- fmean(x = df$welfare,
-                w = df$weight,
-                g = df$reporting_level) |>
+  # === Compute distributional stats ===
+  min    <- fmin(df$welfare,
+                 g = df$reporting_level) |>
     as.list()
-
-  # median
-  median <- fmedian(x = df$welfare,
+  max    <- fmax(df$welfare,
+                 g = df$reporting_level) |>
+    as.list()
+  mean   <- fmean(df$welfare,
+                  w = df$weight,
+                  g = df$reporting_level) |>
+    as.list()
+  median <- fmedian(df$welfare,
                     w = df$weight,
                     g = df$reporting_level) |>
     as.list()
 
-  # gini
-  gini <- sapply(df$reporting_level |> funique(),
-                 FUN = \(x) {
-                   wbpip::md_compute_gini(welfare = df$welfare[df$reporting_level == x],
-                                          weight  = df$weight[df$reporting_level == x])
-                 }) |>
+  # Gini
+  gini <- sapply(levels, \(x) {
+    wbpip::md_compute_gini(
+      welfare = df$welfare[df$reporting_level == x],
+      weight  = df$weight[df$reporting_level == x]
+    )
+  }) |>
     as.list()
 
-  # mld
-  mld <- sapply(df$reporting_level |> funique(),
-                FUN = \(x) {
-                  wbpip::md_compute_mld(welfare = df$welfare[df$reporting_level == x],
-                                        weight  = df$weight[df$reporting_level == x],
-                                        mean    = mean$x)
-                }) |>
+  # MLD (requires mean)
+  mld <- sapply(levels, \(x) {
+    wbpip::md_compute_mld(
+      welfare = df$welfare[df$reporting_level == x],
+      weight  = df$weight[df$reporting_level == x],
+      mean    = mean[[x]]
+    )
+  }) |>
     as.list()
 
-  # polarization
-  pol <- sapply(df$reporting_level |> funique(),
-                FUN = \(x) {
-                  wbpip::md_compute_polarization(welfare = df$welfare[df$reporting_level == x],
-                                                 weight  = df$weight[df$reporting_level == x],
-                                                 gini    = gini[[x]],
-                                                 mean    = mean[[x]],
-                                                 median  = median[[x]])
-                }) |>
+  # Polarization
+  pol <- sapply(levels, \(x) {
+    wbpip::md_compute_polarization(
+      welfare = df$welfare[df$reporting_level == x],
+      weight  = df$weight[df$reporting_level == x],
+      gini    = gini[[x]],
+      mean    = mean[[x]],
+      median  = median[[x]]
+    )}) |>
     as.list()
 
-  # results
-  dist_stats <- list(min          = min,
-                     max          = max,
-                     mean         = mean,
-                     median       = median,
-                     gini         = gini,
-                     mld          = mld,
-                     polarization = pol)
+  # === Output: original list ===
+  dist_stats <- list(
+    min          = min,
+    max          = max,
+    mean         = mean,
+    median       = median,
+    gini         = gini,
+    mld          = mld,
+    polarization = pol)
 
-  dist_stats
+  # === Output: data.table version ===
+  country_code   <- unique(df$country_code)
+  reporting_year <- unique(df$reporting_year)
+
+  dt_dist <- data.table(
+    country_code    = country_code,
+    reporting_year  = reporting_year,
+    reporting_level = names(mean),
+    min             = unlist(min),
+    max             = unlist(max),
+    mean            = unlist(mean),
+    median          = unlist(median),
+    gini            = unlist(gini),
+    mld             = unlist(mld),
+    polarization    = unlist(pol))
+
+  # === Return both ===
+  list(
+    dist_stats = dist_stats,
+    dt_dist   = dt_dist)
 
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -359,25 +533,18 @@ aux_data <- function(cde,
                      df_refy,
                      py = 2021) {
 
-  # if (!exists("aux_data_checks", .GlobalEnv)) {
-  #   assign(x     = "aux_data_checks",
-  #          envir = .GlobalEnv)
-  # }
-
   if (length(yr) > 1) cli::cli_alert_warning("reporting year non-unique")
   if (length(cde) > 1) cli::cli_alert_warning("country code non-unique")
   if (length(reporting_level) > 1) cli::cli_alert_warning("reporting level non-unique")
+
   stopifnot(py %in% c(2011, 2017, 2021))
   output <- list()
   yr     <- as.character(yr)
+
   # PCE
-  result <- dl_aux$pce[country_code == cde,
-             ..yr]
-  if (result |> unlist() |> is.na() |> all()) {
-    print("pce NA")
-  }
   output[["pce"]] <-
-    result  |>
+    dl_aux$pce[country_code == cde,
+               ..yr]  |>
     unlist() |>
     unname() |>
     funique()
