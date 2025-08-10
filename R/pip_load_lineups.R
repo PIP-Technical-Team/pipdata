@@ -388,7 +388,7 @@ load_dt_dist_stats <- function(country_code,
 #' @param full_list list: each element is another list containing
 #'                   country_code scalar (e.g. "ZAF") and year vector
 #'                   (e.g.`c(2001, 2002, 2003)`). If there are four countries,
-#'                   the `length(cntry_refy) = 4`, one for each country with its
+#'                   the `length(full_list) = 4`, one for each country with its
 #'                   year vector.
 #' @param path path to save the output - "P:\03.pip\lineup_distributions\output-lineup-ref-years"
 #'
@@ -409,7 +409,7 @@ load_full_dt_dist_stats <- function(full_list,
              cnlist <-
                lapply(x$year,
                       FUN = function(y) {
-                        load_dt_dist_stats("ZAF",
+                        load_dt_dist_stats(cn,
                                            y,
                                            path = path)
                       })
