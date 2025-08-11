@@ -435,6 +435,19 @@ get_dist_stats <- function(df) {
     )}) |>
     as.list()
 
+  # Deciles
+  deciles <- lapply(levels, \(x) {
+    d <- wbpip:::md_compute_quantiles_share(
+      welfare = df$welfare[df$reporting_level == x],
+      weight  = df$weight[df$reporting_level == x])
+    names(d) <- paste0("decile", 1:10)
+    qDT(list2DF(as.list(d)))
+  })
+  names(deciles) <- levels
+  deciles_dt     <- rowbind(deciles)
+  deciles_dt     <- data.table(reporting_level = levels,
+                               deciles_dt)
+
   # === Output: original list ===
   dist_stats <- list(
     min          = min,
@@ -443,7 +456,8 @@ get_dist_stats <- function(df) {
     median       = median,
     gini         = gini,
     mld          = mld,
-    polarization = pol)
+    polarization = pol,
+    deciles      = deciles)
 
   # === Output: data.table version ===
   country_code   <- unique(df$country_code)
@@ -459,7 +473,11 @@ get_dist_stats <- function(df) {
     median          = unlist(median),
     gini            = unlist(gini),
     mld             = unlist(mld),
-    polarization    = unlist(pol))
+    polarization    = unlist(pol)) |>
+    joyn::left_join(y         = deciles_dt,
+                    by        = "reporting_level",
+                    reportvar = FALSE,
+                    verbose   = FALSE)
 
   # === Return both ===
   list(
