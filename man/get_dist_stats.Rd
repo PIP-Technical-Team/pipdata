@@ -10,7 +10,11 @@ get_dist_stats(df)
 \item{df}{data frame: output of \link{get_refy_distributions}}
 }
 \value{
-list with distributional statistics
+list with:
+\itemize{
+\item dist_stats: original list of distributional stats
+\item dt_stats: a data.table with flattened statistics
+}
 }
 \description{
 Distribution statistics of lineup distribution
