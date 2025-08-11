@@ -193,7 +193,7 @@ cache_id <- function(att,
     cache_id := paste(att$country_code,
                       att$surveyid_year,
                       att$survey_acronym,
-                      paste0("D", reporting_level),
+                      # paste0("D", reporting_level),
                       wt,
                       att$module,
                       sep = "_"
