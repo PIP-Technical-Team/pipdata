@@ -32,15 +32,20 @@ update_pip_inventory <- function(inv_to_clean,
     joyn::left_join(inv_to_clean, by = "survey_id",
                     relationship = "many-to-one",
                     reportvar = FALSE,
-                    verbose = FALSE)
+                    verbose = FALSE)|>
+    collapse::frename(version = "version_dlw",
+                      created = "created_dlw",
+                      hash    = "hash_dlw",
+                      pins_folder = "dlw_folder")
 
-  board <- pipfun::get_pins_boards()$pip_inventory
+
+  board <- pipfun::get_pins_boards(board = "pip_master_inventory")
 
   # inv_name <- paste("pip_inv_",format(Sys.time(), "%Y%m%d"), sep = "")
 
   pins::pin_write(board                 = board,
                    x                     = pip_inv,
-                   name                  = "pip_inventory",
+                   name                  = "pip_master_inventory",
                    force_identical_write = FALSE,
                    type                  = "qs",
                   versioned              = TRUE )
