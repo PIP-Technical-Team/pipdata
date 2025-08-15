@@ -24,9 +24,9 @@ valid_dlw_load <- function(inv,
 
   inv_aux <- unique(data.table::rbindlist(ls_inv_aux))
 
-  # Create mock changes for the inventory (Temporal)
+  # Select valid surveys and compare to previous cleaning
 
-  inv_svy <- m_inv_filter(inv, seed = 1089) # For now is a mock function
+  inv_svy <- m_inv_valid(inv, filter = "random", seed = 1089) # For now is a mock function
 
   # Bind with inventory from aux changes
 

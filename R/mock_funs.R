@@ -19,6 +19,53 @@ m_inv_load <- function(folder = "DLW-OUTPUT",
 
 }
 
+m_inv_valid <- function(inv,
+                        filter = "random",
+                        seed = 1089,
+                        n = 20) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Select only valid surveys
+  inv_valid <- inv[inv$status == "valid",]
+
+  if(filter == "all"){
+
+    return(inv_valid)
+  }else if(filter == "compare"){
+
+    # Compare to previous cleaning with master file
+    master_pip_inv <- pipload::load_pip_master_inventory()|>
+      collapse::fselect(survey_id, version_dlw)|>
+      collapse::frename(version = "version_dlw")
+
+    inv_clean <- inv_valid[!master_pip_inv, on = .( survey_id, version)]
+
+    return(inv_to_clean)
+
+  }else if(filter == "random"){
+
+    set.seed(seed)
+
+    inv_smp <- inv_valid[module %in% c("ALL","GROUP","HIST",  "GPWG", "BIN")]
+    inv_smp <- inv_smp[,.SD[sample(.N, min(floor(n/5), .N))], by = module]
+
+    return(inv_smp)
+
+  }else{
+
+    cli::cli_abort("Need to select a filter")
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(NULL)
+
+}
+
 m_inv_filter <- function(inv,
                          seed = 1089,
                          n = 20) {
