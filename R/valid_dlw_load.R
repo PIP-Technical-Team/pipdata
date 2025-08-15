@@ -13,9 +13,6 @@ valid_dlw_load <- function(inv,
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Temporal fix because it is a list for now
-  inv <- inv[, pin_version := NULL]
-
   # Load changes in aux files
 
   changes_aux <- valid_aux_load(measure = aux_measures,
