@@ -31,7 +31,7 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Load changes
 
-    suppressMessages(changes_release <- pipaux::compare_aux_releases(measure = measure, verbose = FALSE))
+    changes_release <- pipaux::compare_aux_releases(measure = measure, verbose = FALSE)
 
     # Clean changes
 
@@ -57,7 +57,7 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Load changes
 
-    suppressMessages(changes_vintage <- pipaux::compare_aux_vintages(measure = measure, verbose = FALSE))
+    changes_vintage <- pipaux::compare_aux_vintages(measure = measure, verbose = FALSE)
 
     # Clean changes
 
@@ -148,23 +148,6 @@ cln_changes <- function(changes) {
 #' @keywords internal
 check_unique <- function(x, key = attributes(x)$key_cols){
 
-  # if(name == "cpi"){ # Fix while we add as attributes
-  #
-  #   key <- c("country_code", "cpi_year", "reporting_level", "survey_year", "survey_acronym")
-  #
-  # }else if(name == "ppp"){
-  #
-  #   key <- c("country_code", "reporting_level", "ppp_year")
-  #
-  # }else if(name == "pop"){
-  #
-  #   key <- c("country_code", "reporting_level", "year")
-  #
-  # }else if(name == "pfw"){
-  #
-  #   key <- c("country_code", "surveyid_year", "welfare_type")
-  #
-  # }
 
   if(all(key %in% colnames(x))){
 

@@ -68,10 +68,6 @@ cpfw_merge <- function(dt, cpfw, ...){
       dt_c <- add_main_att(dt_c, cpfw)
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Area --------
-      dt_c <- add_area(dt_c) # It can be moved to cleaning
-
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ## Domain variables (same for md and gd) --------
       dt_c <- add_dom_vars(dt_c, cpfw)
 
@@ -103,8 +99,8 @@ add_main_att <- function(dt, cpfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   att <- names(attributes(dt))
 
-  main_attr <- c("surveyid_year", # Check if survey_year is necessary from pfw
-                 "country_code",
+  main_attr <- c("country_code",
+                 "surveyid_year", # Check if survey_year is necessary from pfw
                  "welfare_type")
 
   att_missing <- main_attr[!(main_attr %in% att)]
@@ -207,112 +203,6 @@ add_main_att <- function(dt, cpfw) {
 #
 # }
 
-#' Recode urban to area (lower level, S3 methods)
-#'
-#' @inheritParams cpfw_merge
-#'
-#' @return data.table
-#' @export
-add_area <- function(dt) {
-  UseMethod("add_area")
-}
-
-#' Recode urban to area for micro data
-#'
-#' @inheritParams cpfw_merge
-#'
-#' @return data.table
-#' @exportS3Method pipdata::add_area
-add_area.pipmd <- function(dt) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  # Abort if not urban variable
-  if (!any(c("urban", "area") %in% colnames(dt))){
-
-    survey_id <- c(.pipdataenv$survey_id)
-
-    pipfun::log_add(event = "info",
-                    message = "There is no urban variable",
-                    name = "pipdata_log",
-                    logmeta = list(info = "urb_var",
-                                survey = survey_id))
-
-    dt[, area := ""]
-
-    return(dt)
-
-  }else if(c("urban") %in% colnames(dt)){
-
-    # Recode urban to area
-
-    dt[, area := fcase(urban == 1, "urban",
-                       urban == 0, "rural",
-                       is.na(urban), "",
-                       default = "")]
-
-  }
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-
-}
-
-#' Recode urban to area for group data
-#'
-#' @inheritParams cpfw_merge
-#'
-#' @return data.table
-#' @exportS3Method pipdata::add_area
-add_area.pipgd <- function(dt) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  if (c("subnatid") %in% colnames(dt)){
-
-    setnames(dt, "subnatid", "subnatid1")
-
-  }
-
-
-  # Abort if not urban variable
-  if (!any(c("urban", "area") %in% colnames(dt))){
-
-    survey_id <- c(.pipdataenv$survey_id)
-
-    pipfun::log_add(event = "info",
-                    message = "There is no urban or area variable",
-                    name = "pipdata_log",
-                    logmeta = list(info = "urb_var",
-                                survey = survey_id))
-
-    dt[, area := ""]
-
-    return(dt)
-
-  }else if(c("urban") %in% colnames(dt)){
-
-    # Recode urban to area
-
-    dt[, area := fcase(urban == 1, "urban",
-                       urban == 0, "rural",
-                       is.na(urban), "national",
-                       default = "")]
-
-  }
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-
-}
 
 #' Add Domain variables
 #'
@@ -373,7 +263,10 @@ add_dom_vars <- function(dt, cpfw) {
 
         } else if (cpfw$cpi_domain_var != "urban") { # CASE 3: The cpi and ppp domain variable is different than "urban"
 
-          setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
+          rlang::abort(message = "The cpi domain variable is different than urban",
+                       class = c("piperr","cpi_dom_var"))
+
+          # setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
         }
 
       } else {
@@ -407,7 +300,10 @@ add_dom_vars <- function(dt, cpfw) {
 
           }else if(cpfw$cpi_domain_var != "urban"){
 
-            setattr(dt, dta_var, cpfw$cpi_domain_var) # CASE 3: If domain variable is cpi or ppp, and the domain_var is not "urban", use domain_var
+            rlang::abort(message = "The cpi domain variable is different than urban",
+                         class = c("piperr","cpi_dom_var"))
+
+            # setattr(dt, dta_var, cpfw$cpi_domain_var) # CASE 3: If domain variable is cpi or ppp, and the domain_var is not "urban", use domain_var
 
           }
 

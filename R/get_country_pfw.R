@@ -20,8 +20,6 @@ get_country_pfw <- function(dt, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Filter country PFW --------
 
-  # uvl <- uniq_vars_to_list(df)  #list with unique values for survey
-
   att <- attributes(dt)
 
   cpfw <- pfw[ country_code     == att$country_code
@@ -32,11 +30,6 @@ get_country_pfw <- function(dt, pfw) {
   ## Add reporting level  --------
 
   cpfw <- report_lvl(cpfw)
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Check other welfare type --------
-
-  # cpfw <- othr_wlf(cpfw) # Not needed because it is already on the pfw
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create cache ID   ---------
@@ -200,7 +193,7 @@ cache_id <- function(att,
     cache_id := paste(att$country_code,
                       att$surveyid_year,
                       att$survey_acronym,
-                      paste0("D", reporting_level),
+                      # paste0("D", reporting_level),
                       wt,
                       att$module,
                       sep = "_"

@@ -388,28 +388,30 @@ last_ver_inv <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # dt <- copy(dt)
+
   dt <- dt[,
       # Get max master version and filter
       maxmast := vermast == max(vermast),
       by = .(country_code, surveyid_year, survey_acronym, module, tool)
     ][
-      maxmast == 1
+      maxmast == TRUE
     ][,
       # Get max veralt version and filter
       maxalt := veralt == max(veralt),
       by = .(country_code, surveyid_year, survey_acronym, module, tool)
     ][
-      maxalt == 1
+      maxalt == TRUE
     ][,
       # Get max pip version and filter
       maxpip := pipeline_version == max(pipeline_version),
       by = .(country_code, surveyid_year, survey_acronym, module, tool)
     ][
-      maxpip == 1
+      maxpip == TRUE
     ][,
       c("maxmast","maxalt","maxpip") := NULL
     ][
-      status == "same"
+      status == "valid"
     ][
       module %in% c("GPWG", "GROUP", "BIN", "ALL" , "HIST")
     ]

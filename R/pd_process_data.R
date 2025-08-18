@@ -1,6 +1,31 @@
+pd_process_data <- function(inv_to_clean) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Load PFW
+  pfw  <- pipload::pip_load_aux("pfw", verbose = FALSE)
+
+  # Process data
+  inv_ls <- split(inv_to_clean,
+                  seq_len(nrow(inv_to_clean)))
+
+  results <- purrr::map(inv_ls,
+                        process_data,
+                        pfw = pfw)
+
+  names(results) <- inv_to_clean$survey_id
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(results)
+
+}
+
 #' Process datalibweb data: merge PFW data and clean variables
 #'
-#' @param df dataframe loaded with `valid_dlw_load`
+#' @param inv inventory with survey_id and pins folder
 #' @param pfw PFW
 #' @param ...  other parameters
 #'
@@ -20,31 +45,34 @@
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' md  <- pipdata:::m_svy_id_to_att(md)
 #' process_data(md, pfw)
-process_data <- function(df, pfw, ...) {
+process_data <- function(inv, pfw, ...) {
 
   # on.exit ------------
-  # on.exit({
-  #   rm(survey_id,
-  #      envir = .pipdataenv)
-  # }) # For now
+  on.exit({
+    rm(survey_id,
+       envir = .pipdataenv)
+  })
 
-  svy <- attributes(df)$survey_id
+  svy <- inv$survey_id
 
   assign("survey_id",
          svy,
          envir = .pipdataenv)
 
-  if("countrycode" %in% names(df)){
-    df$country_code <- df$countrycode
-  }
-
   # Computations -------
   res <- tryCatch(
     expr = {
 
+      # Load file
+      df <- inv_dlw_load(inv)
+
+      # Merge country PFW information
       ls_cpfw <- pd_cpfw_merge(df, pfw)
 
-      pd_dlw_clean(ls_cpfw)
+      # Clean main variables
+      ls_clean <- pd_dlw_clean(ls_cpfw)
+
+      ls_clean
 
     },
     piperr = function(cnd){
