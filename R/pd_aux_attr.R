@@ -14,14 +14,7 @@ pd_aux_attr <- function(clean_data,
 
     })
 
-  # Avoid survey name
-  aux_attr <- purrr::flatten(aux_attr)
-
   # Add aux data as attributes
-
-  ## Check if attributes changed
-
-  ## change_aux() -> valid_aux_load(aux_measures = c("cpi", "ppp", "gdp", "pop", "pce"))
 
   ## CPI
 
@@ -54,7 +47,7 @@ pd_aux_attr <- function(clean_data,
 
   if("pop" %in% aux_measures){
 
-    pop  <- pipload::pip_load_aux("pop")
+    pop  <- pipload::pip_load_aux("pop", verbose = FALSE)
     keys <- attributes(pop)$aux_key
 
     aux_attr <- lapply(aux_attr, add_pop_attr,
@@ -65,7 +58,7 @@ pd_aux_attr <- function(clean_data,
 
   if("gdp" %in% aux_measures){
 
-    gdp  <- pipload::pip_load_aux("gdp")
+    gdp  <- pipload::pip_load_aux("gdp", verbose = FALSE)
     keys <- attributes(gdp)$aux_key
 
     aux_attr <- lapply(aux_attr, add_gdp_attr,
@@ -78,7 +71,7 @@ pd_aux_attr <- function(clean_data,
 
   if("pce" %in% aux_measures){
 
-    pce  <- pipload::pip_load_aux("pce")
+    pce  <- pipload::pip_load_aux("pce", verbose = FALSE)
     keys <- attributes(pce)$aux_key
 
     aux_attr <- lapply(aux_attr, add_pce_attr,

@@ -20,7 +20,7 @@ m_inv_load <- function(folder = "DLW-OUTPUT",
 }
 
 m_inv_valid <- function(inv,
-                        filter = "random",
+                        filter = "compare",
                         seed = 1089,
                         n = 20) {
 
@@ -49,7 +49,7 @@ m_inv_valid <- function(inv,
 
     set.seed(seed)
 
-    inv_smp <- inv_valid[module %in% c("ALL","GROUP","HIST",  "GPWG", "BIN")]
+    inv_smp <- inv_valid[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
     inv_smp <- inv_smp[,.SD[sample(.N, min(floor(n/5), .N))], by = module]
 
     return(inv_smp)

@@ -12,26 +12,15 @@ release <- "20250203"
 identity <- "TEST"
 pipfun::setup_working_release(release, verbose = FALSE)
 
-# Load inventory from validated DLW (temporal):
-inv <- pins::pin_read(board = pipfun::get_pins_boards(board = "dlw_metadata"),
-                    name  = "gmd_valid_inv")
-
 #----- Load inventory to clean -----
+
+inv <- suppressMessages(pipload::load_gmd_valid_inv())
 
 inv_to_clean  <- valid_dlw_load(inv, aux_measures = c("pfw"))
 
-#--------- Clean surveys -----
+#--------- Clean surveys and create metadata -----
 
 clean_data <- pd_process_data(inv_to_clean)
-
-#--------- Validate -----------
-
-#valid_inv    <- pip_validation(clean_data)
-#valid_data   <- valid_clean_data(valid_inv)
-
-#--------- Create metadata-----
-
-metadata <- pd_aux_attr(clean_data   = clean_data)
 
 #--------- Save clean_data and metadata------
 
@@ -57,8 +46,8 @@ new_pip_inv <- update_pip_inventory(inv_to_clean          = inv_to_clean,
 
 
 #------ Load data tests -----
-
-NIC <- pipload::find_pip_data(board = pipfun::get_pins_boards(board = "pip_data"),
-                             country_code = "NIC", where = "master", surveyid_year = 2001)
-
-NIC_2 <- pipload::load_pip_data(country_code = "NIC", surveyid_year = 2001)
+#
+# NIC <- pipload::find_pip_data(board = pipfun::get_pins_boards(board = "pip_data"),
+#                              country_code = "NIC", where = "master", surveyid_year = 2001)
+#
+# NIC_2 <- pipload::load_pip_data(country_code = "NIC", surveyid_year = 2001)

@@ -72,7 +72,18 @@ process_data <- function(inv, pfw, ...) {
       # Clean main variables
       ls_clean <- pd_dlw_clean(ls_cpfw)
 
-      ls_clean
+      # Validation
+
+      #valid_inv    <- pip_validation(clean_data)
+      #valid_data   <- valid_clean_data(valid_inv)
+
+      # Metadata
+
+      metadata <- pd_aux_attr(clean_data = ls_clean)
+
+      # Results
+      list(data = ls_clean,
+           metadata = metadata)
 
     },
     piperr = function(cnd){
@@ -107,6 +118,8 @@ process_data <- function(inv, pfw, ...) {
 
     }
   )
+
+  return(res)
 
 
 }

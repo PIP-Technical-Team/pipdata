@@ -1,5 +1,6 @@
 valid_dlw_load <- function(inv,
-                           aux_measures = c("pfw")) {
+                           aux_measures = c("pfw"),
+                           seed = 1089) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -26,7 +27,7 @@ valid_dlw_load <- function(inv,
 
   # Select valid surveys and compare to previous cleaning
 
-  inv_svy <- m_inv_valid(inv, filter = "random", seed = 1089) # For now is a mock function
+  inv_svy <- m_inv_valid(inv, filter = "random", seed = seed) # For now is a mock function
 
   # Bind with inventory from aux changes
 
