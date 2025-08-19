@@ -72,18 +72,27 @@ process_data <- function(inv, pfw, ...) {
       # Clean main variables
       ls_clean <- pd_dlw_clean(ls_cpfw)
 
-      # Validation
+      # Validate
 
-      #valid_inv    <- pip_validation(clean_data)
+      #valid_inv    <- pip_validation(ls_clean)
       #valid_data   <- valid_clean_data(valid_inv)
 
-      # Metadata
+      # Create Aux Metadata
 
       metadata <- pd_aux_attr(clean_data = ls_clean)
 
+
+      # Save clean data and metadata
+      versions_data <- save_pip_data(ls_clean,
+                                     board = "pip_data")
+
+      versions_metadata <- save_pip_data(metadata,
+                                         board = "pip_metadata")
+
       # Results
-      list(data = ls_clean,
-           metadata = metadata)
+      list(pip_names = names(ls_clean),
+           versions_data = versions_data,
+           versions_metadata = versions_metadata)
 
     },
     piperr = function(cnd){

@@ -1,16 +1,35 @@
 update_pip_inventory <- function(inv_to_clean,
-                                 clean_data,
-                                 pins_versions_data,
-                                 pins_versions_metadata) {
+                                 process_data,
+                                 date_valid = max(inv_to_clean$date_validated)) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Defenses
+  if(!inherits(date_valid, "POSIXct")){
+    cli::cli_abort("date_valid should be POSIXct format")
+  }
+
+  # Check null surveys and clean
+
+  null_ls <- names(Filter(is.null, process_data))
+
+  if(length(null_ls)>0){
+
+    pipfun::log_add(event = "info",
+                    message = "Some surveys were not cleaned. Review logmeta to identify which ones.",
+                    name = "pipdata_log",
+                    logmeta = list(info = "null_svys_inf",
+                                   surveys = null_ls))
+  }
+
+  process_data_clean <- process_data[!(names(process_data) %in% null_ls)]
 
   # Pip data cleaned
 
-  svys <- lapply(lapply(clean_data, names), as.list) # temporary
-  svys <- Filter(function(y) !(is.list(y) && length(y) == 0), svys)
+  svys <- lapply(lapply(process_data_clean,
+                        \(x) as.list(x$pip_names)),
+                 as.list)
 
   pip_inv <- data.frame(
     survey_id = rep(names(svys), lengths(svys)),
@@ -19,9 +38,13 @@ update_pip_inventory <- function(inv_to_clean,
 
   # Bind versions
 
-  vrs_dt <- data.table::rbindlist(pins_versions_data, idcol = "pip_id")
+  vrs_dt <- sapply(process_data_clean, \(x){ x$versions_data })
+  vrs_dt <- purrr::flatten(vrs_dt)
+  vrs_dt <- data.table::rbindlist(vrs_dt, idcol = "pip_id")
 
-  vrs_mdt <- data.table::rbindlist(pins_versions_metadata, idcol = "pip_id")
+  vrs_mdt <- sapply(process_data_clean, \(x){ x$versions_metadata })
+  vrs_mdt <- purrr::flatten(vrs_mdt)
+  vrs_mdt <- data.table::rbindlist(vrs_mdt, idcol = "pip_id")
 
   vrs <- vrs_dt |>
     joyn::left_join(vrs_mdt, by = "pip_id",
@@ -50,16 +73,14 @@ update_pip_inventory <- function(inv_to_clean,
 
   new_pip_inv <- pip_inv|>
     collapse::rowbind(old_pip_inv)|>
-    collapse::funique()
+    collapse::funique()|>
+    as.data.table()
 
   board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
 
-  pins::pin_write(board                 = board_master,
-                   x                     = new_pip_inv,
-                   name                  = "pip_master_inventory",
-                   force_identical_write = FALSE,
-                   type                  = "qs",
-                  versioned              = TRUE )
+  pipload::pip_write(board                 = board_master,
+                     x                     = new_pip_inv,
+                     pin_name                  = "pip_master_inventory")
 
   # Save release inventory
 
@@ -69,20 +90,22 @@ update_pip_inventory <- function(inv_to_clean,
     collapse::fsubset(inpovcal == 1)|>
     collapse::fselect(country_code,
                       surveyid_year,
-                      survey_acronym)
+                      survey_acronym)|>
+    collapse::funique()|>
+    as.data.table()
 
-  release_pip_inv  <- new_pip_inv[pfw_release, on = .(country_code,
-                                                      surveyid_year,
-                                                      survey_acronym)]
+  release_pip_inv  <- new_pip_inv[pfw_release,
+                                  on = .(country_code,
+                                         surveyid_year,
+                                         survey_acronym),
+                                  nomatch = 0][
+                                    date_validated < date_valid]
 
-  board_release <- pipfun::get_pins_boards(board = "pip_release_inventory")
+  board_release <- pipfun::get_pins_boards(board = "pip_inventory")
 
-  pins::pin_write(board                 = board_release,
-                  x                     = release_pip_inv,
-                  name                  = "pip_master_inventory",
-                  force_identical_write = FALSE,
-                  type                  = "qs",
-                  versioned              = TRUE )
+  pipload::pip_write(board                 = board_release,
+                     x                     = release_pip_inv,
+                     pin_name              = "pip_release_inventory" )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

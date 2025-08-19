@@ -7,9 +7,6 @@
 
    if(board == "pip_data"){
 
-     # Flatten list:
-     data <- purrr::flatten(data)
-
      board <- pipfun::get_pins_boards()$pip_data
 
    }else if(board == "pip_metadata"){
@@ -26,14 +23,51 @@
                            .y = names(data),
                            .f = \(x, y){
 
-                           pins::pin_write(board                 = board,
-                                           x                     = x,
-                                           name                  = y,
-                                           force_identical_write = FALSE,
-                                           type                  = "qs",
-                                           versioned             = TRUE)
+                             # on.exit ------------
+                             on.exit({
+                               rm(pin_name,
+                                  envir = .pipdataenv)
+                             })
 
-                           pins::pin_versions(board = board, name  = y)
+                             pin <- y
+
+                             assign("pin_name",
+                                    pin,
+                                    envir = .pipdataenv)
+
+                             tryCatch(
+                               expr = {
+
+                                 # Save data
+
+                                 pipload::pip_write(board                 = board,
+                                                    x                     = x,
+                                                    pin_name              = y)
+
+                                 # Get last version
+
+                                 vers <- pins::pin_versions(board = board,
+                                                    name  = y)
+
+                                 vers[rev(order(vers$created)),][1,]
+
+                               },
+                               error = function(cnd){
+
+                                 pin_name <- c(.pipdataenv$pin_name)
+
+                                 pipfun::log_add(event = "error",
+                                                 message = cnd$message,
+                                                 name = "pipdata_log",
+                                                 .trace = cnd$call,
+                                                 logmeta = list(error = "save_error",
+                                                                pin_name = pin_name,
+                                                                status = "The cleaned survey was not saved"))
+
+                                 NULL
+
+                               }
+                             )
                            })
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
