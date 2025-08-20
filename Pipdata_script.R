@@ -1,9 +1,9 @@
-# Test of pipdata functions
+### Test of pipdata functions
+
 # Check packages updates
 metapip::update_pip_packages()
-# metapip::init_metapip()
 
-#----- Load libraries and set release---
+#------- Load libraries and set release-----
 
 library(devtools)
 load_all()
@@ -16,28 +16,34 @@ pipfun::setup_working_release(release, verbose = FALSE)
 
 inv <- suppressMessages(pipload::load_gmd_valid_inv())
 
-inv_to_clean  <- valid_dlw_load(inv, aux_measures = c("pfw"))
+# Check dates of validation
+dates <- data.frame(date = unique(inv$date_validated|>
+                             as.Date()))
+
+# Select one of the first ones
+date_valid <- as.POSIXct(dates[rev(order(dates$date)),][3])
+
+# Add it to environment
+assign("date_valid",
+       date_valid,
+       envir = .pipdataenv)
+
+inv_to_clean  <- valid_dlw_load(inv)
 
 #--------- Clean surveys and create metadata -----
 
-clean_data <- pd_process_data(inv_to_clean)
+process_data <- pd_process_data(inv_to_clean)
 
-#--------- Save clean_data and metadata------
+#--------- Create or Update inventory---------
 
-versions_data <- save_pip_data(clean_data,
-                               board = "pip_data")
+new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
+                                    process_data = process_data)
 
-
-versions_metadata <- save_pip_data(metadata,
-                                   board = "pip_metadata")
-
-# Create or Update inventory
-
-new_pip_inv <- update_pip_inventory(inv_to_clean          = inv_to_clean,
-                                    clean_data            = clean_data,
-                                    pins_versions_data     = versions_data,
-                                    pins_versions_metadata = versions_metadata)
-
+#
+# board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
+# tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")
+# vs <- pins::pin_versions(board = board_master, name = "pip_master_inventory")
+# tst2 <- pins::pin_read(board = board_master, name = "pip_master_inventory", version = "20250819T173702Z-6d58c")
 
 # Check log
 # pipfun::log_filter(name = "pipdata_log")
