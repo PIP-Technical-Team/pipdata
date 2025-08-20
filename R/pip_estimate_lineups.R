@@ -8,7 +8,7 @@
 #'
 #' @return data frame:
 #' @export
-get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
+get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls, version_path) {
 
   # ensure no factors
   lapply(df_refy,
@@ -129,7 +129,8 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
          sort       = FALSE,
          reportvar  = FALSE) |>
     # Group by survey year
-    fgroup_by(survey_year) |>
+    fgroup_by(survey_year,
+              reporting_level) |>
     # number of imputations per survey year (if micro data then n_imp = 1)
     fmutate(n_imp      = data.table::uniqueN(imputation_id),
             # population at survey (decimal) year found by summing survey weights
@@ -230,6 +231,22 @@ get_refy_distributions <- function(df_refy, cntry_code, ref_year, gls) {
   df
 
 }
+
+
+#
+# load_surveys_for_refy_dist <- function(dir, id) {
+#
+#   dt <- fst::read_fst(path          = fs::path(dir,
+#                                                "survey_data",
+#                                                id,
+#                                                ext = "fst"),
+#                       as.data.table = TRUE)
+#
+#   dt
+#
+# }
+
+
 
 #
 #
