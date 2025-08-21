@@ -165,16 +165,18 @@ attr_to_column <- function(df,
                            attr_to_column,
                            dist_stats = FALSE,
                            aux_data   = FALSE,
-                           dattr      = NULL) {
+                           dattr      = NULL,
+                           verbose    = FALSE) {
 
   if (is.null(dattr)) {
-    dattr <- attributes(df)
+    dattr <- extract_attr(df         = df,
+                          attr       = attr_to_column,
+                          dist_stats = dist_stats,
+                          aux_data   = aux_data,
+                          verbose    = verbose)
+
   }
 
-  dattr <- extract_attr(df         = df,
-                        attr       = attr_to_column,
-                        dist_stats = dist_stats,
-                        aux_data   = aux_data)
 
   if (isFALSE(dist_stats) &
       attr_to_column == "dist_stats") {
