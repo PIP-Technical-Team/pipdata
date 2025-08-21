@@ -92,39 +92,62 @@ load_list_refy <- function(input_list,
 extract_attr <- function(df,
                          dist_stats = FALSE,
                          aux_data   = FALSE,
-                         attr) {
+                         attr,
+                         verbose    = FALSE) {
 
-  # Args
-  if (dist_stats & aux_data) {
-    cli::cli_abort("`dist_stats` and `aux_data` cannot both be TRUE")
-  }
 
+
+  # Get attributes
+  #----------------------------
   # all attributes
   l_attr <- attributes(df)
 
   # attr selection
   if (dist_stats) {
     a      <- l_attr$dist_stats[[attr]]
-    n_attr <- names(l_attr$dist_stats)
-    err    <- !attr %in% n_attr
+    # n_attr <- names(l_attr$dist_stats)
+    # err    <- !attr %in% n_attr
   } else if (aux_data) {
     a      <- l_attr$aux_data[[attr]]
-    n_attr <- names(l_attr$aux_data)
-    err    <- !attr %in% n_attr
+    # n_attr <- names(l_attr$aux_data)
+    # err    <- !attr %in% n_attr
   } else {
     a      <- l_attr[[attr]]
-    n_attr <- names(l_attr)
-    err    <- !attr %in% n_attr
+    # n_attr <- names(l_attr)
+    # err    <- !attr %in% n_attr
   }
 
-  # If selected attr not in attribute list
-  if (err) {
-    n_attr <- n_attr[!grepl(pattern = "names|row.names|.internal.selfref|class",
-                            x       = n_attr)]
-    cli::cli_abort("If `dist_stats`={dist_stats} and `aux_data`={aux_data}
+  # Verbose messages
+  #----------------------------
+  if (verbose) {
+
+    # Args
+    if (dist_stats & aux_data) {
+      cli::cli_abort("`dist_stats` and `aux_data` cannot both be TRUE")
+    }
+
+    if (dist_stats) {
+      n_attr <- names(l_attr$dist_stats)
+      err    <- !attr %in% n_attr
+    } else if (aux_data) {
+      n_attr <- names(l_attr$aux_data)
+      err    <- !attr %in% n_attr
+    } else {
+      n_attr <- names(l_attr)
+      err    <- !attr %in% n_attr
+    }
+
+    # If selected attr not in attribute list
+    if (err) {
+      n_attr <- n_attr[!grepl(pattern = "names|row.names|.internal.selfref|class",
+                              x       = n_attr)]
+      cli::cli_abort("If `dist_stats`={dist_stats} and `aux_data`={aux_data}
                    then `attr` argument must be one of {n_attr}")
+    }
   }
 
+  # Return
+  #----------------------------
   a
 
 }
