@@ -38,24 +38,27 @@ update_pip_inventory <- function(inv_to_clean,
 
   # Bind versions
 
-  vrs_dt <- sapply(process_data_clean, \(x){ x$versions_data })
-  vrs_dt <- purrr::flatten(vrs_dt)
-  vrs_dt <- data.table::rbindlist(vrs_dt, idcol = "pip_id")
+  vrs_dt <- data.table::rbindlist(lapply(process_data_clean,
+                   \(x) data.table::rbindlist(lapply(x$versions_data,
+                                                     as.data.table),
+                                              idcol = "pip_id")), idcol = "survey_id")
 
-  vrs_mdt <- sapply(process_data_clean, \(x){ x$versions_metadata })
-  vrs_mdt <- purrr::flatten(vrs_mdt)
-  vrs_mdt <- data.table::rbindlist(vrs_mdt, idcol = "pip_id")
+  vrs_mdt <- data.table::rbindlist(lapply(process_data_clean,
+                   \(x) data.table::rbindlist(lapply(x$versions_metadata,
+                                                     as.data.table),
+                                              idcol = "pip_id")), idcol = "survey_id")
 
   vrs <- vrs_dt |>
-    joyn::left_join(vrs_mdt, by = "pip_id",
+    joyn::left_join(vrs_mdt, by = c("survey_id", "pip_id"),
                     suffix = c("_data","_metadata"),
+                    relationship = "many-to-many",
                     reportvar = FALSE,
                     verbose = FALSE)
 
   # Add info from DLW inventory
 
   pip_inv <- pip_inv |>
-    joyn::left_join(vrs, by = "pip_id",
+    joyn::left_join(vrs, by = c("survey_id", "pip_id"),
                     reportvar = FALSE,
                     verbose = FALSE)|>
     joyn::left_join(inv_to_clean, by = "survey_id",
@@ -98,7 +101,7 @@ update_pip_inventory <- function(inv_to_clean,
                                   on = .(country_code,
                                          surveyid_year,
                                          survey_acronym),
-                                  nomatch = 0][
+                                  nomatch = 0][ # Need to change it for a warning
                                     date_validated < date_valid]
 
   board_release <- pipfun::get_pins_boards(board = "pip_inventory")
