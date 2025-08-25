@@ -13,12 +13,14 @@ write_refy_dist <- function(df_refy,
   ref_year   <- attributes(df_refy)$reporting_year
 
   # save
-  qs::qsave(x = df_refy,
-            file = fs::path(path,
-                            paste0(cntry_code,
-                                   "_",
-                                   ref_year,
-                                   ".qs")))
+  qs::qsave(x        = df_refy,
+            file     = fs::path(path,
+                                paste0(cntry_code,
+                                       "_",
+                                       ref_year,
+                                       ".qs")),
+            preset   = "fast",
+            nthreads = 4)
 
   invisible(TRUE)
 }
@@ -68,7 +70,7 @@ write_multiple_refy_dist <-
              x <- cntry_refy[[i]]
 
              lapply(x$year,
-                    FUN = \(year = x$year,
+                    FUN = \(year         = x$year,
                             country_code = x$country_code){
 
                       suppressMessages(get_refy_distributions(df_refy    = df_refy,
