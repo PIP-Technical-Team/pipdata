@@ -1,23 +1,44 @@
  save_pip_data <- function(data,
-                           board) {
+                           board,
+                           test = FALSE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   if(board == "pip_data"){
+   # if(test){
+   #
+   #   if(board == "pip_data"){
+   #
+   #     board <- pins::board_folder("//tsclient/P/03.pip/pip_data/surveys")
+   #
+   #   }else if(board == "pip_metadata"){
+   #
+   #     board <- pins::board_folder("//tsclient/P/03.pip/pip_data/surveys_metadata")
+   #
+   #   }else{
+   #
+   #     cli::cli_abort("Need to specified the board")
+   #
+   #   }
+   #
+   # }else{
 
-     board <- pipfun::get_pins_boards()$pip_data
+     if(board == "pip_data"){
 
-   }else if(board == "pip_metadata"){
+       board <- pipfun::get_pins_boards()$pip_data
 
-     board <- pipfun::get_pins_boards()$pip_metadata
+     }else if(board == "pip_metadata"){
 
-   }else{
+       board <- pipfun::get_pins_boards()$pip_metadata
 
-     cli::cli_abort("Need to specified the board")
+     }else{
 
-   }
+       cli::cli_abort("Need to specified the board")
+
+     }
+
+   # }
 
    versions <- purrr::map2(.x = data,
                            .y = names(data),
@@ -37,6 +58,8 @@
 
                              tryCatch(
                                expr = {
+
+                                 Sys.sleep(.9)
 
                                  # Save data
 

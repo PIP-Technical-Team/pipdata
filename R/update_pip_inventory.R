@@ -1,6 +1,7 @@
 update_pip_inventory <- function(inv_to_clean,
                                  process_data,
-                                 date_valid = max(inv_to_clean$date_validated)) {
+                                 date_valid = max(inv_to_clean$date_validated),
+                                 test = FALSE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -38,15 +39,11 @@ update_pip_inventory <- function(inv_to_clean,
 
   # Bind versions
 
-  vrs_dt <- data.table::rbindlist(lapply(process_data_clean,
-                   \(x) data.table::rbindlist(lapply(x$versions_data,
-                                                     as.data.table),
-                                              idcol = "pip_id")), idcol = "survey_id")
+  vrs_dt <- format_vrs(process_data = process_data_clean,
+                       version = "versions_data")
 
-  vrs_mdt <- data.table::rbindlist(lapply(process_data_clean,
-                   \(x) data.table::rbindlist(lapply(x$versions_metadata,
-                                                     as.data.table),
-                                              idcol = "pip_id")), idcol = "survey_id")
+  vrs_mdt <- format_vrs(process_data = process_data_clean,
+                        version = "versions_metadata")
 
   vrs <- vrs_dt |>
     joyn::left_join(vrs_mdt, by = c("survey_id", "pip_id"),
@@ -58,6 +55,7 @@ update_pip_inventory <- function(inv_to_clean,
   # Add info from DLW inventory
 
   pip_inv <- pip_inv |>
+    unique()|>
     joyn::left_join(vrs, by = c("survey_id", "pip_id"),
                     reportvar = FALSE,
                     verbose = FALSE)|>
@@ -79,11 +77,17 @@ update_pip_inventory <- function(inv_to_clean,
     collapse::funique()|>
     as.data.table()
 
-  board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
+  if(test){
+
+    board_release <- pins::board_folder("//tsclient/P/03.pip/pip_data/master_inventory")
+  }else{
+
+    board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
+  }
 
   pipload::pip_write(board                 = board_master,
                      x                     = new_pip_inv,
-                     pin_name                  = "pip_master_inventory")
+                     pin_name              = "pip_master_inventory")
 
   # Save release inventory
 
@@ -104,7 +108,14 @@ update_pip_inventory <- function(inv_to_clean,
                                   nomatch = 0][ # Need to change it for a warning
                                     date_validated < date_valid]
 
-  board_release <- pipfun::get_pins_boards(board = "pip_inventory")
+  if(test){
+
+    board_release <- pins::board_folder("//tsclient/P/03.pip/pip_data/release_inventory")
+  }else{
+
+    board_release <- pipfun::get_pins_boards(board = "pip_inventory")
+  }
+
 
   pipload::pip_write(board                 = board_release,
                      x                     = release_pip_inv,
@@ -114,5 +125,29 @@ update_pip_inventory <- function(inv_to_clean,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(new_pip_inv)
+
+}
+
+format_vrs <- function(process_data,
+                       version = c("versions_data",
+                                   "versions_metadata")) {
+
+  version <- match.arg(version)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dt <- data.table::rbindlist(lapply(process_data,
+
+                               \(x) data.table::rbindlist(
+                                 lapply(x[[version]], as.data.table),
+                                 idcol = "pip_id")),
+
+                              idcol = "survey_id")
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 
 }
