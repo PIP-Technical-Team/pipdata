@@ -28,13 +28,15 @@ valid_dlw_load <- function(inv,
 
   # Select valid surveys and compare to previous cleaning
 
-  inv_svy <- m_inv_valid(inv,
-                         filter = "all",
-                         date_valid = date_valid) # For now is a mock function
+  inv_svy <- m_inv_valid(inv, filter = "all") # For now is a mock function
 
   # Bind with inventory from aux changes
 
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
+
+  # Only those after specific date validated
+
+  inv_to_clean <- inv_to_clean[date_validated < date_valid]
 
   # Order alphabetically
 

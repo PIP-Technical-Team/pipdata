@@ -20,10 +20,9 @@ m_inv_load <- function(folder = "DLW-OUTPUT",
 }
 
 m_inv_valid <- function(inv,
-                        filter = "random",
+                        filter = "compare",
                         seed = 1089,
-                        n = 20,
-                        date_valid = .pipdataenv$date_valid) {
+                        n = 20) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -32,15 +31,22 @@ m_inv_valid <- function(inv,
   # Select only valid surveys
   inv_valid <- inv[inv$status == "valid",]
 
-  # Compare to previous cleaning with master file
-  master_pip_inv <- pipload::load_pip_master_inventory()|>
-    collapse::fselect(survey_id, version_dlw)|>
-    collapse::frename(version = "version_dlw")
-
-  inv_clean <- inv_valid[!master_pip_inv, on = .( survey_id, version)][
-    date_validated < date_valid]
-
   if(filter == "all"){
+
+    inv_clean <- inv_valid[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
+
+    return(inv_clean)
+
+  }else if(filter == "compare"){
+
+     # Compare to previous cleaning with master file
+    master_pip_inv <- pipload::load_pip_master_inventory()|>
+      collapse::fselect(survey_id, version_dlw)|>
+      collapse::frename(version = "version_dlw")
+
+    inv_clean <- inv_valid[!master_pip_inv, on = .( survey_id, version)]
+
+    inv_clean <- inv_valid[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
 
     return(inv_clean)
 
