@@ -38,6 +38,10 @@ valid_dlw_load <- function(inv,
 
   inv_to_clean <- inv_to_clean[date_validated < date_valid]
 
+  # Choose only unique
+
+  inv_to_clean <- unique(inv_to_clean)
+
   # Order alphabetically
 
   setorder(inv_to_clean, survey_id)

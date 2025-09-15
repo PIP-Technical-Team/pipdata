@@ -10,35 +10,30 @@ load_all()
 
 release <- "20250203"
 identity <- "TEST"
-pipfun::setup_working_release(release, verbose = FALSE)
+pipfun::setup_working_release(release, identity, verbose = FALSE)
 
 #----- Load inventory to clean -----
 
 inv <- suppressMessages(pipload::load_gmd_valid_inv())
 
-# Check dates of validation
-dates <- data.frame(date = unique(inv$date_validated|>
-                             as.Date()))
+# ------- Filter valid inventory until specific date ---------
+# dt_v <- date_valid(inv, 3)
 
-# Select one of the first ones
-date_valid <- as.POSIXct(dates[rev(order(dates$date)),][3])
+dt_v <- as.POSIXct("2025-08-10", tz = "UTC") # The previous to last validation
 
-# Add it to environment
-assign("date_valid",
-       date_valid,
-       envir = .pipdataenv)
-
-inv_to_clean  <- valid_dlw_load(inv)
+inv_to_clean  <- valid_dlw_load(inv = inv ,
+                                date_valid = dt_v)
 
 #--------- Clean surveys and create metadata -----
 
-process_data <- pd_process_data(inv_to_clean)
+process_data <- pd_process_data(inv_to_clean = inv_to_clean)
 
 #--------- Create or Update inventory---------
 
 new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
                                     process_data = process_data)
 
+old_pip_inv <- pipload::load_pip_master_inventory()
 #
 # board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
 # tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")

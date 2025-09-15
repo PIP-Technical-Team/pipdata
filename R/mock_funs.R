@@ -169,3 +169,23 @@ fix_inv <- function(inv,
   return(inv_to_clean)
 
 }
+
+date_valid <- function(inv,
+                       position) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Check dates of validation
+  dates <- data.frame(date = unique(inv$date_validated|>
+                                      as.Date()))
+
+  # Select one of the first ones
+  date_valid <- as.POSIXct(dates[rev(order(dates$date)),][position])
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(date_valid)
+
+}
