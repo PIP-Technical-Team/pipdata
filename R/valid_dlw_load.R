@@ -28,7 +28,7 @@ valid_dlw_load <- function(inv,
 
   # Select valid surveys and compare to previous cleaning
 
-  inv_svy <- m_inv_valid(inv, filter = "all") # For now is a mock function
+  inv_svy <- m_inv_valid(inv, filter = "compare") # For now is a mock function
 
   # Bind with inventory from aux changes
 

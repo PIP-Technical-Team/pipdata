@@ -30,11 +30,13 @@ process_data <- pd_process_data(inv_to_clean = inv_to_clean)
 
 #--------- Create or Update inventory---------
 
+old_pip_inv <- pipload::load_pip_master_inventory()
+
 new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
                                     process_data = process_data)
 
-old_pip_inv <- pipload::load_pip_master_inventory()
-#
+
+
 # board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
 # tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")
 # vs <- pins::pin_versions(board = board_master, name = "pip_master_inventory")

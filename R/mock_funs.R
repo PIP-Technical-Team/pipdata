@@ -44,7 +44,7 @@ m_inv_valid <- function(inv,
       collapse::fselect(survey_id, version_dlw)|>
       collapse::frename(version = "version_dlw")
 
-    inv_clean <- inv_valid[!master_pip_inv, on = .( survey_id, version)]
+    inv_valid <- inv_valid[!master_pip_inv, on = .( survey_id, version)]
 
     inv_clean <- inv_valid[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
 
