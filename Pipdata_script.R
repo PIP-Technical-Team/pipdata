@@ -12,6 +12,8 @@ release <- "20250203"
 identity <- "TEST"
 pipfun::setup_working_release(release, identity, verbose = FALSE)
 
+# pipfun::get_wrk_release()
+
 #----- Load inventory to clean -----
 
 inv <- suppressMessages(pipload::load_gmd_valid_inv())
@@ -22,11 +24,24 @@ inv <- suppressMessages(pipload::load_gmd_valid_inv())
 dt_v <- as.POSIXct("2025-08-10", tz = "UTC") # The previous to last validation
 
 inv_to_clean  <- valid_dlw_load(inv = inv ,
-                                date_valid = dt_v)
+                                date_valid = dt_v,
+                                filter = "all")
 
 #--------- Clean surveys and create metadata -----
+library(future)
+
+plan(multisession, workers = 10)
 
 process_data <- pd_process_data(inv_to_clean = inv_to_clean)
+
+# Clean up
+plan(sequential)
+
+# Separate log from versions
+
+process_data_cl <- data.table::rbindlist(lapply(ls_est, \(x){
+  x[names(x) %in% c("s_vars")]
+}))
 
 #--------- Create or Update inventory---------
 

@@ -3,6 +3,7 @@ pd_process_data <- function(inv_to_clean) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   # Load PFW
   pfw  <- pipload::pip_load_aux("pfw", verbose = FALSE)
 
@@ -10,9 +11,12 @@ pd_process_data <- function(inv_to_clean) {
   inv_ls <- split(inv_to_clean,
                   seq_len(nrow(inv_to_clean)))
 
-  results <- purrr::map(inv_ls,
+  results <- furrr::future_map(inv_ls,
                         process_data,
-                        pfw = pfw)
+                        pfw = pfw,
+                        .progress = TRUE,
+                        .options = furrr::furrr_options(packages = "pipfun")
+                        )
 
   names(results) <- inv_to_clean$survey_id
 
@@ -46,6 +50,15 @@ pd_process_data <- function(inv_to_clean) {
 #' md  <- pipdata:::m_svy_id_to_att(md)
 #' process_data(md, pfw)
 process_data <- function(inv, pfw, ...) {
+
+  # Load devtools
+  devtools::load_all()
+
+  # Create environment
+  .pipdataenv <-  new.env(parent = emptyenv())
+
+  # initiate logging
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
 
   # on.exit ------------
   on.exit({
@@ -128,7 +141,10 @@ process_data <- function(inv, pfw, ...) {
     }
   )
 
-  return(res)
+  log <- pipfun::log_get("pipdata_log")
+
+  return(list(res,
+              log))
 
 
 }
