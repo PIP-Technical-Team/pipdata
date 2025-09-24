@@ -1,3 +1,12 @@
+#' Load DLW data from inventory
+#'
+#' This function loads DLW data using the pins folder in
+#' the inventory
+#'
+#' @param inv
+#'
+#' @return data.table
+#' @export
 inv_dlw_load <- function(inv) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

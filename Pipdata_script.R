@@ -39,16 +39,28 @@ plan(sequential)
 
 # Separate log from versions
 
-process_data_cl <- data.table::rbindlist(lapply(ls_est, \(x){
-  x[names(x) %in% c("s_vars")]
-}))
+process_data_cl <-lapply(process_data, \(x){
+  x["result"][[1]][[1]]
+})
+
+process_data_log <-lapply(process_data, \(x){
+  x["result"][[1]][[2]]
+})
+
+process_data_errors <- lapply(process_data, \(x){
+  x[["error"]]
+})
+
+null_ls <- names(Filter(is.null, process_data_errors))
+
+process_data_errors <- process_data_errors[!(names(process_data_errors) %in% null_ls)]
 
 #--------- Create or Update inventory---------
 
 old_pip_inv <- pipload::load_pip_master_inventory()
 
 new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
-                                    process_data = process_data)
+                                    process_data = process_data_cl)
 
 
 

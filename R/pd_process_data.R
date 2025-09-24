@@ -11,9 +11,13 @@ pd_process_data <- function(inv_to_clean) {
   inv_ls <- split(inv_to_clean,
                   seq_len(nrow(inv_to_clean)))
 
+  # Safe function
+  safe_function <- purrr::safely(process_data)
+
   results <- furrr::future_map(inv_ls,
-                        process_data,
+                               safe_function,
                         pfw = pfw,
+                        wrk_release = pipfun::get_wrk_release(),
                         .progress = TRUE,
                         .options = furrr::furrr_options(packages = "pipfun")
                         )
@@ -49,13 +53,21 @@ pd_process_data <- function(inv_to_clean) {
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
 #' md  <- pipdata:::m_svy_id_to_att(md)
 #' process_data(md, pfw)
-process_data <- function(inv, pfw, ...) {
+process_data <- function(inv,
+                         pfw,
+                         wrk_release,
+                         ...) {
 
   # Load devtools
   devtools::load_all()
 
   # Create environment
   .pipdataenv <-  new.env(parent = emptyenv())
+
+  # Set wrk release
+  pipfun::setup_working_release(wrk_release$release,
+                                wrk_release$identity,
+                                verbose = FALSE)
 
   # initiate logging
   pipfun::log_init("pipdata_log", overwrite = TRUE)
