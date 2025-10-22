@@ -1,54 +1,46 @@
-# Test of pipdata functions
+### Test of pipdata functions
+
 # Check packages updates
 metapip::update_pip_packages()
-# metapip::init_metapip()
 
-#----- Load libraries and set release---
+#------- Load libraries and set release-----
 
 library(devtools)
 load_all()
 
 release <- "20250203"
 identity <- "TEST"
-pipfun::setup_working_release(release, verbose = FALSE)
-
-# Load inventory from validated DLW (temporal):
-inv <- pins::pin_read(board = pipfun::get_pins_boards(board = "dlw_metadata"),
-                    name  = "gmd_valid_inv")
+pipfun::setup_working_release(release, identity, verbose = FALSE)
 
 #----- Load inventory to clean -----
 
-inv_to_clean  <- valid_dlw_load(inv, aux_measures = c("pfw"))
+inv <- suppressMessages(pipload::load_gmd_valid_inv())
 
-#--------- Clean surveys -----
+# ------- Filter valid inventory until specific date ---------
+# dt_v <- date_valid(inv, 3)
 
-clean_data <- pd_process_data(inv_to_clean)
+dt_v <- as.POSIXct("2025-08-10", tz = "UTC") # The previous to last validation
 
-#--------- Validate -----------
+inv_to_clean  <- valid_dlw_load(inv = inv ,
+                                date_valid = dt_v)
 
-#valid_inv    <- pip_validation(clean_data)
-#valid_data   <- valid_clean_data(valid_inv)
+#--------- Clean surveys and create metadata -----
 
-#--------- Create metadata-----
+process_data <- pd_process_data(inv_to_clean = inv_to_clean)
 
-metadata <- pd_aux_attr(clean_data   = clean_data)
+#--------- Create or Update inventory---------
 
-#--------- Save clean_data and metadata------
+old_pip_inv <- pipload::load_pip_master_inventory()
 
-versions_data <- save_pip_data(clean_data,
-                               board = "pip_data")
+new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
+                                    process_data = process_data)
 
 
-versions_metadata <- save_pip_data(metadata,
-                                   board = "pip_metadata")
 
-# Create or Update inventory
-
-new_pip_inv <- update_pip_inventory(inv_to_clean          = inv_to_clean,
-                                    clean_data            = clean_data,
-                                    pins_versions_data     = versions_data,
-                                    pins_versions_metadata = versions_metadata)
-
+# board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
+# tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")
+# vs <- pins::pin_versions(board = board_master, name = "pip_master_inventory")
+# tst2 <- pins::pin_read(board = board_master, name = "pip_master_inventory", version = "20250819T173702Z-6d58c")
 
 # Check log
 # pipfun::log_filter(name = "pipdata_log")
@@ -57,8 +49,8 @@ new_pip_inv <- update_pip_inventory(inv_to_clean          = inv_to_clean,
 
 
 #------ Load data tests -----
-
-NIC <- pipload::find_pip_data(board = pipfun::get_pins_boards(board = "pip_data"),
-                             country_code = "NIC", where = "master", surveyid_year = 2001)
-
-NIC_2 <- pipload::load_pip_data(country_code = "NIC", surveyid_year = 2001)
+#
+# NIC <- pipload::find_pip_data(board = pipfun::get_pins_boards(board = "pip_data"),
+#                              country_code = "NIC", where = "master", surveyid_year = 2001)
+#
+# NIC_2 <- pipload::load_pip_data(country_code = "NIC", surveyid_year = 2001)

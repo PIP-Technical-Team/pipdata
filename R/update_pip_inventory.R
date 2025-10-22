@@ -1,16 +1,36 @@
 update_pip_inventory <- function(inv_to_clean,
-                                 clean_data,
-                                 pins_versions_data,
-                                 pins_versions_metadata) {
+                                 process_data,
+                                 date_valid = max(inv_to_clean$date_validated),
+                                 test = FALSE) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Defenses
+  if(!inherits(date_valid, "POSIXct")){
+    cli::cli_abort("date_valid should be POSIXct format")
+  }
+
+  # Check null surveys and clean
+
+  null_ls <- names(Filter(is.null, process_data))
+
+  if(length(null_ls)>0){
+
+    pipfun::log_add(event = "info",
+                    message = "Some surveys were not cleaned. Review logmeta to identify which ones.",
+                    name = "pipdata_log",
+                    logmeta = list(info = "null_svys_inf",
+                                   surveys = null_ls))
+  }
+
+  process_data_clean <- process_data[!(names(process_data) %in% null_ls)]
 
   # Pip data cleaned
 
-  svys <- lapply(lapply(clean_data, names), as.list) # temporary
-  svys <- Filter(function(y) !(is.list(y) && length(y) == 0), svys)
+  svys <- lapply(lapply(process_data_clean,
+                        \(x) as.list(x$pip_names)),
+                 as.list)
 
   pip_inv <- data.frame(
     survey_id = rep(names(svys), lengths(svys)),
@@ -19,20 +39,24 @@ update_pip_inventory <- function(inv_to_clean,
 
   # Bind versions
 
-  vrs_dt <- data.table::rbindlist(pins_versions_data, idcol = "pip_id")
+  vrs_dt <- format_vrs(process_data = process_data_clean,
+                       version = "versions_data")
 
-  vrs_mdt <- data.table::rbindlist(pins_versions_metadata, idcol = "pip_id")
+  vrs_mdt <- format_vrs(process_data = process_data_clean,
+                        version = "versions_metadata")
 
   vrs <- vrs_dt |>
-    joyn::left_join(vrs_mdt, by = "pip_id",
+    joyn::left_join(vrs_mdt, by = c("survey_id", "pip_id"),
                     suffix = c("_data","_metadata"),
+                    relationship = "many-to-many",
                     reportvar = FALSE,
                     verbose = FALSE)
 
   # Add info from DLW inventory
 
   pip_inv <- pip_inv |>
-    joyn::left_join(vrs, by = "pip_id",
+    unique()|>
+    joyn::left_join(vrs, by = c("survey_id", "pip_id"),
                     reportvar = FALSE,
                     verbose = FALSE)|>
     joyn::left_join(inv_to_clean, by = "survey_id",
@@ -50,16 +74,20 @@ update_pip_inventory <- function(inv_to_clean,
 
   new_pip_inv <- pip_inv|>
     collapse::rowbind(old_pip_inv)|>
-    collapse::funique()
+    collapse::funique()|>
+    as.data.table()
 
-  board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
+  if(test){
 
-  pins::pin_write(board                 = board_master,
-                   x                     = new_pip_inv,
-                   name                  = "pip_master_inventory",
-                   force_identical_write = FALSE,
-                   type                  = "qs",
-                  versioned              = TRUE )
+    board_release <- pins::board_folder("//tsclient/P/03.pip/pip_data/master_inventory")
+  }else{
+
+    board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
+  }
+
+  pipload::pip_write(board                 = board_master,
+                     x                     = new_pip_inv,
+                     pin_name              = "pip_master_inventory")
 
   # Save release inventory
 
@@ -69,24 +97,57 @@ update_pip_inventory <- function(inv_to_clean,
     collapse::fsubset(inpovcal == 1)|>
     collapse::fselect(country_code,
                       surveyid_year,
-                      survey_acronym)
+                      survey_acronym)|>
+    collapse::funique()|>
+    as.data.table()
 
-  release_pip_inv  <- new_pip_inv[pfw_release, on = .(country_code,
-                                                      surveyid_year,
-                                                      survey_acronym)]
+  release_pip_inv  <- new_pip_inv[pfw_release,
+                                  on = .(country_code,
+                                         surveyid_year,
+                                         survey_acronym),
+                                  nomatch = 0][ # Need to change it for a warning
+                                    date_validated < date_valid]
 
-  board_release <- pipfun::get_pins_boards(board = "pip_release_inventory")
+  if(test){
 
-  pins::pin_write(board                 = board_release,
-                  x                     = release_pip_inv,
-                  name                  = "pip_master_inventory",
-                  force_identical_write = FALSE,
-                  type                  = "qs",
-                  versioned              = TRUE )
+    board_release <- pins::board_folder("//tsclient/P/03.pip/pip_data/release_inventory")
+  }else{
+
+    board_release <- pipfun::get_pins_boards(board = "pip_inventory")
+  }
+
+
+  pipload::pip_write(board                 = board_release,
+                     x                     = release_pip_inv,
+                     pin_name              = "pip_release_inventory" )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(new_pip_inv)
+
+}
+
+format_vrs <- function(process_data,
+                       version = c("versions_data",
+                                   "versions_metadata")) {
+
+  version <- match.arg(version)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dt <- data.table::rbindlist(lapply(process_data,
+
+                               \(x) data.table::rbindlist(
+                                 lapply(x[[version]], as.data.table),
+                                 idcol = "pip_id")),
+
+                              idcol = "survey_id")
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 
 }

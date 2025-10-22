@@ -4,9 +4,9 @@ inv_dlw_load <- function(inv) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # Load survey files (It will change to loading function)
+  # Load survey files
 
-  dt <- pipload::load_dlw_data(pin_name = inv$pins_folder)
+  dt <- pipload::load_dlw_data(pin_name = inv$pins_folder, verbose = FALSE)
 
   # Add data from inventory to attributes of data table and add pip class
 
