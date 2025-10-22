@@ -3,7 +3,7 @@
 # Check packages updates
 metapip::update_pip_packages()
 
-#------- Load libraries and set release-----
+# ----- Load libraries and set release-----
 
 library(devtools)
 load_all()
@@ -12,7 +12,19 @@ release <- "20250203"
 identity <- "TEST"
 pipfun::setup_working_release(release, identity, verbose = FALSE)
 
-#----- Load inventory to clean -----
+# ----- Transform DLW from dta to qs --------
+
+dlw_dta_to_qs(dlw_raw_folder = "dlw_raw/folder_time1",
+              dlw_qs_folder  = "dlw_qs")
+
+# ----- Validate DLW -------
+
+dlw_scan_and_validate( dlw_qs_folder = "data/dlw_qs",
+                       pip_raw_folder = "data/pip_raw",
+                       pip_raw_inventory_path = "data/pip_raw_inventory.qs" )
+
+
+# ----- Load inventory to clean -----
 
 inv <- suppressMessages(pipload::load_gmd_valid_inv())
 
