@@ -2,40 +2,34 @@
 % Please edit documentation in R/process_data.R
 \name{process_data}
 \alias{process_data}
-\alias{process_data.pipmd}
-\alias{process_data.pipgd}
-\alias{process_data.default}
-\title{PD: process data. Source: datalibweb}
+\title{Process datalibweb data: merge PFW data and clean variables}
 \usage{
-process_data(df, ...)
-
-\method{process_data}{pipmd}(df, pfw, ...)
-
-\method{process_data}{pipgd}(df, pfw, ...)
-
-\method{process_data}{default}(df, ...)
+process_data(df, pfw, ...)
 }
 \arguments{
-\item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{dataframe loaded with \code{valid_dlw_load}}
+
+\item{pfw}{PFW}
 
 \item{...}{other parameters}
-
-\item{pfw}{dataframe with Price Framework data loaded with
-\code{pipload::pip_load_aux("pfw")}}
 }
 \value{
 data.table
 }
 \description{
-process datalibweb data. Use S3 method to identify whether the data is
-microdata, groupdata or imputed data
+Process datalibweb data: merge PFW data and clean variables
 }
 \examples{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 pfw <- pipload::pip_load_aux("pfw")
 
 gd  <- pipload::pip_load_dlw("CHN", 2015)
+gd  <- pipdata:::m_svy_id_to_att(gd)
 process_data(gd, pfw)
 
 md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+md  <- pipdata:::m_svy_id_to_att(md)
 process_data(md, pfw)
 }

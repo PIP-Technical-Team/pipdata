@@ -1,103 +1,84 @@
-#' PD: process data. Source: datalibweb
+#' Process datalibweb data: merge PFW data and clean variables
 #'
-#' process datalibweb data. Use S3 method to identify whether the data is
-#' microdata, groupdata or imputed data
-#'
-#' @param df dataframe loaded with `pipload::pip_load_dlw()`
+#' @param df dataframe loaded with `valid_dlw_load`
+#' @param pfw PFW
 #' @param ...  other parameters
 #'
 #' @return data.table
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' pfw <- pipload::pip_load_aux("pfw")
 #'
 #' gd  <- pipload::pip_load_dlw("CHN", 2015)
+#' gd  <- pipdata:::m_svy_id_to_att(gd)
 #' process_data(gd, pfw)
 #'
 #' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' md  <- pipdata:::m_svy_id_to_att(md)
 #' process_data(md, pfw)
-process_data <- function(df, ...) {
-  UseMethod("process_data")
-
-}
-
-#' @param pfw dataframe with Price Framework data loaded with
-#'   `pipload::pip_load_aux("pfw")`
-#'
-#' @export
-#' @rdname process_data
-process_data.pipmd <- function(df, pfw, ...) {
-  cli::cli_alert_info("Using microdata method")
+process_data <- function(df, pfw, ...) {
 
   # on.exit ------------
-  on.exit({
+  # on.exit({
+  #   rm(survey_id,
+  #      envir = .pipdataenv)
+  # }) # For now
 
-  })
+  svy <- attributes(df)$survey_id
 
-  # Defenses -----------
-  stopifnot(
+  assign("survey_id",
+         svy,
+         envir = .pipdataenv)
 
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
+  if("countrycode" %in% names(df)){
+    df$country_code <- df$countrycode
   }
 
   # Computations -------
-  cpfw <- get_country_pfw(df, pfw)
-  x    <- pd_dlw_clean(df, cpfw)
-  y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
+  res <- tryCatch(
+    expr = {
 
+      ls_cpfw <- pd_cpfw_merge(df, pfw)
 
+      pd_dlw_clean(ls_cpfw)
 
-  # Return -------------
-  return(invisible(y))
+    },
+    piperr = function(cnd){
 
-}
+      survey_id <- c(.pipdataenv$survey_id)
 
-#' @param pfw dataframe with Price Framework data loaded with
-#'   `pipload::pip_load_aux("pfw")`
-#'
-#' @export
-#' @rdname process_data
-process_data.pipgd <- function(df, pfw, ...) {
-  cli::cli_alert_info("Using group data method")
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      logmeta = list(error = class(cnd)[2],
+                                     survey = survey_id,
+                                     status = "The survey was skipped"))
 
-  # on.exit ------------
-  on.exit({
+      NULL
 
-  })
+    },
 
-  # Defenses -----------
-  stopifnot(
+    error = function(cnd){
 
+      survey_id <- c(.pipdataenv$survey_id)
+
+      pipfun::log_add(event = "error",
+                      message = cnd$message,
+                      name = "pipdata_log",
+                      .trace = cnd$call,
+                      logmeta = list(error = "unknown_error",
+                                     survey = survey_id,
+                                     status = "The survey was skipped"))
+
+      NULL
+
+    }
   )
 
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
-  # Computations -------
-  cpfw <- get_country_pfw(df, pfw)
-  x    <- pd_dlw_clean(df, cpfw)
-  y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
-
-
-
-  # Return -------------
-  return(invisible(y))
-
-}
-
-
-#' @export
-#' @rdname process_data
-process_data.default <- function(df, ...) {
-
-  cli::cli_alert("no PIP method for this data. Returning same object")
-  return(invisible(df))
 
 }

@@ -2,17 +2,21 @@
 % Please edit documentation in R/utils.R
 \name{add_log}
 \alias{add_log}
-\title{Add warnings or errors to a .logenv}
+\title{Add errors to a .logenv}
 \usage{
-add_log(cnd)
+add_log(line, error = NULL, class = "piperr")
 }
 \arguments{
-\item{cnd}{error or warning condition}
+\item{line}{line to be added to the log}
+
+\item{error}{name of error or warning list}
+
+\item{class}{PIP error or warning class}
 }
 \value{
 a message in .logenv
 }
 \description{
-Add warnings or errors to a .logenv
+Add errors to a .logenv
 }
 \keyword{internal}
