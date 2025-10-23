@@ -7,9 +7,9 @@ pipdata_default_options <- list(
 
   # make sure .logenv is exported properly-----
 
-  if (!exists(".logenv", envir = asNamespace(pkgname))) {
-    assign(".logenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
-  }
+  # if (!exists(".logenv", envir = asNamespace(pkgname))) {
+  #   assign(".logenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
+  # }
 
   # initiate logging
   pipfun::log_init("pipdata_log", overwrite = TRUE)

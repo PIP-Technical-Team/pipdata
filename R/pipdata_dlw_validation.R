@@ -32,7 +32,7 @@ dlw_validation <- function(dlw_data, svy_id) {
 dlw_validation_gpwg <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
@@ -176,7 +176,7 @@ dlw_validation_gpwg <- function(dlw_data, svy_id){
 dlw_validation_group <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data is not loaded" = !is.null(dlw_data))
 
@@ -314,7 +314,7 @@ dlw_validation_group <- function(dlw_data, svy_id){
 dlw_validation_bin <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data is not loaded" = !is.null(dlw_data))
 
@@ -437,7 +437,7 @@ dlw_validation_bin <- function(dlw_data, svy_id){
 dlw_validation_hist <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
   # get variable names
@@ -568,7 +568,7 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 dlw_validation_all <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
@@ -656,7 +656,7 @@ dlw_validation_all <- function(dlw_data, svy_id){
 dlw_validation_aspire <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
@@ -760,7 +760,7 @@ dlw_validation_aspire <- function(dlw_data, svy_id){
 dlw_validation_l <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
@@ -888,7 +888,7 @@ dlw_validation_l <- function(dlw_data, svy_id){
 dlw_validation_skip <- function(dlw_data, svy_id){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   stopifnot("Data data is not loaded" = !is.null(dlw_data))
 
@@ -954,7 +954,7 @@ dlw_var_check <- function(val, col_name) {
 #' }
 is_character <-  function(val, col_name){
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   expr = bquote(is.character(.(val)[[.(col_name)]]))
   validate_if(val,
@@ -976,7 +976,7 @@ is_character <-  function(val, col_name){
 is_numeric <- function(val, col_name){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   expr = bquote(is.numeric(.(val)[[.(col_name)]]))
   validate_if(val,
@@ -999,7 +999,7 @@ is_numeric <- function(val, col_name){
 check_urban <- function(val, col_name){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   # extract unique URBAN values
   urban_info <- unique(val[[col_name]])
@@ -1030,7 +1030,7 @@ check_urban <- function(val, col_name){
 is_greaterthanzero <- function(val, col_name){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   # Logical vector
   expr = bquote(any(val[[col_name]] > 0) |
@@ -1059,7 +1059,7 @@ is_greaterthanzero <- function(val, col_name){
 is_var_avail <- function(val, col_name){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   # Logical vector
   expr = bquote(col_name %in% names(val))
@@ -1086,7 +1086,7 @@ is_var_avail <- function(val, col_name){
 is_var_startwith_avail <- function(val, col_name){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   # Logical vector
   expr = bquote(any(startsWith(names(val), col_name)))
@@ -1113,7 +1113,7 @@ is_var_startwith_avail <- function(val, col_name){
 is_var_endwith_avail <- function(val, col_name){
 
   # set-up a release
-  pipfun::get_wrk_release()
+  pipfun::get_wrk_release(verbose = FALSE)
 
   # Logical vector
   expr = bquote(any(endsWith(names(val), col_name)))
