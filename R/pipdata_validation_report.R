@@ -86,7 +86,6 @@ get_data_status <- function(){
 
 #' List of validation result by survey ID and module type
 #'
-#' @inheritParams pipdata_load_report
 #' @param e_type Character. Validation result type, error/warning, defulat is `error`
 #' @param m_type Character. Module type, GPWG/GROUP/BIN/HIST/OTHER
 #'
@@ -101,23 +100,19 @@ get_data_status <- function(){
 #' )
 #' }
 get_validation_list <- function(
-    root_dir = Sys.getenv("PIP_ROOT_DIR"),
-    maindir = "PIP_ingestion_pipeline_v2/dlw_repository",
-    dlw_inv_folder = "dlw_inventory",
+    # root_dir = Sys.getenv("PIP_ROOT_DIR"),
+    # maindir = "PIP_ingestion_pipeline_v2/dlw_repository",
+    # dlw_inv_folder = "dlw_inventory",
     # release_lbl = NULL,
     # release_idn = NULL,
-    report_type = "validation",
+    # report_type = "validation",
     e_type = c("error", "warning", "success"),
     m_type = NULL){
 
   e_type <- match.arg(e_type)
 
-  rp_data <- pipdata_load_report(root_dir,
-                             maindir,
-                             dlw_inv_folder,
-                             # release_lbl,
-                             # release_idn,
-                             report_type)
+  # load validation report data
+  rp_data <- pipload::load_gmd_valid_report()
 
   # ensure the validation report data is loaded
   stopifnot("Validation report data is not loaded" = !is.null(rp_data))
@@ -157,7 +152,6 @@ get_validation_list <- function(
 
 #' List of validation result by country and module type
 #'
-#' @inheritParams pipdata_load_report
 #' @param e_type Character. Validation result type, error/warning, defulat is `error`
 #' @param ctry Character. Country 3-digits ISO code, defualt is `NULL`
 #' @param by_year Logical. Defualt is `FALSE`. If `TRUE`, generates wide table by module types
@@ -177,12 +171,6 @@ get_validation_list <- function(
 #' )
 #' }
 get_validation_ctry <- function(
-    root_dir = Sys.getenv("PIP_ROOT_DIR"),
-    maindir = "PIP_ingestion_pipeline_v2/dlw_repository",
-    dlw_inv_folder = "dlw_inventory",
-    # release_lbl = NULL,
-    # release_idn = NULL,
-    report_type = "validation",
     e_type = c("error", "warning", "success"),
     ctry = NULL,
     by_year = FALSE,
@@ -190,12 +178,8 @@ get_validation_ctry <- function(
 
   e_type <- match.arg(e_type)
 
-  rp_data <- pipdata_load_report(root_dir,
-                             maindir,
-                             dlw_inv_folder,
-                             # release_lbl,
-                             # release_idn,
-                             report_type)
+  # load validation report data
+  rp_data <- pipload::load_gmd_valid_report()
 
   # ensure the validation report data is loaded
   stopifnot("Validation report data is not loaded" = !is.null(rp_data))
