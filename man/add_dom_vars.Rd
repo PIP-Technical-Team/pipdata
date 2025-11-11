@@ -2,7 +2,7 @@
 % Please edit documentation in R/pd_cpfw_merge.R
 \name{add_dom_vars}
 \alias{add_dom_vars}
-\title{Add Domain variables}
+\title{Add metadata variables to country/survey}
 \usage{
 add_dom_vars(dt, cpfw)
 }
@@ -13,8 +13,13 @@ add_dom_vars(dt, cpfw)
 }
 \value{
 data.table
+
+data.table
 }
 \description{
-Add Domain variables
+Add metadata variables to country/survey
 }
+\keyword{Add}
+\keyword{Domain}
 \keyword{internal}
+\keyword{variables}

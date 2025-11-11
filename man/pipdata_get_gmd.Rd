@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_get_gmd.R
 \name{pipdata_get_gmd}
 \alias{pipdata_get_gmd}
-\title{Get GMD catalog datasets and pinned them to local directory}
+\title{Retrieve and Pin GMD Catalog Datasets to a Local Directory}
 \usage{
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
@@ -12,20 +12,24 @@ pipdata_get_gmd(
 )
 }
 \arguments{
-\item{inv_gmd_list}{Character. Name of inventory file that contains GMD datasets list}
+\item{inv_gmd_list}{Character. The name of the inventory file containing the list of GMD datasets.}
 
-\item{log}{Logical. Keep the logging information. TRUE/FALSE default value is \code{TRUE}}
+\item{log}{Logical. Whether to keep logging information. Default is \code{TRUE}.}
 
-\item{save_log}{Logical. Save logging information. TRUE/FALSE default value is \code{TRUE}}
+\item{save_log}{Logical. Whether to save logging information to a file. Default is \code{TRUE}.}
 
-\item{check_missing}{Logical. Get missing data. TRUE/FALSE default value is \code{TRUE}}
+\item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
 }
 \value{
-data.table pinned in local folder
+A \code{data.table} object pinned in the local folder.
 }
 \description{
-This function gets GMD datasets, specifically "GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", and "L"
-and pinned the datasets in local directory.
+This wrapper function automates the process of managing GMD catalog datasets by performing the following tasks:
+\enumerate{
+\item Checks for new datasets in the GMD catalog using the inventory file (\code{dlw_gmd_inv}), which contains the current list of available GMD datasets.
+\item If new datasets are found (specifically \code{"GPWG"}, \code{"GROUP"}, \code{"BIN"}, \code{"HIST"}, \code{"ALL"}, \code{"ASPIRE"}, and \code{"L"}), downloads them using \code{dlw::dlw_get_gmd} and pins them to the local directory.
+\item Updates the inventory file (\code{dlw_gmd_inv}) with information about the newly downloaded datasets.
+}
 }
 \examples{
 \dontrun{
