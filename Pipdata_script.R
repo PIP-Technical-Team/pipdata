@@ -12,18 +12,6 @@ release <- "20250203"
 identity <- "TEST"
 pipfun::setup_working_release(release, identity, verbose = FALSE)
 
-# ----- Transform DLW from dta to qs --------
-
-dlw_dta_to_qs(dlw_raw_folder = "dlw_raw/folder_time1",
-              dlw_qs_folder  = "dlw_qs")
-
-# ----- Validate DLW -------
-
-dlw_scan_and_validate( dlw_qs_folder = "data/dlw_qs",
-                       pip_raw_folder = "data/pip_raw",
-                       pip_raw_inventory_path = "data/pip_raw_inventory.qs" )
-
-
 # ----- Load inventory to clean -----
 
 inv <- suppressMessages(pipload::load_gmd_valid_inv())
@@ -34,11 +22,14 @@ inv <- suppressMessages(pipload::load_gmd_valid_inv())
 dt_v <- as.POSIXct("2025-08-10", tz = "UTC") # The previous to last validation
 
 inv_to_clean  <- valid_dlw_load(inv = inv ,
-                                date_valid = dt_v)
+                                date_valid = dt_v,
+                                filter = "all") # It can be all, compare, random. Compare means compare to previous inventory
+
+BFA_inv <- inv_to_clean[inv_to_clean$country_code == "BFA",]
 
 #--------- Clean surveys and create metadata -----
 
-process_data <- pd_process_data(inv_to_clean = inv_to_clean)
+process_data <- pd_process_data(inv_to_clean = BFA_inv)
 
 #--------- Create or Update inventory---------
 
@@ -46,6 +37,8 @@ old_pip_inv <- pipload::load_pip_master_inventory()
 
 new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
                                     process_data = process_data)
+
+waldo::compare(old_pip_inv, new_pip_inv)
 
 
 

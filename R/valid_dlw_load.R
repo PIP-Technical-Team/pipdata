@@ -1,7 +1,8 @@
 valid_dlw_load <- function(inv,
                            aux_measures = c("pfw"),
                            seed = 1089,
-                           date_valid = .pipdataenv$date_valid) {
+                           date_valid = .pipdataenv$date_valid,
+                           filter = "compare") {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -28,7 +29,7 @@ valid_dlw_load <- function(inv,
 
   # Select valid surveys and compare to previous cleaning
 
-  inv_svy <- m_inv_valid(inv, filter = "compare") # For now is a mock function
+  inv_svy <- m_inv_valid(inv, filter = filter) # For now is a mock function
 
   # Bind with inventory from aux changes
 
