@@ -1,45 +1,49 @@
-#' Match GMD datasets from the server with the local inventory
+#' Get the list of current GMD datasets that match the local inventory
 #'
 #' @return A data.table of matched datasets, or NULL if no match found
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' dlw_gmd_match(inv_gmd_list = "dlw_gmd_inv")
+#' df <- dlw_gmd_match()
+#' head()
 #' }
-dlw_gmd_match <- function() {
+dlw_gmd_match <- \() {
 
-  # initialize working release and dlw inventory board
+  # initialize working release and dlw inventory working folder
   pipfun::get_wrk_release(verbose = FALSE)
-  dlw_inv_board  <- pipfun::get_pins_boards(board = "dlw_inventory")
+  pip_folders <- pipfun::get_pip_folders()
 
-  # check directory existence for inventory board
-  check_directory(dlw_inv_board)
+  dlw_inv <- pip_folders$dlw_inventory
+  stamp::st_init(dlw_inv)
+  
+  # check directory existence for inventory folder
+  check_directory(dlw_inv)  
 
-  # Step 1: Get current GMD catalog from server --------------------------------
-  gmd_cur_list <- dlw::dlw_server_catalog()
-
-  if (is.null(gmd_cur_list)) {
-    cli::cli_abort("Failed to download GMD current list from server.")
-  }
-
-  gmd_cur_list <- gmd_cur_list[
-    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
-  ]
-
-  # Step 2: Load local GMD inventory list --------------------------------------
-  inv_gmd <- tryCatch(
+  # Step 1: Load local GMD inventory list --------------------------------------
+  local_gmd_inv <- tryCatch(
     pipload::load_dlw_gmd_inventory(),
     error = function(e) {
       cli::cli_abort("Failed to read local GMD pin list.")
     }
   )
+  
+  # Step 2: Get current GMD catalog from server --------------------------------
+  current_gmd_list <- dlw::dlw_server_catalog()
+
+  if (is.null(current_gmd_list)) {
+    cli::cli_abort("Failed to download GMD current list from server.")
+  }
+
+  current_gmd_list <- current_gmd_list[
+    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
+  ]
 
   # Step 3: Compare lists ------------------------------------------------------
-  base_file_name <- names(inv_gmd)
+  base_file_name <- names(local_gmd_inv)
 
-  gmd_compare <- inv_gmd[data_available == "Yes", .(FileName, Checksum, data_available)] |>
-    joyn::inner_join(gmd_cur_list, by = c("FileName", "Checksum"))
+  gmd_compare <- local_gmd_inv[data_available == "Yes", .(FileName, Checksum, data_available)] |>
+    joyn::inner_join(current_gmd_list, by = c("FileName", "Checksum"))
 
   gmd_compare <- gmd_compare[, -c(".joyn")] |>
     setcolorder(base_file_name)
@@ -48,7 +52,7 @@ dlw_gmd_match <- function() {
 }
 
 
-#' Compare local and server GMD datasets to get new entries
+#' Compare the local GMD dataset with the server version to identify new entries.
 #'
 #' @param check_missing Logical. If TRUE, includes missing datasets from either side.
 #'
@@ -57,48 +61,52 @@ dlw_gmd_match <- function() {
 #'
 #' @examples
 #' \dontrun{
-#' dlw_gmd_new(inv_gmd_list = "dlw_gmd_inv")
+#' df <- dlw_gmd_new()
+#' head(df)
 #' }
 dlw_gmd_new <- function(check_missing = TRUE) {
 
-  # initialize working release and dlw inventory board
+   # initialize working release and dlw inventory working folder
   pipfun::get_wrk_release(verbose = FALSE)
-  dlw_inv_board  <- pipfun::get_pins_boards(board = "dlw_inventory")
+  pip_folders <- pipfun::get_pip_folders()
 
-  # check directory existence for inventory board
-  check_directory(dlw_inv_board)
+  dlw_inv <- pip_folders$dlw_inventory
+  stamp::st_init(dlw_inv)
+  
+  # check directory existence for inventory folder
+  check_directory(dlw_inv)  
 
-  # Step 1: Load current GMD server catalog -----------------------------------
-
-  gmd_cur_list <- dlw::dlw_server_catalog()
-  if (is.null(gmd_cur_list)) {
-    cli::cli_abort("Failed to download GMD current list from server.")
-  }
-
-  gmd_cur_list <- gmd_cur_list[
-    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
-  ]
-
-  # Step 2: Load local inventory pin (if available) ---------------------------
-  inv_gmd <- tryCatch(
+  # Step 1: Load local GMD inventory list --------------------------------------
+  local_gmd_inv <- tryCatch(
     pipload::load_dlw_gmd_inventory(),
     error = function(e) {
       cli::cli_abort("Failed to read local GMD pin list.")
     }
   )
+  
+  # Step 2: Get current GMD catalog from server --------------------------------
+  current_gmd_list <- dlw::dlw_server_catalog()
+
+  if (is.null(current_gmd_list)) {
+    cli::cli_abort("Failed to download GMD current list from server.")
+  }
+
+  current_gmd_list <- current_gmd_list[
+    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
+  ]
 
   # Step 3: Compare the lists -------------------------------------------------
-  base_file_name <- names(gmd_cur_list)
+  base_file_name <- names(current_gmd_list)
 
   gmd_compare <- if (check_missing) {
 
-    inv_gmd[data_available == "Yes", .(FileName, Checksum, data_available)] |>
-      joyn::full_join(gmd_cur_list, by = c("FileName", "Checksum"))
+    local_gmd_inv[data_available == "Yes", .(FileName, Checksum, data_available)] |>
+      joyn::full_join(current_gmd_list, by = c("FileName", "Checksum"))
 
   } else {
 
-    inv_gmd[, .(FileName, Checksum, data_available)] |>
-      joyn::full_join(gmd_cur_list, by = c("FileName", "Checksum"))
+    local_gmd_inv[, .(FileName, Checksum, data_available)] |>
+      joyn::full_join(current_gmd_list, by = c("FileName", "Checksum"))
   }
 
   # keep only new (non-matching) entries from server
@@ -117,22 +125,33 @@ dlw_gmd_new <- function(check_missing = TRUE) {
 #'
 #' @examples
 #' \dontrun{
-#' gmd_inv_new()
+#' df <- gmd_inv_new()
+#' head(df)
 #' }
 gmd_inv_new <- function(check_missing = TRUE) {
 
-  # initialize working release and dlw inventory board
+  # initialize working release and working folder
   pipfun::get_wrk_release(verbose = FALSE)
-  dlw_inv_board  <- pipfun::get_pins_boards(board = "dlw_inventory")
-  dlw_meta_board <- pipfun::get_pins_boards(board = "dlw_metadata")
+  pip_folders <- pipfun::get_pip_folders()
 
-  # check directory existence of inventory and metadata board
-  check_directory(dlw_inv_board)
-  check_directory(dlw_meta_board)
+  dlw_inv <- pip_folders$dlw_inventory
+  dlw_meta <- pip_folders$dlw_metadata
+  
+ 
+  # check directory existence 
+  check_directory(dlw_inv)
+  check_directory(dlw_meta)
 
-  # Step 1: Load local inventory pin (if available) ---------------------------
+  # Step 1: Load local GMD inventory list --------------------------------------
+  stamp::st_init(dlw_inv)
 
-  gmd_inv <- tryCatch(
+  # correct file existence check
+  gmd_inv_file <- fs::path(dlw_inv, "dlw_gmd_inv.qs2")
+  if (!fs::is_file(gmd_inv_file)) {
+    cli::cli_abort("GMD datasets inventory file does not exist in dlw_inventory folder.")
+  }
+
+  local_gmd_inv <- tryCatch(
     pipload::load_dlw_gmd_inventory(),
     error = function(e) {
       cli::cli_abort("Failed to read local GMD pin list.")
@@ -140,36 +159,54 @@ gmd_inv_new <- function(check_missing = TRUE) {
   )
 
   # Step 2: Load GMD validation inventory pin (if available) -------------------
+  stamp::st_init(dlw_meta)
 
-  valid_inv <- tryCatch(
+  # correct file existence check
+  valid_inv_file <- fs::path(dlw_meta, "gmd_valid_inv.qs2")
+  if (!fs::is_file(valid_inv_file)) {
+
+    return(local_gmd_inv)
+
+    cli::cli_abort("GMD validation inventory file does not exist in dlw_metadata folder.")
+  }
+
+ valid_inv <- tryCatch(
     pipload::load_gmd_valid_inv(),
     error = function(e) {
-      cli::cli_abort("Failed to read validation inventory pin list.")
+      cli::cli_abort("Failed to read validation inventory data.")
     }
   )
 
-  # Step 3: Compare the GMD pin and validation pin lists -----------------------
+  # Step 3: Compare the GMD and validation inventory lists -----------------------
+  # Make survey_id end in `.dta`
+  valid_inv[, survey_id := fs::path_ext_set(survey_id, "dta")]
+  valid_inv <- valid_inv[data_available == "Yes",
+    .(FileName = as.character(survey_id), Checksum, data_available)]
 
-  valid_inv <-
-    valid_inv[, survey_id := as.character(fs::path(survey_id, ext = "dta"))][, .(survey_id, Checksum, data_available) ] |>
-    setnames("survey_id", "FileName")
+  # valid_inv <-
+    # valid_inv[, survey_id := as.character(fs::path(survey_id, ext = "dta"))][, .(survey_id, Checksum, data_available) ] |>
+    # setnames("survey_id", "FileName")
 
-  gmd_inv <- gmd_inv[data_available == "Yes", ]
+  local_gmd_inv <- local_gmd_inv[data_available == "Yes", ]
 
-  gmd_new <- if (check_missing) {
-
-    valid_inv[data_available == "Yes", .(FileName, Checksum)] |>
-      joyn::full_join(gmd_inv, by = c("FileName", "Checksum"))
-
+  # Build comparison table
+  if (check_missing) {
+    gmd_new <- joyn::full_join(
+      valid_inv[data_available == "Yes", .(FileName, Checksum)],
+      local_gmd_inv,
+      by = c("FileName", "Checksum")
+    )
   } else {
-
-    valid_inv[, .(FileName, Checksum)] |>
-      joyn::full_join(gmd_inv, by = c("FileName", "Checksum"))
+    gmd_new <- joyn::full_join(
+      valid_inv[, .(FileName, Checksum)],
+      local_gmd_inv,
+      by = c("FileName", "Checksum")
+    )
   }
 
   # keep only new (non-matching) entries from GMD pin list
-  gmd_new <- gmd_new[`.joyn` == "y", !c(".joyn")]
-
+  # gmd_new <- gmd_new[`.joyn` == "y", !c(".joyn")]
+  gmd_new <- gmd_new[.joyn == "y"][, .joyn := NULL]
   return(gmd_new)
 }
 
@@ -201,4 +238,50 @@ get_pin_list <- function() {
   return(dlw_pin_list)
 }
 
+#' Retrieve a List of GMD datasets from the Server
+#'
+#' This function fetches a list of GMD datasets from the server, 
+#' filters them based on Module and file extension.
+#'
+#' @inheritParams pipdata_get_gmd
+#' 
+#' @return A data table containing the list of GMD datasets.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' gmd_list <- dlw_gen_gmd_list()
+#' head(gmd_list)
+#' }
+dlw_gen_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv"){
 
+  # Step 1: Get current GMD catalog from server --------------------------------
+  gmd_list <- dlw::dlw_server_catalog()
+
+  if (is.null(gmd_list)) {
+    cli::cli_abort("Failed to download GMD current list from server.")
+  }
+
+  # Add data_available column and assign "No" to all entries
+  # gmd_list[, data_available := "No"]
+
+  # Filter for specific modules and file extension
+  gmd_list <- gmd_list[
+    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
+  ]
+
+  # Save the gmd_list in the local dlw_inventory folder
+  pipfun::get_wrk_release(verbose = FALSE)
+  pip_folders <- pipfun::get_pip_folders()
+  dlw_inv  <- pip_folders$dlw_inventory
+
+  check_directory(dlw_inv)
+
+  stamp::st_init(dlw_inv)
+
+  pipload::pip_write(x = gmd_list,
+    id = inv_gmd_list,
+    dir = dlw_inv,
+    format  = "qs2")
+
+}

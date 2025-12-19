@@ -67,10 +67,17 @@ pipdata_get_gmd <- function(
 
   cli::cli_alert_info("Working folder: {.dir {dlw_data}}")
 
-  cli::cli_progress_bar("Downloading .qs", total = nrow(inv_gmd))
+  cli::cli_progress_bar("Downloading GMD files", 
+          total = nrow(inv_gmd))
 
   inv_gmd$data_available <- NA
-  inv_gmd <- inv_gmd[c(1:4),]
+  # inv_gmd <- inv_gmd[c(1:4),]
+  
+  # ctry_partial <- c("BOL","CHN", "NGA", "IND", "IDN", "COL", "PHL", "ARG", "LUX", "FRA")
+  ctry_partial <- c("AFG")
+  module_partial <- c("ALL", "GROUP", "HIST", "GPWG", "BIN")
+  inv_gmd <- inv_gmd[(Country %in% ctry_partial & Module %in% module_partial), ]
+
   for (i in seq_along(1:nrow(inv_gmd))){
 
     # extract relevant information for the current row to get the data
@@ -119,11 +126,8 @@ pipdata_get_gmd <- function(
                           logmeta = list(error = e))
         }
 
-
         cli::cli_inform(msg)
-
         inv_gmd$data_available[i] <- "No"
-
       }
     )
 
@@ -168,7 +172,7 @@ pipdata_get_gmd <- function(
 
   if (save_log & log) {
 
-    pipfun::log_save(name = "pipdata_log", board = dlw_inv_board, pin_name = "dlw_gmd_log")
+    pipfun::log_save(name = "pipdata_log", dir = dlw_inv, id = "dlw_gmd_log")
 
     pipfun::log_add("info", "logging file is saved",
                     name = "pipdata_log",
