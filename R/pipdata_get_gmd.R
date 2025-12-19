@@ -16,7 +16,7 @@
 #' @param save_log Logical. Whether to save logging information to a file. Default is `TRUE`.
 #' @param check_missing Logical. Whether to check for and retrieve missing data. Default is `TRUE`.
 #'
-#' @return A `data.table` object pinned in the local folder.
+#' @return A `data.table` object saved in the local folder.
 #' @export
 #'
 #' @examples
@@ -58,13 +58,11 @@ pipdata_get_gmd <- function(
   ### -------------------------------------------------------------------------
 
   # 1) check if there is any new GMD datasets
-
   inv_gmd <- dlw_gmd_new(check_missing = check_missing)
 
   if (is.null(inv_gmd) || nrow(inv_gmd) == 0) cli::cli_abort("There is no new data on GMD catalog")
 
   # 2) get the data from GMD catalog and pin to local folder -------------------
-
   cli::cli_alert_info("Working folder: {.dir {dlw_data}}")
 
   cli::cli_progress_bar("Downloading GMD files", 
@@ -140,7 +138,6 @@ pipdata_get_gmd <- function(
   inv_gmd$data_available[is.na(inv_gmd$data_available)] <- "No"
 
   # 3) save the GMD list -------------------------------------------------------
-
   # get list of datasets already saved in the local folder
   inv_gmd_match <- dlw_gmd_match()
 
@@ -150,9 +147,6 @@ pipdata_get_gmd <- function(
   }
 
   stamp::st_init(dlw_inv)
-  # dlw_inv |>
-    # pipload::pip_write(inv_gmd, inv_gmd_list)
-
   pipload::pip_write(x = inv_gmd,
     id = inv_gmd_list,
     dir = dlw_inv,
@@ -169,7 +163,6 @@ pipdata_get_gmd <- function(
   }
 
   # 4) save the logging file ---------------------------------------------------
-
   if (save_log & log) {
 
     pipfun::log_save(name = "pipdata_log", dir = dlw_inv, id = "dlw_gmd_log")

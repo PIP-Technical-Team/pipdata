@@ -39,14 +39,13 @@ pipdata_validate_gmd <- function(
   dlw_inv  <- pip_folders$dlw_inventory
   dlw_meta <- pip_folders$dlw_metadata
 
-    # check directory existence for working folders
+  # check directory existence for working folders
   check_directory(dlw_data)
   check_directory(dlw_inv)
   check_directory(dlw_meta)
 
   ### -------------------------------------------------------------------------
   # 1) get list of local gmd datasets that are not yet validated
-
   gmd_new <- gmd_inv_new()
 
   if (is.null(gmd_new) || nrow(gmd_new) == 0){
@@ -101,7 +100,6 @@ pipdata_validate_gmd <- function(
   }
 
   # 4) validate gmd local datasets ---------------------------------------------
-
   cli::cli_alert_info("Location of GMD data: {.dir {dlw_data}}")
 
   all_names <- unique(gmd_new$FileName)
@@ -148,8 +146,6 @@ pipdata_validate_gmd <- function(
         id= file_id,
         dir = dlw_data)
 
-      # pipload::load_dlw_data(id = inv_pin_name, dir = dlw_data)
-
       }, error = function(e) {
         
         msg <- glue::glue('Could not load data from GMD data folder.')
@@ -166,8 +162,6 @@ pipdata_validate_gmd <- function(
     if (!is.null(out)) {
 
       version_info <- stamp::st_info(fs::path(dlw_data, file_id, ext = "qs2"))
-
-      # versions <- pins::pin_versions(dlw_data_board, inv_pin_name)
 
       # Validate the data using the appropriate function
       check <- if (md_type %in% names(validation_functions)) {
@@ -221,7 +215,7 @@ pipdata_validate_gmd <- function(
         pipeline_version  = pipeline_version,
         latest_version_id = "",
         content_hash      = "",
-        # file_path         = "",
+        file_path         = "",
         status            = "",
         data_available    = "No",
         date_validated    = Sys.time(),
@@ -275,12 +269,6 @@ pipdata_validate_gmd <- function(
 
   } else {
 
-    # dlw_meta_board |>
-      # pins::pin_write(final_inv, "gmd_valid_inv", type = "qs")
-      # pipload::pip_write(final_inv, "gmd_valid_inv")
-
-    # stamp::st_init(dlw_meta)
-
     pipload::pip_write(x = final_inv,
       id = "gmd_valid_inv",
       dir = dlw_meta,
@@ -299,7 +287,6 @@ pipdata_validate_gmd <- function(
 
 
   # 6. save validation report file in DLW inventory folder ---------------------
-
   # generate validation report
   valid_report <- get_validation_report()
 
@@ -318,7 +305,6 @@ pipdata_validate_gmd <- function(
 
     # survey names in validation data
     valid_all_names <- unique(valid_report$table_name)
-    # stamp::st_init(dlw_meta)
     old_valid_report <- tryCatch(
       pipload::load_gmd_valid_report(),
       error = function(e) {
@@ -342,11 +328,6 @@ pipdata_validate_gmd <- function(
 
     }
 
-    # dlw_meta_board |>
-      # pins::pin_write(valid_report, "validation_report", type = "qs")
-      # pipload::pip_write(valid_report, "validation_report")
-
-    # stamp::st_init(dlw_meta)
     pipload::pip_write(x = valid_report,
       id = "validation_report",
       dir = dlw_meta,
@@ -363,9 +344,7 @@ pipdata_validate_gmd <- function(
   }
 
   # 7. save logging file in DLW metadaa folder---------------------------------
-
   if (save_log && log) {
-    # stamp::st_init(dlw_meta)
     pipfun::log_save(name = "pipdata_log", dir = dlw_meta, id = "dlw_validation_log")
 
     pipfun::log_add("info", "logging file is saved",
