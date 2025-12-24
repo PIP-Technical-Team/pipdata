@@ -1,82 +1,82 @@
 inv_dlw_load <- function(inv) {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Load survey files
 
-  dt <- pipload::load_dlw_data(pin_name = inv$pins_folder, verbose = FALSE)
+  # dt <- pipload::load_dlw_data(pin_name = inv$pins_folder, verbose = FALSE)
+
+  # Small fix for loading Tefera's files
+  pip_folders <- pipfun::get_pip_folders()
+
+  dt <- qs::qread(fs::path(
+    pip_folders$dlw_data,
+    inv$survey_id,
+    ext = "qs2"
+  ))
 
   # Add data from inventory to attributes of data table and add pip class
 
-  dt <- data_to_dt(dt,inv$survey_id)
+  dt <- data_to_dt(dt, inv$survey_id)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
-
 }
 
 data_to_dt <- function(dt, survey_id) {
+  #--------- defenses --------------------------
 
+  if (!is.data.table(dt)) {
+    dt <- data.table::as.data.table(dt)
+  }
 
-      #--------- defenses --------------------------
+  #--------- leaving just the 'label' attribute ---------
 
-      if(!is.data.table(dt)){
-        dt <- data.table::as.data.table(dt)
-      }
+  dt <- only_labels(dt)
 
-      #--------- leaving just the 'label' attribute ---------
+  #--------- Survey ID and its components ---------
 
-      dt <- only_labels(dt)
+  dt <- survey_id_to_attr(dt, survey_id)
 
-      #--------- Survey ID and its components ---------
+  #--------- Add class ---------
 
-      dt <- survey_id_to_attr(dt, survey_id)
+  dt <- pipload::as_pip(dt)
 
-      #--------- Add class ---------
+  # Temporary fix
 
-      dt <- pipload::as_pip(dt)
-
-      # Temporary fix
-
-      dt[,
-         module := NULL
-      ]
+  dt[,
+    module := NULL
+  ]
 
   return(dt)
 }
 
 only_labels <- function(dt) {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  nn  <- names(dt)
+  nn <- names(dt)
 
   for (j in seq_along(nn)) {
-
-    ats       <- attributes(dt[[j]])
-    atsn      <- names(ats)
+    ats <- attributes(dt[[j]])
+    atsn <- names(ats)
     to_remove <- atsn[!grepl("label", atsn)]
 
     for (i in seq_along(to_remove)) {
       attr(dt[[j]], to_remove[i]) <- NULL
     }
-
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
-
 }
 
 survey_id_to_attr <- function(dt, survey_id) {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,49 +97,51 @@ survey_id_to_attr <- function(dt, survey_id) {
       "module"
     )
 
-  svy_id_attr <- tstrsplit(survey_id, "_",
-                           fixed=TRUE, names = cnames)
+  svy_id_attr <- tstrsplit(survey_id, "_", fixed = TRUE, names = cnames)
 
-  attributes(dt)      <- c(attributes(dt), svy_id_attr)
+  attributes(dt) <- c(attributes(dt), svy_id_attr)
 
-  attr(dt, "tool")    <- ifelse(attributes(dt)$module == "ALL", "TB", "PC")
+  attr(dt, "tool") <- ifelse(attributes(dt)$module == "ALL", "TB", "PC")
   attr(dt, "vermast") <- tolower(attributes(dt)$vermast)
-  attr(dt, "veralt")  <- tolower(attributes(dt)$veralt)
+  attr(dt, "veralt") <- tolower(attributes(dt)$veralt)
   attr(dt, "surveyid_year") <- as.numeric(attributes(dt)$surveyid_year)
-  attr(dt, "M")       <- NULL
-  attr(dt, "A")       <- NULL
+  attr(dt, "M") <- NULL
+  attr(dt, "A") <- NULL
   attr(dt, "survey_id") <- survey_id
 
   # Add gd_type
 
-  if("gd_type" %in% names(dt)){
-
+  if ("gd_type" %in% names(dt)) {
     attr(dt, "gd_type") <- collapse::funique(dt$gd_type)
-
   }
 
   # Check year and surveyid_year is the same
 
-  if("year" %in% names(dt)){
-
+  if ("year" %in% names(dt)) {
     year <- unique(dt$year)
     year <- purrr::discard(year, is.na)
     surveyid_year <- attributes(dt)$surveyid_year
 
-    if(surveyid_year!=year){
-
-      rlang::abort("Year variables in DLW survey different from survey_id year in inventory.
+    if (surveyid_year != year) {
+      rlang::abort(
+        "Year variables in DLW survey different from survey_id year in inventory.
                      {cli::col_blue('Surveyid_year added to attributes')}",
-                   class = c("piperr","yr_wrng"),
-                   use_cli_format = TRUE)
-
+        class = c("piperr", "yr_wrng"),
+        use_cli_format = TRUE
+      )
     }
   }
 
   # Remove variables
 
-  fnames <- c(grep("^(welf|weight|subnatid|edu)", names(dt), value = TRUE),
-              "urban","area","age","male","literacy")
+  fnames <- c(
+    grep("^(welf|weight|subnatid|edu)", names(dt), value = TRUE),
+    "urban",
+    "area",
+    "age",
+    "male",
+    "literacy"
+  )
 
   to_keep <- names(dt)[names(dt) %in% fnames]
 
@@ -155,5 +157,4 @@ survey_id_to_attr <- function(dt, survey_id) {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
-
 }

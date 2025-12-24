@@ -8,39 +8,51 @@ metapip::update_pip_packages()
 library(devtools)
 load_all()
 
-release <- "20250203"
+release <- "20251211"
 identity <- "TEST"
-pipfun::setup_working_release(release, identity, verbose = FALSE)
+
+# Create a New PIP Release (NPR)
+# pipfun::new_pip_release(release = release,
+#                        identity = identity,
+#                        root_dir = Sys.getenv("PIP_ROOT_DIR"))
+
+# wrkrl <- pipfun::get_latest_pip_release()
+wrkrl <- pipfun::setup_working_release(release, identity)
 
 # ----- Load inventory to clean -----
 
-inv <- suppressMessages(pipload::load_gmd_valid_inv())
+# inv <- pipload::load_gmd_valid_inv()
+
+# binv <- pipfun::get_pip_folders(folder = "dlw_metadata")
+# inv <- pipload::pip_read("gmd_valid_inv", dir = binv, format = "qs")
+
+inv <- qs::qread(
+  "//w1wbgencifs01/pip/PIP_ingestion_pipeline_v2/dlw_repository/dlw_metadata/20251211_TEST/gmd_valid_inv.qs2"
+)
 
 # ------- Filter valid inventory until specific date ---------
-# dt_v <- date_valid(inv, 3)
 
-dt_v <- as.POSIXct("2025-08-10", tz = "UTC") # The previous to last validation
+# inv_to_clean <- valid_dlw_load(inv = inv, filter = "all") # It can be all, compare, random. Compare means compare to previous inventory
 
-inv_to_clean  <- valid_dlw_load(inv = inv ,
-                                date_valid = dt_v,
-                                filter = "all") # It can be all, compare, random. Compare means compare to previous inventory
+inv <- as.data.table(inv)
+inv_to_clean <- inv[status == "valid"]
 
-BFA_inv <- inv_to_clean[inv_to_clean$country_code == "BFA",]
+COL_inv <- inv_to_clean[country_code == "COL", ]
 
 #--------- Clean surveys and create metadata -----
 
-process_data <- pd_process_data(inv_to_clean = BFA_inv)
+process_data <- pd_process_data(inv_to_clean = COL_inv)
 
 #--------- Create or Update inventory---------
 
-old_pip_inv <- pipload::load_pip_master_inventory()
+# old_pip_inv <- pipload::load_pip_master_inventory()
 
-new_pip_inv <- update_pip_inventory(inv_to_clean = inv_to_clean,
-                                    process_data = process_data)
+new_pip_inv <- update_pip_inventory(
+  inv_to_clean = inv_to_clean,
+  process_data = process_data
+)
 
 waldo::compare(old_pip_inv, new_pip_inv)
-
-
 
 # board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
 # tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")
@@ -51,7 +63,6 @@ waldo::compare(old_pip_inv, new_pip_inv)
 # pipfun::log_filter(name = "pipdata_log")
 # pipfun::log_save(name = "pipdata_log", path = "log.qs")
 # log <- qs::qread("log.qs")
-
 
 #------ Load data tests -----
 #

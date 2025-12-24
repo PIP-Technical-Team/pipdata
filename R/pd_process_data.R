@@ -1,18 +1,14 @@
 pd_process_data <- function(inv_to_clean) {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load PFW
-  pfw  <- pipload::pip_load_aux("pfw", verbose = FALSE)
+  pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
 
   # Process data
-  inv_ls <- split(inv_to_clean,
-                  seq_len(nrow(inv_to_clean)))
+  inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
 
-  results <- purrr::map(inv_ls,
-                        process_data,
-                        pfw = pfw)
+  results <- purrr::map(inv_ls, process_data, pfw = pfw)
 
   names(results) <- inv_to_clean$survey_id
 
@@ -20,7 +16,6 @@ pd_process_data <- function(inv_to_clean) {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(results)
-
 }
 
 #' Process datalibweb data: merge PFW data and clean variables
@@ -36,33 +31,28 @@ pd_process_data <- function(inv_to_clean) {
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
 #'
-#' pfw <- pipload::pip_load_aux("pfw")
+#' pfw <- pipload::load_aux_data("pfw")
 #'
-#' gd  <- pipload::pip_load_dlw("CHN", 2015)
+#' gd  <- pipload::load_aux_data("CHN", 2015)
 #' gd  <- pipdata:::m_svy_id_to_att(gd)
 #' process_data(gd, pfw)
 #'
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+#' md   <- pipload::load_aux_data(country = "PRY", 2012)
 #' md  <- pipdata:::m_svy_id_to_att(md)
 #' process_data(md, pfw)
 process_data <- function(inv, pfw, ...) {
-
   # on.exit ------------
   on.exit({
-    rm(survey_id,
-       envir = .pipdataenv)
+    rm(survey_id, envir = .pipdataenv)
   })
 
   svy <- inv$survey_id
 
-  assign("survey_id",
-         svy,
-         envir = .pipdataenv)
+  assign("survey_id", svy, envir = .pipdataenv)
 
   # Computations -------
   res <- tryCatch(
     expr = {
-
       # Load file
       df <- inv_dlw_load(inv)
 
@@ -81,54 +71,54 @@ process_data <- function(inv, pfw, ...) {
 
       metadata <- pd_aux_attr(clean_data = ls_clean)
 
-
       # Save clean data and metadata
-      versions_data <- save_pip_data(ls_clean,
-                                     board = "pip_data")
+      versions_data <- save_pip_data(ls_clean, dir = "pip_data")
 
-      versions_metadata <- save_pip_data(metadata,
-                                         board = "pip_metadata")
+      versions_metadata <- save_pip_data(metadata, dir = "pip_metadata")
 
       # Results
-      list(pip_names = names(ls_clean),
-           versions_data = versions_data,
-           versions_metadata = versions_metadata)
-
+      list(
+        pip_names = names(ls_clean),
+        versions_data = versions_data,
+        versions_metadata = versions_metadata
+      )
     },
-    piperr = function(cnd){
-
+    piperr = function(cnd) {
       survey_id <- c(.pipdataenv$survey_id)
 
-      pipfun::log_add(event = "error",
-                      message = cnd$message,
-                      name = "pipdata_log",
-                      .trace = cnd$call,
-                      logmeta = list(error = class(cnd)[2],
-                                     survey = survey_id,
-                                     status = "The survey was skipped"))
+      pipfun::log_add(
+        event = "error",
+        message = cnd$message,
+        name = "pipdata_log",
+        .trace = cnd$call,
+        logmeta = list(
+          error = class(cnd)[2],
+          survey = survey_id,
+          status = "The survey was skipped"
+        )
+      )
 
       NULL
-
     },
 
-    error = function(cnd){
-
+    error = function(cnd) {
       survey_id <- c(.pipdataenv$survey_id)
 
-      pipfun::log_add(event = "error",
-                      message = cnd$message,
-                      name = "pipdata_log",
-                      .trace = cnd$call,
-                      logmeta = list(error = "unknown_error",
-                                     survey = survey_id,
-                                     status = "The survey was skipped"))
+      pipfun::log_add(
+        event = "error",
+        message = cnd$message,
+        name = "pipdata_log",
+        .trace = cnd$call,
+        logmeta = list(
+          error = "unknown_error",
+          survey = survey_id,
+          status = "The survey was skipped"
+        )
+      )
 
       NULL
-
     }
   )
 
   return(res)
-
-
 }

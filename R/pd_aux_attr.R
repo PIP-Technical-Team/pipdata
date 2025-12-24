@@ -1,116 +1,98 @@
-pd_aux_attr <- function(clean_data,
-                        aux_measures = c("cpi","ppp","pop","gdp","pce")) {
-
+pd_aux_attr <- function(
+  clean_data,
+  aux_measures = c("cpi", "ppp", "pop", "gdp", "pce")
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Add attributes already in surveys
 
-  aux_attr <- collapse::rapply2d(clean_data,\(x){
-
-      ls <- attributes(x)
-      ls[!names(ls) %in% c("row.names", "notes")]
-
-    })
+  aux_attr <- collapse::rapply2d(clean_data, \(x) {
+    ls <- attributes(x)
+    ls[!names(ls) %in% c("row.names", "notes")]
+  })
 
   # Add aux data as attributes
 
   ## CPI
 
-  if("cpi" %in% aux_measures){
-
-    cpi  <- pipload::pip_load_aux("cpi", verbose = FALSE)
+  if ("cpi" %in% aux_measures) {
+    cpi <- pipload::load_aux_data("cpi", verbose = FALSE)
     keys <- attributes(cpi)$aux_key
 
-    aux_attr <- lapply(aux_attr, add_cpi_attr,
-                       cpi = cpi, keys = keys)
-
+    aux_attr <- lapply(aux_attr, add_cpi_attr, cpi = cpi, keys = keys)
   }
 
   ## PPP
 
-  if("ppp" %in% aux_measures){
+  # if ("ppp" %in% aux_measures) {
+  #   ppp <- pipload::load_aux_data("ppp", verbose = FALSE)
+  #   keys <- attributes(ppp)$aux_key
 
-    ppp  <- pipload::pip_load_aux("ppp", verbose = FALSE)
-    keys <- attributes(ppp)$aux_key
-
-    aux_attr <- lapply(aux_attr, add_ppp_attr,
-                       ppp = ppp, keys = keys)
-  }
+  #   aux_attr <- lapply(aux_attr, add_ppp_attr, ppp = ppp, keys = keys)
+  # }
 
   # Set base years in Deflation function
 
-
   ## POP
 
-
-  if("pop" %in% aux_measures){
-
-    pop  <- pipload::pip_load_aux("pop", verbose = FALSE)
+  if ("pop" %in% aux_measures) {
+    pop <- pipload::load_aux_data("pop", verbose = FALSE)
     keys <- attributes(pop)$aux_key
 
-    aux_attr <- lapply(aux_attr, add_pop_attr,
-                       pop = pop, keys = keys)
+    aux_attr <- lapply(aux_attr, add_pop_attr, pop = pop, keys = keys)
   }
 
   ## GDP
 
-  if("gdp" %in% aux_measures){
-
-    gdp  <- pipload::pip_load_aux("gdp", verbose = FALSE)
+  if ("gdp" %in% aux_measures) {
+    gdp <- pipload::load_aux_data("gdp", verbose = FALSE)
     keys <- attributes(gdp)$aux_key
 
-    aux_attr <- lapply(aux_attr, add_gdp_attr,
-                       gdp = gdp, keys = keys)
+    aux_attr <- lapply(aux_attr, add_gdp_attr, gdp = gdp, keys = keys)
   }
-
 
   ## PCE
 
-
-  if("pce" %in% aux_measures){
-
-    pce  <- pipload::pip_load_aux("pce", verbose = FALSE)
+  if ("pce" %in% aux_measures) {
+    pce <- pipload::load_aux_data("pce", verbose = FALSE)
     keys <- attributes(pce)$aux_key
 
-    aux_attr <- lapply(aux_attr, add_pce_attr,
-                       pce = pce, keys = keys)
+    aux_attr <- lapply(aux_attr, add_pce_attr, pce = pce, keys = keys)
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(aux_attr)
-
 }
 
-add_cpi_attr <- function(ls,
-                         cpi,
-                         keys) {
-
+add_cpi_attr <- function(ls, cpi, keys) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Find the keys in survey
-  if("year" %in% keys){
+  if ("year" %in% keys) {
     keys <- c(keys, "surveyid_year")
   }
 
   id <- ls[names(ls) %in% keys]
 
   # Fix reporting  (Temporal)
-  if("reporting_level" %in% names(ls)){
+  if ("reporting_level" %in% names(ls)) {
     id$reporting_level <- ls$cpi_data_level
   }
 
   # Filter survey cpi
-  filtered_cpi <- cpi|>
-    collapse::fsubset(country_code == id$country_code &
-                        year == id$surveyid_year &
-                        survey_acronym == id$survey_acronym &
-                        reporting_level == id$reporting_level)
+  filtered_cpi <- cpi |>
+    collapse::fsubset(
+      country_code == id$country_code &
+        year == id$surveyid_year &
+        survey_acronym == id$survey_acronym &
+        reporting_level == id$reporting_level
+    )
 
   # Create attributes
   cpi_attr <- filtered_cpi$cpi_value
@@ -123,13 +105,9 @@ add_cpi_attr <- function(ls,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(ls)
-
 }
 
-add_ppp_attr <- function(ls,
-                         ppp,
-                         keys) {
-
+add_ppp_attr <- function(ls, ppp, keys) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,22 +115,31 @@ add_ppp_attr <- function(ls,
   id <- ls[names(ls) %in% keys]
 
   # Fix reporting  (Temporal)
-  if("reporting_level" %in% names(ls)){
+  if ("reporting_level" %in% names(ls)) {
     id$reporting_level <- ls$ppp_data_level
   }
 
   # Add ppp_version
   ppp[,
-      ppp_version := {
-        x <- paste0("ppp_", ppp_year, "_", release_version, "_", adaptation_version)
-        x <- gsub("_v", "_0", x )
-      }
+    ppp_version := {
+      x <- paste0(
+        "ppp_",
+        ppp_year,
+        "_",
+        release_version,
+        "_",
+        adaptation_version
+      )
+      x <- gsub("_v", "_0", x)
+    }
   ]
 
   # Filter survey ppp
-  filtered_ppp <- ppp|>
-    collapse::fsubset(country_code == id$country_code &
-                      reporting_level == id$reporting_level)
+  filtered_ppp <- ppp |>
+    collapse::fsubset(
+      country_code == id$country_code &
+        reporting_level == id$reporting_level
+    )
 
   # Create attributes
   ppp_attr <- filtered_ppp$ppp
@@ -165,18 +152,14 @@ add_ppp_attr <- function(ls,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(ls)
-
 }
 
-add_pop_attr <- function(ls,
-                         pop,
-                         keys) {
-
+add_pop_attr <- function(ls, pop, keys) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Find the keys in survey
-  if("year" %in% keys){
+  if ("year" %in% keys) {
     keys <- c(keys, "surveyid_year")
   }
 
@@ -184,16 +167,17 @@ add_pop_attr <- function(ls,
   id <- ls[names(ls) %in% keys]
 
   # Fix reporting  (Temporal)
-  if("reporting_level" %in% names(ls)){
+  if ("reporting_level" %in% names(ls)) {
     id$reporting_level <- ls$pop_data_level
   }
 
-
   # Filter survey pop
-  filtered_pop <- pop|>
-    collapse::fsubset(country_code == id$country_code &
-                        year == id$surveyid_year &
-                        reporting_level == id$reporting_level)
+  filtered_pop <- pop |>
+    collapse::fsubset(
+      country_code == id$country_code &
+        year == id$surveyid_year &
+        reporting_level == id$reporting_level
+    )
 
   # Create attributes
   pop_attr <- filtered_pop$pop
@@ -206,18 +190,14 @@ add_pop_attr <- function(ls,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(ls)
-
 }
 
-add_gdp_attr <- function(ls,
-                         gdp,
-                         keys) {
-
+add_gdp_attr <- function(ls, gdp, keys) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Find the keys in survey
-  if("year" %in% keys){
+  if ("year" %in% keys) {
     keys <- c(keys, "surveyid_year")
   }
 
@@ -225,15 +205,17 @@ add_gdp_attr <- function(ls,
   id <- ls[names(ls) %in% keys]
 
   # Fix reporting  (Temporal)
-  if("reporting_level" %in% names(ls)){
+  if ("reporting_level" %in% names(ls)) {
     id$reporting_level <- ls$gdp_data_level
   }
 
   # Filter survey gdp
-  filtered_gdp <- gdp|>
-    collapse::fsubset(country_code == id$country_code &
-                        year == id$surveyid_year &
-                        reporting_level == id$reporting_level)
+  filtered_gdp <- gdp |>
+    collapse::fsubset(
+      country_code == id$country_code &
+        year == id$surveyid_year &
+        reporting_level == id$reporting_level
+    )
 
   # Create attributes
   gdp_attr <- filtered_gdp$gdp
@@ -246,18 +228,14 @@ add_gdp_attr <- function(ls,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(ls)
-
 }
 
-add_pce_attr <- function(ls,
-                         pce,
-                         keys) {
-
+add_pce_attr <- function(ls, pce, keys) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Find the keys in survey
-  if("year" %in% keys){
+  if ("year" %in% keys) {
     keys <- c(keys, "surveyid_year")
   }
 
@@ -265,15 +243,17 @@ add_pce_attr <- function(ls,
   id <- ls[names(ls) %in% keys]
 
   # Fix reporting  (Temporal)
-  if("reporting_level" %in% names(ls)){
+  if ("reporting_level" %in% names(ls)) {
     id$reporting_level <- ls$gdp_data_level
   }
 
   # Filter survey pce
-  filtered_pce <- pce|>
-    collapse::fsubset(country_code == id$country_code &
-                        year == id$surveyid_year &
-                        reporting_level == id$reporting_level)
+  filtered_pce <- pce |>
+    collapse::fsubset(
+      country_code == id$country_code &
+        year == id$surveyid_year &
+        reporting_level == id$reporting_level
+    )
 
   # Create attributes
   pce_attr <- filtered_pce$pce
@@ -286,7 +266,4 @@ add_pce_attr <- function(ls,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(ls)
-
 }
-
-
