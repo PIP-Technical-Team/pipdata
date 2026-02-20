@@ -14,11 +14,8 @@ dlw_gmd_match <- \() {
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  # set paths to root and working folders
-  dlw_inv <- pip_folders$dlw_inventory
-
   # check directory existence for inventory folder
-  check_directory(dlw_inv)
+  check_directory(pip_folders$dlw_inventory)
 
   # Step 1: Load local GMD inventory list --------------------------------------
   local_gmd_inv <- tryCatch(
@@ -75,11 +72,8 @@ dlw_gmd_new <- function(check_missing = TRUE) {
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  # set paths to root and working folders
-  dlw_inv  <- pip_folders$dlw_inventory
-
   # check directory existence
-  check_directory(dlw_inv)
+  check_directory(pip_folders$dlw_inventory)
 
   # Step 1: Load local GMD inventory list --------------------------------------
   local_gmd_inv <- tryCatch(
@@ -145,19 +139,14 @@ gmd_inv_new <- function(check_missing = TRUE) {
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  # set paths to root and working folders
-  dlw_inv <- pip_folders$dlw_inventory
-  dlw_meta <- pip_folders$dlw_metadata
-
-
   # check directory existence
-  check_directory(dlw_inv)
-  check_directory(dlw_meta)
+  check_directory(pip_folders$dlw_inventory)
+  check_directory(pip_folders$dlw_metadata)
 
   # Step 1: Load local GMD inventory list --------------------------------------
 
   # correct file existence check
-  gmd_inv_file <- fs::path(dlw_inv, "dlw_gmd_inv.qs2", "dlw_gmd_inv.qs2")
+  gmd_inv_file <- fs::path(pip_folders$dlw_inventory, "dlw_gmd_inv.qs2", "dlw_gmd_inv.qs2")
 
   if (!fs::is_file(gmd_inv_file)) {
 
@@ -176,7 +165,11 @@ gmd_inv_new <- function(check_missing = TRUE) {
   # Step 2: Load GMD validation inventory pin (if available) -------------------
 
   # correct file existence check
-  valid_inv_file <- fs::path(dlw_meta, "gmd_valid_inv.qs2", "gmd_valid_inv.qs2")
+  valid_inv_file <- fs::path(
+    pip_folders$dlw_metadata,
+    "gmd_valid_inv.qs2",
+    "gmd_valid_inv.qs2"
+  )
   if (!fs::is_file(valid_inv_file)) {
 
     return(local_gmd_inv)
@@ -260,11 +253,8 @@ dlw_gen_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv"){
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  # set paths to root and working folders
-  dlw_inv  <- pip_folders$dlw_inventory
-
   # check directory existence
-  check_directory(dlw_inv)
+  check_directory(pip_folders$dlw_inventory)
 
   # save the GMD list in the local dlw_inventory folder
   pipload::pip_write(x = gmd_list,

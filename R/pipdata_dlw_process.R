@@ -53,37 +53,34 @@ pipdata_dlw_process <- function(
   # root <- fs::path(Sys.getenv("PIP_ROOT_DIR"),
   #                  "PIP_ingestion_pipeline_v2/testing_folder")
 
-  root <- fs::path(Sys.getenv("PIP_ROOT_DIR"),
-                   "tefera_test")
-
-
   # pipfun::setup_working_release(release = lr$release,
   #                               identity = lr$identity,
+  #                               main_dir = root,
   #                               verbose = FALSE)
+
   pipfun::setup_working_release(release = lr$release,
                                 identity = lr$identity,
-                                main_dir = root,
                                 verbose = FALSE)
 
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  # set paths to root and working folders
-  dlw_data <- pip_folders$dlw_data
-  dlw_inv  <- pip_folders$dlw_inventory
-
   # check directory existence for inventory, and data folders
-  check_directory(dlw_data)
-  check_directory(dlw_inv)
+  check_directory(pip_folders$dlw_data)
+  check_directory(pip_folders$dlw_inventory)
 
   # 1) Checks if the list of GMD DLW datasets is available ---------------------
-  gmd_list <- fs::path(dlw_inv, "dlw_gmd_inv.qs2", "dlw_gmd_inv.qs2")
+  gmd_list <- fs::path(
+    pip_folders$dlw_inventory,
+    "dlw_gmd_inv.qs2",
+    "dlw_gmd_inv.qs2"
+  )
 
   if (!fs::is_file(gmd_list)) {
 
     cli::cli_text(
       "Local GMD list is not available.\n",
-      "Expected location: {.path {dlw_inv}}\n",
+      "Expected location: {.path {pip_folders$dlw_inventory}}\n",
       "What would you like to do?"
     )
 
@@ -103,7 +100,7 @@ pipdata_dlw_process <- function(
     if (choice == 1) {
       cli::cli_alert_info(
         cli::cli_text(
-          "Downloading GMD list to {.path {dlw_inv}}"
+          "Downloading GMD list to {.path {pip_folders$dlw_inventory}}"
         )
       )
 

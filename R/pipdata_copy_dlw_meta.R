@@ -12,7 +12,7 @@
 #' The function:
 #' 1. Sets up a working environment for the source release folder to load,
 #'    the metadata (`gmd_valid_inv`, `gmd_valid_report`, and `gmd_valid_log`).
-#' 2. Sets up a working environment for the destination release folder to copy 
+#' 2. Sets up a working environment for the destination release folder to copy
 #' the metadata.
 #'
 #' @return Invisibly returns `TRUE` if the operation completes successfully.
@@ -49,8 +49,7 @@ copy_dlw_metadata <- function(from_release = NULL,
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  dlw_meta <- pip_folders$dlw_metadata
-  check_directory(dlw_meta)
+  check_directory(pip_folders$dlw_metadata)
 
   # Load pins from source board
   cli::cli_inform(c(i = "Loading metadata from source board..."))
@@ -75,26 +74,21 @@ copy_dlw_metadata <- function(from_release = NULL,
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  dlw_meta <- pip_folders$dlw_metadata
-  check_directory(dlw_meta)
+  check_directory(pip_folders$dlw_metadata)
 
   # 3) Write dlw metadata to destination folder ------------------------------------------
-  stamp::st_init(dlw_meta)
   pipload::pip_write(x = gmd_inv_df,
     id = "gmd_valid_inv",
-    dir = dlw_meta,
-    format  = "qs2")
-  
+    alias = "dlw_meta")
+
   pipload::pip_write(x = valid_report_df,
     id = "validation_report",
-    dir = dlw_meta,
-    format  = "qs2")
-  
+    alias = "dlw_meta")
+
   pipload::pip_write(x = log_df,
     id = "dlw_validation_log",
-    dir = dlw_meta,
-    format  = "qs2")
-  
+    alias =  "dlw_meta")
+
   cli::cli_alert_success("DLW metadata successfully copied from {.val {from_release}} to {.val {to_release}}.")
 
   invisible(TRUE)

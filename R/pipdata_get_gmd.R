@@ -48,13 +48,9 @@ pipdata_get_gmd <- function(
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
-  # set paths to root and working folders
-  dlw_data <- pip_folders$dlw_data
-  dlw_inv  <- pip_folders$dlw_inventory
-
   # check directory existence for root, inventory, and data folders
-  check_directory(dlw_data)
-  check_directory(dlw_inv)
+  check_directory(pip_folders$dlw_data)
+  check_directory(pip_folders$dlw_inventory)
 
   ### -------------------------------------------------------------------------
 
@@ -65,18 +61,19 @@ pipdata_get_gmd <- function(
   if (is.null(inv_gmd) || nrow(inv_gmd) == 0) cli::cli_abort("There is no new data on GMD catalog")
 
   # 2) get the data from GMD catalog and pin to local folder -------------------
-  cli::cli_alert_info("Working folder: {.dir {dlw_data}}")
+  cli::cli_alert_info("Working folder: {.dir {pip_folders$dlw_data}}")
 
   cli::cli_progress_bar("Downloading GMD files",
           total = nrow(inv_gmd))
 
   inv_gmd$data_available <- NA
-  # inv_gmd <- inv_gmd[c(1:4),]
+  #inv_gmd <- inv_gmd[c(1:4),]
 
   # ctry_partial <- c("BOL","CHN", "NGA", "IND", "IDN", "COL", "PHL", "ARG", "LUX", "FRA")
-  ctry_partial <- c("BOL", "CHN")
+  # ctry_partial <- c("BOL", "CHN")
   module_partial <- c("ALL", "GROUP", "HIST", "GPWG", "BIN")
-  inv_gmd <- inv_gmd[(Country %in% ctry_partial & Module %in% module_partial), ]
+  # inv_gmd <- inv_gmd[(Country %in% ctry_partial & Module %in% module_partial), ]
+  inv_gmd <- inv_gmd[(Module %in% module_partial), ]
 
   for (i in seq_along(1:nrow(inv_gmd))){
 
@@ -103,7 +100,7 @@ pipdata_get_gmd <- function(
           module = md_type,
           vermast = vermst,
           veralt = veralt,
-          local_dir = dlw_data
+          local_dir = pip_folders$dlw_data
         )
 
         # Mark data as available if download is successful
@@ -127,7 +124,7 @@ pipdata_get_gmd <- function(
                                       module       = md_type,
                                       vermast      = vermst,
                                       veralt       = veralt,
-                                      local_dir    = dlw_data),
+                                      local_dir    = pip_folders$dlw_data),
                           logmeta = list(error = e))
         }
 
@@ -156,15 +153,19 @@ pipdata_get_gmd <- function(
   pipload::pip_write(x = inv_gmd,
     id = inv_gmd_list,
     alias = "dlw_inv")
-  # stamp::st_save(inv_gmd, fs::path(dlw_inv, inv_gmd_list, ext = "qs2"), alias = "dlw_inv")
 
-  cli::cli_alert_success("GMD inventory file is saved at: {.dir {dlw_inv}}")
+  cli::cli_alert_success(
+    "GMD inventory file is saved at: {.dir {pip_folders$dlw_inventory}}"
+  )
 
   if (log) {
 
-    pipfun::log_add("info", "Inventory file is saved",
-                    name = "pipdata_log",
-                    logmeta = list(saved_at = dlw_inv))
+    pipfun::log_add(
+      "info",
+      "Inventory file is saved",
+      name = "pipdata_log",
+      logmeta = list(saved_at = pip_folders$dlw_inventory)
+    )
   }
 
   # 4) save the logging file ---------------------------------------------------
