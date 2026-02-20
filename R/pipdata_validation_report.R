@@ -116,7 +116,6 @@ get_validation_list <- function(
   pip_folders <- pipfun::get_pip_folders()
   dlw_meta <- pip_folders$dlw_metadata
 
-  stamp::st_init(dlw_meta)
   rp_data <- pipload::load_gmd_valid_report()
 
   # ensure the validation report data is loaded
@@ -188,7 +187,6 @@ get_validation_ctry <- function(
   pip_folders <- pipfun::get_pip_folders()
   dlw_meta <- pip_folders$dlw_metadata
 
-  stamp::st_init(dlw_meta)
   rp_data <- pipload::load_gmd_valid_report()
 
   # ensure the validation report data is loaded

@@ -32,9 +32,9 @@ pipdata_validate_gmd <- function(
 
   # 0) set-up release and dlw data, inventory, and  metadata working folders
   pipfun::get_wrk_release(verbose = FALSE)
-
   pip_folders <- pipfun::get_pip_folders()
 
+  # set paths to root and working folders
   dlw_data <- pip_folders$dlw_data
   dlw_inv  <- pip_folders$dlw_inventory
   dlw_meta <- pip_folders$dlw_metadata
@@ -56,8 +56,7 @@ pipdata_validate_gmd <- function(
   }
 
   # 2) Load validated gmd inventory file ---------------------------------------
-  stamp::st_init(dlw_meta)
-  valid_inv_file <- fs::path(dlw_meta, "gmd_valid_inv.qs2")
+  valid_inv_file <- fs::path(dlw_meta, "gmd_valid_inv.qs2", "gmd_valid_inv.qs2")
   if (!fs::is_file(valid_inv_file)) {
 
     old_inv <- NULL
@@ -67,6 +66,7 @@ pipdata_validate_gmd <- function(
   } else {
     old_inv <- tryCatch(
 
+      # stamp::st_load(fs::path(dlw_meta, "gmd_valid_inv.qs2"), alias = "dlw_meta"),
       pipload::load_gmd_valid_inv(),
 
       error = function(e) {
@@ -102,6 +102,8 @@ pipdata_validate_gmd <- function(
   # 4) validate gmd local datasets ---------------------------------------------
   cli::cli_alert_info("Location of GMD data: {.dir {dlw_data}}")
 
+  gmd_new <- gmd_new[data_available == "Yes", ]
+
   all_names <- unique(gmd_new$FileName)
   new_inv   <- vector("list", length(all_names))
 
@@ -123,12 +125,11 @@ pipdata_validate_gmd <- function(
   # get the GMD data
   new_inv <- lapply(seq_len(nrow(gmd_new)), function(i) {
 
-    stamp::st_init(dlw_data)
-
     file_name  <- gmd_new[["FileName"]][i]
     inv_pin_name  <- file_name |>
       fs::path_ext_remove() |>
       fs::path(ext = "qs2")
+
     nm         <- fs::path_ext_remove(file_name)
     md_type    <- gmd_new[["Module"]][i]
     data_avail <- gmd_new[["data_available"]][i]
@@ -137,17 +138,22 @@ pipdata_validate_gmd <- function(
     pipeline_version  = 1
 
     file_id  <- file_name |>
-      fs::path_ext_remove()
+      fs::path_ext_remove() |>
+      tolower()
+
+    # file_id  <- file_name |>
+    #   fs::path_ext_remove() |>
+    #   fs::path_ext_set("qs2")
 
     # load GMD data from local repository
     out <- tryCatch({
 
-      pipload::pip_read(
-        id= file_id,
-        dir = dlw_data)
+      # pipload::load_dlw_data(
+      #   id_name = file_id)
+      stamp::st_load(fs::path(dlw_data, file_id, ext = "qs2"), alias = "dlw")
 
       }, error = function(e) {
-        
+
         msg <- glue::glue('Could not load data from GMD data folder.')
 
         if (log) {
@@ -161,7 +167,9 @@ pipdata_validate_gmd <- function(
 
     if (!is.null(out)) {
 
-      version_info <- stamp::st_info(fs::path(dlw_data, file_id, ext = "qs2"))
+      version_info <- stamp::st_info(fs::path(dlw_data, file_id, ext = "qs2"), alias = "dlw")
+      # version_info <- stamp::st_info(fs::path(dlw_data, file_id), alias = "dlw")
+      # version_info <- stamp::st_info(fs::path(dlw_data, file_id))
 
       # Validate the data using the appropriate function
       check <- if (md_type %in% names(validation_functions)) {
@@ -239,7 +247,7 @@ pipdata_validate_gmd <- function(
     pipload::survey_id_to_vars() |>
     tidyr::as_tibble() |>
     # tidyr::unnest(pin_version, keep_empty = TRUE) |>
-    as.data.table()
+    data.table::as.data.table()
   final_inv <- final_inv[, pipeline_version := fifelse(is.na(pipeline_version), 1, pipeline_version)]
 
   # update inventory file with the newly validated data
@@ -248,13 +256,12 @@ pipdata_validate_gmd <- function(
     base_file_name <- names(final_inv)
     final_inv <- rbind(validated_data, final_inv, ignore.attr=TRUE, fill = TRUE)
 
-    setcolorder(final_inv, base_file_name)
+    data.table::setcolorder(final_inv, base_file_name)
 
   }
 
   # 5. save inventory file DLW inventory folder---------------------------------
   ## check if the inventory file is generated and save it to DLW inventory file
-  stamp::st_init(dlw_meta)
   if (is.null(final_inv)) {
 
     cli::cli_alert_danger("Inventory file is not generated")
@@ -271,8 +278,10 @@ pipdata_validate_gmd <- function(
 
     pipload::pip_write(x = final_inv,
       id = "gmd_valid_inv",
-      dir = dlw_meta,
-      format  = "qs2")
+      alias = "dlw_meta")
+
+    # stamp::st_save(final_inv, fs::path(dlw_meta, "gmd_valid_inv", ext = "qs2"),
+    #                alias = "dlw_meta")
 
     cli::cli_alert_success("Inventory file is saved at: {.dir {dlw_meta}}")
 
@@ -306,6 +315,7 @@ pipdata_validate_gmd <- function(
     # survey names in validation data
     valid_all_names <- unique(valid_report$table_name)
     old_valid_report <- tryCatch(
+      # stamp::st_load(fs::path(dlw_meta, "validation_report.qs2"), alias = "dlw_meta"),
       pipload::load_gmd_valid_report(),
       error = function(e) {
         msg <- "Failed to read validation report file."
@@ -330,8 +340,10 @@ pipdata_validate_gmd <- function(
 
     pipload::pip_write(x = valid_report,
       id = "validation_report",
-      dir = dlw_meta,
-      format  = "qs2")
+      alias = "dlw_meta")
+
+    # stamp::st_save(valid_report, fs::path(dlw_meta, "validation_report", ext = "qs2"),
+    #                alias = "dlw_meta")
 
     cli::cli_alert_success("Validation report is saved")
 
@@ -345,7 +357,7 @@ pipdata_validate_gmd <- function(
 
   # 7. save logging file in DLW metadaa folder---------------------------------
   if (save_log && log) {
-    pipfun::log_save(name = "pipdata_log", dir = dlw_meta, id = "dlw_validation_log")
+    pipfun::log_save(name = "pipdata_log", id = "dlw_validation_log", alias = "dlw_meta")
 
     pipfun::log_add("info", "logging file is saved",
                     name = "pipdata_log",
