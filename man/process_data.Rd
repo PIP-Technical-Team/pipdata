@@ -23,13 +23,13 @@ Process datalibweb data: merge PFW data and clean variables
 release <- "20250203"
 pipfun::setup_working_release(release)
 
-pfw <- pipload::pip_load_aux("pfw")
+pfw <- pipload::load_aux_data("pfw")
 
-gd  <- pipload::pip_load_dlw("CHN", 2015)
+gd  <- pipload::load_aux_data("CHN", 2015)
 gd  <- pipdata:::m_svy_id_to_att(gd)
 process_data(gd, pfw)
 
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
+md   <- pipload::load_aux_data(country = "PRY", 2012)
 md  <- pipdata:::m_svy_id_to_att(md)
 process_data(md, pfw)
 }

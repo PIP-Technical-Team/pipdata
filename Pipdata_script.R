@@ -8,7 +8,7 @@ metapip::update_pip_packages()
 library(devtools)
 load_all()
 
-release <- "20251211"
+release <- "20260202"
 identity <- "TEST"
 
 # Create a New PIP Release (NPR)
@@ -16,39 +16,49 @@ identity <- "TEST"
 #                        identity = identity,
 #                        root_dir = Sys.getenv("PIP_ROOT_DIR"))
 
-# wrkrl <- pipfun::get_latest_pip_release()
-wrkrl <- pipfun::setup_working_release(release, identity)
+wrkrl <- pipfun::get_latest_pip_release()
+pipfun::setup_working_release(
+  wrkrl$release,
+  wrkrl$identity,
+  main_dir = fs::path(
+    Sys.getenv("PIP_ROOT_DIR"),
+    "PIP_ingestion_pipeline_v2/testing_folder"
+  ),
+  verbose = FALSE
+)
+
+pipfun::setup_working_release(
+  release,
+  identity,
+  verbose = FALSE
+)
 
 # ----- Load inventory to clean -----
+stamp::st_load("indicators.qs2", alias = "aux")
+valid_inv <- stamp::st_load("gmd_valid_inv.qs2", alias = "dlw_meta")
 
-# inv <- pipload::load_gmd_valid_inv()
-
-# binv <- pipfun::get_pip_folders(folder = "dlw_metadata")
-# inv <- pipload::pip_read("gmd_valid_inv", dir = binv, format = "qs")
-
-inv <- qs::qread(
-  "//w1wbgencifs01/pip/PIP_ingestion_pipeline_v2/dlw_repository/dlw_metadata/20251211_TEST/gmd_valid_inv.qs2"
-)
+inv <- pipload::load_gmd_valid_inv()
 
 # ------- Filter valid inventory until specific date ---------
 
+# # Can only be run when Rossi fix the compare functions
 # inv_to_clean <- valid_dlw_load(inv = inv, filter = "all") # It can be all, compare, random. Compare means compare to previous inventory
 
-inv <- as.data.table(inv)
+# inv <- as.data.table(inv)
 inv_to_clean <- inv[status == "valid"]
 
-COL_inv <- inv_to_clean[country_code == "COL", ]
+# COL_inv <- inv_to_clean[country_code == "COL", ]
 
 #--------- Clean surveys and create metadata -----
 
-process_data <- pd_process_data(inv_to_clean = COL_inv)
+process_data <- pd_process_data(inv_to_clean = inv_to_clean)
 
 #--------- Create or Update inventory---------
 
 # old_pip_inv <- pipload::load_pip_master_inventory()
 
 new_pip_inv <- update_pip_inventory(
-  inv_to_clean = inv_to_clean,
+  inv_to_clean = COL_inv,
   process_data = process_data
 )
 
