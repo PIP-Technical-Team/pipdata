@@ -112,6 +112,10 @@ get_validation_list <- function(
   e_type <- match.arg(e_type)
 
   # load validation report data
+  pipfun::get_wrk_release(verbose = FALSE)
+  pip_folders <- pipfun::get_pip_folders()
+  dlw_meta <- pip_folders$dlw_metadata
+
   rp_data <- pipload::load_gmd_valid_report()
 
   # ensure the validation report data is loaded
@@ -179,6 +183,10 @@ get_validation_ctry <- function(
   e_type <- match.arg(e_type)
 
   # load validation report data
+  pipfun::get_wrk_release(verbose = FALSE)
+  pip_folders <- pipfun::get_pip_folders()
+  dlw_meta <- pip_folders$dlw_metadata
+
   rp_data <- pipload::load_gmd_valid_report()
 
   # ensure the validation report data is loaded
