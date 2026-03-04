@@ -1,16 +1,14 @@
-save_pip_data <- function(data, dir, test = FALSE) {
+save_pip_data <- function(data, alias) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  if (dir == "pip_data") {
-    dir <- pipfun::get_pip_folders()$pip_data
-  } else if (dir == "pip_metadata") {
-    dir <- pipfun::get_pip_folders()$pip_metadata
-  } else {
-    cli::cli_abort("Need to specified the directory")
-  }
-
+  # if (dir == "pip_data") {
+  #   dir <- pipfun::get_pip_folders()$pip_data
+  # } else if (dir == "pip_metadata") {
+  #   dir <- pipfun::get_pip_folders()$pip_metadata
+  # } else {
+  #   cli::cli_abort("Need to specified the directory")
   # }
 
   versions <- purrr::map2(.x = data, .y = names(data), .f = \(x, y) {
@@ -29,7 +27,7 @@ save_pip_data <- function(data, dir, test = FALSE) {
 
         # Save data
 
-        pipload::pip_write(dir = dir, x = x, id = y)
+        pipload::pip_write(x = x, id = y, alias = alias)
 
         # Get last version
 

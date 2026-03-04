@@ -7,15 +7,6 @@ inv_dlw_load <- function(inv) {
 
   dt <- pipload::load_dlw_data(id_name = inv$survey_id, verbose = FALSE)
 
-  # Small fix for loading Tefera's files
-  # pip_folders <- pipfun::get_pip_folders()
-
-  # dt <- qs::qread(fs::path(
-  #   pip_folders$dlw_data,
-  #   inv$survey_id,
-  #   ext = "qs2"
-  # ))
-
   # Add data from inventory to attributes of data table and add pip class
 
   dt <- data_to_dt(dt, inv$survey_id)

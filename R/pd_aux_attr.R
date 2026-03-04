@@ -1,10 +1,15 @@
 pd_aux_attr <- function(
   clean_data,
-  aux_measures = c("cpi", "ppp", "pop", "gdp", "pce")
+  aux_list
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Filter cleaning aux data
+  aux_list <- aux_list[
+    names(aux_list) %in% c("cpi", "ppp", "pop", "gdp", "pce")
+  ]
 
   # Add attributes already in surveys
 
@@ -17,8 +22,8 @@ pd_aux_attr <- function(
 
   ## CPI, PPP, POP, GDP, PCE
 
-  for (measure in aux_measures) {
-    aux_data <- pipload::load_aux_data(measure, verbose = FALSE)
+  for (measure in names(aux_list)) {
+    aux_data <- aux_list[[measure]]
     aux_keys <- stamp::st_get_pk(aux_data)
     aux_attr <- lapply(
       aux_attr,
@@ -50,6 +55,11 @@ add_attr <- function(ls, measure, aux_data, keys) {
     aux_data = aux_data,
     id = id
   )
+
+  # No aux data to add, return original attributes
+  if (nrow(filtered_aux) == 0) {
+    return(ls)
+  }
 
   # Create attributes
   aux_attr <- create_attr(measure = measure, filtered_aux = filtered_aux)

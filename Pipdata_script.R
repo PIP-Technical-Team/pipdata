@@ -8,24 +8,23 @@ metapip::update_pip_packages()
 library(devtools)
 load_all()
 
-release <- "20260202"
+release <- "20260206"
 identity <- "TEST"
 
 # Create a New PIP Release (NPR)
 # pipfun::new_pip_release(release = release,
 #                        identity = identity,
 #                        root_dir = Sys.getenv("PIP_ROOT_DIR"))
-
-wrkrl <- pipfun::get_latest_pip_release()
-pipfun::setup_working_release(
-  wrkrl$release,
-  wrkrl$identity,
-  main_dir = fs::path(
-    Sys.getenv("PIP_ROOT_DIR"),
-    "PIP_ingestion_pipeline_v2/testing_folder"
-  ),
-  verbose = FALSE
-)
+# wrkrl <- pipfun::get_latest_pip_release()
+# pipfun::setup_working_release(
+#   wrkrl$release,
+#   wrkrl$identity,
+#   main_dir = fs::path(
+#     Sys.getenv("PIP_ROOT_DIR"),
+#     "PIP_ingestion_pipeline_v2/testing_folder"
+#   ),
+#   verbose = FALSE
+# )
 
 pipfun::setup_working_release(
   release,
@@ -34,8 +33,8 @@ pipfun::setup_working_release(
 )
 
 # ----- Load inventory to clean -----
-stamp::st_load("indicators.qs2", alias = "aux")
-valid_inv <- stamp::st_load("gmd_valid_inv.qs2", alias = "dlw_meta")
+# stamp::st_load("indicators.qs2", alias = "aux")
+# valid_inv <- stamp::st_load("gmd_valid_inv.qs2", alias = "dlw_meta")
 
 inv <- pipload::load_gmd_valid_inv()
 
@@ -63,11 +62,6 @@ new_pip_inv <- update_pip_inventory(
 )
 
 waldo::compare(old_pip_inv, new_pip_inv)
-
-# board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
-# tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")
-# vs <- pins::pin_versions(board = board_master, name = "pip_master_inventory")
-# tst2 <- pins::pin_read(board = board_master, name = "pip_master_inventory", version = "20250819T173702Z-6d58c")
 
 # Check log
 # pipfun::log_filter(name = "pipdata_log")
