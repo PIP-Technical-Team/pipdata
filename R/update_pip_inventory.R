@@ -97,12 +97,12 @@ update_pip_inventory <- function(
   pipload::pip_write(
     x = new_pip_inv,
     id = "pip_master_inventory",
-    dir = pipfun::get_pip_folders(name = "pip_master_inventory")
+    alias = "pip_master"
   )
 
   # Save release inventory
 
-  pfw <- pipload::pip_load_aux("pfw", verbose = FALSE)
+  pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
 
   pfw_release <- pfw |>
     collapse::fsubset(inpovcal == 1) |>
@@ -122,7 +122,7 @@ update_pip_inventory <- function(
   pipload::pip_write(
     x = release_pip_inv,
     id = "pip_release_inventory",
-    dir = pipfun::get_pip_folders(name = "pip_inventory")
+    alias = "pip_inv"
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
