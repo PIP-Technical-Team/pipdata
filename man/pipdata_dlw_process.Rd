@@ -10,9 +10,7 @@ pipdata_dlw_process(
   validate_dlw_data = TRUE,
   log = TRUE,
   save_log = TRUE,
-  check_missing = TRUE,
-  release = NULL,
-  identity = NULL
+  check_missing = TRUE
 )
 }
 \arguments{
@@ -27,10 +25,6 @@ pipdata_dlw_process(
 \item{save_log}{Logical. Whether to save logging information to a file. Default is \code{TRUE}.}
 
 \item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
-
-\item{release}{Character. The data release identifier or date, used to configure the working environment.}
-
-\item{identity}{Character. One of \code{"PROD"}, \code{"INT"}, or \code{"TEST"}.}
 }
 \value{
 Invisibly returns \code{NULL}. Output files are written to disk.
@@ -38,8 +32,11 @@ Invisibly returns \code{NULL}. Output files are written to disk.
 \description{
 This wrapper function automates key steps in processing DLW data by performing the following tasks:
 \enumerate{
-\item Checks for new datasets in the GMD catalog, downloads them using \code{dlw::dlw_get_gmd}, and pins them to the local directory.
-\item Validates the downloaded datasets and updates the validation inventory (\code{"gmd_valid_inv"}).
+\item Checks if the list of GMD DLW datasets is available, if not, get the list
+\item Checks for new datasets in the GMD catalog, downloads them using \code{dlw::dlw_get_gmd},
+and save them to the local directory.
+\item Validates the downloaded datasets using \code{pipdata::pipdata_validate_gmd}
+and updates the validation inventory (\code{"gmd_valid_inv"}).
 }
 }
 \examples{

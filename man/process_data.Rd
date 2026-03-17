@@ -4,14 +4,14 @@
 \alias{process_data}
 \title{Process datalibweb data: merge PFW data and clean variables}
 \usage{
-process_data(inv, pfw, ...)
+process_data(inv, aux_list, ...)
 }
 \arguments{
 \item{inv}{inventory with survey_id and pins folder}
 
-\item{pfw}{PFW}
-
 \item{...}{other parameters}
+
+\item{pfw}{PFW}
 }
 \value{
 data.table

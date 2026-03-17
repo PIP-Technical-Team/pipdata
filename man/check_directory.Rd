@@ -2,21 +2,21 @@
 % Please edit documentation in R/pipdata_validate_gmd.R
 \name{check_directory}
 \alias{check_directory}
-\title{Check directory existence of a board and abort if not available}
+\title{Check whether the working folder exists and abort if it does not}
 \usage{
-check_directory(board)
+check_directory(wrk_folder)
 }
 \arguments{
-\item{board}{A pin board}
+\item{wrk_folder}{A working folder path}
 }
 \value{
-Message if board is not available
+Message if working folder is not available
 }
 \description{
-Check directory existence of a board and abort if not available
+Check whether the working folder exists and abort if it does not
 }
 \examples{
 \dontrun{
-check_directory(dlw_data_board)
+check_directory(dlw_data)
 }
 }

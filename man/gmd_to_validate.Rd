@@ -7,12 +7,15 @@
 gmd_to_validate(gmd_new, inv_validated)
 }
 \arguments{
-\item{gmd_new}{A data.table containing the new GMD records. Must include columns \code{FileName} and \code{Checksum}.}
+\item{gmd_new}{A data.table containing the new GMD records. Must include
+columns \code{FileName} and \code{Checksum}.}
 
-\item{inv_validated}{A data.table of validated inventory records with \code{survey_id} and \code{Checksum} columns.}
+\item{inv_validated}{A data.table of validated inventory records
+with \code{survey_id} and \code{Checksum} columns.}
 }
 \value{
-A data.table containing only GMD records that match the validated inventory. Returns all of \code{gmd_new} if \code{inv_validated} is NULL or empty. Result is returned invisibly.
+A data.table containing only GMD records that match the validated inventory.
+Returns all of \code{gmd_new} if \code{inv_validated} is NULL or empty. Result is returned invisibly.
 }
 \description{
 This function filters and returns the subset of new GMD records that match the validated inventory.
