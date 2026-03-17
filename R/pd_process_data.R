@@ -1,23 +1,54 @@
-pd_process_data <- function(inv_to_clean) {
+#' Process DLW inventory and create cleaned pip data
+#'
+#' Iterate over the datalibweb (DLW) inventory, process each survey by
+#' merging auxiliary data (PFW, CPI, PPP, population, GDP, PCE), cleaning
+#' main variables, creating metadata, and saving new versions of the cleaned
+#' data and metadata into the pip storage. The function returns an updated
+#' pip inventory with the new versions recorded.
+#'
+#' @param inv A data.frame or tibble containing the DLW inventory. It can be
+#' downloaded using `pipload::load_gmd_valid_inv()`.
+#' @param aux_measures A character vector of auxiliary measures to load and merge
+#' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
+#' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
+#'   versions for cleaned data and metadata.
+#' @export
+#' @examples
+#' \dontrun{
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#' inv <- pipload::load_gmd_valid_inv()
+#' pd_process_data(inv)
+#' }
+pd_process_data <- function(
+  inv = inv,
+  aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce")
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load aux data for metadata attributes and processing
-  aux_measures <- c("pfw", "cpi", "ppp", "pop", "gdp", "pce")
   aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = FALSE)
   names(aux_list) <- aux_measures
 
+  # Load valid inventory
+  inv_to_clean <- valid_dlw_load(inv = inv, aux_measures = aux_measures)
+
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
-
   results <- purrr::map(inv_ls, process_data, aux_list = aux_list)
-
   names(results) <- inv_to_clean$survey_id
+
+  # Update inventory with new versions of clean data
+  new_pip_inv <- update_pip_inventory(
+    inv_to_clean = inv_to_clean,
+    proc_dta = results
+  )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(results)
+  return(new_pip_inv)
 }
 
 #' Process datalibweb data: merge PFW data and clean variables

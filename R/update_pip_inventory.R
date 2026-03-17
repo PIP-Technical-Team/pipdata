@@ -1,6 +1,6 @@
 update_pip_inventory <- function(
   inv_to_clean,
-  process_data,
+  proc_dta,
   date_valid = max(inv_to_clean$date_validated)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -13,7 +13,7 @@ update_pip_inventory <- function(
 
   # Check null surveys and clean
 
-  null_ls <- names(Filter(is.null, process_data))
+  null_ls <- names(Filter(is.null, proc_dta))
 
   if (length(null_ls) > 0) {
     pipfun::log_add(
@@ -24,7 +24,7 @@ update_pip_inventory <- function(
     )
   }
 
-  process_data_clean <- process_data[!(names(process_data) %in% null_ls)]
+  process_data_clean <- proc_dta[!(names(proc_dta) %in% null_ls)]
 
   # Pip data cleaned
 
@@ -56,6 +56,48 @@ update_pip_inventory <- function(
       reportvar = FALSE,
       verbose = FALSE
     )
+
+  # Remove skipped surveys from inventory
+  if ("skipped_data" %in% names(vrs)) {
+    skipped_svys_data <- vrs$survey_id[vrs$skipped_data == TRUE]
+    reasons <- vrs$reason_data[vrs$skipped_data == TRUE]
+
+    pipfun::log_add(
+      event = "info",
+      message = "Some surveys were skipped during processing. Review logmeta to identify which ones.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "skipped_svys_data",
+        surveys = skipped_svys_data,
+        reasons = reasons
+      )
+    )
+
+    vrs <- vrs[vrs$skipped_data != TRUE, ]
+  } else if ("skipped_metadata" %in% names(vrs)) {
+    skipped_svys_metadata <- vrs$survey_id[vrs$skipped_metadata == TRUE]
+    reasons <- vrs$reason_metadata[vrs$skipped_metadata == TRUE]
+
+    pipfun::log_add(
+      event = "info",
+      message = "Some surveys were skipped during metadata creation. Review logmeta to identify which ones.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "skipped_svys_metadata",
+        surveys = skipped_svys_metadata,
+        reasons = reasons
+      )
+    )
+
+    vrs <- vrs[vrs$skipped_metadata != TRUE, ]
+  }
+
+  # Exit if all surveys were skipped
+  if (nrow(vrs) == 0) {
+    cli::cli_abort(
+      "All surveys were skipped during processing. No inventory to update. Review logmeta to identify which ones."
+    )
+  }
 
   # Add info from DLW inventory
 
@@ -90,7 +132,7 @@ update_pip_inventory <- function(
   )
 
   new_pip_inv <- pip_inv |>
-    collapse::rowbind(old_pip_inv) |>
+    collapse::rowbind(old_pip_inv, fill = TRUE) |>
     collapse::funique() |>
     as.data.table()
 
