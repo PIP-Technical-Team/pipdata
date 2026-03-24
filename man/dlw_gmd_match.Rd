@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_dlw_compare.R
 \name{dlw_gmd_match}
 \alias{dlw_gmd_match}
-\title{Match GMD datasets from the server with the local inventory}
+\title{Get the list of current GMD datasets that match the local inventory}
 \usage{
 dlw_gmd_match()
 }
@@ -10,10 +10,11 @@ dlw_gmd_match()
 A data.table of matched datasets, or NULL if no match found
 }
 \description{
-Match GMD datasets from the server with the local inventory
+Get the list of current GMD datasets that match the local inventory
 }
 \examples{
 \dontrun{
-dlw_gmd_match(inv_gmd_list = "dlw_gmd_inv")
+df <- dlw_gmd_match()
+head()
 }
 }

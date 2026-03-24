@@ -27,7 +27,8 @@ Imports:
     DT,
     dlw,
     pins,
-    stamp (>= 0.0.5)
+    stamp (>= 0.0.5),
+    piptm
 Suggests: 
     knitr,
     rmarkdown,

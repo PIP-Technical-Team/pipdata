@@ -31,24 +31,16 @@
 #   canonical identifier injected by prepare_for_arrow / inject_metadata_cols).
 
 # ---------------------------------------------------------------------------
-# Internal constants
+# Internal constants — derived from piptm::pip_arrow_schema()
 # ---------------------------------------------------------------------------
 
-# Columns required to be present in any prepared input data.table.
-.REQUIRED_COLS_GEN <- c(
-  "country_code", "surveyid_year", "welfare_type",
-  "survey_id", "survey_acronym", "welfare", "weight"
-)
+.SCHEMA_GEN        <- piptm::pip_arrow_schema()
+.REQUIRED_COLS_GEN <- piptm::pip_required_cols()
+.ALLOWED_COLS_GEN  <- piptm::pip_allowed_cols()
 
-# All columns permitted in the schema (required + optional breakdowns).
-.ALLOWED_COLS_GEN <- c(
-  .REQUIRED_COLS_GEN, "gender", "area", "education", "age"
-)
-
-# Fixed factor levels — checked against data before writing.
-.GENDER_LEVELS_GEN    <- c("male", "female")
-.AREA_LEVELS_GEN      <- c("urban", "rural")
-.EDU_LEVELS_GEN       <- c("No education", "Primary", "Secondary", "Tertiary")
+.GENDER_LEVELS_GEN <- .SCHEMA_GEN$levels$gender
+.AREA_LEVELS_GEN   <- .SCHEMA_GEN$levels$area
+.EDU_LEVELS_GEN    <- .SCHEMA_GEN$levels$education
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -249,35 +241,10 @@
 #' @return An `arrow::Schema` object.
 #' @keywords internal
 .build_arrow_schema <- function(col_names) {
-
-  # Base required fields — always present
-  fields <- list(
-    arrow::field("country_code",   arrow::utf8()),
-    arrow::field("surveyid_year",  arrow::int32()),
-    arrow::field("welfare_type",   arrow::utf8()),
-    arrow::field("survey_id",      arrow::utf8()),
-    arrow::field("survey_acronym", arrow::utf8()),
-    arrow::field("welfare",        arrow::float64()),
-    arrow::field("weight",         arrow::float64())
+  fields <- lapply(
+    intersect(names(.SCHEMA_GEN$fields), col_names),
+    function(nm) arrow::field(nm, .SCHEMA_GEN$fields[[nm]]$type)
   )
-
-  # Optional breakdown dimensions — dictionary encoding matches schema spec
-  dict_type <- arrow::dictionary(arrow::int8(), arrow::utf8())
-
-  if ("gender" %in% col_names) {
-    fields <- c(fields, list(arrow::field("gender", dict_type)))
-  }
-  if ("area" %in% col_names) {
-    fields <- c(fields, list(arrow::field("area", dict_type)))
-  }
-  if ("education" %in% col_names) {
-    fields <- c(fields, list(arrow::field("education", dict_type)))
-  }
-  # age: continuous int32, NOT a dictionary column (per schema rules)
-  if ("age" %in% col_names) {
-    fields <- c(fields, list(arrow::field("age", arrow::int32())))
-  }
-
   do.call(arrow::schema, fields)
 }
 
@@ -589,20 +556,3 @@ generate_arrow_dataset <- function(survey_list,
 
   return(summary_dt[])
 }
-# Bad: negative welfare
-bad_dt <- data.table::copy(BOL_2012)
-bad_dt[1L, welfare := -1]
-write_survey_parquet(bad_dt, arrow_repo_path = test_repo)
-# Expected: cli_abort on negative welfare
-
-# Bad: extra column
-bad_dt2 <- data.table::copy(BOL_2012)
-bad_dt2[, extra_col := 1L]
-write_survey_parquet(bad_dt2, arrow_repo_path = test_repo)
-# Expected: cli_abort on extra column
-
-# Warn (not abort): zero welfare
-zero_dt <- data.table::copy(BOL_2012)
-zero_dt[1L, welfare := 0]
-write_survey_parquet(zero_dt, arrow_repo_path = test_repo, overwrite = TRUE)
-# Expected: rlang::warn about zero welfare, still writes

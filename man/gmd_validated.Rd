@@ -7,9 +7,11 @@
 gmd_validated(gmd_new, inv_validated)
 }
 \arguments{
-\item{gmd_new}{A data.table containing new GMD records. Must include columns \code{FileName} and \code{Checksum}.}
+\item{gmd_new}{A data.table containing new GMD records. Must include
+columns \code{FileName} and \code{Checksum}.}
 
-\item{inv_validated}{A data.table of validated inventory records with \code{survey_id} and \code{Checksum} columns.}
+\item{inv_validated}{A data.table of validated inventory records
+with \code{survey_id} and \code{Checksum} columns.}
 }
 \value{
 A data.table with only validated GMD records that exist in both \code{gmd_new} and \code{inv_validated}.

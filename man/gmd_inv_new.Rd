@@ -17,6 +17,7 @@ Compare local GMD and validation inventory datasets to get new entries
 }
 \examples{
 \dontrun{
-gmd_inv_new()
+df <- gmd_inv_new()
+head(df)
 }
 }
