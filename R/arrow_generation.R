@@ -428,131 +428,265 @@ write_survey_parquet <- function(dt,
   return(summary_base[])
 }
 
-# ---------------------------------------------------------------------------
-# generate_arrow_dataset()
-# ---------------------------------------------------------------------------
 
-#' Batch-write a list of prepared survey data.tables to the Arrow repository
+#' Extract survey IDs from a PIP release inventory
 #'
-#' Iterates over a named list of prepared `data.table` objects, calling
-#' `write_survey_parquet()` for each one, and returns a consolidated summary.
+#' Convenience helper to produce the `survey_ids` vector expected by
+#' [generate_arrow_dataset()] directly from the inventory object returned by
+#' [pipload::load_pip_release_inventory()].
 #'
-#' Each element must already be prepared (schema-conformant, all required
-#' columns injected). Use `prepare_for_arrow()` to prepare raw {pipdata}
-#' output before passing it here.
+#' @param inventory A `data.table` returned by
+#'   [pipload::load_pip_release_inventory()]. Must contain a `survey_id`
+#'   column.
+#' @param country_code Optional character vector of ISO3 codes to subset.
+#'   `NULL` (default) returns all surveys.
+#' @param welfare_type Optional character vector of welfare type codes
+#'   (`"INC"`, `"CON"`) to subset. `NULL` (default) returns all.
 #'
-#' Surveys that fail validation or write errors are recorded with
-#' `status = "error"` in the summary — the batch does not abort early.
-#'
-#' @param survey_list     A named list of prepared `data.table` objects. Names
-#'   are used only for progress messages; the actual `survey_id` is read from
-#'   the data.
-#' @param arrow_repo_path Absolute path to the root of the Master Arrow
-#'   Repository.
-#' @param overwrite       Logical. Passed through to `write_survey_parquet()`.
-#'   Defaults to `FALSE` (skip existing files).
-#'
-#' @return A `data.table` with one row per survey and the same columns as the
-#'   return value of `write_survey_parquet()`, plus:
-#'   \describe{
-#'     \item{`list_name`}{The name of the element in `survey_list`.}
-#'   }
-#'
+#' @return A character vector of survey IDs.
 #' @family arrow-generation
 #' @export
 #' @examples
 #' \dontrun{
-#' surveys <- list(BOL_2012 = BOL_2012, PER_2019 = PER_2019)
-#' summary <- generate_arrow_dataset(surveys, arrow_repo_path = "path/to/arrow")
+#' inv <- pipload::load_pip_release_inventory()
+#' ids <- survey_ids_from_inventory(inv)
+#' ids <- survey_ids_from_inventory(inv, country_code = "BOL")
 #' }
-generate_arrow_dataset <- function(survey_list,
-                                   arrow_repo_path,
-                                   overwrite = FALSE) {
+survey_ids_from_inventory <- function(inventory,
+                                      country_code = NULL,
+                                      welfare_type = NULL) {
 
-  stopifnot(is.list(survey_list), length(survey_list) > 0L)
-  stopifnot(is.character(arrow_repo_path), length(arrow_repo_path) == 1L)
-
-  # Ensure names exist for informative progress messages
-  if (is.null(names(survey_list))) {
-    names(survey_list) <- paste0("survey_", seq_along(survey_list))
+  if (!data.table::is.data.table(inventory)) {
+    cli::cli_abort(
+      "{.arg inventory} must be a {.cls data.table}, not {.cls {class(inventory)}}."
+    )
+  }
+  if (!"survey_id" %in% names(inventory)) {
+    cli::cli_abort(
+      "{.arg inventory} must contain a {.field survey_id} column."
+    )
   }
 
-  n_surveys <- length(survey_list)
-  rlang::inform(
-    paste0("Starting Arrow dataset generation: ", n_surveys, " survey(s).")
-  )
+  dt <- data.table::copy(inventory)
 
-  # --- Iterate and collect results -------------------------------------------
-  # Use a pre-allocated list and rbindlist for efficiency.
+  if (!is.null(country_code)) {
+    if (!is.character(country_code)) {
+      cli::cli_abort("{.arg country_code} must be a character vector.")
+    }
+    if (!"country_code" %in% names(dt)) {
+      cli::cli_abort(
+        "{.arg inventory} must contain a {.field country_code} column to filter by country."
+      )
+    }
+    # Assign to local var to avoid data.table column name ambiguity
+    cc <- toupper(country_code)
+    dt <- dt[country_code %in% cc]
+  }
+
+  if (!is.null(welfare_type)) {
+    if (!is.character(welfare_type)) {
+      cli::cli_abort("{.arg welfare_type} must be a character vector.")
+    }
+    if (!"welfare_type" %in% names(dt)) {
+      cli::cli_abort(
+        "{.arg inventory} must contain a {.field welfare_type} column to filter by welfare type."
+      )
+    }
+    wt <- toupper(welfare_type)
+    dt <- dt[welfare_type %in% wt]
+  }
+
+  if (nrow(dt) == 0L) {
+    cli::cli_warn("No surveys match the given filters. Returning empty vector.")
+  }
+
+  dt[["survey_id"]]
+}
+
+
+#' Parse a survey ID string into its component parts
+#'
+#' Splits a canonical PIP survey ID (e.g.
+#' `"BOL_2012_EH_V02_M_V08_A_GMD_ALL"`) into named components for use with
+#' [pipload::load_pip_data()].
+#'
+#' @param survey_id A single survey ID string.
+#'
+#' @return A named list with elements `country_code`, `surveyid_year`,
+#'   `survey_acronym`, `vermast`, `veralt`, `collection`, `module`.
+#' @keywords internal
+.parse_survey_id <- function(survey_id) {
+  # Expected full format: COUNTRY_YEAR_ACRONYM_VMAST_M_VALT_A_COLLECTION_MODULE
+  # e.g.                  BOL_2012_EH_V02_M_V08_A_GMD_ALL
+  # Minimum required:     COUNTRY_YEAR_ACRONYM
+  parts <- strsplit(survey_id, "_", fixed = TRUE)[[1L]]
+
+  if (length(parts) < 3L) {
+    cli::cli_abort(c(
+      "Cannot parse survey ID {.val {survey_id}}.",
+      "i" = "Expected at minimum: COUNTRY_YEAR_ACRONYM (e.g. {.val BOL_2012_EH}).",
+      "i" = "Full format: COUNTRY_YEAR_ACRONYM_VMAST_M_VALT_A_COLLECTION_MODULE."
+    ))
+  }
+
+  list(
+    country_code   = parts[[1L]],
+    surveyid_year  = as.integer(parts[[2L]]),
+    survey_acronym = parts[[3L]],
+    # Optional components — NULL when not present (load_pip_data accepts NULL)
+    vermast        = if (length(parts) >= 4L) tolower(parts[[4L]]) else NULL,
+    veralt         = if (length(parts) >= 6L) tolower(parts[[6L]]) else NULL,
+    collection     = if (length(parts) >= 8L) parts[[8L]]          else NULL,
+    module         = if (length(parts) >= 9L) parts[[9L]]          else "ALL"
+  )
+}
+
+
+#' Batch-write surveys to the Arrow repository
+#'
+#' Accepts either a character vector of survey IDs or a release inventory
+#' `data.table` (from [pipload::load_pip_release_inventory()]). Surveys are
+#' loaded, cleaned, and written one at a time — memory from each survey is
+#' freed before the next is loaded.
+#'
+#' @param survey_ids Character vector of survey IDs, or a `data.table`
+#'   inventory from [pipload::load_pip_release_inventory()]. When a
+#'   `data.table` is supplied it is passed through
+#'   [survey_ids_from_inventory()] automatically.
+#' @param arrow_repo_path Absolute path to the root of the Master Arrow
+#'   Repository.
+#' @param overwrite Logical. Passed to [write_survey_parquet()].
+#' @param where Passed to [pipload::load_pip_data()]. One of `"release"`
+#'   (default) or `"master"`.
+#' @param version Release version string passed to
+#'   [pipload::load_pip_data()]. `NULL` uses the latest available.
+#' @param country_code Optional ISO3 filter — only used when `survey_ids` is
+#'   an inventory `data.table`.
+#' @param welfare_type Optional welfare type filter (`"INC"`, `"CON"`) — only
+#'   used when `survey_ids` is an inventory `data.table`.
+#'
+#' @return A `data.table` with one row per survey and columns: `survey_id`,
+#'   `status` (`"written"`, `"skipped"`, or `"error"`), `n_rows`,
+#'   `available_dimensions`, `file_path`, `message`.
+#' @family arrow-generation
+#' @export
+#' @examples
+#' \dontrun{
+#' # From inventory — recommended for large batches
+#' inv     <- pipload::load_pip_release_inventory()
+#' results <- generate_arrow_dataset(inv, arrow_repo_path = "path/to/arrow")
+#'
+#' # Subset to one country
+#' results <- generate_arrow_dataset(
+#'   inv,
+#'   arrow_repo_path = "path/to/arrow",
+#'   country_code    = "BOL"
+#' )
+#'
+#' # Explicit character vector
+#' results <- generate_arrow_dataset(
+#'   "BOL_2012_EH_V02_M_V08_A_GMD_ALL",
+#'   arrow_repo_path = "path/to/arrow"
+#' )
+#' }
+generate_arrow_dataset <- function(survey_ids,
+                                   arrow_repo_path,
+                                   overwrite    = FALSE,
+                                   where        = "release",
+                                   version      = NULL,
+                                   country_code = NULL,
+                                   welfare_type = NULL) {
+
+  # --- Normalise survey_ids input -------------------------------------------
+  if (data.table::is.data.table(survey_ids)) {
+    survey_ids <- survey_ids_from_inventory(
+      survey_ids,
+      country_code = country_code,
+      welfare_type = welfare_type
+    )
+  }
+
+  # --- Input validation (user-facing; use cli, not stopifnot) ---------------
+  if (!is.character(survey_ids) || length(survey_ids) < 1L) {
+    cli::cli_abort("{.arg survey_ids} must be a non-empty character vector.")
+  }
+  if (!is.character(arrow_repo_path) || length(arrow_repo_path) != 1L) {
+    cli::cli_abort("{.arg arrow_repo_path} must be a single string.")
+  }
+  if (!is.logical(overwrite) || length(overwrite) != 1L) {
+    cli::cli_abort("{.arg overwrite} must be a single logical value.")
+  }
+  where <- match.arg(where, c("release", "master"))
+
+  n_surveys <- length(survey_ids)
+  cli::cli_inform("Processing {n_surveys} survey(s).")
+
   results <- vector("list", n_surveys)
 
-  for (i in seq_along(survey_list)) {
-    list_name <- names(survey_list)[[i]]
-    dt        <- survey_list[[i]]
+  for (i in seq_len(n_surveys)) {
+    # Use a distinct local name to avoid shadowing function args
+    survey_id_i <- survey_ids[[i]]
+    cli::cli_inform("[{i}/{n_surveys}] {survey_id_i}")
 
-    rlang::inform(
-      paste0("[", i, "/", n_surveys, "] Processing: ", list_name)
-    )
+    results[[i]] <- tryCatch({
 
-    # Wrap in tryCatch to catch validation errors without aborting the batch
-    row <- tryCatch(
-      write_survey_parquet(
-        dt             = dt,
-        arrow_repo_path = arrow_repo_path,
-        overwrite      = overwrite
-      ),
-      error = function(e) {
-        # If .validate_for_write or directory creation aborts, record here
-        data.table::data.table(
-          survey_id            = tryCatch(dt[1L, survey_id],
-                                         error = function(e2) NA_character_),
-          country_code         = NA_character_,
-          surveyid_year        = NA_integer_,
-          welfare_type         = NA_character_,
-          file_path            = NA_character_,
-          n_rows               = NA_integer_,
-          available_dimensions = NA_character_,
-          status               = "error",
-          message              = conditionMessage(e)
-        )
-      }
-    )
+      # Parse ID into load_pip_data() arguments
+      parsed <- .parse_survey_id(survey_id_i)
 
-    row[, list_name := list_name]
-    results[[i]] <- row
-  }
-
-  # --- Consolidate results ---------------------------------------------------
-  summary_dt <- data.table::rbindlist(results, use.names = TRUE, fill = TRUE)
-
-  # Move list_name to first position for readability
-  data.table::setcolorder(
-    summary_dt,
-    c("list_name", setdiff(names(summary_dt), "list_name"))
-  )
-
-  # --- Print summary ---------------------------------------------------------
-  n_written <- summary_dt[status == "written", .N]
-  n_skipped <- summary_dt[status == "skipped", .N]
-  n_errors  <- summary_dt[status == "error",   .N]
-
-  rlang::inform(
-    paste0(
-      "Arrow dataset generation complete. ",
-      "Written: ", n_written, "  |  ",
-      "Skipped: ", n_skipped, "  |  ",
-      "Errors: ",  n_errors
-    )
-  )
-
-  if (n_errors > 0L) {
-    rlang::warn(
-      paste0(
-        n_errors, " survey(s) failed. ",
-        "Check the $message column in the returned summary for details."
+      raw <- pipload::load_pip_data(
+        country_code   = parsed$country_code,
+        surveyid_year  = parsed$surveyid_year,
+        survey_acronym = parsed$survey_acronym,
+        vermast        = parsed$vermast,
+        veralt         = parsed$veralt,
+        collection     = parsed$collection,
+        module         = parsed$module,
+        where          = where,
+        version        = version,
+        metadata       = FALSE
       )
-    )
+
+      meta <- pipload::load_pip_data(
+        country_code   = parsed$country_code,
+        surveyid_year  = parsed$surveyid_year,
+        survey_acronym = parsed$survey_acronym,
+        vermast        = parsed$vermast,
+        veralt         = parsed$veralt,
+        collection     = parsed$collection,
+        module         = parsed$module,
+        where          = where,
+        version        = version,
+        metadata       = TRUE
+      )
+
+      dt <- prepare_for_arrow(raw, meta)
+      rm(raw, meta)
+
+      result_row <- write_survey_parquet(
+        dt              = dt,
+        arrow_repo_path = arrow_repo_path,
+        overwrite       = overwrite
+      )
+
+      rm(dt)
+      gc()
+
+      result_row
+
+    }, error = function(e) {
+      data.table::data.table(
+        survey_id            = survey_id_i,
+        country_code         = NA_character_,
+        surveyid_year        = NA_integer_,
+        welfare_type         = NA_character_,
+        file_path            = NA_character_,
+        n_rows               = NA_integer_,
+        available_dimensions = NA_character_,
+        status               = "error",
+        message              = conditionMessage(e)
+      )
+    })
   }
 
-  return(summary_dt[])
+  data.table::rbindlist(results, fill = TRUE)
 }

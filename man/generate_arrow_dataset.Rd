@@ -2,48 +2,75 @@
 % Please edit documentation in R/arrow_generation.R
 \name{generate_arrow_dataset}
 \alias{generate_arrow_dataset}
-\title{Batch-write a list of prepared survey data.tables to the Arrow repository}
+\title{Batch-write surveys to the Arrow repository}
 \usage{
-generate_arrow_dataset(survey_list, arrow_repo_path, overwrite = FALSE)
+generate_arrow_dataset(
+  survey_ids,
+  arrow_repo_path,
+  overwrite = FALSE,
+  where = "release",
+  version = NULL,
+  country_code = NULL,
+  welfare_type = NULL
+)
 }
 \arguments{
-\item{survey_list}{A named list of prepared \code{data.table} objects. Names
-are used only for progress messages; the actual \code{survey_id} is read from
-the data.}
+\item{survey_ids}{Character vector of survey IDs, or a \code{data.table}
+inventory from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}. When a
+\code{data.table} is supplied it is passed through
+\code{\link[=survey_ids_from_inventory]{survey_ids_from_inventory()}} automatically.}
 
 \item{arrow_repo_path}{Absolute path to the root of the Master Arrow
 Repository.}
 
-\item{overwrite}{Logical. Passed through to \code{write_survey_parquet()}.
-Defaults to \code{FALSE} (skip existing files).}
+\item{overwrite}{Logical. Passed to \code{\link[=write_survey_parquet]{write_survey_parquet()}}.}
+
+\item{where}{Passed to \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}. One of \code{"release"}
+(default) or \code{"master"}.}
+
+\item{version}{Release version string passed to
+\code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}. \code{NULL} uses the latest available.}
+
+\item{country_code}{Optional ISO3 filter — only used when \code{survey_ids} is
+an inventory \code{data.table}.}
+
+\item{welfare_type}{Optional welfare type filter (\code{"INC"}, \code{"CON"}) — only
+used when \code{survey_ids} is an inventory \code{data.table}.}
 }
 \value{
-A \code{data.table} with one row per survey and the same columns as the
-return value of \code{write_survey_parquet()}, plus:
-\describe{
-\item{\code{list_name}}{The name of the element in \code{survey_list}.}
-}
+A \code{data.table} with one row per survey and columns: \code{survey_id},
+\code{status} (\code{"written"}, \code{"skipped"}, or \code{"error"}), \code{n_rows},
+\code{available_dimensions}, \code{file_path}, \code{message}.
 }
 \description{
-Iterates over a named list of prepared \code{data.table} objects, calling
-\code{write_survey_parquet()} for each one, and returns a consolidated summary.
-}
-\details{
-Each element must already be prepared (schema-conformant, all required
-columns injected). Use \code{prepare_for_arrow()} to prepare raw {pipdata}
-output before passing it here.
-
-Surveys that fail validation or write errors are recorded with
-\code{status = "error"} in the summary — the batch does not abort early.
+Accepts either a character vector of survey IDs or a release inventory
+data.table (from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}). Surveys are
+loaded, cleaned, and written one at a time — memory from each survey is
+freed before the next is loaded.
 }
 \examples{
 \dontrun{
-surveys <- list(BOL_2012 = BOL_2012, PER_2019 = PER_2019)
-summary <- generate_arrow_dataset(surveys, arrow_repo_path = "path/to/arrow")
+# From inventory (recommended for large batches)
+inv     <- pipload::load_pip_release_inventory()
+results <- generate_arrow_dataset(inv, arrow_repo_path = "path/to/arrow")
+
+# Subset by country
+results <- generate_arrow_dataset(
+  inv,
+  arrow_repo_path = "path/to/arrow",
+  country_code    = c("BOL", "PER")
+)
+
+# From explicit vector
+results <- generate_arrow_dataset(
+  c("BOL_2012_EH", "PER_2019_ENAHO"),
+  arrow_repo_path = "path/to/arrow"
+)
 }
 }
 \seealso{
 Other arrow-generation: 
+\code{\link{survey_ids_from_inventory}()},
 \code{\link{write_survey_parquet}()}
 }
 \concept{arrow-generation}

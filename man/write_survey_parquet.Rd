@@ -69,6 +69,7 @@ result <- write_survey_parquet(BOL_2012, arrow_repo_path = "path/to/arrow")
 }
 \seealso{
 Other arrow-generation: 
-\code{\link{generate_arrow_dataset}()}
+\code{\link{generate_arrow_dataset}()},
+\code{\link{survey_ids_from_inventory}()}
 }
 \concept{arrow-generation}
