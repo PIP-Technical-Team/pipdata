@@ -5,11 +5,27 @@
 # Responsibility: write schema-conformant, partitioned Parquet files to the
 # Master Arrow Repository from already-prepared data.tables.
 #
-# The input data.table is assumed to have been processed by
-# `prepare_for_arrow()` (arrow_prep.R), which handles metadata injection,
-# type casting, breakdown dimension standardisation, and pre-write checks.
-# These functions therefore focus only on I/O concerns: partition path
-# construction, directory creation, filename derivation, and the write itself.
+# The input data.table MUST have been processed by `prepare_for_arrow()`
+# (arrow_prep.R) before any function in this file is called. That function
+# handles metadata injection, type casting, breakdown dimension
+# standardisation, and pre-write checks. The functions here focus only on
+# I/O concerns: partition path construction, directory creation, filename
+# derivation, and the write itself.
+#
+# Typical single-survey workflow
+# ------------------------------
+#   raw    <- pipload::load_pip_data(..., metadata = FALSE)
+#   meta   <- pipload::load_pip_data(..., metadata = TRUE)
+#   dt     <- prepare_for_arrow(raw, meta)          # arrow_prep.R
+#   result <- write_survey_parquet(dt, arrow_repo_path = "path/to/arrow")
+#
+# Typical batch workflow
+# ----------------------
+#   inv     <- pipload::load_pip_release_inventory()
+#   results <- generate_arrow_dataset(inv, arrow_repo_path = "path/to/arrow")
+#
+# See also: prepare_for_arrow() in arrow_prep.R — mandatory preprocessing
+#           step before write_survey_parquet().
 #
 # Exported functions
 # ------------------
@@ -255,7 +271,7 @@
 #' Write a single prepared survey data.table to a Parquet file
 #'
 #' Takes a schema-conformant, already-prepared `data.table` (output of
-#' `prepare_for_arrow()`) and writes it to the correct partition directory
+#' [prepare_for_arrow()]) and writes it to the correct partition directory
 #' inside the Master Arrow Repository.
 #'
 #' Partition structure:
@@ -278,15 +294,18 @@
 #'    compression).
 #' 6. Returns a one-row summary `data.table`.
 #'
-#' @param dt            A prepared `data.table`. Must contain all required
-#'   columns and only schema-allowed columns. Typically the output of
-#'   `prepare_for_arrow()`.
-#' @param arrow_repo_path  Absolute path to the root of the Master Arrow
+#' @param dt A `data.table` produced by \strong{[prepare_for_arrow()]}.
+#'   Must contain all required columns and only schema-allowed columns.
+#'   \strong{Do not pass raw survey data directly — passing unprepared data
+#'   will produce misleading validation errors. Always call
+#'   [prepare_for_arrow()] first.}
+#' @param arrow_repo_path Absolute path to the root of the Master Arrow
 #'   Repository. The directory must exist; partition subdirectories are
 #'   created automatically.
-#' @param overwrite     Logical. If `FALSE` (default), skip writing when the
+#' @param overwrite Logical. If `FALSE` (default), skip writing when the
 #'   target Parquet file already exists and return a `"skipped"` status row.
-#'   If `TRUE`, overwrite the existing file.
+#'   This makes re-runs safe — only missing surveys are written. If `TRUE`,
+#'   overwrite the existing file.
 #'
 #' @return A one-row `data.table` with columns:
 #'   \describe{
@@ -302,11 +321,16 @@
 #'     \item{`message`}{Error message when status is "error"; NA otherwise.}
 #'   }
 #'
+#' @seealso [prepare_for_arrow()] for the mandatory preprocessing step.
+#'   [generate_arrow_dataset()] for batch processing.
 #' @family arrow-generation
 #' @export
 #' @examples
 #' \dontrun{
-#' result <- write_survey_parquet(BOL_2012, arrow_repo_path = "path/to/arrow")
+#' raw    <- pipload::load_pip_data("BOL", 2012, "EH", metadata = FALSE)
+#' meta   <- pipload::load_pip_data("BOL", 2012, "EH", metadata = TRUE)
+#' dt     <- prepare_for_arrow(raw, meta)
+#' result <- write_survey_parquet(dt, arrow_repo_path = "path/to/arrow")
 #' }
 write_survey_parquet <- function(dt,
                                  arrow_repo_path,
@@ -545,9 +569,10 @@ survey_ids_from_inventory <- function(inventory,
 #' Batch-write surveys to the Arrow repository
 #'
 #' Accepts either a character vector of survey IDs or a release inventory
-#' `data.table` (from [pipload::load_pip_release_inventory()]). Surveys are
-#' loaded, cleaned, and written one at a time — memory from each survey is
-#' freed before the next is loaded.
+#' `data.table` (from [pipload::load_pip_release_inventory()]). For each
+#' survey, data is loaded via [pipload::load_pip_data()], prepared via
+#' [prepare_for_arrow()], and written via [write_survey_parquet()]. Memory
+#' from each survey is freed before the next is loaded.
 #'
 #' @param survey_ids Character vector of survey IDs, or a `data.table`
 #'   inventory from [pipload::load_pip_release_inventory()]. When a
@@ -555,7 +580,10 @@ survey_ids_from_inventory <- function(inventory,
 #'   [survey_ids_from_inventory()] automatically.
 #' @param arrow_repo_path Absolute path to the root of the Master Arrow
 #'   Repository.
-#' @param overwrite Logical. Passed to [write_survey_parquet()].
+#' @param overwrite Logical. Passed to [write_survey_parquet()]. If `FALSE`
+#'   (default), surveys whose Parquet file already exists are skipped — making
+#'   it safe to re-run the function without duplicating work. Set to `TRUE`
+#'   only when you need to overwrite existing files.
 #' @param where Passed to [pipload::load_pip_data()]. One of `"release"`
 #'   (default) or `"master"`.
 #' @param version Release version string passed to
@@ -568,6 +596,8 @@ survey_ids_from_inventory <- function(inventory,
 #' @return A `data.table` with one row per survey and columns: `survey_id`,
 #'   `status` (`"written"`, `"skipped"`, or `"error"`), `n_rows`,
 #'   `available_dimensions`, `file_path`, `message`.
+#' @seealso [prepare_for_arrow()] for the preprocessing applied to each
+#'   survey internally. [write_survey_parquet()] for single-survey writes.
 #' @family arrow-generation
 #' @export
 #' @examples
