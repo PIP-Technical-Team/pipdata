@@ -52,6 +52,10 @@ valid_aux_load <- function(
     unique_release <- lapply(changes_release, check_unique)
 
     if (compare %in% c("release")) {
+      if (length(unique_release) == 0) {
+        return(NULL)
+      }
+
       return(unique_release)
     }
   }
@@ -80,7 +84,10 @@ valid_aux_load <- function(
 
     unique_vintage <- lapply(changes_vintage, check_unique)
 
-    if (compare %in% c("release")) {
+    if (compare %in% c("vintage")) {
+      if (length(unique_vintage) == 0) {
+        return(NULL)
+      }
       return(unique_vintage)
     }
   }
@@ -88,9 +95,14 @@ valid_aux_load <- function(
   if (compare %in% c("all")) {
     # Combine if all changes are considered
 
-    unique_all <- list(unique_release, unique_vintage)
+    unique_all <- list(
+      release = if (length(unique_release) == 0) NULL else unique_release,
+      vintage = if (length(unique_vintage) == 0) NULL else unique_vintage
+    )
 
-    names(unique_all) <- c("release", "vintage")
+    if (all(sapply(unique_all, is.null))) {
+      return(NULL)
+    }
 
     return(unique_all)
   }

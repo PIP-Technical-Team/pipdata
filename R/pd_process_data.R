@@ -22,7 +22,9 @@
 #' }
 pd_process_data <- function(
   inv = inv,
-  aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce")
+  aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  force = FALSE,
+  verbose = getOption("pipdata.verbose", default = FALSE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -32,7 +34,20 @@ pd_process_data <- function(
   names(aux_list) <- aux_measures
 
   # Load valid inventory
-  inv_to_clean <- valid_dlw_load(inv = inv, aux_measures = aux_measures)
+  inv_to_clean <- valid_dlw_load(
+    inv = inv,
+    aux_measures = aux_measures,
+    force = force,
+    verbose = verbose
+  )
+
+  if (is.null(inv_to_clean) || nrow(inv_to_clean) == 0) {
+    cli::cli_alert_info("No surveys to process.")
+
+    # Load old pip inventory and return
+    old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
+    return(old_pip_inv)
+  }
 
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))

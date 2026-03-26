@@ -2,6 +2,7 @@ valid_dlw_load <- function(
   inv,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
+  force = FALSE,
   # date_valid = .pipdataenv$date_valid,
   verbose = getOption("pipdata.verbose", default = FALSE)
 ) {
@@ -18,13 +19,22 @@ valid_dlw_load <- function(
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Load changes in aux files
-  changes_aux <- valid_aux_load(measure = aux_measures, compare = "all")
-  ls_inv_aux <- lapply(changes_aux, filter_aux_inv, inv = inv)
+  all_changes_aux <- valid_aux_load(measure = aux_measures, compare = "all")
+  ls_inv_aux <- lapply(all_changes_aux, filter_aux_inv, inv = inv)
 
   # Join release and vintage changes and select unique surveys
-  inv_aux <- ls_inv_aux |>
-    data.table::rbindlist() |>
-    collapse::funique()
+  if (
+    is.null(ls_inv_aux) ||
+      length(ls_inv_aux) == 0 ||
+      all(sapply(ls_inv_aux, is.null))
+  ) {
+    cli::cli_alert_info("No changes in auxiliary files.")
+    inv_aux <- NULL
+  } else {
+    inv_aux <- ls_inv_aux |>
+      data.table::rbindlist() |>
+      collapse::funique()
+  }
 
   # Filter inventory for specific modules and select last version of each survey (and random sample if needed)
   # inv <- m_inv_valid(inv, seed = seed) # Mock function to select 20 random surveys from valid inventory
@@ -32,7 +42,18 @@ valid_dlw_load <- function(
   inv_svy <- last_ver_inv(inv)
 
   # Select valid surveys and compare to previous cleaning
-  inv_svy <- inv_to_process(inv_svy)
+  if (force) {
+    inv_svy <- inv_svy
+  } else {
+    inv_svy <- inv_to_process(inv_svy)
+  }
+
+  if (
+    (is.null(inv_svy) || nrow(inv_svy) == 0) &&
+      (is.null(inv_aux) || nrow(inv_aux) == 0)
+  ) {
+    return(NULL)
+  }
 
   # Bind with inventory from aux changes
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
@@ -57,6 +78,11 @@ filter_aux_inv <- function(inv, changes_aux) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Defense
+  if (is.null(changes_aux) || length(changes_aux) == 0) {
+    return(NULL)
+  }
 
   # Fix year variable
 
@@ -83,11 +109,13 @@ filter_aux_inv <- function(inv, changes_aux) {
     reportvar = FALSE
   )
 
-  # Choose last version if not empty
-
-  if (!(nrow(inv_aux) == 0)) {
-    inv_aux <- last_ver_inv(inv_aux)
+  # Return if empty
+  if (nrow(inv_aux) == 0) {
+    return(NULL)
   }
+
+  # Choose last version if not empty
+  inv_aux <- last_ver_inv(inv_aux)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -171,9 +199,10 @@ inv_to_process <- function(inv) {
   )
 
   if (inv_svy[, .N] == 0) {
-    cli::cli_abort(
+    cli::cli_alert_warning(
       "All surveys in the inventory have been cleaned in previous versions. No surveys to process."
     )
+    return(NULL)
   }
 
   return(inv_svy)
