@@ -31,23 +31,36 @@
 #' full string (`"income"` / `"consumption"`) to the two-letter code
 #' (`"INC"` / `"CON"`). Unknown values are passed through after `toupper()`.
 #'
+#' The `survey_id` column in the output holds the **`pip_id`** value (e.g.
+#' `"ARG_2003_EPHC-S2_INC_ALL"`), not the raw `survey_id` string. This is
+#' because `pip_id` uniquely identifies a single physical file (one welfare
+#' type), whereas `survey_id` can map to multiple files (INC + CON). The
+#' Parquet filename and partition path are derived from this column.
+#'
 #' @param dt       A `data.table` of survey microdata. Modified **by reference**.
 #' @param metadata Named list returned by
 #'   `pipload::load_pip_data(..., metadata = TRUE)`.  Must contain
-#'   `country_code`, `surveyid_year`, `survey_acronym`, `welfare_type`, and
-#'   `survey_id`.
+#'   `country_code`, `surveyid_year`, `survey_acronym`, and `welfare_type`.
+#' @param pip_id   The canonical `pip_id` string for this specific survey file
+#'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`), taken from the release inventory.
+#'   This is stored in the `survey_id` column of the output data.table and
+#'   used as the Parquet filename stem.
 #'
 #' @return `dt` invisibly (modified by reference).
 #' @keywords internal
-inject_metadata_cols <- function(dt, metadata) {
+inject_metadata_cols <- function(dt, metadata, pip_id) {
   required_fields <- c(
-    "country_code", "surveyid_year", "survey_acronym",
-    "welfare_type", "survey_id"
+    "country_code", "surveyid_year", "survey_acronym", "welfare_type"
   )
   missing_fields <- setdiff(required_fields, names(metadata))
   if (length(missing_fields) > 0L) {
     cli::cli_abort(
       "metadata is missing required field(s): {.field {missing_fields}}"
+    )
+  }
+  if (!is.character(pip_id) || length(pip_id) != 1L || is.na(pip_id)) {
+    cli::cli_abort(
+      "{.arg pip_id} must be a single non-NA character string."
     )
   }
 
@@ -62,7 +75,7 @@ inject_metadata_cols <- function(dt, metadata) {
       wt_raw == "CONSUMPTION", "CON",
       default = wt_raw
     ),
-    survey_id      = as.character(metadata$survey_id)
+    survey_id      = as.character(pip_id)
   )]
 
   invisible(dt)
@@ -455,8 +468,11 @@ validate_pre_write <- function(dt) {
 #'   `welfare` and `weight` columns.
 #' @param metadata Named list of survey identifiers as returned by
 #'   `pipload::load_pip_data(..., metadata = TRUE)`. Must contain
-#'   `country_code`, `surveyid_year`, `survey_acronym`, `welfare_type`, and
-#'   `survey_id`.
+#'   `country_code`, `surveyid_year`, `survey_acronym`, and `welfare_type`.
+#' @param pip_id   The canonical `pip_id` string for this specific survey file
+#'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`), taken from the `pip_id` column of
+#'   the release inventory. Stored in the `survey_id` column of the output
+#'   data.table and used as the Parquet filename stem.
 #'
 #' @return A new `data.table` containing only schema-allowed columns, ready
 #'   for [write_survey_parquet()].
@@ -465,11 +481,13 @@ validate_pre_write <- function(dt) {
 #' @export
 #' @examples
 #' \dontrun{
+#' inv  <- pipload::load_pip_release_inventory()
+#' pip  <- inv[survey_id == "ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL", pip_id]
 #' raw  <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = FALSE)
 #' meta <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = TRUE)
-#' dt   <- prepare_for_arrow(raw, meta)
+#' dt   <- prepare_for_arrow(raw, meta, pip_id = pip)
 #' }
-prepare_for_arrow <- function(data, metadata) {
+prepare_for_arrow <- function(data, metadata, pip_id) {
   if (!data.table::is.data.table(data)) {
     cli::cli_abort(
       "{.arg data} must be a {.cls data.table}, not {.cls {class(data)[[1L]]}}."
@@ -485,7 +503,7 @@ prepare_for_arrow <- function(data, metadata) {
   dt <- data.table::copy(data)
 
   # ---- Step 1 & 2: inject metadata and cast core columns -------------------
-  inject_metadata_cols(dt, metadata)
+  inject_metadata_cols(dt, metadata, pip_id)
   cast_data_cols(dt)
 
   # ---- Step 3: breakdown dimension standardisation -------------------------

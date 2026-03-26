@@ -6,11 +6,12 @@
 \usage{
 generate_arrow_dataset(
   survey_ids,
-  arrow_repo_path,
+  arrow_repo_path = getOption("pipdata.arrow_repo"),
   overwrite = FALSE,
   where = "release",
   version = NULL,
-  country_code = NULL,
+  surveys = NULL,
+  module = NULL,
   welfare_type = NULL
 )
 }
@@ -23,7 +24,10 @@ inventory from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inve
 \item{arrow_repo_path}{Absolute path to the root of the Master Arrow
 Repository.}
 
-\item{overwrite}{Logical. Passed to \code{\link[=write_survey_parquet]{write_survey_parquet()}}.}
+\item{overwrite}{Logical. Passed to \code{\link[=write_survey_parquet]{write_survey_parquet()}}. If \code{FALSE}
+(default), surveys whose Parquet file already exists are skipped — making
+it safe to re-run the function without duplicating work. Set to \code{TRUE}
+only when you need to overwrite existing files.}
 
 \item{where}{Passed to \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}. One of \code{"release"}
 (default) or \code{"master"}.}
@@ -31,8 +35,14 @@ Repository.}
 \item{version}{Release version string passed to
 \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}. \code{NULL} uses the latest available.}
 
-\item{country_code}{Optional ISO3 filter — only used when \code{survey_ids} is
-an inventory \code{data.table}.}
+\item{surveys}{Optional named integer vector of exact country-year pairs to
+include (e.g. \code{c(ARG = 2003, BOL = 2020)}). Names are ISO3 country codes,
+values are survey years. Pairs are matched jointly — no cross-product.
+\code{NULL} (default) applies no country/year filter. Only used when
+\code{survey_ids} is an inventory \code{data.table}.}
+
+\item{module}{Optional character vector of module codes to subset (e.g.
+\code{"ALL"}) — only used when \code{survey_ids} is an inventory \code{data.table}.}
 
 \item{welfare_type}{Optional welfare type filter (\code{"INC"}, \code{"CON"}) — only
 used when \code{survey_ids} is an inventory \code{data.table}.}
@@ -44,31 +54,36 @@ A \code{data.table} with one row per survey and columns: \code{survey_id},
 }
 \description{
 Accepts either a character vector of survey IDs or a release inventory
-data.table (from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}). Surveys are
-loaded, cleaned, and written one at a time — memory from each survey is
-freed before the next is loaded.
+\code{data.table} (from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}). For each
+survey, data is loaded via \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}, prepared via
+\code{\link[=prepare_for_arrow]{prepare_for_arrow()}}, and written via \code{\link[=write_survey_parquet]{write_survey_parquet()}}. Memory
+from each survey is freed before the next is loaded.
 }
 \examples{
 \dontrun{
-# From inventory (recommended for large batches)
-inv     <- pipload::load_pip_release_inventory()
-results <- generate_arrow_dataset(inv, arrow_repo_path = "path/to/arrow")
+inv <- pipload::load_pip_release_inventory()
 
-# Subset by country
+# All surveys in inventory (use with care — very large)
+results <- generate_arrow_dataset(inv)
+
+# All ALL-module surveys
+results <- generate_arrow_dataset(inv, module = "ALL")
+
+# Exact country-year pairs, ALL module
 results <- generate_arrow_dataset(
   inv,
-  arrow_repo_path = "path/to/arrow",
-  country_code    = c("BOL", "PER")
+  surveys = c(ARG = 2003, BOL = 2020, COL = 2010, IDN = 2019),
+  module  = "ALL"
 )
 
-# From explicit vector
-results <- generate_arrow_dataset(
-  c("BOL_2012_EH", "PER_2019_ENAHO"),
-  arrow_repo_path = "path/to/arrow"
-)
+# Explicit character vector of survey IDs
+results <- generate_arrow_dataset("BOL_2012_EH_V02_M_V08_A_GMD_ALL")
 }
 }
 \seealso{
+\code{\link[=prepare_for_arrow]{prepare_for_arrow()}} for the preprocessing applied to each
+survey internally. \code{\link[=write_survey_parquet]{write_survey_parquet()}} for single-survey writes.
+
 Other arrow-generation: 
 \code{\link{survey_ids_from_inventory}()},
 \code{\link{write_survey_parquet}()}

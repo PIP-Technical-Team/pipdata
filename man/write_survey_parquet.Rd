@@ -4,12 +4,18 @@
 \alias{write_survey_parquet}
 \title{Write a single prepared survey data.table to a Parquet file}
 \usage{
-write_survey_parquet(dt, arrow_repo_path, overwrite = FALSE)
+write_survey_parquet(
+  dt,
+  arrow_repo_path = getOption("pipdata.arrow_repo"),
+  overwrite = FALSE
+)
 }
 \arguments{
-\item{dt}{A prepared \code{data.table}. Must contain all required
-columns and only schema-allowed columns. Typically the output of
-\code{prepare_for_arrow()}.}
+\item{dt}{A \code{data.table} produced by \strong{\code{\link[=prepare_for_arrow]{prepare_for_arrow()}}}.
+Must contain all required columns and only schema-allowed columns.
+\strong{Do not pass raw survey data directly — passing unprepared data
+will produce misleading validation errors. Always call
+\code{\link[=prepare_for_arrow]{prepare_for_arrow()}} first.}}
 
 \item{arrow_repo_path}{Absolute path to the root of the Master Arrow
 Repository. The directory must exist; partition subdirectories are
@@ -17,7 +23,8 @@ created automatically.}
 
 \item{overwrite}{Logical. If \code{FALSE} (default), skip writing when the
 target Parquet file already exists and return a \code{"skipped"} status row.
-If \code{TRUE}, overwrite the existing file.}
+This makes re-runs safe — only missing surveys are written. If \code{TRUE},
+overwrite the existing file.}
 }
 \value{
 A one-row \code{data.table} with columns:
@@ -36,7 +43,7 @@ dimension columns present (empty string when none).}
 }
 \description{
 Takes a schema-conformant, already-prepared \code{data.table} (output of
-\code{prepare_for_arrow()}) and writes it to the correct partition directory
+\code{\link[=prepare_for_arrow]{prepare_for_arrow()}}) and writes it to the correct partition directory
 inside the Master Arrow Repository.
 }
 \details{
@@ -64,10 +71,16 @@ compression).
 }
 \examples{
 \dontrun{
-result <- write_survey_parquet(BOL_2012, arrow_repo_path = "path/to/arrow")
+raw    <- pipload::load_pip_data("BOL", 2012, "EH", metadata = FALSE)
+meta   <- pipload::load_pip_data("BOL", 2012, "EH", metadata = TRUE)
+dt     <- prepare_for_arrow(raw, meta)
+result <- write_survey_parquet(dt, arrow_repo_path = "path/to/arrow")
 }
 }
 \seealso{
+\code{\link[=prepare_for_arrow]{prepare_for_arrow()}} for the mandatory preprocessing step.
+\code{\link[=generate_arrow_dataset]{generate_arrow_dataset()}} for batch processing.
+
 Other arrow-generation: 
 \code{\link{generate_arrow_dataset}()},
 \code{\link{survey_ids_from_inventory}()}

@@ -14,23 +14,45 @@
 #
 # Typical single-survey workflow
 # ------------------------------
-#   raw    <- pipload::load_pip_data(..., metadata = FALSE)
-#   meta   <- pipload::load_pip_data(..., metadata = TRUE)
+#   raw  <- pipload::load_pip_data("BOL", 2012, "EH",
+#              welfare_type = "CON", module = "ALL", metadata = FALSE)
+#   meta <- pipload::load_pip_data("BOL", 2012, "EH",
+#              welfare_type = "CON", module = "ALL", metadata = TRUE)
 #   dt     <- prepare_for_arrow(raw, meta)          # arrow_prep.R
-#   result <- write_survey_parquet(dt, arrow_repo_path = "path/to/arrow")
+#   result <- write_survey_parquet(dt)
 #
 # Typical batch workflow
 # ----------------------
 #   inv     <- pipload::load_pip_release_inventory()
-#   results <- generate_arrow_dataset(inv, arrow_repo_path = "path/to/arrow")
+#   results <- generate_arrow_dataset(inv, module = "ALL")
+#
+#   # Exact country-year pairs
+#   results <- generate_arrow_dataset(
+#     inv,
+#     surveys = c(ARG = 2003, BOL = 2020, COL = 2010, IDN = 2019),
+#     module  = "ALL"
+#   )
+#
+#   # Explicit survey ID character vector (inventory loaded internally)
+#   results <- generate_arrow_dataset("ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL")
+#
+# Data loading note
+# -----------------
+# `generate_arrow_dataset()` always resolves the physical file to load via
+# the `pip_id` column of the release inventory — NOT by parsing the
+# `survey_id` string. This ensures the correct versioned `.qs2` file is
+# read. When `survey_ids` is a character vector the inventory is loaded
+# automatically to perform this resolution.
 #
 # See also: prepare_for_arrow() in arrow_prep.R — mandatory preprocessing
 #           step before write_survey_parquet().
 #
 # Exported functions
 # ------------------
-#   write_survey_parquet()    — write one prepared data.table to Parquet
-#   generate_arrow_dataset()  — batch-write a list of surveys
+#   write_survey_parquet()      — write one prepared data.table to Parquet
+#   survey_ids_from_inventory() — filter an inventory to a character vector
+#                                 of survey IDs
+#   generate_arrow_dataset()    — batch-write a list of surveys
 #
 # Partition structure
 # -------------------
@@ -38,13 +60,15 @@
 #     country=<country_code>/
 #       year=<surveyid_year>/
 #         welfare=<welfare_type>/
-#           <survey_id>-0.parquet
+#           <pip_id>-0.parquet
 #
 # Filename convention (from arrow-schema.json §filename_convention)
 # -----------------------------------------------------------------
-#   <survey_id>-0.parquet
-#   where <survey_id> is taken directly from the data column (already the
-#   canonical identifier injected by prepare_for_arrow / inject_metadata_cols).
+#   <pip_id>-0.parquet
+#   where <pip_id> is the value stored in the data column `survey_id`.
+#   prepare_for_arrow() / inject_metadata_cols() write the pip_id (e.g.
+#   "ARG_2003_EPHC-S2_INC_ALL") — NOT the raw survey_id string — into that
+#   column, ensuring each welfare-type file gets a unique filename.
 
 # ---------------------------------------------------------------------------
 # Internal constants — derived from piptm::pip_arrow_schema()
@@ -257,8 +281,13 @@
 #' @return An `arrow::Schema` object.
 #' @keywords internal
 .build_arrow_schema <- function(col_names) {
-  fields <- lapply(
-    intersect(names(.SCHEMA_GEN$fields), col_names),
+  # Intersect keeping the order of col_names (i.e. the column order of the
+  # data.table), NOT the order of the schema definition.  arrow::as_arrow_table()
+  # matches schema fields positionally, so the schema order must match the
+  # data column order exactly to avoid "field at index N has name X != Y" errors.
+  matched <- intersect(col_names, names(.SCHEMA_GEN$fields))
+  fields  <- lapply(
+    matched,
     function(nm) arrow::field(nm, .SCHEMA_GEN$fields[[nm]]$type)
   )
   do.call(arrow::schema, fields)
@@ -333,7 +362,7 @@
 #' result <- write_survey_parquet(dt, arrow_repo_path = "path/to/arrow")
 #' }
 write_survey_parquet <- function(dt,
-                                 arrow_repo_path,
+                                 arrow_repo_path = getOption("pipdata.arrow_repo"),
                                  overwrite = FALSE) {
 
   stopifnot(data.table::is.data.table(dt))
@@ -462,8 +491,15 @@ write_survey_parquet <- function(dt,
 #' @param inventory A `data.table` returned by
 #'   [pipload::load_pip_release_inventory()]. Must contain a `survey_id`
 #'   column.
-#' @param country_code Optional character vector of ISO3 codes to subset.
-#'   `NULL` (default) returns all surveys.
+#' @param surveys Optional named integer vector specifying exact
+#'   country-year pairs to include. Names must be ISO3 country codes and
+#'   values must be survey years (e.g. `c(ARG = 2003, BOL = 2020)`). When
+#'   supplied, only rows matching **both** a name and its corresponding value
+#'   are retained — cross-product matching is never performed. When `NULL`
+#'   (default) the country/year filter is not applied and all rows pass
+#'   through (subject to `module` and `welfare_type` filters).
+#' @param module Optional character vector of module codes to subset (e.g.
+#'   `"ALL"`, `"BIN"`, `"GROUP"`). `NULL` (default) returns all modules.
 #' @param welfare_type Optional character vector of welfare type codes
 #'   (`"INC"`, `"CON"`) to subset. `NULL` (default) returns all.
 #'
@@ -473,11 +509,20 @@ write_survey_parquet <- function(dt,
 #' @examples
 #' \dontrun{
 #' inv <- pipload::load_pip_release_inventory()
+#' # All surveys
 #' ids <- survey_ids_from_inventory(inv)
-#' ids <- survey_ids_from_inventory(inv, country_code = "BOL")
+#' # All BOL surveys
+#' ids <- survey_ids_from_inventory(inv, surveys = c(BOL = 2020))
+#' # Exact country-year pairs
+#' ids <- survey_ids_from_inventory(
+#'   inv,
+#'   surveys = c(ARG = 2003, BOL = 2020, COL = 2010, IDN = 2019),
+#'   module  = "ALL"
+#' )
 #' }
 survey_ids_from_inventory <- function(inventory,
-                                      country_code = NULL,
+                                      surveys      = NULL,
+                                      module       = NULL,
                                       welfare_type = NULL) {
 
   if (!data.table::is.data.table(inventory)) {
@@ -493,18 +538,46 @@ survey_ids_from_inventory <- function(inventory,
 
   dt <- data.table::copy(inventory)
 
-  if (!is.null(country_code)) {
-    if (!is.character(country_code)) {
-      cli::cli_abort("{.arg country_code} must be a character vector.")
-    }
-    if (!"country_code" %in% names(dt)) {
+  # --- surveys filter: paired country-year matching -------------------------
+  if (!is.null(surveys)) {
+    if (!is.numeric(surveys) && !is.integer(surveys)) {
       cli::cli_abort(
-        "{.arg inventory} must contain a {.field country_code} column to filter by country."
+        "{.arg surveys} must be a named integer/numeric vector (e.g. {.code c(ARG = 2003, BOL = 2020)})."
       )
     }
-    # Assign to local var to avoid data.table column name ambiguity
-    cc <- toupper(country_code)
-    dt <- dt[country_code %in% cc]
+    if (is.null(names(surveys)) || any(nchar(names(surveys)) == 0L)) {
+      cli::cli_abort(
+        "Every element of {.arg surveys} must be named with an ISO3 country code."
+      )
+    }
+    for (col in c("country_code", "surveyid_year")) {
+      if (!col %in% names(dt)) {
+        cli::cli_abort(
+          "{.arg inventory} must contain a {.field {col}} column to use {.arg surveys} filter."
+        )
+      }
+    }
+    # Build a lookup key for each pair and filter rows that match any pair
+    cc  <- toupper(names(surveys))
+    yr  <- as.integer(surveys)
+    # Create a temporary join key in the inventory copy
+    dt[, .pair_key := paste0(toupper(country_code), "_", surveyid_year)]
+    keep_keys <- paste0(cc, "_", yr)
+    dt <- dt[.pair_key %in% keep_keys]
+    dt[, .pair_key := NULL]
+  }
+
+  if (!is.null(module)) {
+    if (!is.character(module)) {
+      cli::cli_abort("{.arg module} must be a character vector.")
+    }
+    if (!"module" %in% names(dt)) {
+      cli::cli_abort(
+        "{.arg inventory} must contain a {.field module} column to filter by module."
+      )
+    }
+    mod <- toupper(module)
+    dt  <- dt[toupper(get("module")) %in% mod]
   }
 
   if (!is.null(welfare_type)) {
@@ -588,8 +661,13 @@ survey_ids_from_inventory <- function(inventory,
 #'   (default) or `"master"`.
 #' @param version Release version string passed to
 #'   [pipload::load_pip_data()]. `NULL` uses the latest available.
-#' @param country_code Optional ISO3 filter — only used when `survey_ids` is
-#'   an inventory `data.table`.
+#' @param surveys Optional named integer vector of exact country-year pairs to
+#'   include (e.g. `c(ARG = 2003, BOL = 2020)`). Names are ISO3 country codes,
+#'   values are survey years. Pairs are matched jointly — no cross-product.
+#'   `NULL` (default) applies no country/year filter. Only used when
+#'   `survey_ids` is an inventory `data.table`.
+#' @param module Optional character vector of module codes to subset (e.g.
+#'   `"ALL"`) — only used when `survey_ids` is an inventory `data.table`.
 #' @param welfare_type Optional welfare type filter (`"INC"`, `"CON"`) — only
 #'   used when `survey_ids` is an inventory `data.table`.
 #'
@@ -602,41 +680,49 @@ survey_ids_from_inventory <- function(inventory,
 #' @export
 #' @examples
 #' \dontrun{
-#' # From inventory — recommended for large batches
-#' inv     <- pipload::load_pip_release_inventory()
-#' results <- generate_arrow_dataset(inv, arrow_repo_path = "path/to/arrow")
+#' inv <- pipload::load_pip_release_inventory()
 #'
-#' # Subset to one country
+#' # All surveys in inventory (use with care — very large)
+#' results <- generate_arrow_dataset(inv)
+#'
+#' # All ALL-module surveys
+#' results <- generate_arrow_dataset(inv, module = "ALL")
+#'
+#' # Exact country-year pairs, ALL module
 #' results <- generate_arrow_dataset(
 #'   inv,
-#'   arrow_repo_path = "path/to/arrow",
-#'   country_code    = "BOL"
+#'   surveys = c(ARG = 2003, BOL = 2020, COL = 2010, IDN = 2019),
+#'   module  = "ALL"
 #' )
 #'
-#' # Explicit character vector
-#' results <- generate_arrow_dataset(
-#'   "BOL_2012_EH_V02_M_V08_A_GMD_ALL",
-#'   arrow_repo_path = "path/to/arrow"
-#' )
+#' # Explicit character vector of survey IDs
+#' results <- generate_arrow_dataset("BOL_2012_EH_V02_M_V08_A_GMD_ALL")
 #' }
 generate_arrow_dataset <- function(survey_ids,
-                                   arrow_repo_path,
+                                   arrow_repo_path = getOption("pipdata.arrow_repo"),
                                    overwrite    = FALSE,
                                    where        = "release",
                                    version      = NULL,
-                                   country_code = NULL,
+                                   surveys      = NULL,
+                                   module       = NULL,
                                    welfare_type = NULL) {
 
   # --- Normalise survey_ids input -------------------------------------------
+  # Keep the full inventory — we need its columns to call load_pip_data()
+  # correctly without string parsing.
+  inventory <- NULL
+
   if (data.table::is.data.table(survey_ids)) {
+    inventory  <- data.table::copy(survey_ids)
     survey_ids <- survey_ids_from_inventory(
-      survey_ids,
-      country_code = country_code,
+      inventory,
+      surveys      = surveys,
+      module       = module,
       welfare_type = welfare_type
     )
   }
 
-  # --- Input validation (user-facing; use cli, not stopifnot) ---------------
+  # --- Input validation -----------------------------------------------------
   if (!is.character(survey_ids) || length(survey_ids) < 1L) {
     cli::cli_abort("{.arg survey_ids} must be a non-empty character vector.")
   }
@@ -648,48 +734,80 @@ generate_arrow_dataset <- function(survey_ids,
   }
   where <- match.arg(where, c("release", "master"))
 
-  n_surveys <- length(survey_ids)
-  cli::cli_inform("Processing {n_surveys} survey(s).")
+  # If survey_ids was a character vector (not an inventory), load the
+  # inventory now so we can look up the correct load arguments per pip_id.
+  if (is.null(inventory)) {
+    cli::cli_inform("Loading release inventory to resolve pip_id(s)...")
+    inventory <- pipload::load_pip_release_inventory()
+  }
 
-  results <- vector("list", n_surveys)
+  # --- Resolve pip_ids from the inventory -----------------------------------
+  # Each survey_id may map to multiple pip_id (e.g. INC + CON versions).
+  # Each pip_id corresponds to one physical .qs2 file and one Parquet file.
+  pip_rows <- inventory[
+    !is.na(pip_id) & survey_id %in% survey_ids,
+    .(survey_id, pip_id, country_code, surveyid_year,
+      survey_acronym, vermast, veralt, collection, module,
+      welfare_type)
+  ]
 
-  for (i in seq_len(n_surveys)) {
-    # Use a distinct local name to avoid shadowing function args
-    survey_id_i <- survey_ids[[i]]
-    cli::cli_inform("[{i}/{n_surveys}] {survey_id_i}")
+  if (nrow(pip_rows) == 0L) {
+    cli::cli_abort(
+      "None of the supplied survey IDs could be matched to a pip_id in the inventory."
+    )
+  }
+
+  unmatched <- setdiff(survey_ids, pip_rows$survey_id)
+  if (length(unmatched) > 0L) {
+    cli::cli_warn(
+      "These survey IDs had no pip_id in the inventory and will be skipped: {.val {unmatched}}"
+    )
+  }
+
+  n_total <- nrow(pip_rows)
+  cli::cli_inform("Processing {n_total} pip_id(s).")
+
+  results <- vector("list", n_total)
+
+  for (i in seq_len(n_total)) {
+    row_i       <- pip_rows[i]
+    pip_id_i    <- row_i$pip_id
+    survey_id_i <- row_i$survey_id
+
+    cli::cli_inform("[{i}/{n_total}] {pip_id_i}")
 
     results[[i]] <- tryCatch({
 
-      # Parse ID into load_pip_data() arguments
-      parsed <- .parse_survey_id(survey_id_i)
-
+      # Use inventory columns directly — no string parsing
       raw <- pipload::load_pip_data(
-        country_code   = parsed$country_code,
-        surveyid_year  = parsed$surveyid_year,
-        survey_acronym = parsed$survey_acronym,
-        vermast        = parsed$vermast,
-        veralt         = parsed$veralt,
-        collection     = parsed$collection,
-        module         = parsed$module,
+        country_code   = row_i$country_code,
+        surveyid_year  = row_i$surveyid_year,
+        survey_acronym = row_i$survey_acronym,
+        vermast        = row_i$vermast,
+        veralt         = row_i$veralt,
+        collection     = row_i$collection,
+        module         = row_i$module,
+        welfare_type   = row_i$welfare_type,
         where          = where,
         version        = version,
         metadata       = FALSE
       )
 
       meta <- pipload::load_pip_data(
-        country_code   = parsed$country_code,
-        surveyid_year  = parsed$surveyid_year,
-        survey_acronym = parsed$survey_acronym,
-        vermast        = parsed$vermast,
-        veralt         = parsed$veralt,
-        collection     = parsed$collection,
-        module         = parsed$module,
+        country_code   = row_i$country_code,
+        surveyid_year  = row_i$surveyid_year,
+        survey_acronym = row_i$survey_acronym,
+        vermast        = row_i$vermast,
+        veralt         = row_i$veralt,
+        collection     = row_i$collection,
+        module         = row_i$module,
+        welfare_type   = row_i$welfare_type,
         where          = where,
         version        = version,
         metadata       = TRUE
       )
 
-      dt <- prepare_for_arrow(raw, meta)
+      dt <- prepare_for_arrow(raw, meta, pip_id = pip_id_i)
       rm(raw, meta)
 
       result_row <- write_survey_parquet(
@@ -706,9 +824,9 @@ generate_arrow_dataset <- function(survey_ids,
     }, error = function(e) {
       data.table::data.table(
         survey_id            = survey_id_i,
-        country_code         = NA_character_,
-        surveyid_year        = NA_integer_,
-        welfare_type         = NA_character_,
+        country_code         = row_i$country_code,
+        surveyid_year        = row_i$surveyid_year,
+        welfare_type         = row_i$welfare_type,
         file_path            = NA_character_,
         n_rows               = NA_integer_,
         available_dimensions = NA_character_,

@@ -4,15 +4,28 @@
 \alias{survey_ids_from_inventory}
 \title{Extract survey IDs from a PIP release inventory}
 \usage{
-survey_ids_from_inventory(inventory, country_code = NULL, welfare_type = NULL)
+survey_ids_from_inventory(
+  inventory,
+  surveys = NULL,
+  module = NULL,
+  welfare_type = NULL
+)
 }
 \arguments{
 \item{inventory}{A \code{data.table} returned by
 \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}. Must contain a \code{survey_id}
 column.}
 
-\item{country_code}{Optional character vector of ISO3 codes to subset.
-\code{NULL} (default) returns all surveys.}
+\item{surveys}{Optional named integer vector specifying exact
+country-year pairs to include. Names must be ISO3 country codes and
+values must be survey years (e.g. \code{c(ARG = 2003, BOL = 2020)}). When
+supplied, only rows matching \strong{both} a name and its corresponding value
+are retained — cross-product matching is never performed. When \code{NULL}
+(default) the country/year filter is not applied and all rows pass
+through (subject to \code{module} and \code{welfare_type} filters).}
+
+\item{module}{Optional character vector of module codes to subset (e.g.
+\code{"ALL"}, \code{"BIN"}, \code{"GROUP"}). \code{NULL} (default) returns all modules.}
 
 \item{welfare_type}{Optional character vector of welfare type codes
 (\code{"INC"}, \code{"CON"}) to subset. \code{NULL} (default) returns all.}
@@ -28,8 +41,16 @@ Convenience helper to produce the \code{survey_ids} vector expected by
 \examples{
 \dontrun{
 inv <- pipload::load_pip_release_inventory()
+# All surveys
 ids <- survey_ids_from_inventory(inv)
-ids <- survey_ids_from_inventory(inv, country_code = "BOL")
+# All BOL surveys
+ids <- survey_ids_from_inventory(inv, surveys = c(BOL = 2020))
+# Exact country-year pairs
+ids <- survey_ids_from_inventory(
+  inv,
+  surveys = c(ARG = 2003, BOL = 2020, COL = 2010, IDN = 2019),
+  module  = "ALL"
+)
 }
 }
 \seealso{
