@@ -45,7 +45,7 @@ pipdata_get_gmd <- function(
 
   #### -------------------------------------------------------------------------
 
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence for root, inventory, and data folders
@@ -66,11 +66,9 @@ pipdata_get_gmd <- function(
   cli::cli_progress_bar("Downloading GMD files",
           total = nrow(inv_gmd))
 
-  inv_gmd$data_available <- NA
-  #inv_gmd <- inv_gmd[c(1:4),]
+  # inv_gmd$data_available <- NA
 
   # ctry_partial <- c("BOL","CHN", "NGA", "IND", "IDN", "COL", "PHL", "ARG", "LUX", "FRA")
-  # ctry_partial <- c("BOL", "CHN")
   module_partial <- c("ALL", "GROUP", "HIST", "GPWG", "BIN")
   # inv_gmd <- inv_gmd[(Country %in% ctry_partial & Module %in% module_partial), ]
   inv_gmd <- inv_gmd[(Module %in% module_partial), ]
@@ -152,6 +150,7 @@ pipdata_get_gmd <- function(
 
   pipload::pip_write(x = inv_gmd,
     id = inv_gmd_list,
+    pk = c("Checksum", "FileName"),
     alias = "dlw_inv")
 
   cli::cli_alert_success(
