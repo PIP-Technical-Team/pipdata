@@ -359,15 +359,21 @@ recode_gndr <- function(dt) {
 #'
 #' @return data.table
 #' @keywords internal
-recode_age <- function(dt){
-
+recode_age <- function(dt) {
+  if (c("age") %in% colnames(dt)) {
     dt <- dt |>
       collapse::fmutate(age = as.double(age)) |>
-      collapse::ftransform(age = dplyr::case_when(
-        age < 0 ~ NA_real_,
-        age >= 0 & age <= 110 ~ age,
-        age > 110 ~ NA_real_,
-        .default = NA_real_))
+      collapse::ftransform(
+        age = dplyr::case_when(
+          age < 0 ~ NA_real_,
+          age >= 0 & age <= 110 ~ age,
+          age > 110 ~ NA_real_,
+          .default = NA_real_
+        )
+      )
+  }
+
+  return(dt)
 }
 
 #' Recode urban to area (lower level, S3 methods)
@@ -385,17 +391,37 @@ add_area <- function(dt) {
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @exportS3Method pipdata::add_area
+#' @method add_area pipmd
+#' @export
 add_area.pipmd <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  if (c("subnatid") %in% colnames(dt)){
+  if ("subnatid" %in% colnames(dt)) {
+    # Find all subnatid columns with numbers
+    subnatid_cols <- grep("^subnatid[0-9]+$", colnames(dt), value = TRUE)
 
+    # Extract the maximum number
+    if (length(subnatid_cols) > 0) {
+      nums <- as.numeric(gsub("subnatid", "", subnatid_cols))
+      max_num <- max(nums)
+    } else {
+      max_num <- 0
+    }
+
+    # Rename from largest to smallest to avoid conflicts
+    for (i in max_num:1) {
+      old_name <- paste0("subnatid", i)
+      new_name <- paste0("subnatid", i + 1)
+      if (old_name %in% colnames(dt)) {
+        setnames(dt, old_name, new_name)
+      }
+    }
+
+    # Finally rename subnatid to subnatid1
     setnames(dt, "subnatid", "subnatid1")
-
   }
 
   # Abort if not urban variable
@@ -436,7 +462,8 @@ add_area.pipmd <- function(dt) {
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
-#' @exportS3Method pipdata::add_area
+#' @method add_area pipgd
+#' @export
 add_area.pipgd <- function(dt) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -534,6 +561,7 @@ pip_vars <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # order columns in correct order
+  pip_vars_all <- pip_vars_all[pip_vars_all %in% colnames(dt)]
   setcolorder(dt, pip_vars_all)
   dt <- dt[, .SD, .SDcols = pip_vars_all]
 
