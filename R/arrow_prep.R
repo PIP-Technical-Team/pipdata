@@ -1,4 +1,3 @@
-
 # Pre-Arrow Cleaning & Standardisation
 # Spec:  docs/pre-arrow-cleaning-spec.md
 # Schema: inst/schema/arrow-schema.json  (in {piptm})
@@ -50,7 +49,8 @@
 #' @keywords internal
 inject_metadata_cols <- function(dt, metadata, pip_id) {
   required_fields <- c(
-    "country_code", "surveyid_year", "survey_acronym", "welfare_type"
+    "country_code", "surveyid_year", "survey_acronym", "welfare_type",
+    "vermast", "veralt"
   )
   missing_fields <- setdiff(required_fields, names(metadata))
   if (length(missing_fields) > 0L) {
@@ -75,7 +75,11 @@ inject_metadata_cols <- function(dt, metadata, pip_id) {
       wt_raw == "CONSUMPTION", "CON",
       default = wt_raw
     ),
-    survey_id      = as.character(pip_id)
+    survey_id      = as.character(pip_id),
+    version        = paste0(
+      tolower(as.character(metadata$vermast)), "_",
+      tolower(as.character(metadata$veralt))
+    )
   )]
 
   invisible(dt)
@@ -192,82 +196,24 @@ standardize_area <- function(dt) {
 # §3.3 — Education standardisation
 # ---------------------------------------------------------------------------
 
-#' Standardise education to a 4-level ordered factor
+#' Standardise education columns to factors
 #'
-#' Derives an `education` column from the first available source in priority
-#' order: `educat4` → `educat5` → `educat7` → `educy`. The result is an
-#' ordered factor with levels `c("No education", "Primary", "Secondary",
-#' "Tertiary")`. If no source column is present the function is a no-op.
+#' Ensures any of `educat4`, `educat5`, `educat7` present in `dt` are
+#' factors, preserving their original levels as-is. No recoding or renaming
+#' is applied. If none are present the function is a no-op.
 #'
 #' @param dt A `data.table` of survey microdata. Modified **by reference**.
 #'
 #' @return `dt` invisibly (modified by reference).
 #' @keywords internal
 standardize_education <- function(dt) {
-  valid_levels <- c("No education", "Primary", "Secondary", "Tertiary")
-  col_names    <- names(dt)
+  edu_cols <- intersect(c("educat4", "educat5", "educat7"), names(dt))
 
-  if ("educat4" %in% col_names) {
-    # educat4 may carry canonical string labels OR numeric-code factor levels
-    # ("1"–"4"). Handle both forms.
-    educat4_chr <- as.character(dt[["educat4"]])
-    dt[, education := factor(data.table::fcase(
-      # Canonical string labels (preferred)
-      educat4_chr == "No education", "No education",
-      educat4_chr == "Primary",      "Primary",
-      educat4_chr == "Secondary",    "Secondary",
-      educat4_chr == "Tertiary",     "Tertiary",
-      # Numeric-code form: 1=No education, 2=Primary, 3=Secondary, 4=Tertiary
-      educat4_chr == "1",            "No education",
-      educat4_chr == "2",            "Primary",
-      educat4_chr == "3",            "Secondary",
-      educat4_chr == "4",            "Tertiary",
-      default = NA_character_
-    ), levels = valid_levels)]
-
-  } else if ("educat5" %in% col_names) {
-    # educat5 may carry canonical string labels OR numeric codes ("1"–"5").
-    educat5_chr <- as.character(dt[["educat5"]])
-    dt[, education := factor(data.table::fcase(
-      # Canonical string labels
-      educat5_chr == "No education",                                              "No education",
-      educat5_chr %in% c(
-        "Primary incomplete",
-        "Primary complete but secondary incomplete"
-      ),                                                                          "Primary",
-      educat5_chr == "Secondary complete",                                        "Secondary",
-      educat5_chr == "Some tertiary/post-secondary",                              "Tertiary",
-      # Numeric-code form: 1=No education, 2–3=Primary, 4=Secondary, 5=Tertiary
-      educat5_chr == "1",                                                         "No education",
-      educat5_chr %in% c("2", "3"),                                               "Primary",
-      educat5_chr == "4",                                                         "Secondary",
-      educat5_chr == "5",                                                         "Tertiary",
-      default = NA_character_
-    ), levels = valid_levels)]
-
-  } else if ("educat7" %in% col_names) {
-    # educat7 is an integer code (1–7); factors with numeric labels are cast to
-    # integer via as.integer(as.character(...)) to avoid level-index coercion.
-    educat7_int <- suppressWarnings(as.integer(as.character(dt[["educat7"]])))
-    dt[, education := factor(data.table::fcase(
-      educat7_int == 1L,                   "No education",
-      educat7_int %in% c(2L, 3L),          "Primary",
-      educat7_int %in% c(4L, 5L),          "Secondary",
-      educat7_int %in% c(6L, 7L),          "Tertiary",
-      default = NA_character_
-    ), levels = valid_levels)]
-
-  } else if ("educy" %in% col_names) {
-    educy_num <- as.numeric(dt[["educy"]])
-    dt[, education := factor(data.table::fcase(
-      educy_num == 0,                      "No education",
-      educy_num >= 1  & educy_num <= 6,    "Primary",
-      educy_num >= 7  & educy_num <= 12,   "Secondary",
-      educy_num >= 13,                     "Tertiary",
-      default = NA_character_
-    ), levels = valid_levels)]
+  for (col in edu_cols) {
+    if (!is.factor(dt[[col]])) {
+      dt[, (col) := factor(get(col))]
+    }
   }
-  # No source column present: no-op — orchestrator will omit.
 
   invisible(dt)
 }
@@ -313,7 +259,7 @@ validate_pre_write <- function(dt) {
   # §4.1 — Required columns present ------------------------------------------
   required_cols <- c(
     "country_code", "surveyid_year", "welfare_type", "survey_id",
-    "survey_acronym", "welfare", "weight"
+    "survey_acronym", "welfare", "weight", "version"
   )
   missing_cols <- setdiff(required_cols, names(dt))
   if (length(missing_cols) > 0L) {
@@ -383,9 +329,8 @@ validate_pre_write <- function(dt) {
   }
 
   # §4.7 — Factor level conformance -------------------------------------------
-  valid_gender    <- c("male", "female")
-  valid_area      <- c("urban", "rural")
-  valid_education <- c("No education", "Primary", "Secondary", "Tertiary")
+  valid_gender <- c("male", "female")
+  valid_area   <- c("urban", "rural")
 
   if ("gender" %in% names(dt)) {
     bad <- dt[!is.na(gender) & !as.character(gender) %in% valid_gender,
@@ -405,27 +350,17 @@ validate_pre_write <- function(dt) {
       )
     }
   }
-  if ("education" %in% names(dt)) {
-    bad <- dt[!is.na(education) & !as.character(education) %in% valid_education,
-              unique(as.character(education))]
-    if (length(bad) > 0L) {
-      cli::cli_abort(
-        "education has values outside allowed levels {.val {valid_education}}: {.val {bad}}"
-      )
-    }
-  }
-  if ("age" %in% names(dt)) {
-    bad <- dt[!is.na(age) & (age < 0L | age > 130L), unique(age)]
-    if (length(bad) > 0L) {
-      cli::cli_abort("age values out of range [0, 130]: {.val {bad}}")
+  for (edu_col in c("educat4", "educat5", "educat7")) {
+    if (edu_col %in% names(dt) && !is.factor(dt[[edu_col]])) {
+      cli::cli_abort("{.field {edu_col}} must be a factor.")
     }
   }
 
   # §4.8 — No extra columns ---------------------------------------------------
   allowed_cols <- c(
     "country_code", "surveyid_year", "welfare_type", "survey_id",
-    "survey_acronym", "welfare", "weight",
-    "gender", "area", "education", "age"
+    "survey_acronym", "welfare", "weight", "version",
+    "gender", "area", "educat4", "educat5", "educat7", "age"
   )
   extra <- setdiff(names(dt), allowed_cols)
   if (length(extra) > 0L) {
@@ -513,13 +448,12 @@ prepare_for_arrow <- function(data, metadata, pip_id) {
   standardize_age(dt)
 
   # ---- Step 1 (cont.): column selection ------------------------------------
-  # Keep only schema-allowed columns; drop everything else.
-  allowed_cols   <- c(
+  allowed_cols      <- c(
     "country_code", "surveyid_year", "welfare_type", "survey_id",
-    "survey_acronym", "welfare", "weight",
-    "gender", "area", "education", "age"
+    "survey_acronym", "welfare", "weight", "version",
+    "gender", "area", "educat4", "educat5", "educat7", "age"
   )
-  optional_dim_cols <- c("gender", "area", "education", "age")
+  optional_dim_cols <- c("gender", "area", "educat4", "educat5", "educat7", "age")
 
   # Drop columns not in the schema
   extra_cols <- setdiff(names(dt), allowed_cols)
