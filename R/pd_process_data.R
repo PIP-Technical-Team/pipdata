@@ -27,6 +27,15 @@ pd_process_data <- function(
   verbose = getOption("pipdata.verbose", default = FALSE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Temporarily switch stamp versioning to "timestamp" when force = TRUE
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (force) {
+    old_versioning <- stamp::st_opts("versioning", .get = TRUE)
+    on.exit(stamp::st_opts(versioning = old_versioning), add = TRUE)
+    stamp::st_opts(versioning = "timestamp")
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load aux data for metadata attributes and processing
@@ -51,6 +60,7 @@ pd_process_data <- function(
 
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
+  names(inv_ls) <- inv_to_clean$survey_id
   results <- purrr::map(inv_ls, process_data, aux_list = aux_list)
   names(results) <- inv_to_clean$survey_id
 
@@ -151,12 +161,27 @@ process_data <- function(inv, aux_list, ...) {
     error = function(cnd) {
       survey_id <- c(.pipdataenv$survey_id)
 
+      # purrr::map() wraps the original condition; traverse the parent chain
+      # to recover the root cause (e.g. a piperr thrown inside map())
+      original_cnd <- cnd
+      while (!is.null(original_cnd$parent)) {
+        original_cnd <- original_cnd$parent
+      }
+
+      if (inherits(original_cnd, "piperr")) {
+        error_class <- class(original_cnd)[2] # e.g. "gd_type_miss"
+        err_msg <- original_cnd$message
+      } else {
+        error_class <- "unknown_error"
+        err_msg <- cnd$message
+      }
+
       pipfun::log_add(
         event = "error",
-        message = cnd$message,
+        message = err_msg,
         name = "pipdata_log",
         logmeta = list(
-          error = "unknown_error",
+          error = error_class,
           survey = survey_id,
           status = "The survey was skipped"
         )
