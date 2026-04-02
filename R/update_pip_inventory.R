@@ -103,7 +103,7 @@ update_pip_inventory <- function(
 
   pip_inv <- pip_inv |>
     unique() |>
-    joyn::left_join(
+    joyn::inner_join(
       vrs,
       by = c("survey_id", "pip_id"),
       reportvar = FALSE,
@@ -131,6 +131,8 @@ update_pip_inventory <- function(
     error = function(e) NULL
   )
 
+  old_pip_inv <- old_pip_inv[!old_pip_inv$survey_id %in% pip_inv$survey_id, ]
+
   new_pip_inv <- pip_inv |>
     collapse::rowbind(old_pip_inv, fill = TRUE) |>
     collapse::funique() |>
@@ -139,7 +141,8 @@ update_pip_inventory <- function(
   pipload::pip_write(
     x = new_pip_inv,
     id = "pip_master_inventory",
-    alias = "pip_master"
+    alias = "pip_master",
+    pk = c("survey_id", "pip_id")
   )
 
   # Save release inventory
@@ -164,13 +167,19 @@ update_pip_inventory <- function(
   pipload::pip_write(
     x = release_pip_inv,
     id = "pip_release_inventory",
-    alias = "pip_inv"
+    alias = "pip_inv",
+    pk = c("survey_id", "pip_id")
+  )
+
+  pip_inv <- tryCatch(
+    pipload::load_pip_master_inventory(),
+    error = function(e) NULL
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(new_pip_inv)
+  return(pip_inv)
 }
 
 format_vrs <- function(
