@@ -11,7 +11,7 @@
 dlw_gmd_match <- \() {
 
   # initialize working release and dlw inventory working folder
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence for inventory folder
@@ -43,7 +43,7 @@ dlw_gmd_match <- \() {
     data_available == "Yes",
     .(FileName, Checksum, data_available)
   ][
-    current_gmd_list,
+    current_gmd_list[, !c("data_available")],
     on = .(FileName, Checksum),
     nomatch = 0
   ] |>
@@ -67,9 +67,8 @@ dlw_gmd_match <- \() {
 #' head(df)
 #' }
 dlw_gmd_new <- function(check_missing = TRUE) {
-
-   # initialize working release and dlw inventory working folder
-  pipfun::get_wrk_release(verbose = FALSE)
+  # initialize working release and dlw inventory working folder
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence
@@ -91,13 +90,19 @@ dlw_gmd_new <- function(check_missing = TRUE) {
   }
 
   current_gmd_list <- current_gmd_list[
-    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
+    Module %in%
+      c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") &
+      Ext == "dta"
   ]
 
   # Step 3: Compare the lists -------------------------------------------------
   base_file_name <- names(current_gmd_list)
 
-  lhs <- local_gmd_inv[, .(FileName, Checksum, data_available)]
+  if (!check_missing) {
+    lhs <- lhs[data_available %in% c("No", NA), ]
+  }
+
+  lhs <- local_gmd_inv[, .(FileName, Checksum)]
 
   gmd_compare <- unique(
     rbindlist(
@@ -112,12 +117,11 @@ dlw_gmd_new <- function(check_missing = TRUE) {
   ) |>
     data.table::setcolorder(base_file_name, skip_absent = TRUE)
 
-  # remove datasets names in we aready downloaded the data and save them in local drive
-  gmd_compare <- gmd_compare[data_available %in% c("No", NA), ]
-  if (!check_missing) {
-    gmd_compare <- gmd_compare[is.na(data_available), ]
-  }
-
+  # replace NA in data_available with "No"
+  gmd_compare <- gmd_compare[, 
+    data_available := fifelse(is.na(data_available), 
+    "No", data_available)]
+  
   return(gmd_compare)
 }
 
@@ -136,7 +140,7 @@ dlw_gmd_new <- function(check_missing = TRUE) {
 gmd_inv_new <- function(check_missing = TRUE) {
 
   # initialize working release and working folder
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence
@@ -190,10 +194,6 @@ gmd_inv_new <- function(check_missing = TRUE) {
   valid_inv <- valid_inv[data_available == "Yes",
     .(FileName = as.character(survey_id), Checksum, data_available)]
 
-  # valid_inv <-
-    # valid_inv[, survey_id := as.character(fs::path(survey_id, ext = "dta"))][, .(survey_id, Checksum, data_available) ] |>
-    # setnames("survey_id", "FileName")
-
   local_gmd_inv <- local_gmd_inv[data_available == "Yes", ]
 
   # Build comparison table
@@ -212,7 +212,6 @@ gmd_inv_new <- function(check_missing = TRUE) {
   }
 
   # keep only new (non-matching) entries from GMD pin list
-  # gmd_new <- gmd_new[`.joyn` == "y", !c(".joyn")]
   gmd_new <- gmd_new[.joyn == "y"][, .joyn := NULL]
   return(gmd_new)
 }
@@ -250,7 +249,7 @@ dlw_gen_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv"){
   ]
 
   # Save the gmd_list in the local dlw_inventory folder
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence
@@ -259,5 +258,6 @@ dlw_gen_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv"){
   # save the GMD list in the local dlw_inventory folder
   pipload::pip_write(x = gmd_list,
                      id = inv_gmd_list,
+                     pk = c("Checksum", "FileName"),
                      alias = "dlw_inv")
 }

@@ -11,6 +11,8 @@
 #' @inheritParams pipdata_get_gmd
 #' @param get_dlw_data Logical. Whether to check for and download new DLW data. Default is `TRUE`.
 #' @param validate_dlw_data Logical. Whether to validate newly downloaded datasets. Default is `TRUE`.
+#' @param release Character. The data release identifier or date, used to configure the working environment.
+#' @param identity Character. One of `"PROD"`, `"INT"`, or `"TEST"`.
 #'
 #' @returns Invisibly returns `NULL`. Output files are written to disk.
 #' @export
@@ -22,7 +24,9 @@
 #'             validate_dlw_data = TRUE,
 #'             log             = TRUE,
 #'             save_log        = TRUE,
-#'             check_missing   = TRUE
+#'             check_missing   = TRUE,
+#'             release         = "20260206",
+#'             identity        = "TEST"
 #'             )
 #' }
 pipdata_dlw_process <- function(
@@ -31,38 +35,28 @@ pipdata_dlw_process <- function(
     validate_dlw_data = TRUE,
     log  = TRUE,
     save_log = TRUE,
-    check_missing = TRUE
+    check_missing = TRUE,
+    release = NULL,
+    identity = NULL
 ){
 
-  ## setting up dlw token
-  dlwtoken <- Sys.getenv("dlw_token")
-  dlw::dlw_set_token(dlwtoken)
-
-  ## setup working environment
-  lr <- pipfun::get_latest_pip_release()
-
-  if (is.null(lr$release)) {
+  # 0) setup working environment
+  if (is.null(release)) {
     cli::cli_abort("Data release date is not provided")
   }
 
-  if (is.null(lr$identity)) {
+  if (is.null(identity)) {
     cli::cli_abort("Identity type is not provided")
   }
 
+  pipfun::setup_working_release(
+    release = release,
+    identity = identity,
+    #main_dir = root,
+    verbose = FALSE
+  )
 
-  # root <- fs::path(Sys.getenv("PIP_ROOT_DIR"),
-  #                  "PIP_ingestion_pipeline_v2/testing_folder")
-
-  # pipfun::setup_working_release(release = lr$release,
-  #                               identity = lr$identity,
-  #                               main_dir = root,
-  #                               verbose = FALSE)
-
-  pipfun::setup_working_release(release = lr$release,
-                                identity = lr$identity,
-                                verbose = FALSE)
-
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence for inventory, and data folders

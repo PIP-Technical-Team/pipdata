@@ -53,7 +53,6 @@ copy_dlw_metadata <- function(from_release = NULL,
 
   # Load pins from source board
   cli::cli_inform(c(i = "Loading metadata from source board..."))
-  stamp::st_init(dlw_meta)
   gmd_inv_df       <- pipload::load_gmd_valid_inv()
   valid_report_df  <- pipload::load_gmd_valid_report()
   log_df           <- pipload::load_gmd_valid_log()
@@ -67,9 +66,12 @@ copy_dlw_metadata <- function(from_release = NULL,
     cli::cli_abort("Identity type (to copy dlw metadata to) is not provided.")
   }
 
+  # Clear aliases registered by the source setup before re-initialising
+  # stamp::st_clear_builders()
+
   cli::cli_inform(c(i = "Setting up destination working folder for release {.val {to_release}} / identity {.val {to_identity}}..."))
-  pipfun::setup_working_release(release = from_release,
-                                identity = from_identity)
+  pipfun::setup_working_release(release = to_release,
+                                identity = to_identity)
 
   pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
@@ -77,9 +79,12 @@ copy_dlw_metadata <- function(from_release = NULL,
   check_directory(pip_folders$dlw_metadata)
 
   # 3) Write dlw metadata to destination folder ------------------------------------------
-  pipload::pip_write(x = gmd_inv_df,
+  pipload::pip_write(
+    x = gmd_inv_df,
     id = "gmd_valid_inv",
-    alias = "dlw_meta")
+    pk = "survey_id",
+    alias = "dlw_meta"
+  )
 
   pipload::pip_write(x = valid_report_df,
     id = "validation_report",

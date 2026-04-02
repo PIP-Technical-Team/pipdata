@@ -31,7 +31,7 @@ pipdata_validate_gmd <- function(
   ### --------------------------------------------------------------------------
 
   # 0) set-up release and dlw data, inventory, and  metadata working folders
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence for working folders
@@ -277,6 +277,7 @@ pipdata_validate_gmd <- function(
 
     pipload::pip_write(x = final_inv,
       id = "gmd_valid_inv",
+      pk = "survey_id",
       alias = "dlw_meta")
 
     cli::cli_alert_success(
