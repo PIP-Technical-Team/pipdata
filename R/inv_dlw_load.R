@@ -26,7 +26,7 @@ data_to_dt <- function(dt, survey_id) {
 
   #--------- leaving just the 'label' attribute ---------
 
-  dt <- only_labels(dt)
+  # dt <- only_labels(dt)
 
   #--------- Survey ID and its components ---------
 
@@ -45,27 +45,27 @@ data_to_dt <- function(dt, survey_id) {
   return(dt)
 }
 
-only_labels <- function(dt) {
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  nn <- names(dt)
+# only_labels <- function(dt) {
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # computations   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   nn <- names(dt)
 
-  for (j in seq_along(nn)) {
-    ats <- attributes(dt[[j]])
-    atsn <- names(ats)
-    to_remove <- atsn[!grepl("label", atsn)]
+#   for (j in seq_along(nn)) {
+#     ats <- attributes(dt[[j]])
+#     atsn <- names(ats)
+#     to_remove <- atsn[!grepl("label", atsn)]
 
-    for (i in seq_along(to_remove)) {
-      attr(dt[[j]], to_remove[i]) <- NULL
-    }
-  }
+#     for (i in seq_along(to_remove)) {
+#       attr(dt[[j]], to_remove[i]) <- NULL
+#     }
+#   }
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-}
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Return   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   return(dt)
+# }
 
 survey_id_to_attr <- function(dt, survey_id) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,7 +131,9 @@ survey_id_to_attr <- function(dt, survey_id) {
     "area",
     "age",
     "male",
-    "literacy"
+    "gender",
+    "literacy",
+    "school"
   )
 
   to_keep <- names(dt)[names(dt) %in% fnames]
