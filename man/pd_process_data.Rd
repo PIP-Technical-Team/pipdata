@@ -6,7 +6,9 @@
 \usage{
 pd_process_data(
   inv = inv,
-  aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce")
+  aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  force = FALSE,
+  verbose = getOption("pipdata.verbose", default = FALSE)
 )
 }
 \arguments{
