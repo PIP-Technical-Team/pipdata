@@ -60,7 +60,8 @@
 #     country=<country_code>/
 #       year=<surveyid_year>/
 #         welfare=<welfare_type>/
-#           <pip_id>-0.parquet
+#           version=<version>/
+#             <pip_id>-0.parquet
 #
 # Filename convention (from arrow-schema.json §filename_convention)
 # -----------------------------------------------------------------
@@ -80,7 +81,6 @@
 
 .GENDER_LEVELS_GEN <- .SCHEMA_GEN$levels$gender
 .AREA_LEVELS_GEN   <- .SCHEMA_GEN$levels$area
-.EDU_LEVELS_GEN    <- .SCHEMA_GEN$levels$education
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -92,18 +92,22 @@
 #' @param country_code    ISO3 country code (character scalar).
 #' @param surveyid_year   Survey year (integer scalar).
 #' @param welfare_type    Welfare type code — `"INC"` or `"CON"`.
+#' @param version         Combined version string, e.g. `"v01_v04"` (character
+#'   scalar). Derived from `paste0(tolower(vermast), "_", tolower(veralt))`.
 #'
 #' @return Absolute path string for the partition directory.
 #' @keywords internal
 .build_partition_dir <- function(arrow_repo_path,
                                  country_code,
                                  surveyid_year,
-                                 welfare_type) {
+                                 welfare_type,
+                                 version) {
   file.path(
     arrow_repo_path,
     paste0("country=", country_code),
     paste0("year=",    surveyid_year),
-    paste0("welfare=", welfare_type)
+    paste0("welfare=", welfare_type),
+    paste0("version=", version)
   )
 }
 
@@ -154,7 +158,7 @@
   }
 
   # --- Partition key consistency (one unique value per file) ------------------
-  for (key_col in c("country_code", "surveyid_year", "welfare_type")) {
+  for (key_col in c("country_code", "surveyid_year", "welfare_type", "version")) {
     n_unique <- dt[, data.table::uniqueN(get(key_col))]
     if (n_unique != 1L) {
       cli::cli_abort(
@@ -247,16 +251,10 @@
       )
     }
   }
-  if ("education" %in% names(dt)) {
-    bad <- dt[!is.na(education) & !education %in% .EDU_LEVELS_GEN,
-              unique(as.character(education))]
-    if (length(bad) > 0L) {
-      cli::cli_abort(
-        paste0(
-          "education has values outside allowed levels ",
-          "{.val {.EDU_LEVELS_GEN}}: {.val {bad}}"
-        )
-      )
+  # educat4/5/7: only check they are factors — levels are survey-specific.
+  for (edu_col in c("educat4", "educat5", "educat7")) {
+    if (edu_col %in% names(dt) && !is.factor(dt[[edu_col]])) {
+      cli::cli_abort("{.field {edu_col}} must be a factor column.")
     }
   }
   if ("age" %in% names(dt)) {
@@ -309,7 +307,8 @@
 #'   country=<country_code>/
 #'     year=<surveyid_year>/
 #'       welfare=<welfare_type>/
-#'         <survey_id>-0.parquet
+#'         version=<version>/
+#'           <survey_id>-0.parquet
 #' ```
 #'
 #' The function:
@@ -385,11 +384,12 @@ write_survey_parquet <- function(dt,
   country_code   <- dt[1L, country_code]
   surveyid_year  <- dt[1L, surveyid_year]
   welfare_type   <- dt[1L, welfare_type]
+  version        <- dt[1L, version]
   survey_id      <- dt[1L, survey_id]
 
   # --- Derive paths ----------------------------------------------------------
   partition_dir  <- .build_partition_dir(
-    arrow_repo_path, country_code, surveyid_year, welfare_type
+    arrow_repo_path, country_code, surveyid_year, welfare_type, version
   )
   parquet_file   <- file.path(
     partition_dir, .build_parquet_filename(survey_id)
@@ -398,11 +398,12 @@ write_survey_parquet <- function(dt,
     paste0("country=", country_code),
     paste0("year=",    surveyid_year),
     paste0("welfare=", welfare_type),
+    paste0("version=", version),
     .build_parquet_filename(survey_id)
   )
 
   # --- Identify available breakdown dimensions present in this survey ---------
-  dim_cols         <- intersect(c("gender", "area", "education", "age"), names(dt))
+  dim_cols         <- intersect(c("gender", "area", "educat4", "educat5", "educat7", "age"), names(dt))
   avail_dimensions <- paste(dim_cols, collapse = ", ")
 
   # --- Build summary row skeleton (filled in below) --------------------------
