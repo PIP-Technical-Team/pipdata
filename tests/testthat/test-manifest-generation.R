@@ -47,10 +47,14 @@ make_fixture_dt <- function(country_code  = "COL",
       levels = c("urban", "rural")
     )]
   }
-  if ("education" %in% dims) {
-    dt[, education := factor(
-      rep(c("Primary", "Secondary"), length.out = n_rows),
-      levels = c("No education", "Primary", "Secondary", "Tertiary")
+  if ("educat4" %in% dims) {
+    dt[, educat4 := factor(
+      rep(c("Primary (complete or incomplete)", "No education"), length.out = n_rows)
+    )]
+  }
+  if ("educat5" %in% dims) {
+    dt[, educat5 := factor(
+      rep(c("Primary incomplete", "Secondary complete"), length.out = n_rows)
     )]
   }
   if ("age" %in% dims) {
@@ -68,18 +72,21 @@ make_fixture_dt <- function(country_code  = "COL",
 #' @param country_code   ISO3 code.
 #' @param surveyid_year  Survey year.
 #' @param welfare_type   "INC" or "CON".
+#' @param version        Combined version string, e.g. `"v01_v02"`.
 #'
 #' @return Absolute path of the written Parquet file.
 write_fixture_parquet <- function(arrow_root, dt,
                                   pip_id        = "COL_2010_ECH_V01_M_V02_A_INC",
                                   country_code  = "COL",
                                   surveyid_year = 2010L,
-                                  welfare_type  = "INC") {
+                                  welfare_type  = "INC",
+                                  version       = "v01_v02") {
   partition_dir <- file.path(
     arrow_root,
     paste0("country=", country_code),
     paste0("year=", surveyid_year),
-    paste0("welfare=", welfare_type)
+    paste0("welfare=", welfare_type),
+    paste0("version=", version)
   )
   dir.create(partition_dir, recursive = TRUE, showWarnings = FALSE)
   out_file <- file.path(partition_dir, paste0(pip_id, "-0.parquet"))
@@ -105,16 +112,56 @@ make_fixture_inventory <- function(surveys = list(
 }
 
 # ===========================================================================
+# .build_manifest_file_path()
+# ===========================================================================
+
+test_that(".build_manifest_file_path includes version= segment in returned path", {
+  path <- pipdata:::.build_manifest_file_path(
+    country_code  = "COL",
+    surveyid_year = 2010L,
+    welfare_type  = "INC",
+    version       = "v01_v02",
+    pip_id        = "COL_2010_ECH_V01_M_V02_A_INC"
+  )
+
+  expect_match(path, "country=COL")
+  expect_match(path, "year=2010")
+  expect_match(path, "welfare=INC")
+  expect_match(path, "version=v01_v02")
+  expect_match(path, "COL_2010_ECH_V01_M_V02_A_INC-0.parquet")
+  # Must be 4-level: country/year/welfare/version/filename
+  parts <- strsplit(path, "/")[[1L]]
+  expect_length(parts, 5L)
+})
+
+test_that(".build_manifest_file_path uses correct segment order", {
+  path  <- pipdata:::.build_manifest_file_path(
+    country_code  = "BOL",
+    surveyid_year = 2020L,
+    welfare_type  = "INC",
+    version       = "v01_v04",
+    pip_id        = "BOL_2020_EH_V01_M_V04_A_INC"
+  )
+  parts <- strsplit(path, "/")[[1L]]
+
+  expect_match(parts[[1L]], "^country=")
+  expect_match(parts[[2L]], "^year=")
+  expect_match(parts[[3L]], "^welfare=")
+  expect_match(parts[[4L]], "^version=")
+  expect_match(parts[[5L]], "\\.parquet$")
+})
+
+# ===========================================================================
 # discover_parquet_dimensions()
 # ===========================================================================
 
-test_that("discover_parquet_dimensions returns correct dims when all 4 present", {
+test_that("discover_parquet_dimensions returns correct dims when educat4/5 present", {
   tmp <- withr::local_tempdir()
-  dt  <- make_fixture_dt(dims = c("gender", "area", "education", "age"))
+  dt  <- make_fixture_dt(dims = c("gender", "area", "educat4", "educat5", "age"))
   f   <- write_fixture_parquet(tmp, dt)
 
   dims <- discover_parquet_dimensions(f)
-  expect_equal(sort(dims), sort(c("gender", "area", "education", "age")))
+  expect_equal(sort(dims), sort(c("gender", "area", "educat4", "educat5", "age")))
 })
 
 test_that("discover_parquet_dimensions returns subset of dims correctly", {
@@ -162,16 +209,18 @@ test_that("build_manifest_entry returns a correctly structured list", {
     survey_acronym       = "ECH",
     vermast              = "V01",
     veralt               = "V02",
+    version              = "v01_v02",
     module               = "ALL",
     pip_id               = "COL_2010_ECH_V01_M_V02_A_INC",
-    file_path            = "country=COL/year=2010/welfare=INC/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
+    file_path            = "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
     available_dimensions = c("gender", "area")
   )
 
   expect_type(entry, "list")
   expect_named(entry, c(
     "country_code", "year", "welfare_type", "survey_id", "survey_acronym",
-    "vermast", "veralt", "module", "pip_id", "file_path", "available_dimensions"
+    "vermast", "veralt", "version", "module", "pip_id", "file_path",
+    "available_dimensions"
   ))
   expect_identical(entry$country_code,   "COL")
   expect_identical(entry$year,            2010L)
@@ -180,11 +229,12 @@ test_that("build_manifest_entry returns a correctly structured list", {
   expect_identical(entry$survey_acronym,  "ECH")
   expect_identical(entry$vermast,         "V01")
   expect_identical(entry$veralt,          "V02")
+  expect_identical(entry$version,         "v01_v02")
   expect_identical(entry$module,          "ALL")
   expect_identical(entry$pip_id,          "COL_2010_ECH_V01_M_V02_A_INC")
   expect_identical(
     entry$file_path,
-    "country=COL/year=2010/welfare=INC/COL_2010_ECH_V01_M_V02_A_INC-0.parquet"
+    "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet"
   )
   expect_identical(entry$available_dimensions, c("gender", "area"))
 })
@@ -198,12 +248,14 @@ test_that("build_manifest_entry coerces year to integer", {
     survey_acronym       = "EH",
     vermast              = "V01",
     veralt               = "V02",
+    version              = "v01_v02",
     module               = "ALL",
     pip_id               = "BOL_2012_EH_V01_M_V02_A_CON",
-    file_path            = "country=BOL/year=2012/welfare=CON/BOL_2012_EH_V01_M_V02_A_CON-0.parquet",
+    file_path            = "country=BOL/year=2012/welfare=CON/version=v01_v02/BOL_2012_EH_V01_M_V02_A_CON-0.parquet",
     available_dimensions = character(0)
   )
   expect_identical(entry$year, 2012L)
+  expect_identical(entry$version, "v01_v02")
   expect_identical(entry$available_dimensions, character(0))
 })
 
@@ -215,9 +267,9 @@ test_that("generate_release_manifest writes valid JSON and returns summary", {
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
 
-  # Write fixture Parquet with 2 dims
+  # Write fixture Parquet with 2 dims — 4-level partition path
   dt  <- make_fixture_dt(dims = c("gender", "area"))
-  write_fixture_parquet(tmp_arrow, dt)
+  write_fixture_parquet(tmp_arrow, dt, version = "v01_v02")
 
   inv <- make_fixture_inventory()
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
@@ -241,10 +293,13 @@ test_that("generate_release_manifest writes valid JSON and returns summary", {
   expect_identical(survey_entry$country_code,  "COL")
   expect_identical(survey_entry$welfare_type,  "INC")
   expect_identical(survey_entry$pip_id, "COL_2010_ECH_V01_M_V02_A_INC")
+  # version= segment must appear in file_path
   expect_match(
     survey_entry$file_path,
-    "country=COL/year=2010/welfare=INC/COL_2010_ECH_V01_M_V02_A_INC-0.parquet"
+    "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet"
   )
+  # version field present in entry
+  expect_identical(survey_entry$version, "v01_v02")
   expect_true(
     all(c("gender", "area") %in% unlist(survey_entry$available_dimensions))
   )
@@ -260,6 +315,7 @@ test_that("generate_release_manifest records 'missing' for absent Parquet files"
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
   # No Parquet file written — directory is empty
+  # The derived path will be country=COL/year=2010/welfare=INC/version=v01_v02/...
 
   inv      <- make_fixture_inventory()
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
@@ -281,7 +337,7 @@ test_that("generate_release_manifest skips rows with NA pip_id", {
   tmp_manifest <- withr::local_tempdir()
 
   dt <- make_fixture_dt(dims = c("gender"))
-  write_fixture_parquet(tmp_arrow, dt)
+  write_fixture_parquet(tmp_arrow, dt, version = "v01_v02")
 
   inv_with_na <- make_fixture_inventory(list(
     list(
@@ -323,6 +379,8 @@ test_that("generate_release_manifest skips rows with NA pip_id", {
 
   manifest <- jsonlite::fromJSON(out_path, simplifyVector = FALSE)
   expect_equal(length(manifest$surveys), 1L)
+  # version field present
+  expect_identical(manifest$surveys[[1L]]$version, "v01_v02")
 })
 
 test_that("generate_release_manifest with set_as_current writes pointer file", {
@@ -330,7 +388,7 @@ test_that("generate_release_manifest with set_as_current writes pointer file", {
   tmp_manifest <- withr::local_tempdir()
 
   dt <- make_fixture_dt(dims = c("gender", "area"))
-  write_fixture_parquet(tmp_arrow, dt)
+  write_fixture_parquet(tmp_arrow, dt, version = "v01_v02")
 
   inv      <- make_fixture_inventory()
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
@@ -426,7 +484,7 @@ test_that("generate_release_manifest handles multiple surveys correctly", {
   )
   inv <- make_fixture_inventory(surveys)
 
-  # Write both fixture files
+  # Write both fixture files with version= partition
   dt_col <- make_fixture_dt(
     country_code = "COL", surveyid_year = 2010L, welfare_type = "INC",
     pip_id = "COL_2010_ECH_V01_M_V02_A_INC", dims = c("gender", "area")
@@ -438,11 +496,13 @@ test_that("generate_release_manifest handles multiple surveys correctly", {
   )
   write_fixture_parquet(tmp_arrow, dt_col,
     pip_id        = "COL_2010_ECH_V01_M_V02_A_INC",
-    country_code  = "COL", surveyid_year = 2010L, welfare_type = "INC"
+    country_code  = "COL", surveyid_year = 2010L, welfare_type = "INC",
+    version       = "v01_v02"
   )
   write_fixture_parquet(tmp_arrow, dt_bol,
     pip_id        = "BOL_2012_EH_V01_M_V02_A_CON",
-    country_code  = "BOL", surveyid_year = 2012L, welfare_type = "CON"
+    country_code  = "BOL", surveyid_year = 2012L, welfare_type = "CON",
+    version       = "v01_v02"
   )
 
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
@@ -462,8 +522,12 @@ test_that("generate_release_manifest handles multiple surveys correctly", {
   # BOL survey has no dims
   bol_entry <- Filter(function(s) s$country_code == "BOL", manifest$surveys)[[1L]]
   expect_equal(length(bol_entry$available_dimensions), 0L)
+  expect_identical(bol_entry$version, "v01_v02")
+  expect_match(bol_entry$file_path, "version=v01_v02")
 
   # COL survey has gender + area
   col_entry <- Filter(function(s) s$country_code == "COL", manifest$surveys)[[1L]]
   expect_true(all(c("gender", "area") %in% unlist(col_entry$available_dimensions)))
+  expect_identical(col_entry$version, "v01_v02")
+  expect_match(col_entry$file_path, "version=v01_v02")
 })

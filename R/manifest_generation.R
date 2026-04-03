@@ -17,8 +17,9 @@
 #     "release_id": "20260206",
 #     "arrow_root": "<path>",
 #     "created_at": "<ISO 8601>",
-#     "surveys": [ ... one entry per pip_id ... ]
+#   "surveys": [ ... one entry per pip_id ... ]
 #   }
+#   where file_path follows: country=<cc>/year=<yr>/welfare=<wt>/version=<ver>/<pip_id>-0.parquet
 #
 # Workflow
 # --------
@@ -42,12 +43,14 @@
 
 #' Derive the relative Parquet path for a pip_id
 #'
-#' Follows the partition convention established in arrow-schema.json:
-#'   `country=<cc>/year=<yr>/welfare=<wt>/<pip_id>-0.parquet`
+#' Follows the 4-level partition convention established in arrow-schema.json:
+#'   `country=<cc>/year=<yr>/welfare=<wt>/version=<version>/<pip_id>-0.parquet`
 #'
 #' @param country_code  ISO3 country code (character scalar).
 #' @param surveyid_year Survey year (integer scalar).
 #' @param welfare_type  "INC" or "CON" (character scalar).
+#' @param version       Combined version string, e.g. `"v01_v04"` (character
+#'   scalar). Derived from `paste0(tolower(vermast), "_", tolower(veralt))`.
 #' @param pip_id        Canonical pip_id string, e.g. "COL_2010_ECH_V01_M_V02_A_INC".
 #'
 #' @return Relative path string (forward slashes).
@@ -55,11 +58,13 @@
 .build_manifest_file_path <- function(country_code,
                                       surveyid_year,
                                       welfare_type,
+                                      version,
                                       pip_id) {
   paste(
     paste0("country=", country_code),
     paste0("year=",    surveyid_year),
     paste0("welfare=", welfare_type),
+    paste0("version=", version),
     paste0(pip_id, "-0.parquet"),
     sep = "/"
   )
@@ -67,10 +72,10 @@
 
 #' Optional breakdown dimension column names (canonical order)
 #'
-#' @return Character vector of the 4 optional breakdown dimension column names.
+#' @return Character vector of the optional breakdown dimension column names.
 #' @keywords internal
 .manifest_dim_cols <- function() {
-  c("gender", "area", "education", "age")
+  c("gender", "area", "educat4", "educat5", "educat7", "age")
 }
 
 # ---------------------------------------------------------------------------
@@ -81,7 +86,7 @@
 #'
 #' Reads only the file schema (no row data) and returns the names of optional
 #' breakdown dimension columns that are present. The canonical optional
-#' dimensions are: `gender`, `area`, `education`, `age`.
+#' dimensions are: `gender`, `area`, `educat4`, `educat5`, `educat7`, `age`.
 #'
 #' @param file_path Absolute path to a `.parquet` file.
 #'
@@ -95,7 +100,7 @@
 #' @examples
 #' \dontrun{
 #' dims <- discover_parquet_dimensions("path/to/COL_2010_ECH_V01_M_V02_A_INC-0.parquet")
-#' # e.g. c("gender", "area", "education")
+#' # e.g. c("gender", "area", "educat4", "educat5")
 #' }
 discover_parquet_dimensions <- function(file_path) {
   stopifnot(is.character(file_path), length(file_path) == 1L)
@@ -134,11 +139,13 @@ discover_parquet_dimensions <- function(file_path) {
 #' @param survey_acronym       Short survey name (e.g. `"ECH"`).
 #' @param vermast              Master version string (e.g. `"V01"`).
 #' @param veralt               Alternative version string (e.g. `"V02"`).
+#' @param version              Combined version string, e.g. `"v01_v02"`. Derived
+#'   from `paste0(tolower(vermast), "_", tolower(veralt))`.
 #' @param module               Processing module (e.g. `"ALL"`).
 #' @param pip_id               Canonical pip_id (e.g.
 #'   `"COL_2010_ECH_V01_M_V02_A_INC"`). Used as the filename stem.
 #' @param file_path            Relative path from `arrow_root` to the Parquet
-#'   file (forward slashes).
+#'   file (forward slashes). Includes the `version=<version>` partition segment.
 #' @param available_dimensions Character vector of breakdown dimension names
 #'   available in this survey's Parquet file (e.g. `c("gender", "area")`).
 #'   Use `character(0)` when none are present.
@@ -156,9 +163,10 @@ discover_parquet_dimensions <- function(file_path) {
 #'   survey_acronym       = "ECH",
 #'   vermast              = "V01",
 #'   veralt               = "V02",
+#'   version              = "v01_v02",
 #'   module               = "ALL",
 #'   pip_id               = "COL_2010_ECH_V01_M_V02_A_INC",
-#'   file_path            = "country=COL/year=2010/welfare=INC/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
+#'   file_path            = "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
 #'   available_dimensions = c("gender", "area")
 #' )
 build_manifest_entry <- function(country_code,
@@ -168,6 +176,7 @@ build_manifest_entry <- function(country_code,
                                  survey_acronym,
                                  vermast,
                                  veralt,
+                                 version,
                                  module,
                                  pip_id,
                                  file_path,
@@ -180,6 +189,7 @@ build_manifest_entry <- function(country_code,
     survey_acronym       = as.character(survey_acronym),
     vermast              = as.character(vermast),
     veralt               = as.character(veralt),
+    version              = as.character(version),
     module               = as.character(module),
     pip_id               = as.character(pip_id),
     file_path            = as.character(file_path),
@@ -214,10 +224,11 @@ build_manifest_entry <- function(country_code,
 #'       "survey_acronym": "ECH",
 #'       "vermast": "V01",
 #'       "veralt": "V02",
+#'       "version": "v01_v02",
 #'       "module": "ALL",
 #'       "pip_id": "COL_2010_ECH_V01_M_V02_A_INC",
-#'       "file_path": "country=COL/year=2010/welfare=INC/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
-#'       "available_dimensions": ["gender", "area", "education"]
+#'       "file_path": "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
+#'       "available_dimensions": ["gender", "area", "educat4"]
 #'     }
 #'   ]
 #' }
@@ -341,11 +352,15 @@ generate_release_manifest <- function(release_id,
     row_i     <- inv[i]
     pip_id_i  <- row_i$pip_id
 
+    # Derive version from vermast / veralt (same construction as arrow_prep.R)
+    version_i  <- paste0(tolower(row_i$vermast), "_", tolower(row_i$veralt))
+
     # Relative path (forward slashes)
     rel_path_i <- .build_manifest_file_path(
       country_code  = row_i$country_code,
       surveyid_year = row_i$surveyid_year,
       welfare_type  = row_i$welfare_type,
+      version       = version_i,
       pip_id        = pip_id_i
     )
 
@@ -387,6 +402,7 @@ generate_release_manifest <- function(release_id,
       survey_acronym       = row_i$survey_acronym,
       vermast              = row_i$vermast,
       veralt               = row_i$veralt,
+      version              = version_i,
       module               = row_i$module,
       pip_id               = pip_id_i,
       file_path            = rel_path_i,
