@@ -29,7 +29,7 @@ overwrite the existing file.}
 \value{
 A one-row \code{data.table} with columns:
 \describe{
-\item{\code{survey_id}}{Survey identifier.}
+\item{\code{pip_id}}{File-level survey identifier (e.g. "BOL_2020_EH_INC_ALL").}
 \item{\code{country_code}}{ISO3 country code.}
 \item{\code{surveyid_year}}{Survey year.}
 \item{\code{welfare_type}}{"INC" or "CON".}
@@ -53,7 +53,8 @@ Partition structure:
   country=<country_code>/
     year=<surveyid_year>/
       welfare=<welfare_type>/
-        <survey_id>-0.parquet
+        version=<version>/
+          <pip_id>-0.parquet
 }\if{html}{\out{</div>}}
 
 The function:

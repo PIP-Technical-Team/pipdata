@@ -2,7 +2,7 @@
 % Please edit documentation in R/arrow_prep.R
 \name{standardize_education}
 \alias{standardize_education}
-\title{Standardise education to a 4-level ordered factor}
+\title{Standardise education columns to factors}
 \usage{
 standardize_education(dt)
 }
@@ -13,8 +13,8 @@ standardize_education(dt)
 \code{dt} invisibly (modified by reference).
 }
 \description{
-Derives an \code{education} column from the first available source in priority
-order: \code{educat4} → \code{educat5} → \code{educat7} → \code{educy}. The result is an
-ordered factor with levels \code{c("No education", "Primary", "Secondary", "Tertiary")}. If no source column is present the function is a no-op.
+Ensures any of \code{educat4}, \code{educat5}, \code{educat7} present in \code{dt} are
+factors, preserving their original levels as-is. No recoding or renaming
+is applied. If none are present the function is a no-op.
 }
 \keyword{internal}

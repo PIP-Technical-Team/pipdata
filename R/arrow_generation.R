@@ -23,7 +23,7 @@
 #
 # Typical batch workflow
 # ----------------------
-#   inv     <- pipload::load_pip_release_inventory()
+#   inv     <- pipload::load_pip_master_inventory()
 #   results <- generate_arrow_dataset(inv, module = "ALL")
 #
 #   # Exact country-year pairs
@@ -66,21 +66,42 @@
 # Filename convention (from arrow-schema.json §filename_convention)
 # -----------------------------------------------------------------
 #   <pip_id>-0.parquet
-#   where <pip_id> is the value stored in the data column `survey_id`.
+#   where <pip_id> is the value stored in the data column `pip_id`.
 #   prepare_for_arrow() / inject_metadata_cols() write the pip_id (e.g.
-#   "ARG_2003_EPHC-S2_INC_ALL") — NOT the raw survey_id string — into that
-#   column, ensuring each welfare-type file gets a unique filename.
+#   "ARG_2003_EPHC-S2_INC_ALL") into that column, ensuring each
+#   welfare-type file gets a unique filename.
 
 # ---------------------------------------------------------------------------
 # Internal constants — derived from piptm::pip_arrow_schema()
+# Initialised in .onLoad() (aaa.R) to avoid cyclic namespace issues at
+# package load time. Do not call piptm:: at top level here.
 # ---------------------------------------------------------------------------
 
-.SCHEMA_GEN        <- piptm::pip_arrow_schema()
-.REQUIRED_COLS_GEN <- piptm::pip_required_cols()
-.ALLOWED_COLS_GEN  <- piptm::pip_allowed_cols()
+.SCHEMA_GEN        <- NULL
+.REQUIRED_COLS_GEN <- NULL
+.ALLOWED_COLS_GEN  <- NULL
+.GENDER_LEVELS_GEN <- NULL
+.AREA_LEVELS_GEN   <- NULL
 
-.GENDER_LEVELS_GEN <- .SCHEMA_GEN$levels$gender
-.AREA_LEVELS_GEN   <- .SCHEMA_GEN$levels$area
+# Lazy accessors — return the cached global when initialised by .onLoad(),
+# otherwise fall back to calling piptm:: directly. This makes the arrow
+# generation functions robust in load_all() development sessions where
+# piptm may not be on the search path yet.
+.get_schema <- function() {
+  if (is.null(.SCHEMA_GEN)) piptm::pip_arrow_schema() else .SCHEMA_GEN
+}
+.get_required_cols <- function() {
+  if (is.null(.REQUIRED_COLS_GEN)) piptm::pip_required_cols() else .REQUIRED_COLS_GEN
+}
+.get_allowed_cols <- function() {
+  if (is.null(.ALLOWED_COLS_GEN)) piptm::pip_allowed_cols() else .ALLOWED_COLS_GEN
+}
+.get_gender_levels <- function() {
+  if (is.null(.GENDER_LEVELS_GEN)) piptm::pip_arrow_schema()$levels$gender else .GENDER_LEVELS_GEN
+}
+.get_area_levels <- function() {
+  if (is.null(.AREA_LEVELS_GEN)) piptm::pip_arrow_schema()$levels$area else .AREA_LEVELS_GEN
+}
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -111,17 +132,40 @@
   )
 }
 
-#' Derive the Parquet filename from a survey_id
+#' Derive the Parquet filename from a pip_id
 #'
 #' Follows the filename convention in arrow-schema.json:
-#'   `<survey_id>-0.parquet`
+#'   `<pip_id>-0.parquet`
 #'
-#' @param survey_id Full survey identifier string.
+#' @param pip_id File-level survey identifier string (e.g. `"BOL_2020_EH_INC_ALL"`).
 #'
 #' @return Filename string (no directory component).
 #' @keywords internal
-.build_parquet_filename <- function(survey_id) {
-  paste0(survey_id, "-0.parquet")
+.build_parquet_filename <- function(pip_id) {
+  paste0(pip_id, "-0.parquet")
+}
+
+#' Extract welfare type code from a pip_id string
+#'
+#' The pip_id schema is `COUNTRY_YEAR_ACRONYM_(INC|CON)_(ALL|GPWG)`. The
+#' welfare token is always the second-to-last underscore-delimited segment.
+#' The inventory does not carry a `welfare_type` column, so this helper is
+#' the canonical way to derive it for use with
+#' [pipload::load_pip_data()].
+#'
+#' @param pip_id A single pip_id string
+#'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`).
+#'
+#' @return `"INC"` or `"CON"` (character scalar).
+#' @keywords internal
+.extract_welfare_from_pip_id <- function(pip_id) {
+  parts <- strsplit(pip_id, "_", fixed = TRUE)[[1L]]
+  if (length(parts) < 2L) {
+    cli::cli_abort(
+      "Cannot extract welfare type from pip_id {.val {pip_id}}: too few segments."
+    )
+  }
+  parts[[length(parts) - 1L]]
 }
 
 #' Validate a prepared data.table before writing to Parquet
@@ -138,7 +182,7 @@
 .validate_for_write <- function(dt) {
 
   # --- Required columns -------------------------------------------------------
-  missing_cols <- setdiff(.REQUIRED_COLS_GEN, names(dt))
+  missing_cols <- setdiff(.get_required_cols(), names(dt))
   if (length(missing_cols) > 0L) {
     cli::cli_abort(
       "Required columns missing from input data: {.val {missing_cols}}"
@@ -146,7 +190,7 @@
   }
 
   # --- No extra columns -------------------------------------------------------
-  extra_cols <- setdiff(names(dt), .ALLOWED_COLS_GEN)
+  extra_cols <- setdiff(names(dt), .get_allowed_cols())
   if (length(extra_cols) > 0L) {
     cli::cli_abort(
       paste0(
@@ -197,7 +241,7 @@
     rlang::warn(
       paste0(
         n_zero, " row(s) have welfare == 0 in survey: ",
-        dt[1L, survey_id]
+        dt[1L, pip_id]
       )
     )
   }
@@ -228,25 +272,27 @@
 
   # --- Factor level conformance for optional breakdown dimensions -------------
   if ("gender" %in% names(dt)) {
-    bad <- dt[!is.na(gender) & !gender %in% .GENDER_LEVELS_GEN,
+    gender_levels <- .get_gender_levels()
+    bad <- dt[!is.na(gender) & !gender %in% gender_levels,
               unique(as.character(gender))]
     if (length(bad) > 0L) {
       cli::cli_abort(
         paste0(
           "gender has values outside allowed levels ",
-          "{.val {.GENDER_LEVELS_GEN}}: {.val {bad}}"
+          "{.val {gender_levels}}: {.val {bad}}"
         )
       )
     }
   }
   if ("area" %in% names(dt)) {
-    bad <- dt[!is.na(area) & !area %in% .AREA_LEVELS_GEN,
+    area_levels <- .get_area_levels()
+    bad <- dt[!is.na(area) & !area %in% area_levels,
               unique(as.character(area))]
     if (length(bad) > 0L) {
       cli::cli_abort(
         paste0(
           "area has values outside allowed levels ",
-          "{.val {.AREA_LEVELS_GEN}}: {.val {bad}}"
+          "{.val {area_levels}}: {.val {bad}}"
         )
       )
     }
@@ -283,10 +329,11 @@
   # data.table), NOT the order of the schema definition.  arrow::as_arrow_table()
   # matches schema fields positionally, so the schema order must match the
   # data column order exactly to avoid "field at index N has name X != Y" errors.
-  matched <- intersect(col_names, names(.SCHEMA_GEN$fields))
+  schema  <- .get_schema()
+  matched <- intersect(col_names, names(schema$fields))
   fields  <- lapply(
     matched,
-    function(nm) arrow::field(nm, .SCHEMA_GEN$fields[[nm]]$type)
+    function(nm) arrow::field(nm, schema$fields[[nm]]$type)
   )
   do.call(arrow::schema, fields)
 }
@@ -308,7 +355,7 @@
 #'     year=<surveyid_year>/
 #'       welfare=<welfare_type>/
 #'         version=<version>/
-#'           <survey_id>-0.parquet
+#'           <pip_id>-0.parquet
 #' ```
 #'
 #' The function:
@@ -337,7 +384,7 @@
 #'
 #' @return A one-row `data.table` with columns:
 #'   \describe{
-#'     \item{`survey_id`}{Survey identifier.}
+#'     \item{`pip_id`}{File-level survey identifier (e.g. "BOL_2020_EH_INC_ALL").}
 #'     \item{`country_code`}{ISO3 country code.}
 #'     \item{`surveyid_year`}{Survey year.}
 #'     \item{`welfare_type`}{"INC" or "CON".}
@@ -385,21 +432,21 @@ write_survey_parquet <- function(dt,
   surveyid_year  <- dt[1L, surveyid_year]
   welfare_type   <- dt[1L, welfare_type]
   version        <- dt[1L, version]
-  survey_id      <- dt[1L, survey_id]
+  pip_id_val     <- dt[1L, pip_id]
 
   # --- Derive paths ----------------------------------------------------------
   partition_dir  <- .build_partition_dir(
     arrow_repo_path, country_code, surveyid_year, welfare_type, version
   )
   parquet_file   <- file.path(
-    partition_dir, .build_parquet_filename(survey_id)
+    partition_dir, .build_parquet_filename(pip_id_val)
   )
   rel_path       <- file.path(
     paste0("country=", country_code),
     paste0("year=",    surveyid_year),
     paste0("welfare=", welfare_type),
     paste0("version=", version),
-    .build_parquet_filename(survey_id)
+    .build_parquet_filename(pip_id_val)
   )
 
   # --- Identify available breakdown dimensions present in this survey ---------
@@ -408,7 +455,7 @@ write_survey_parquet <- function(dt,
 
   # --- Build summary row skeleton (filled in below) --------------------------
   summary_base <- data.table::data.table(
-    survey_id            = survey_id,
+    pip_id               = pip_id_val,
     country_code         = country_code,
     surveyid_year        = surveyid_year,
     welfare_type         = welfare_type,
@@ -483,14 +530,14 @@ write_survey_parquet <- function(dt,
 }
 
 
-#' Extract survey IDs from a PIP release inventory
+#' Extract survey IDs from a PIP master inventory
 #'
 #' Convenience helper to produce the `survey_ids` vector expected by
 #' [generate_arrow_dataset()] directly from the inventory object returned by
-#' [pipload::load_pip_release_inventory()].
+#' [pipload::load_pip_master_inventory()].
 #'
 #' @param inventory A `data.table` returned by
-#'   [pipload::load_pip_release_inventory()]. Must contain a `survey_id`
+#'   [pipload::load_pip_master_inventory()]. Must contain a `survey_id`
 #'   column.
 #' @param surveys Optional named integer vector specifying exact
 #'   country-year pairs to include. Names must be ISO3 country codes and
@@ -509,7 +556,7 @@ write_survey_parquet <- function(dt,
 #' @export
 #' @examples
 #' \dontrun{
-#' inv <- pipload::load_pip_release_inventory()
+#' inv <- pipload::load_pip_master_inventory()
 #' # All surveys
 #' ids <- survey_ids_from_inventory(inv)
 #' # All BOL surveys
@@ -642,14 +689,14 @@ survey_ids_from_inventory <- function(inventory,
 
 #' Batch-write surveys to the Arrow repository
 #'
-#' Accepts either a character vector of survey IDs or a release inventory
-#' `data.table` (from [pipload::load_pip_release_inventory()]). For each
+#' Accepts either a character vector of survey IDs or a master inventory
+#' `data.table` (from [pipload::load_pip_master_inventory()]). For each
 #' survey, data is loaded via [pipload::load_pip_data()], prepared via
 #' [prepare_for_arrow()], and written via [write_survey_parquet()]. Memory
 #' from each survey is freed before the next is loaded.
 #'
 #' @param survey_ids Character vector of survey IDs, or a `data.table`
-#'   inventory from [pipload::load_pip_release_inventory()]. When a
+#'   inventory from [pipload::load_pip_master_inventory()]. When a
 #'   `data.table` is supplied it is passed through
 #'   [survey_ids_from_inventory()] automatically.
 #' @param arrow_repo_path Absolute path to the root of the Master Arrow
@@ -658,8 +705,11 @@ survey_ids_from_inventory <- function(inventory,
 #'   (default), surveys whose Parquet file already exists are skipped — making
 #'   it safe to re-run the function without duplicating work. Set to `TRUE`
 #'   only when you need to overwrite existing files.
-#' @param where Passed to [pipload::load_pip_data()]. One of `"release"`
-#'   (default) or `"master"`.
+#' @param where Passed to both the raw and metadata [pipload::load_pip_data()]
+#'   calls. One of `"master"` (default) or `"release"`. Use `"master"` when
+#'   processing surveys that have not yet been published to the release
+#'   inventory. Both raw data and metadata are always loaded from the same
+#'   repository so that inventory lookups are consistent.
 #' @param version Release version string passed to
 #'   [pipload::load_pip_data()]. `NULL` uses the latest available.
 #' @param surveys Optional named integer vector of exact country-year pairs to
@@ -672,16 +722,17 @@ survey_ids_from_inventory <- function(inventory,
 #' @param welfare_type Optional welfare type filter (`"INC"`, `"CON"`) — only
 #'   used when `survey_ids` is an inventory `data.table`.
 #'
-#' @return A `data.table` with one row per survey and columns: `survey_id`,
-#'   `status` (`"written"`, `"skipped"`, or `"error"`), `n_rows`,
-#'   `available_dimensions`, `file_path`, `message`.
+#' @return A `data.table` with one row per pip_id and columns: `pip_id`,
+#'   `country_code`, `surveyid_year`, `welfare_type`, `file_path`, `n_rows`,
+#'   `available_dimensions`, `status` (`"written"`, `"skipped"`, or `"error"`),
+#'   `message`.
 #' @seealso [prepare_for_arrow()] for the preprocessing applied to each
 #'   survey internally. [write_survey_parquet()] for single-survey writes.
 #' @family arrow-generation
 #' @export
 #' @examples
 #' \dontrun{
-#' inv <- pipload::load_pip_release_inventory()
+#' inv <- pipload::load_pip_master_inventory()
 #'
 #' # All surveys in inventory (use with care — very large)
 #' results <- generate_arrow_dataset(inv)
@@ -702,7 +753,7 @@ survey_ids_from_inventory <- function(inventory,
 generate_arrow_dataset <- function(survey_ids,
                                    arrow_repo_path = getOption("pipdata.arrow_repo"),
                                    overwrite    = FALSE,
-                                   where        = "release",
+                                   where        = "master",
                                    version      = NULL,
                                    surveys      = NULL,
                                    module       = NULL,
@@ -739,18 +790,25 @@ generate_arrow_dataset <- function(survey_ids,
   # inventory now so we can look up the correct load arguments per pip_id.
   if (is.null(inventory)) {
     cli::cli_inform("Loading release inventory to resolve pip_id(s)...")
-    inventory <- pipload::load_pip_release_inventory()
+    inventory <- pipload::load_pip_master_inventory()
   }
 
   # --- Resolve pip_ids from the inventory -----------------------------------
   # Each survey_id may map to multiple pip_id (e.g. INC + CON versions).
   # Each pip_id corresponds to one physical .qs2 file and one Parquet file.
+  #
+  # NOTE: the inventory does not carry a welfare_type column. It is derived
+  # from pip_id (second-to-last "_" segment, e.g. "..._INC_ALL" -> "INC")
+  # using .extract_welfare_from_pip_id(). Never select welfare_type from the
+  # inventory — data.table would silently return NA for a missing column,
+  # which would cause load_pip_data() to find 0 matching files.
   pip_rows <- inventory[
     !is.na(pip_id) & survey_id %in% survey_ids,
     .(survey_id, pip_id, country_code, surveyid_year,
-      survey_acronym, vermast, veralt, collection, module,
-      welfare_type)
+      survey_acronym, vermast, veralt, collection, module)
   ]
+  pip_rows[, welfare_type := vapply(pip_id, .extract_welfare_from_pip_id,
+                                    character(1L))]
 
   if (nrow(pip_rows) == 0L) {
     cli::cli_abort(
@@ -779,19 +837,24 @@ generate_arrow_dataset <- function(survey_ids,
 
     results[[i]] <- tryCatch({
 
-      # Use inventory columns directly — no string parsing
+      # Use inventory columns directly — no string parsing.
+      # Both raw and meta use the same `where` so surveys that only exist in
+      # "master" (not yet in the release inventory) are still resolvable.
+      # Metadata is always loaded with the same `where` as raw data; callers
+      # who want release metadata should pass where = "release" explicitly.
       raw <- pipload::load_pip_data(
         country_code   = row_i$country_code,
         surveyid_year  = row_i$surveyid_year,
         survey_acronym = row_i$survey_acronym,
         vermast        = row_i$vermast,
         veralt         = row_i$veralt,
-        collection     = row_i$collection,
+        #collection     = row_i$collection,
         module         = row_i$module,
         welfare_type   = row_i$welfare_type,
         where          = where,
         version        = version,
-        metadata       = FALSE
+        metadata       = FALSE,
+        verbose        = FALSE
       )
 
       meta <- pipload::load_pip_data(
@@ -800,7 +863,7 @@ generate_arrow_dataset <- function(survey_ids,
         survey_acronym = row_i$survey_acronym,
         vermast        = row_i$vermast,
         veralt         = row_i$veralt,
-        collection     = row_i$collection,
+        #collection     = row_i$collection,
         module         = row_i$module,
         welfare_type   = row_i$welfare_type,
         where          = where,
@@ -824,7 +887,7 @@ generate_arrow_dataset <- function(survey_ids,
 
     }, error = function(e) {
       data.table::data.table(
-        survey_id            = survey_id_i,
+        pip_id               = pip_id_i,
         country_code         = row_i$country_code,
         surveyid_year        = row_i$surveyid_year,
         welfare_type         = row_i$welfare_type,

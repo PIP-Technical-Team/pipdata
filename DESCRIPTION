@@ -29,10 +29,10 @@ Imports:
     DT,
     dlw,
     pins,
-    stamp (>= 0.0.5),
-    piptm
+    stamp (>= 0.0.5)
 Suggests: 
     knitr,
+    piptm,
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

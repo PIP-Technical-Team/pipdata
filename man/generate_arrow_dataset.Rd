@@ -17,7 +17,7 @@ generate_arrow_dataset(
 }
 \arguments{
 \item{survey_ids}{Character vector of survey IDs, or a \code{data.table}
-inventory from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}. When a
+inventory from \code{\link[pipload:load_pip_data]{pipload::load_pip_master_inventory()}}. When a
 \code{data.table} is supplied it is passed through
 \code{\link[=survey_ids_from_inventory]{survey_ids_from_inventory()}} automatically.}
 
@@ -48,20 +48,21 @@ values are survey years. Pairs are matched jointly — no cross-product.
 used when \code{survey_ids} is an inventory \code{data.table}.}
 }
 \value{
-A \code{data.table} with one row per survey and columns: \code{survey_id},
-\code{status} (\code{"written"}, \code{"skipped"}, or \code{"error"}), \code{n_rows},
-\code{available_dimensions}, \code{file_path}, \code{message}.
+A \code{data.table} with one row per pip_id and columns: \code{pip_id},
+\code{country_code}, \code{surveyid_year}, \code{welfare_type}, \code{file_path}, \code{n_rows},
+\code{available_dimensions}, \code{status} (\code{"written"}, \code{"skipped"}, or \code{"error"}),
+\code{message}.
 }
 \description{
-Accepts either a character vector of survey IDs or a release inventory
-\code{data.table} (from \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}). For each
+Accepts either a character vector of survey IDs or a master inventory
+\code{data.table} (from \code{\link[pipload:load_pip_data]{pipload::load_pip_master_inventory()}}). For each
 survey, data is loaded via \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}, prepared via
 \code{\link[=prepare_for_arrow]{prepare_for_arrow()}}, and written via \code{\link[=write_survey_parquet]{write_survey_parquet()}}. Memory
 from each survey is freed before the next is loaded.
 }
 \examples{
 \dontrun{
-inv <- pipload::load_pip_release_inventory()
+inv <- pipload::load_pip_master_inventory()
 
 # All surveys in inventory (use with care — very large)
 results <- generate_arrow_dataset(inv)

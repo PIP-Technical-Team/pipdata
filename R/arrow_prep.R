@@ -75,7 +75,7 @@ inject_metadata_cols <- function(dt, metadata, pip_id) {
       wt_raw == "CONSUMPTION", "CON",
       default = wt_raw
     ),
-    survey_id      = as.character(pip_id),
+    pip_id         = as.character(pip_id),
     version        = paste0(
       tolower(as.character(metadata$vermast)), "_",
       tolower(as.character(metadata$veralt))
@@ -258,7 +258,7 @@ validate_pre_write <- function(dt) {
 
   # §4.1 — Required columns present ------------------------------------------
   required_cols <- c(
-    "country_code", "surveyid_year", "welfare_type", "survey_id",
+    "country_code", "surveyid_year", "welfare_type", "pip_id",
     "survey_acronym", "welfare", "weight", "version"
   )
   missing_cols <- setdiff(required_cols, names(dt))
@@ -296,7 +296,7 @@ validate_pre_write <- function(dt) {
     rlang::warn(
       paste0(
         n_zero, " row(s) have welfare == 0 in survey: ",
-        dt[1L, survey_id]
+        dt[1L, pip_id]
       )
     )
   }
@@ -358,7 +358,7 @@ validate_pre_write <- function(dt) {
 
   # §4.8 — No extra columns ---------------------------------------------------
   allowed_cols <- c(
-    "country_code", "surveyid_year", "welfare_type", "survey_id",
+    "country_code", "surveyid_year", "welfare_type", "pip_id",
     "survey_acronym", "welfare", "weight", "version",
     "gender", "area", "educat4", "educat5", "educat7", "age"
   )
@@ -416,7 +416,7 @@ validate_pre_write <- function(dt) {
 #' @export
 #' @examples
 #' \dontrun{
-#' inv  <- pipload::load_pip_release_inventory()
+#' inv  <- pipload::load_pip_master_inventory()
 #' pip  <- inv[survey_id == "ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL", pip_id]
 #' raw  <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = FALSE)
 #' meta <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = TRUE)
@@ -449,7 +449,7 @@ prepare_for_arrow <- function(data, metadata, pip_id) {
 
   # ---- Step 1 (cont.): column selection ------------------------------------
   allowed_cols      <- c(
-    "country_code", "surveyid_year", "welfare_type", "survey_id",
+    "country_code", "surveyid_year", "welfare_type", "pip_id",
     "survey_acronym", "welfare", "weight", "version",
     "gender", "area", "educat4", "educat5", "educat7", "age"
   )

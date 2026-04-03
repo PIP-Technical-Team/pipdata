@@ -8,7 +8,8 @@
   arrow_repo_path,
   country_code,
   surveyid_year,
-  welfare_type
+  welfare_type,
+  version
 )
 }
 \arguments{
@@ -19,6 +20,9 @@
 \item{surveyid_year}{Survey year (integer scalar).}
 
 \item{welfare_type}{Welfare type code — \code{"INC"} or \code{"CON"}.}
+
+\item{version}{Combined version string, e.g. \code{"v01_v04"} (character
+scalar). Derived from \code{paste0(tolower(vermast), "_", tolower(veralt))}.}
 }
 \value{
 Absolute path string for the partition directory.

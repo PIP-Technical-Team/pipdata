@@ -2,18 +2,18 @@
 % Please edit documentation in R/arrow_generation.R
 \name{.build_parquet_filename}
 \alias{.build_parquet_filename}
-\title{Derive the Parquet filename from a survey_id}
+\title{Derive the Parquet filename from a pip_id}
 \usage{
-.build_parquet_filename(survey_id)
+.build_parquet_filename(pip_id)
 }
 \arguments{
-\item{survey_id}{Full survey identifier string.}
+\item{pip_id}{File-level survey identifier string (e.g. \code{"BOL_2020_EH_INC_ALL"}).}
 }
 \value{
 Filename string (no directory component).
 }
 \description{
 Follows the filename convention in arrow-schema.json:
-\verb{<survey_id>-0.parquet}
+\verb{<pip_id>-0.parquet}
 }
 \keyword{internal}

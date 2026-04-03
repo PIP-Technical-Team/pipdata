@@ -29,7 +29,7 @@ make_fixture_dt <- function(country_code  = "COL",
     country_code   = country_code,
     surveyid_year  = as.integer(surveyid_year),
     welfare_type   = welfare_type,
-    survey_id      = pip_id,
+    pip_id         = pip_id,
     survey_acronym = "ECH",
     welfare        = seq(0.5, by = 0.1, length.out = n_rows),
     weight         = rep(1.0, n_rows)

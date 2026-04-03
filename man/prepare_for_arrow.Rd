@@ -49,7 +49,7 @@ object passed by the caller is not modified.
 }
 \examples{
 \dontrun{
-inv  <- pipload::load_pip_release_inventory()
+inv  <- pipload::load_pip_master_inventory()
 pip  <- inv[survey_id == "ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL", pip_id]
 raw  <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = FALSE)
 meta <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = TRUE)

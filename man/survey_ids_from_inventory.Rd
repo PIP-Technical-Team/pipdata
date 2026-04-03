@@ -2,7 +2,7 @@
 % Please edit documentation in R/arrow_generation.R
 \name{survey_ids_from_inventory}
 \alias{survey_ids_from_inventory}
-\title{Extract survey IDs from a PIP release inventory}
+\title{Extract survey IDs from a PIP master inventory}
 \usage{
 survey_ids_from_inventory(
   inventory,
@@ -13,7 +13,7 @@ survey_ids_from_inventory(
 }
 \arguments{
 \item{inventory}{A \code{data.table} returned by
-\code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}. Must contain a \code{survey_id}
+\code{\link[pipload:load_pip_data]{pipload::load_pip_master_inventory()}}. Must contain a \code{survey_id}
 column.}
 
 \item{surveys}{Optional named integer vector specifying exact
@@ -36,11 +36,11 @@ A character vector of survey IDs.
 \description{
 Convenience helper to produce the \code{survey_ids} vector expected by
 \code{\link[=generate_arrow_dataset]{generate_arrow_dataset()}} directly from the inventory object returned by
-\code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}}.
+\code{\link[pipload:load_pip_data]{pipload::load_pip_master_inventory()}}.
 }
 \examples{
 \dontrun{
-inv <- pipload::load_pip_release_inventory()
+inv <- pipload::load_pip_master_inventory()
 # All surveys
 ids <- survey_ids_from_inventory(inv)
 # All BOL surveys
