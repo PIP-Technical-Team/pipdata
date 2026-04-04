@@ -19,7 +19,7 @@
 #     "created_at": "<ISO 8601>",
 #   "surveys": [ ... one entry per pip_id ... ]
 #   }
-#   where file_path follows: country=<cc>/year=<yr>/welfare=<wt>/version=<ver>/<pip_id>-0.parquet
+#   where file_path follows: country=<cc>/year=<yr>/welfare_type=<wt>/version=<ver>/<pip_id>-0.parquet
 #
 # Workflow
 # --------
@@ -43,8 +43,13 @@
 
 #' Derive the relative Parquet path for a pip_id
 #'
+#' Internal helper used only during manifest generation to locate the physical
+#' Parquet file for existence checks and dimension introspection. The derived
+#' path is **not** stored in the manifest JSON — the manifest stores partition
+#' filter keys instead.
+#'
 #' Follows the 4-level partition convention established in arrow-schema.json:
-#'   `country=<cc>/year=<yr>/welfare=<wt>/version=<version>/<pip_id>-0.parquet`
+#'   `country=<cc>/year=<yr>/welfare_type=<wt>/version=<version>/<pip_id>-0.parquet`
 #'
 #' @param country_code  ISO3 country code (character scalar).
 #' @param surveyid_year Survey year (integer scalar).
@@ -55,16 +60,16 @@
 #'
 #' @return Relative path string (forward slashes).
 #' @keywords internal
-.build_manifest_file_path <- function(country_code,
-                                      surveyid_year,
-                                      welfare_type,
-                                      version,
-                                      pip_id) {
+.derive_parquet_path <- function(country_code,
+                                 surveyid_year,
+                                 welfare_type,
+                                 version,
+                                 pip_id) {
   paste(
-    paste0("country=", country_code),
-    paste0("year=",    surveyid_year),
-    paste0("welfare=", welfare_type),
-    paste0("version=", version),
+    paste0("country=",      country_code),
+    paste0("year=",         surveyid_year),
+    paste0("welfare_type=", welfare_type),
+    paste0("version=",      version),
     paste0(pip_id, "-0.parquet"),
     sep = "/"
   )
@@ -129,71 +134,66 @@ discover_parquet_dimensions <- function(file_path) {
 #'
 #' Constructs the list structure for one survey entry in the manifest JSON.
 #' Does not perform file I/O — all information comes from the inventory row
-#' and the pre-computed `file_path` and `available_dimensions` vectors.
+#' and the pre-computed `dimensions` vector.
 #'
-#' @param country_code         ISO3 country code.
-#' @param surveyid_year        Survey year (integer).
-#' @param welfare_type         "INC" or "CON".
-#' @param survey_id            Full DLW survey identifier (e.g.
+#' The entry stores four **partition filter keys** (`country_code`, `year`,
+#' `welfare_type`, `version`) that `{piptm}` uses with Arrow's native
+#' partition pushdown via `open_dataset() |> dplyr::filter()`. No physical
+#' file path is stored — the manifest is therefore portable across environments.
+#'
+#' @param country_code   ISO3 country code. Partition filter key.
+#' @param surveyid_year  Survey year (integer). Partition filter key.
+#' @param welfare_type   `"INC"` or `"CON"`. Partition filter key.
+#' @param survey_id      Full DLW survey identifier (e.g.
 #'   `"COL_2010_ECH_V01_M_V02_A_GMD_ALL"`).
-#' @param survey_acronym       Short survey name (e.g. `"ECH"`).
-#' @param vermast              Master version string (e.g. `"V01"`).
-#' @param veralt               Alternative version string (e.g. `"V02"`).
-#' @param version              Combined version string, e.g. `"v01_v02"`. Derived
-#'   from `paste0(tolower(vermast), "_", tolower(veralt))`.
-#' @param module               Processing module (e.g. `"ALL"`).
-#' @param pip_id               Canonical pip_id (e.g.
-#'   `"COL_2010_ECH_V01_M_V02_A_INC"`). Used as the filename stem.
-#' @param file_path            Relative path from `arrow_root` to the Parquet
-#'   file (forward slashes). Includes the `version=<version>` partition segment.
-#' @param available_dimensions Character vector of breakdown dimension names
+#' @param survey_acronym Short survey name (e.g. `"ECH"`).
+#' @param version        Combined version string, e.g. `"v01_v02"`. Partition
+#'   filter key. Derived from
+#'   `paste0(tolower(vermast), "_", tolower(veralt))`.
+#' @param module         Processing module (e.g. `"ALL"`).
+#' @param pip_id         Canonical pip_id (e.g. `"COL_2010_ECH_V01_M_V02_A_INC"`).
+#' @param dimensions     Character vector of breakdown dimension column names
 #'   available in this survey's Parquet file (e.g. `c("gender", "area")`).
-#'   Use `character(0)` when none are present.
+#'   Use `character(0)` when none are present. Known universe:
+#'   `gender`, `area`, `educat4`, `educat5`, `educat7`, `age`.
 #'
-#' @return A named list suitable for JSON serialisation via [jsonlite::toJSON()].
+#' @return A named list with 9 fields suitable for JSON serialisation via
+#'   [jsonlite::toJSON()]: `pip_id`, `survey_id`, `country_code`, `year`,
+#'   `welfare_type`, `version`, `survey_acronym`, `module`, `dimensions`.
 #'
 #' @family manifest-generation
 #' @export
 #' @examples
 #' entry <- build_manifest_entry(
-#'   country_code         = "COL",
-#'   surveyid_year        = 2010L,
-#'   welfare_type         = "INC",
-#'   survey_id            = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-#'   survey_acronym       = "ECH",
-#'   vermast              = "V01",
-#'   veralt               = "V02",
-#'   version              = "v01_v02",
-#'   module               = "ALL",
-#'   pip_id               = "COL_2010_ECH_V01_M_V02_A_INC",
-#'   file_path            = "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
-#'   available_dimensions = c("gender", "area")
+#'   country_code   = "COL",
+#'   surveyid_year  = 2010L,
+#'   welfare_type   = "INC",
+#'   survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+#'   survey_acronym = "ECH",
+#'   version        = "v01_v02",
+#'   module         = "ALL",
+#'   pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
+#'   dimensions     = c("gender", "area")
 #' )
 build_manifest_entry <- function(country_code,
                                  surveyid_year,
                                  welfare_type,
                                  survey_id,
                                  survey_acronym,
-                                 vermast,
-                                 veralt,
                                  version,
                                  module,
                                  pip_id,
-                                 file_path,
-                                 available_dimensions) {
+                                 dimensions) {
   list(
-    country_code         = as.character(country_code),
-    year                 = as.integer(surveyid_year),
-    welfare_type         = as.character(welfare_type),
-    survey_id            = as.character(survey_id),
-    survey_acronym       = as.character(survey_acronym),
-    vermast              = as.character(vermast),
-    veralt               = as.character(veralt),
-    version              = as.character(version),
-    module               = as.character(module),
-    pip_id               = as.character(pip_id),
-    file_path            = as.character(file_path),
-    available_dimensions = as.character(available_dimensions)
+    pip_id         = as.character(pip_id),
+    survey_id      = as.character(survey_id),
+    country_code   = as.character(country_code),
+    year           = as.integer(surveyid_year),
+    welfare_type   = as.character(welfare_type),
+    version        = as.character(version),
+    survey_acronym = as.character(survey_acronym),
+    module         = as.character(module),
+    dimensions     = as.character(dimensions)
   )
 }
 
@@ -212,23 +212,19 @@ build_manifest_entry <- function(country_code,
 #'
 #' ```json
 #' {
-#'   "release_id": "20260206",
-#'   "arrow_root": "/path/to/arrow",
-#'   "created_at": "2026-02-06T12:00:00Z",
-#'   "surveys": [
+#'   "release": "20260206",
+#'   "generated_at": "2026-02-06T12:00:00Z",
+#'   "entries": [
 #'     {
+#'       "pip_id": "COL_2010_ECH_V01_M_V02_A_INC",
+#'       "survey_id": "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
 #'       "country_code": "COL",
 #'       "year": 2010,
 #'       "welfare_type": "INC",
-#'       "survey_id": "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-#'       "survey_acronym": "ECH",
-#'       "vermast": "V01",
-#'       "veralt": "V02",
 #'       "version": "v01_v02",
+#'       "survey_acronym": "ECH",
 #'       "module": "ALL",
-#'       "pip_id": "COL_2010_ECH_V01_M_V02_A_INC",
-#'       "file_path": "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
-#'       "available_dimensions": ["gender", "area", "educat4"]
+#'       "dimensions": ["gender", "area", "educat4"]
 #'     }
 #'   ]
 #' }
@@ -239,11 +235,12 @@ build_manifest_entry <- function(country_code,
 #' loaded downstream). A summary of written, skipped, and failed entries is
 #' returned invisibly.
 #'
-#' @param release_id       Character scalar. The PIP release identifier, e.g.
-#'   `"20260206"`. Used as the `release_id` field and as part of the default
-#'   output filename.
+#' @param release          Character scalar. The PIP release identifier, e.g.
+#'   `"20260206"`. Used as the `release` field in the JSON.
 #' @param arrow_root       Absolute path to the root of the Master Arrow
 #'   Repository. All survey Parquet files are expected under this directory.
+#'   Not stored in the manifest output — the consumer configures this
+#'   independently via the `PIPTM_ARROW_ROOT` environment variable.
 #' @param release_inventory A `data.table` from
 #'   [pipload::load_pip_release_inventory()] (or equivalent). Must contain
 #'   columns: `survey_id`, `pip_id`, `country_code`, `surveyid_year`,
@@ -260,9 +257,9 @@ build_manifest_entry <- function(country_code,
 #'   `pip_id` rows) and columns:
 #'   \describe{
 #'     \item{`pip_id`}{Canonical pip_id string.}
-#'     \item{`file_path`}{Absolute path of the Parquet file.}
+#'     \item{`file_path`}{Absolute path of the Parquet file checked (not in JSON).}
 #'     \item{`status`}{"included", "missing", or "unreadable".}
-#'     \item{`available_dimensions`}{Comma-separated dimension names (empty
+#'     \item{`dimensions`}{Comma-separated dimension names (empty
 #'       string when none; `NA` when file is missing/unreadable).}
 #'     \item{`message`}{Informational note or `NA`.}
 #'   }
@@ -274,14 +271,14 @@ build_manifest_entry <- function(country_code,
 #' \dontrun{
 #' inv <- pipload::load_pip_release_inventory()
 #' generate_release_manifest(
-#'   release_id       = "20260206",
-#'   arrow_root       = "//server/pip/arrow",
+#'   release           = "20260206",
+#'   arrow_root        = "//server/pip/arrow",
 #'   release_inventory = inv,
-#'   output_path      = "//server/manifests/manifest_20260206.json",
-#'   set_as_current   = TRUE
+#'   output_path       = "//server/manifests/manifest_20260206.json",
+#'   set_as_current    = TRUE
 #' )
 #' }
-generate_release_manifest <- function(release_id,
+generate_release_manifest <- function(release,
                                       arrow_root,
                                       release_inventory,
                                       output_path,
@@ -289,7 +286,7 @@ generate_release_manifest <- function(release_id,
 
   # --- Input validation -------------------------------------------------------
   stopifnot(
-    is.character(release_id),  length(release_id)  == 1L, !is.na(release_id),
+    is.character(release),     length(release)     == 1L, !is.na(release),
     is.character(arrow_root),  length(arrow_root)  == 1L, !is.na(arrow_root),
     is.character(output_path), length(output_path) == 1L, !is.na(output_path),
     is.logical(set_as_current), length(set_as_current) == 1L
@@ -336,7 +333,7 @@ generate_release_manifest <- function(release_id,
   }
 
   cli::cli_inform(
-    "Building manifest for release {.val {release_id}} ({n_total} pip_id(s))."
+    "Building manifest for release {.val {release}} ({n_total} pip_id(s))."
   )
 
   # --- Process each pip_id ---------------------------------------------------
@@ -355,8 +352,9 @@ generate_release_manifest <- function(release_id,
     # Derive version from vermast / veralt (same construction as arrow_prep.R)
     version_i  <- paste0(tolower(row_i$vermast), "_", tolower(row_i$veralt))
 
-    # Relative path (forward slashes)
-    rel_path_i <- .build_manifest_file_path(
+    # Derive the relative path (used only for file existence check and dimension
+    # introspection — NOT stored in the manifest output)
+    rel_path_i <- .derive_parquet_path(
       country_code  = row_i$country_code,
       surveyid_year = row_i$surveyid_year,
       welfare_type  = row_i$welfare_type,
@@ -395,18 +393,15 @@ generate_release_manifest <- function(release_id,
 
     # --- Build survey entry ---------------------------------------------------
     survey_entries[[i]] <- build_manifest_entry(
-      country_code         = row_i$country_code,
-      surveyid_year        = row_i$surveyid_year,
-      welfare_type         = row_i$welfare_type,
-      survey_id            = row_i$survey_id,
-      survey_acronym       = row_i$survey_acronym,
-      vermast              = row_i$vermast,
-      veralt               = row_i$veralt,
-      version              = version_i,
-      module               = row_i$module,
-      pip_id               = pip_id_i,
-      file_path            = rel_path_i,
-      available_dimensions = dims_i
+      country_code   = row_i$country_code,
+      surveyid_year  = row_i$surveyid_year,
+      welfare_type   = row_i$welfare_type,
+      survey_id      = row_i$survey_id,
+      survey_acronym = row_i$survey_acronym,
+      version        = version_i,
+      module         = row_i$module,
+      pip_id         = pip_id_i,
+      dimensions     = dims_i
     )
   }
 
@@ -432,10 +427,9 @@ generate_release_manifest <- function(release_id,
   survey_list <- Filter(Negate(is.null), survey_entries)
 
   manifest <- list(
-    release_id = release_id,
-    arrow_root = arrow_root,
-    created_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-    surveys    = survey_list
+    release      = release,
+    generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    entries      = survey_list
   )
 
   manifest_json <- jsonlite::toJSON(manifest, pretty = TRUE, auto_unbox = TRUE)
@@ -459,16 +453,16 @@ generate_release_manifest <- function(release_id,
 
   # --- Optionally write current_release.json ----------------------------------
   if (isTRUE(set_as_current)) {
-    .write_current_release(release_id = release_id, output_dir = output_dir)
+    .write_current_release(release_id = release, output_dir = output_dir)
   }
 
   # --- Return summary ---------------------------------------------------------
   summary_dt <- data.table::data.table(
-    pip_id               = pip_ids_out,
-    file_path            = file_paths,
-    status               = statuses,
-    available_dimensions = avail_dims,
-    message              = messages
+    pip_id     = pip_ids_out,
+    file_path  = file_paths,
+    status     = statuses,
+    dimensions = avail_dims,
+    message    = messages
   )
 
   invisible(summary_dt)

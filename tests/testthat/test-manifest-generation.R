@@ -83,10 +83,10 @@ write_fixture_parquet <- function(arrow_root, dt,
                                   version       = "v01_v02") {
   partition_dir <- file.path(
     arrow_root,
-    paste0("country=", country_code),
-    paste0("year=", surveyid_year),
-    paste0("welfare=", welfare_type),
-    paste0("version=", version)
+    paste0("country=",      country_code),
+    paste0("year=",         surveyid_year),
+    paste0("welfare_type=", welfare_type),
+    paste0("version=",      version)
   )
   dir.create(partition_dir, recursive = TRUE, showWarnings = FALSE)
   out_file <- file.path(partition_dir, paste0(pip_id, "-0.parquet"))
@@ -112,11 +112,11 @@ make_fixture_inventory <- function(surveys = list(
 }
 
 # ===========================================================================
-# .build_manifest_file_path()
+# .derive_parquet_path()
 # ===========================================================================
 
-test_that(".build_manifest_file_path includes version= segment in returned path", {
-  path <- pipdata:::.build_manifest_file_path(
+test_that(".derive_parquet_path includes version= segment in returned path", {
+  path <- pipdata:::.derive_parquet_path(
     country_code  = "COL",
     surveyid_year = 2010L,
     welfare_type  = "INC",
@@ -126,16 +126,16 @@ test_that(".build_manifest_file_path includes version= segment in returned path"
 
   expect_match(path, "country=COL")
   expect_match(path, "year=2010")
-  expect_match(path, "welfare=INC")
+  expect_match(path, "welfare_type=INC")
   expect_match(path, "version=v01_v02")
   expect_match(path, "COL_2010_ECH_V01_M_V02_A_INC-0.parquet")
-  # Must be 4-level: country/year/welfare/version/filename
+  # Must be 4-level: country/year/welfare_type/version/filename
   parts <- strsplit(path, "/")[[1L]]
   expect_length(parts, 5L)
 })
 
-test_that(".build_manifest_file_path uses correct segment order", {
-  path  <- pipdata:::.build_manifest_file_path(
+test_that(".derive_parquet_path uses correct segment order", {
+  path  <- pipdata:::.derive_parquet_path(
     country_code  = "BOL",
     surveyid_year = 2020L,
     welfare_type  = "INC",
@@ -146,7 +146,7 @@ test_that(".build_manifest_file_path uses correct segment order", {
 
   expect_match(parts[[1L]], "^country=")
   expect_match(parts[[2L]], "^year=")
-  expect_match(parts[[3L]], "^welfare=")
+  expect_match(parts[[3L]], "^welfare_type=")
   expect_match(parts[[4L]], "^version=")
   expect_match(parts[[5L]], "\\.parquet$")
 })
@@ -200,70 +200,76 @@ test_that("discover_parquet_dimensions input validation requires single string",
 # build_manifest_entry()
 # ===========================================================================
 
-test_that("build_manifest_entry returns a correctly structured list", {
+test_that("build_manifest_entry returns a correctly structured list with 9 fields", {
   entry <- build_manifest_entry(
-    country_code         = "COL",
-    surveyid_year        = 2010L,
-    welfare_type         = "INC",
-    survey_id            = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-    survey_acronym       = "ECH",
-    vermast              = "V01",
-    veralt               = "V02",
-    version              = "v01_v02",
-    module               = "ALL",
-    pip_id               = "COL_2010_ECH_V01_M_V02_A_INC",
-    file_path            = "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
-    available_dimensions = c("gender", "area")
+    country_code   = "COL",
+    surveyid_year  = 2010L,
+    welfare_type   = "INC",
+    survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+    survey_acronym = "ECH",
+    version        = "v01_v02",
+    module         = "ALL",
+    pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
+    dimensions     = c("gender", "area")
   )
 
   expect_type(entry, "list")
+  # Exactly 9 fields in order matching brainstorm schema
   expect_named(entry, c(
-    "country_code", "year", "welfare_type", "survey_id", "survey_acronym",
-    "vermast", "veralt", "version", "module", "pip_id", "file_path",
-    "available_dimensions"
+    "pip_id", "survey_id", "country_code", "year", "welfare_type",
+    "version", "survey_acronym", "module", "dimensions"
   ))
-  expect_identical(entry$country_code,   "COL")
-  expect_identical(entry$year,            2010L)
-  expect_identical(entry$welfare_type,    "INC")
-  expect_identical(entry$survey_id,       "COL_2010_ECH_V01_M_V02_A_GMD_ALL")
-  expect_identical(entry$survey_acronym,  "ECH")
-  expect_identical(entry$vermast,         "V01")
-  expect_identical(entry$veralt,          "V02")
-  expect_identical(entry$version,         "v01_v02")
-  expect_identical(entry$module,          "ALL")
   expect_identical(entry$pip_id,          "COL_2010_ECH_V01_M_V02_A_INC")
-  expect_identical(
-    entry$file_path,
-    "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet"
-  )
-  expect_identical(entry$available_dimensions, c("gender", "area"))
+  expect_identical(entry$survey_id,       "COL_2010_ECH_V01_M_V02_A_GMD_ALL")
+  expect_identical(entry$country_code,    "COL")
+  expect_identical(entry$year,             2010L)
+  expect_identical(entry$welfare_type,    "INC")
+  expect_identical(entry$version,         "v01_v02")
+  expect_identical(entry$survey_acronym,  "ECH")
+  expect_identical(entry$module,          "ALL")
+  expect_identical(entry$dimensions,      c("gender", "area"))
 })
 
-test_that("build_manifest_entry coerces year to integer", {
+test_that("build_manifest_entry has no file_path, vermast, or veralt fields", {
   entry <- build_manifest_entry(
-    country_code         = "BOL",
-    surveyid_year        = "2012",  # character — should be coerced
-    welfare_type         = "CON",
-    survey_id            = "BOL_2012_EH_V01_M_V02_A_GMD_ALL",
-    survey_acronym       = "EH",
-    vermast              = "V01",
-    veralt               = "V02",
-    version              = "v01_v02",
-    module               = "ALL",
-    pip_id               = "BOL_2012_EH_V01_M_V02_A_CON",
-    file_path            = "country=BOL/year=2012/welfare=CON/version=v01_v02/BOL_2012_EH_V01_M_V02_A_CON-0.parquet",
-    available_dimensions = character(0)
+    country_code   = "COL",
+    surveyid_year  = 2010L,
+    welfare_type   = "INC",
+    survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+    survey_acronym = "ECH",
+    version        = "v01_v02",
+    module         = "ALL",
+    pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
+    dimensions     = character(0)
   )
-  expect_identical(entry$year, 2012L)
-  expect_identical(entry$version, "v01_v02")
-  expect_identical(entry$available_dimensions, character(0))
+  expect_false("file_path"          %in% names(entry))
+  expect_false("vermast"            %in% names(entry))
+  expect_false("veralt"             %in% names(entry))
+  expect_false("available_dimensions" %in% names(entry))
+})
+
+test_that("build_manifest_entry coerces year to integer and accepts empty dimensions", {
+  entry <- build_manifest_entry(
+    country_code   = "BOL",
+    surveyid_year  = "2012",  # character — should be coerced
+    welfare_type   = "CON",
+    survey_id      = "BOL_2012_EH_V01_M_V02_A_GMD_ALL",
+    survey_acronym = "EH",
+    version        = "v01_v02",
+    module         = "ALL",
+    pip_id         = "BOL_2012_EH_V01_M_V02_A_CON",
+    dimensions     = character(0)
+  )
+  expect_identical(entry$year,       2012L)
+  expect_identical(entry$version,    "v01_v02")
+  expect_identical(entry$dimensions, character(0))
 })
 
 # ===========================================================================
 # generate_release_manifest()
 # ===========================================================================
 
-test_that("generate_release_manifest writes valid JSON and returns summary", {
+test_that("generate_release_manifest writes valid JSON with new format and returns summary", {
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
 
@@ -275,7 +281,7 @@ test_that("generate_release_manifest writes valid JSON and returns summary", {
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
 
   result <- generate_release_manifest(
-    release_id        = "20260206",
+    release           = "20260206",
     arrow_root        = tmp_arrow,
     release_inventory = inv,
     output_path       = out_path
@@ -284,30 +290,38 @@ test_that("generate_release_manifest writes valid JSON and returns summary", {
   # File should exist
   expect_true(file.exists(out_path))
 
-  # JSON should parse cleanly
+  # JSON should parse cleanly with new top-level keys
   manifest <- jsonlite::fromJSON(out_path, simplifyVector = FALSE)
-  expect_identical(manifest$release_id, "20260206")
-  expect_equal(length(manifest$surveys), 1L)
+  expect_identical(manifest$release, "20260206")
+  expect_true(!is.null(manifest$generated_at))
+  expect_equal(length(manifest$entries), 1L)
+  # Old keys must NOT be present
+  expect_null(manifest$release_id)
+  expect_null(manifest$created_at)
+  expect_null(manifest$surveys)
+  expect_null(manifest$arrow_root)
 
-  survey_entry <- manifest$surveys[[1L]]
-  expect_identical(survey_entry$country_code,  "COL")
-  expect_identical(survey_entry$welfare_type,  "INC")
-  expect_identical(survey_entry$pip_id, "COL_2010_ECH_V01_M_V02_A_INC")
-  # version= segment must appear in file_path
-  expect_match(
-    survey_entry$file_path,
-    "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet"
-  )
-  # version field present in entry
-  expect_identical(survey_entry$version, "v01_v02")
-  expect_true(
-    all(c("gender", "area") %in% unlist(survey_entry$available_dimensions))
-  )
+  # Verify entry schema (9 fields)
+  entry <- manifest$entries[[1L]]
+  expect_named(entry, c(
+    "pip_id", "survey_id", "country_code", "year", "welfare_type",
+    "version", "survey_acronym", "module", "dimensions"
+  ), ignore.order = TRUE)
+  expect_identical(entry$pip_id,        "COL_2010_ECH_V01_M_V02_A_INC")
+  expect_identical(entry$country_code,  "COL")
+  expect_identical(entry$welfare_type,  "INC")
+  expect_identical(entry$version,       "v01_v02")
+  # No file_path/vermast/veralt in entry
+  expect_null(entry$file_path)
+  expect_null(entry$vermast)
+  expect_null(entry$veralt)
+  expect_null(entry$available_dimensions)
+  expect_true(all(c("gender", "area") %in% unlist(entry$dimensions)))
 
-  # Summary data.table
+  # Summary data.table has 'dimensions' column (not 'available_dimensions')
   expect_s3_class(result, "data.table")
-  expect_true("pip_id" %in% names(result))
-  expect_true("status" %in% names(result))
+  expect_true("dimensions" %in% names(result))
+  expect_false("available_dimensions" %in% names(result))
   expect_identical(result[pip_id == "COL_2010_ECH_V01_M_V02_A_INC", status], "included")
 })
 
@@ -315,7 +329,6 @@ test_that("generate_release_manifest records 'missing' for absent Parquet files"
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
   # No Parquet file written — directory is empty
-  # The derived path will be country=COL/year=2010/welfare=INC/version=v01_v02/...
 
   inv      <- make_fixture_inventory()
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
@@ -323,7 +336,7 @@ test_that("generate_release_manifest records 'missing' for absent Parquet files"
   expect_warning(
     expect_error(
       generate_release_manifest(
-        release_id        = "20260206",
+        release           = "20260206",
         arrow_root        = tmp_arrow,
         release_inventory = inv,
         output_path       = out_path
@@ -367,7 +380,7 @@ test_that("generate_release_manifest skips rows with NA pip_id", {
 
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
   result   <- generate_release_manifest(
-    release_id        = "20260206",
+    release           = "20260206",
     arrow_root        = tmp_arrow,
     release_inventory = inv_with_na,
     output_path       = out_path
@@ -378,9 +391,8 @@ test_that("generate_release_manifest skips rows with NA pip_id", {
   expect_identical(result$pip_id, "COL_2010_ECH_V01_M_V02_A_INC")
 
   manifest <- jsonlite::fromJSON(out_path, simplifyVector = FALSE)
-  expect_equal(length(manifest$surveys), 1L)
-  # version field present
-  expect_identical(manifest$surveys[[1L]]$version, "v01_v02")
+  expect_equal(length(manifest$entries), 1L)
+  expect_identical(manifest$entries[[1L]]$version, "v01_v02")
 })
 
 test_that("generate_release_manifest with set_as_current writes pointer file", {
@@ -394,7 +406,7 @@ test_that("generate_release_manifest with set_as_current writes pointer file", {
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
 
   generate_release_manifest(
-    release_id        = "20260206",
+    release           = "20260206",
     arrow_root        = tmp_arrow,
     release_inventory = inv,
     output_path       = out_path,
@@ -413,7 +425,7 @@ test_that("generate_release_manifest errors when arrow_root does not exist", {
   inv <- make_fixture_inventory()
   expect_error(
     generate_release_manifest(
-      release_id        = "20260206",
+      release           = "20260206",
       arrow_root        = "/nonexistent/arrow",
       release_inventory = inv,
       output_path       = tempfile(fileext = ".json")
@@ -427,7 +439,7 @@ test_that("generate_release_manifest errors when output directory does not exist
   inv       <- make_fixture_inventory()
   expect_error(
     generate_release_manifest(
-      release_id        = "20260206",
+      release           = "20260206",
       arrow_root        = tmp_arrow,
       release_inventory = inv,
       output_path       = "/nonexistent/dir/manifest.json"
@@ -445,7 +457,7 @@ test_that("generate_release_manifest errors when inventory missing required colu
 
   expect_error(
     generate_release_manifest(
-      release_id        = "20260206",
+      release           = "20260206",
       arrow_root        = tmp_arrow,
       release_inventory = bad_inv,
       output_path       = out_path
@@ -507,7 +519,7 @@ test_that("generate_release_manifest handles multiple surveys correctly", {
 
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
   result   <- generate_release_manifest(
-    release_id        = "20260206",
+    release           = "20260206",
     arrow_root        = tmp_arrow,
     release_inventory = inv,
     output_path       = out_path
@@ -517,17 +529,17 @@ test_that("generate_release_manifest handles multiple surveys correctly", {
   expect_true(all(result$status == "included"))
 
   manifest <- jsonlite::fromJSON(out_path, simplifyVector = FALSE)
-  expect_equal(length(manifest$surveys), 2L)
+  expect_equal(length(manifest$entries), 2L)
+  expect_identical(manifest$release, "20260206")
 
   # BOL survey has no dims
-  bol_entry <- Filter(function(s) s$country_code == "BOL", manifest$surveys)[[1L]]
-  expect_equal(length(bol_entry$available_dimensions), 0L)
+  bol_entry <- Filter(function(s) s$country_code == "BOL", manifest$entries)[[1L]]
+  expect_equal(length(bol_entry$dimensions), 0L)
   expect_identical(bol_entry$version, "v01_v02")
-  expect_match(bol_entry$file_path, "version=v01_v02")
+  expect_null(bol_entry$file_path)
 
   # COL survey has gender + area
-  col_entry <- Filter(function(s) s$country_code == "COL", manifest$surveys)[[1L]]
-  expect_true(all(c("gender", "area") %in% unlist(col_entry$available_dimensions)))
+  col_entry <- Filter(function(s) s$country_code == "COL", manifest$entries)[[1L]]
+  expect_true(all(c("gender", "area") %in% unlist(col_entry$dimensions)))
   expect_identical(col_entry$version, "v01_v02")
-  expect_match(col_entry$file_path, "version=v01_v02")
 })

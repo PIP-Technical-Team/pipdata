@@ -59,7 +59,7 @@
 #   <arrow_repo_path>/
 #     country=<country_code>/
 #       year=<surveyid_year>/
-#         welfare=<welfare_type>/
+#         welfare_type=<welfare_type>/
 #           version=<version>/
 #             <pip_id>-0.parquet
 #
@@ -125,10 +125,10 @@
                                  version) {
   file.path(
     arrow_repo_path,
-    paste0("country=", country_code),
-    paste0("year=",    surveyid_year),
-    paste0("welfare=", welfare_type),
-    paste0("version=", version)
+    paste0("country=",      country_code),
+    paste0("year=",         surveyid_year),
+    paste0("welfare_type=", welfare_type),
+    paste0("version=",      version)
   )
 }
 
@@ -353,7 +353,7 @@
 #' <arrow_repo_path>/
 #'   country=<country_code>/
 #'     year=<surveyid_year>/
-#'       welfare=<welfare_type>/
+#'       welfare_type=<welfare_type>/
 #'         version=<version>/
 #'           <pip_id>-0.parquet
 #' ```
@@ -442,10 +442,10 @@ write_survey_parquet <- function(dt,
     partition_dir, .build_parquet_filename(pip_id_val)
   )
   rel_path       <- file.path(
-    paste0("country=", country_code),
-    paste0("year=",    surveyid_year),
-    paste0("welfare=", welfare_type),
-    paste0("version=", version),
+    paste0("country=",      country_code),
+    paste0("year=",         surveyid_year),
+    paste0("welfare_type=", welfare_type),
+    paste0("version=",      version),
     .build_parquet_filename(pip_id_val)
   )
 
@@ -868,7 +868,8 @@ generate_arrow_dataset <- function(survey_ids,
         welfare_type   = row_i$welfare_type,
         where          = where,
         version        = version,
-        metadata       = TRUE
+        metadata       = TRUE,
+        verbose = FALSE
       )
 
       dt <- prepare_for_arrow(raw, meta, pip_id = pip_id_i)
