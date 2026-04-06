@@ -1,7 +1,6 @@
 #' deflate welfare to add_pip_vars (Higher level)
 #'
 #' @param lf list of dataframes with welfare variable called welfare
-#' @inheritParams pd_dlw_clean
 #' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
 #' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`
 #' @param  pop dataframe from `pipload::pip_load_aux("pop")`
@@ -10,6 +9,9 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
 #' ppp  <- pipload::pip_load_aux("ppp")
 #' cpi  <- pipload::pip_load_aux("cpi")
 #' pop  <- pipload::pip_load_aux("pop")
@@ -20,7 +22,7 @@
 #' x    <- pd_dlw_clean(md, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
-#' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' pd_add_pip_vars(lf = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
@@ -29,7 +31,7 @@
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
-#' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' pd_add_pip_vars(lf = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -37,64 +39,30 @@
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)
 #'
-#' pd_add_pip_vars(lf = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
-pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+#' pd_add_pip_vars(lf = y, cpi = cpi, ppp = ppp, pop = pop)
+#' }
+pd_add_pip_vars <- function(lf, cpi, ppp, pop) {
 
   # Computations -------
-  rl <-
-    tryCatch(
-      expr = {
-        # Your code...
-        if (inherits(lf, "list")) {
-          y <- purrr::map2(.x = lf,
-                           .y =  cpfw,
-                           .f = add_pip_vars,
-                           cpi = cpi,
-                           ppp = ppp,
-                           pop = pop)
-        } else {
-          y <- add_pip_vars(df = lf,
-                           cpfw = cpfw,
-                           cpi = cpi,
-                           ppp = ppp,
-                           pop = pop)
-          y <- list(y)
-        }
-        names(y) <- sapply(cpfw, `[[`, "cache_id")
 
-        y
-      }, # end of expr section
+  # PPP manipulation
+  ppp           <- ppp_to_wide(ppp = ppp)
 
-      error = function(e) {
-        glue("Error: {e}")
-      }, # end of error section
-
-      warning = function(w) {
-        glue("Warning: {w$message}")
-      }, # end of warning section
-
-      finally = {
-        # Do this at the end before quitting the tryCatch structure...
-      } # end of finally section
-
-    ) # End of trycatch
-
+    # if (inherits(lf, "list")) { # It is always a list by default
+      rl <- purrr::map(.x = lf,
+                       .f = add_pip_vars,
+                       cpi = cpi,
+                       ppp = ppp,
+                       pop = pop)
+    # } else {
+    #   y <- add_pip_vars(df = lf,
+    #                    cpfw = cpfw,
+    #                    cpi = cpi,
+    #                    ppp = ppp,
+    #                    pop = pop)
+    #   y <- list(y)
+    # }
+    # names(y) <- sapply(cpfw, `[[`, "cache_id")
 
   # Return -------------
   return(rl)
@@ -103,7 +71,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 
 
 #' Estimate welfare in PPP values (lower level)
-#' @inheritParams pd_dlw_clean
+#'
 #' @param  df  dataframe from `pd_wbpip_clean()`
 #' @param  cpi dataframe from `pipload::pip_load_aux("cpi")`
 #' @param  ppp dataframe from `pipload::pip_load_aux("ppp")`
@@ -113,6 +81,10 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' ppp  <- pipload::pip_load_aux("ppp")
 #' cpi  <- pipload::pip_load_aux("cpi")
 #' pop  <- pipload::pip_load_aux("pop")
@@ -123,7 +95,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(md, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
-#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -131,7 +103,7 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
-#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
+#' add_pip_vars(df = y, cpi = cpi, ppp = ppp, pop = pop)
 #'
 #' gd   <- pipload::pip_load_dlw("ARE", 2019)
 #' cpfw <- get_country_pfw(gd, pfw)
@@ -139,24 +111,10 @@ pd_add_pip_vars <- function(lf, cpfw, cpi, ppp, pop) {
 #' x    <- pd_dlw_clean(gd, cpfw)
 #' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
 #'
-#' add_pip_vars(df = y, cpfw = cpfw, cpi = cpi, ppp = ppp, pop = pop)
-add_pip_vars <- function(df, cpfw, cpi, ppp, pop, ...) {
-  UseMethod("add_pip_vars")
-}
+#' add_pip_vars(df = y, cpi = cpi, ppp = ppp, pop = pop)
+#' }
+add_pip_vars <- function(df, cpi, ppp, pop, ...) {
 
-
-#' default S3 method for add_pip_vars
-#'
-#' @inheritParams add_pip_vars
-#'
-#' @return data.table.
-#' @export
-add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
 
   # Defenses -----------
   # if (inherits(df, "data.table")) {
@@ -180,29 +138,11 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
   }
 
 
-
-
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
   # Computations -------
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## reporting level variable --------
 
-  dl_var        <- grep("data_level", names(df), value = TRUE) # data_level vars
-  ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(df, .x))
-  select_var    <- dl_var[which.max(ordered_level)]
-
-  df[, reporting_level := get(select_var)]
-
-  setorder(df, reporting_level)
+  df <- add_rep_lvl(df)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Deflated data --------
@@ -214,22 +154,7 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
   # ppp_table <- ppp_table[ppp_default == TRUE]
 
   # Merge survey table with PPP (left join)
-  ppp           <- ppp_to_wide(ppp = ppp)
-  ppp_versions  <- attr(ppp, "ppp_versions")
-  ppp_years     <-
-    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
-    unique() |>
-    sort()
-
-
-
-  df <- joyn::merge(df, ppp,
-                    by         = c("country_code", "ppp_data_level"),
-                    match_type = "m:1",
-                    keep       = "left",
-                    reportvar  = FALSE,
-                    verbose    = FALSE
-  )
+  df <- add_ppp(df,ppp)
 
   # Merge survey table with CPI (left join)
 
@@ -267,6 +192,12 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
 
 ###  .......................................................
 ###  Check CPI and PPP years                        ####
+
+  ppp_versions  <- attr(ppp, "ppp_versions")
+  ppp_years     <-
+    gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
+    unique() |>
+    sort()
 
   if (setequal(cpi_years , ppp_years)) {
     base_years <-  cpi_years # deflate years
@@ -320,137 +251,6 @@ add_pip_vars.default <- function(df, cpfw, cpi, ppp, pop, ...) {
   return(df)
 
 }
-
-
-
-
-
-#' Convert PPP data from `pipload` to wide format
-#'
-#' @param ppp data frame with ppp data from `pipload::pip_load_aux("ppp")`
-#'
-#' @return data.table with PPP values to wide format based on versioning
-#' @export
-#'
-#' @examples
-#' ppp <-  pipload::pip_load_aux("ppp")
-#' x   <-  ppp_to_wide(ppp)
-#' names(x)
-ppp_to_wide <- function(ppp) {
-
-#   ____________________________________________________________________________
-#   on.exit                                                                 ####
-  on.exit({
-
-  })
-
-#   ____________________________________________________________________________
-#   Defenses                                                           ####
-  if (inherits(ppp, "data.table")) {
-    ppp <- copy(ppp)
-  } else {
-    ppp <- qDT(ppp)
-  }
-  stopifnot( exprs = {
-
-    }
-  )
-
-#   ____________________________________________________________________________
-#   Early returns                                                           ####
-  if (FALSE) {
-    return()
-  }
-
-#   ____________________________________________________________________________
-#   Computations                                                            ####
-  ppp[,
-      ppp_version := {
-        x <- paste0("ppp_", ppp_year, "_", release_version, "_", adaptation_version)
-        x <- gsub("_v", "_0", x )
-      }
-  ]
-
-  ppp_v <- ppp[, unique(ppp_version)]
-
-  ppp <- dcast(ppp,
-               formula = country_code + ppp_data_level ~ ppp_version,
-               value.var = "ppp",
-  )
-  setattr(ppp, "ppp_versions", ppp_v)
-
-
-
-#   ____________________________________________________________________________
-#   Return                                                                  ####
-  return(ppp)
-
-}
-
-
-
-#' Defate welfare variable to PPP values
-#'
-#' @param df data frame with welfare variable called `welfare_lcu`
-#' @param base_year numeric: base year
-#'
-#' @return data.table with welfare in PPP values
-get_welfare_ppp <- function(df, base_year) {
-
-  #   ____________________________________________________________________________
-  #   on.exit                                                                 ####
-  on.exit({
-
-  })
-
-  #   ____________________________________________________________________________
-  #   Defenses                                                                ####
-  if (inherits(df, "data.table")) {
-    dt <- copy(df)
-  } else {
-    dt <- qDT(df)
-  }
-
-  stopifnot( exprs = {
-
-  }
-  )
-
-  #   ____________________________________________________________________________
-  #   Early returns                                                           ####
-  if (FALSE) {
-    return()
-  }
-
-  #   ____________________________________________________________________________
-  #   Computations                                                            ####
-  cpiv     <- paste0("cpi", base_year)
-
-  ppp_vars  <- grep("^ppp_[0-9]{4}", names(dt), value = TRUE)
-  ppp_pat   <- paste0("^ppp_", base_year)
-  ppp_vars  <- grep(ppp_pat, names(dt), value = TRUE)
-
-  welf_vars <- glue("welfare_{ppp_vars}")
-
-  dt[,
-     (welf_vars) := lapply(.SD, \(v) {
-       wbpip::deflate_welfare_mean(
-         welfare_mean = welfare_lcu,
-         ppp          = v,
-         cpi          = get(cpiv)
-       )
-     }),
-     .SDcols = ppp_vars]
-
-  dt <- dt[,
-           ..welf_vars]
-
-
-  #   ____________________________________________________________________________
-  #   Return                                                                  ####
-  return(dt)
-}
-
 
 
 #' Adjust microdata to WDI population levels when the number of reporting levels

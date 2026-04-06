@@ -1,6 +1,6 @@
 #' Get Country Price framework  data based on PFW and DLW data info
 #'
-#' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
+#' @param dt data frame with micro data, loaded with `pipload::pip_load_dlw()`
 #' @param pfw data frame with Price framework data, loaded with
 #'   `pipload::pip_load_aux("pfw")`
 #'
@@ -8,121 +8,178 @@
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' pfw <- pipload::pip_load_aux("pfw")
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
+#' gd   <- pipload::pip_load_dlw("PHL", 2012)
+#' gd  <- pipdata:::m_svy_id_to_att(gd)
 #' cpfw <- get_country_pfw(gd, pfw)
-get_country_pfw <- function(df, pfw) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-
-  # Defenses -----------
-  keyVar <- c("country_code", "surveyid_year", "survey_acronym")
-  stopifnot( exprs = {
-    # 1) Check for duplicates
-    uniqueN(pfw, by = keyVar) == nrow(pfw)
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
-
-  # Computations -------
-  # subset microdata survey; BIN is BIN is treated as microdata in PCN/PIP
-  # pfw <- pfw[use_microdata == 1 |
-  #              use_bin     == 1 |
-  #              use_imputed == 1 |
-  #              inpovcal     == 1] # subset country-years in Povcalnet
+get_country_pfw <- function(dt, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## unique variables --------
+  ## Filter country PFW --------
 
-  # get single-value variables
-  uvl <- uniq_vars_to_list(df)  #list with unique value
+  att <- attributes(dt)
 
-  # filter PFW
-
-  cpfw <- # country price framework
-    pfw[ country_code     == uvl$country_code
-         & surveyid_year  == uvl$surveyid_year
-         & survey_acronym == uvl$survey_acronym
-    ]
+  cpfw <- pfw[ country_code     == att$country_code
+               & surveyid_year  == att$surveyid_year
+               & survey_acronym == att$survey_acronym]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## reporting level  --------
-  dcols <- c(
-    "cpi_domain",
-    "ppp_domain",
-    "gdp_domain",
-    "pce_domain",
-    "pop_domain"
-  )
+  ## Add reporting level  --------
 
-  cpfw <-
-    cpfw[
-      # filter inpovcal data
-      inpovcal == 1
-    ][,
-      # Find MAX domain per obs
-      reporting_level := apply(.SD, MARGIN = 1,
-                               function(x) {
-                                 y <- max(x)
-                                 as.character(y)
-                               }),
-      .SDcols = dcols
-    ]
-
-
-
-
-  # check if there is a unique record for country, survey ID year and survey_acronym
-  stopifnot(exprs =  {
-    "PFW is not unique for country, surveyid year, and survey_acronym" = nrow(cpfw) == 1
-    "PFW does not contains info for country, surveyid year, and survey_acronym" = nrow(cpfw) != 0
-  })
-
-
+  cpfw <- report_lvl(cpfw)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Other welfare type --------
+  # Create cache ID   ---------
 
-  cpfw[,
-       is_alt_welf := FALSE
-  ]
-  if (cpfw$oth_welfare1_type != "") {
+  cpfw <- cache_id(cpfw =  cpfw,
+                   att = att)
 
-    cpfw_alt <- copy(cpfw)
-    cpfw_alt[
-      ,
-      welfare_type := fcase(
-        grepl("^([Cc])", oth_welfare1_type), "consumption",
-        grepl("^([Ii])", oth_welfare1_type), "income",
-        default = ""
+  # Return -------------
+  return(cpfw)
+
+}
+
+#' Add reporting level variable to country PFW
+#'
+#' @param cpfw data.table with country Price Framework
+#'
+#' @return data.table
+#' @keywords internal
+report_lvl <- function(cpfw) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      dcols <- c( # We need to include to sysdata
+        "cpi_domain",
+        "ppp_domain",
+        "gdp_domain",
+        "pce_domain",
+        "pop_domain"
       )
-    ][
-      ,
-      oth_welfare1_type := NULL # remove variable
-    ][
-      ,
-      is_alt_welf := TRUE
-    ]
+
+      cpfw <-
+        cpfw[
+          # filter inpovcal data
+          inpovcal == 1
+        ][,
+          # Find MAX domain per obs
+          reporting_level := apply(.SD, MARGIN = 1,
+                                   function(x) {
+                                     y <- max(x)
+                                     as.character(y)
+                                   }),
+          .SDcols = dcols
+        ]
+
+      n_cpfw_wt <- length(unique(cpfw$welfare_type))
+
+      if(nrow(cpfw)==0){
+
+        rlang::abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
+                     class = c("piperr","info_pfw"),
+                     use_cli_format = TRUE)
+
+      }else if(nrow(cpfw) > 1 & n_cpfw_wt ==1){
+
+        rlang::abort(message = "PFW is not unique for country, surveyid year, survey_acronym and welfare_type",
+                     class = c("piperr", "no_unq_pfw"),
+                     use_cli_format = TRUE)
+
+      }else if(nrow(cpfw)>1){
+
+        survey_id <- c(.pipdataenv$survey_id)
+
+        pipfun::log_add(event = "info",
+                        message = "More than one value for country/year PFW",
+                        name = "pipdata_log",
+                        logmeta = list(info = "othr_wlf_inf",
+                                    survey = survey_id))
+      }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(cpfw)
+
+}
 
 
-    cpfw <- rbindlist(l         =  list(cpfw, cpfw_alt),
-                      use.names = TRUE,
-                      fill      = TRUE)
+#' Duplicate country PFW if there are two types of welfare
+#'
+#' @param cpfw country PFW data.table
+#' @param log_wrn boolean value for logging warning in log.txt
+#'
+#' @return data.table
+#' @keywords internal
+# othr_wlf <- function(cpfw) {
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # computations   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#       cpfw[,
+#            is_alt_welf := FALSE
+#       ]
+#
+#       if (cpfw$oth_welfare1_type != "") {
+#
+#         cpfw_alt <- copy(cpfw)
+#
+#         cpfw_alt[
+#           ,
+#           welfare_type := fcase(
+#             grepl("^([Cc])", oth_welfare1_type), "consumption",
+#             grepl("^([Ii])", oth_welfare1_type), "income",
+#             default = ""
+#           )
+#         ][
+#           ,
+#           oth_welfare1_type := NULL # remove variable
+#         ][
+#           ,
+#           is_alt_welf := TRUE
+#         ]
+#
+#
+#         cpfw <- rbindlist(l         =  list(cpfw, cpfw_alt),
+#                           use.names = TRUE,
+#                           fill      = TRUE)
+#
+#       }
+#
+#       if(nrow(cpfw)>1){
+#
+#         rlang::abort(message = "More than one type of welfare",
+#                      class = c("piperr", "othr_wlf_inf"),
+#                      use_cli_format = TRUE)
+#       }
+#
+#
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   # Return   ---------
+#   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   return(cpfw)
+#
+# }
 
-  }
+#' Create cache ID for country PFW
+#'
+#' @param cpfw country PFW data.table
+#' @param att survey attributes
+#'
+#' @return data.table
+#' @keywords internal
+cache_id <- function(att,
+                     cpfw) {
 
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Cache ID   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   cpfw[
     ,
@@ -133,20 +190,33 @@ get_country_pfw <- function(df, pfw) {
     )
   ][
     ,
-    cache_id := paste(country_code,
-                      surveyid_year,
-                      survey_acronym,
-                      paste0("D", reporting_level),
+    cache_id := paste(att$country_code,
+                      att$surveyid_year,
+                      att$survey_acronym,
+                      # paste0("D", reporting_level),
                       wt,
-                      uvl$module,
+                      att$module,
                       sep = "_"
     )
   ]
 
+  if(any(cpfw$wt=="")){
+
+    rlang::abort(message = "Welfare type is undefined",
+                 class = c("piperr", "no_wlf_tp"),
+                 use_cli_format = TRUE)
+
+  }
+
+  cpfw[,
+    wt := NULL
+  ]
+
   cpfw <- split(cpfw, by = "cache_id")
 
-  # Return -------------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(cpfw)
 
 }
-

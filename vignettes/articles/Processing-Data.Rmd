@@ -11,7 +11,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(pipdata)
+devtools::load_all(".")
+# library(pipdata)
 ```
 
 This article explains how the `pd_*` functions in {pipdata} work together. These are the functions used during the data processing pipeline and that are necessary to process both welfare data from datalibweb and auxiliary data from different sources into the files that will be used for calculations in the estimations pipeline. The process is summarized in the
@@ -57,9 +58,18 @@ lf_dlw    <- pd_dlw_clean(lf, cpfw)
 ## Clean to be used by `wbpip`
 
 ```{r}
-lf_wbpip <- pd_wbpip_clean(lf_dlw)
+lf_wbpip <- pd_wbpip_clean(lf_dlw, cpfw )
 # names(lf_wbpip)
 ```
+
+These functions are built in a way that they don't skip the code if there is an error. Rather, the error is  stored for later analysis. 
+
+```{r no-error}
+# Miss one argument on purpose
+lf_wbpip_error <- pd_wbpip_clean(lf_dlw)
+lf_wbpip_error
+```
+
 
 ## Add variables for PIP process
 

@@ -1,73 +1,33 @@
 #' Clean data from datalibweb structure (High level)
 #'
-#' @param lf List of data frames or single dataframe. In pipeline, the data
-#'   frames come from `pd_split_alt_welfare()`
-#' @param cpfw data frame with Price framework data for country/survey in `df`.
-#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
-#'   `pipload::pip_load_aux("pfw")`
+#' @param ls List of data frames or single dataframe.
 #'
 #' @return list with data.tables
 #' @export
 #'
 #' @examples
+#' release <- "20250203"
+#' pipfun::setup_working_release(release)
+#'
 #' pfw  <- pipload::pip_load_aux("pfw")
-#' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
-#' lf   <- pd_split_alt_welfare(md, cpfw)
-#' l    <- pd_dlw_clean(lf, cpfw)
-#' names(l)
-pd_dlw_clean <- function(lf, cpfw) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    ## check that both are lists
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+#'
+#' gd    <- pipload::pip_load_dlw("CHN", 2015)
+#' gd  <- pipdata:::m_svy_id_to_att(gd)
+#' ls    <- pd_cpfw_merge(gd, pfw)
+#' lf    <- pd_dlw_clean(ls)
+#' names(lf)
+#'
+#' md    <- pipload::pip_load_dlw(country = "PHL", 2012)
+#' md  <- pipdata:::m_svy_id_to_att(md)
+#' ls    <- pd_cpfw_merge(md, pfw)
+#' lf    <- pd_dlw_clean(ls)
+#' names(lf)
+pd_dlw_clean <- function(ls) {
 
   # Computations -------
-  rl <-
-    tryCatch(
-      expr = {
-        # Your code...
-        if (inherits(lf, "list")) {
-          y <- purrr::map2(.x = lf,
-                           .y =  cpfw,
-                           .f = dlw_clean)
-        } else {
-          y <- dlw_clean(lf, cpfw[[1]])
-          y <- list(y)
-        }
 
-        names(y) <- sapply(cpfw, `[[`, "cache_id")
-        y
-      }, # end of expr section
-
-    error = function(e) {
-      glue("Error: {e$message}")
-    }, # end of error section
-
-    warning = function(w) {
-      glue("Warning: {w$message}")
-    }, # end of warning section
-
-    finally = {
-      # Do this at the end before quitting the tryCatch structure...
-    } # end of finally section
-
-  ) # End of trycatch
-
-
+      rl <- purrr::map(.x = ls,
+                       .f = dlw_clean)
 
   # Return -------------
   return(rl)
@@ -75,305 +35,83 @@ pd_dlw_clean <- function(lf, cpfw) {
 }
 
 
-#' Clean data from datalibweb structure (lower level, S2 methods)
+#' Clean data from datalibweb structure (lower level, S3 methods)
 #'
-#' PD: process data. Source: datalibweb. Action: Clean
-#'
-#' @param df dataframe loaded with `pipload::pip_load_dlw()`
+#' @param df data.table
 #' @param ...  other parameters
 #'
 #' @return data.table
 #' @export
-#'
-#' @examples
-#' gd  <- pipload::pip_load_dlw("CHN", 2015)
-#' pfw <- pipload::pip_load_aux("pfw")
-#' cpfw <- get_country_pfw(gd, pfw)
-#' dlw_clean(gd, cpfw[[1]])
-#'
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
-#' dlw_clean(md, cpfw[[1]])
 dlw_clean <- function(df,...) {
   UseMethod("dlw_clean")
 }
 
 #' Clean micro data from Datalibweb original file
 #'
-#' @param df data frame with micro data, loaded with `pipload::pip_load_dlw()`
-#' @param cpfw data frame with Price framework data for country/survey in `df`.
-#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
-#'   `pipload::pip_load_aux("pfw")`
+#' @param df data frame with micro data,
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @export
-#'
-#' @examples
-#' pfw <- pipload::pip_load_aux("pfw")
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' cpfw <- get_country_pfw(md, pfw)
-#' dlw_clean(md, cpfw[[1]])
-dlw_clean.pipmd <- function(df, cpfw, ...) {
-
-#   ____________________________________________________________________________
-#   Initial formatting                                                      ####
+dlw_clean.pipmd <- function(df, ...) {
+  #   ____________________________________________________________________________
+  #   Initial formatting                                                      ####
 
   # hard copy
   md <- copy(df)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Area --------
+  md <- add_area(md)
 
   ## clean weight variable
-  variables <- colnames(md)
+  md <- format_wgt(md)
 
-  if (!c("weight") %in% variables) {
-    if (c("weight_p") %in% variables){
-      setnames(md, old = "weight_p", new = "weight")
-    }
-    else if (c("weight_h") %in% variables){
-      setnames(md, old = "weight_h", new = "weight")
-    }
-    else{
-      md[, weight := 1 / .N]
-      ## add message
-    }
-  }
+  ## format welfare variable
+  md <- format_wlf(md)
 
-  #### Make sure no information is lost
-  # change class type of "welfare", "weight"
-  varNames <- c("welfare", "weight")
-  md[,(varNames):= lapply(.SD, as.double),
-      .SDcols = varNames]
-  md[, welfare := welfare / 365]
+  #   ____________________________________________________________________________
+  #   Recode variables                                                      ####
 
+  ## Education
+  md <- recode_edu(md)
 
+  ## Gender
+  md <- recode_gndr(md)
 
-#   ____________________________________________________________________________
-#   Recoding variables                                                      ####
+  ## Age
+  md <- recode_age(md)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Wbpip clean (need to updata) --------
 
-##  ............................................................................
-##  Education                                                               ####
+  md <- wbpip_clean(md)
 
-  # educat4
-  if (c("educat4") %in% variables){
+  #   ____________________________________________________________________________
+  #   Final formatting                                                        ####
 
-    setnames(md, old = "educat4", new = "educat4_2")
-    md[, educat4 := NA_character_]
-    md[educat4_2 == 1, educat4 := "No education"]
-    md[educat4_2 == 2, educat4 := "Primary"]
-    md[educat4_2 == 3, educat4 := "Secondary"]
-    md[educat4_2 == 4, educat4 := "Tertiary"]
+  md <- pip_vars(md)
 
-    md[, educat4_2:= NULL]
-  }
+  # Sort by welfare (commented because it gives an error)
+  # sortbycol <- c(
+  #   "welfare",
+  #   "hhid",
+  #   "pid")
 
-  # educat5
-  if (c("educat5") %in% variables){
+  # setorderv(md, cols = "welfare")
 
-    setnames(md, old = "educat5", new = "educat5_2")
-    md[, educat5 := NA_character_]
-
-    md[educat5_2 == 1, educat5 := "No education"]
-    md[educat5_2 == 2, educat5 := "Primary incomplete"]
-    md[educat5_2 == 3, educat5 := "Primary complete but secondary incomplete"]
-    md[educat5_2 == 4, educat5 := "Secondary complete"]
-    md[educat5_2 == 5, educat5 := "Some tertiary/post-secondary"]
-    md[, educat5_2:= NULL]
-  }
-
-  # literacy
-  if (c("literacy") %in% variables) {
-    setnames(md, "literacy", "literacy2")
-    md[, literacy := NA_character_]
-    md[literacy2 ==1, literacy := "yes"]
-    md[literacy2 ==0, literacy := "no"]
-    md[, literacy2 := NULL]
-  }
-
-
-##  ............................................................................
-##  Geographical variables                                                  ####
-
-  # rename subnatid
-  if (c("subnatid") %in% variables){
-    setnames(md, "subnatid", "subnatid1")
-  }
-
-  # Recode urban to string
-  if (c("urban") %in% variables){
-
-    setnames(md, "urban", "urban2")
-    md[, urban := NA_character_]
-    md[urban2 == 1, urban := "urban"]
-    md[urban2 == 0, urban := "rural"]
-    md[, urban2 := NULL]
-  }
-
-
-##  ............................................................................
-##  Other variables                                                         ####
-
-  # Recode male to string
-  if (c("male") %in% variables){
-
-    setnames(md, "male", "male2")
-    md[, male := NA_character_]
-    md[male2 == 1, male := "male"]
-    md[male2 == 0, male := "female"]
-    md[, male2 := NULL]
-
-  }
-
-  # Add variables  from PFW data
-  if (!c("survey_year") %in% variables) {
-    md[, survey_year := cpfw$survey_year]
-  }
-
-  # generate countrycode variable if not available in md data
-  if (!c("countrycode") %in% variables){
-    md[, countrycode := cpfw$country_code]
-  }
-
-  # Create welfare_type
-  if (!c("welfare_type") %in% variables){
-    md[, welfare_type := cpfw$welfare_type]
-  }
-
-  # Create distribution_type
-  if (cpfw$use_imputed == 1) {
-
-    md[, distribution_type := "imputed"]
-
-  }else {
-
-    md[, distribution_type := "micro"]
-
-  }
-
-
-##  ............................................................................
-##  Level and domain variables                                              ####
-
-  # Create ppp_data_level
-  if (c("ppp_data_level") %in% variables) {
-    md[, ppp_data_level := NULL]
-  }
-
-  if (cpfw$ppp_domain == 1){
-    md[, ppp_data_level := "national"]
-  }
-
-  if (cpfw$ppp_domain == 2) {
-
-    md[, ppp_data_level := urban]
-
-  }
-
-  # Create cpi_data_level
-  if (c("cpi_data_level") %in% variables) {
-    md[, cpi_data_level := NULL]
-  }
-  if (cpfw$cpi_domain == 1) {
-
-    md[, cpi_data_level := "national"]
-
-  }
-  if (cpfw$cpi_domain == 2) {
-
-    md[, cpi_data_level := urban]
-  }
-
-  # Create gdp_data_level
-  if (cpfw$gdp_domain == 1) {
-    md[, gdp_data_level := "national"]
-  }
-  if (cpfw$gdp_domain == 2) {
-
-    md[, gdp_data_level := urban]
-
-  }
-
-  # Create pce_data_level
-  if (c("pce_domain") %in% variables) {
-    md[, pce_data_level := NULL]
-  }
-  if (cpfw$pce_domain == 1) {
-
-    md[, pce_data_level := "national"]
-
-  }
-  if (cpfw$pce_domain == 2) {
-
-    md[, pce_data_level := urban]
-
-  }
-
-  # Create pop_data_level
-  if (c("pop_domain") %in% variables) {
-
-    md[, pop_data_level := NULL]
-
-  }
-  if (cpfw$pop_domain == 1) {
-    md[, pop_data_level := "national"]
-  }
-  if (cpfw$pop_domain == 2) {
-
-    md[, pop_data_level := urban]
-
-  }
-
-
-
-#   ____________________________________________________________________________
-#   Variables that do not exist                                             ####
-
-  # get from internal data `pip_var_type`
-  pip_vars  <- pip_var_type$pip_vars_pc
-  pip_type  <- pip_var_type$pip_vars_pc_class
-
-  miss_ind  <- !(pip_vars %in% names(md))
-  miss_vars <- pip_vars[miss_ind]
-  miss_type <- pip_type[miss_ind]
-
-  miss_type <- glue("as.{miss_type}")
-
-  md[,
-     (miss_vars) := lapply(miss_type, \(x) get(x)())]
-
-
-#   ____________________________________________________________________________
-#   Final formatting                                                        ####
-
-  # order columns in correct order
-  setcolorder(md, pip_vars)
-  md <- md[, .SD, .SDcols = pip_vars]
-
-  # Sort by country_code, surveyid_year and welfare
-  sortbycol <- c("country_code", "surveyid_year", "welfare", "hhid" ,"pid")
-  setorderv(md, sortbycol)
   return(md)
 }
 
 
 #' Clean group data from Datalibweb original file
 #'
-#' @param df data frame with group data, loaded with `pipload::pip_load_dlw()`
-#' @param cpfw data frame with Price framework data for country/survey in `df`.
-#'   It is loaded with `get_country_pfw(df, pfw)`. `pfw` is loaded in
-#'   `pipload::pip_load_aux("pfw")`
+#' @param df data frame with group data
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @export
-#'
-#' @examples
-#' pfw <- pipload::pip_load_aux("pfw")
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' dlw_clean(gd, cpfw[[1]])
-dlw_clean.pipgd <- function(df, cpfw, ...) {
+dlw_clean.pipgd <- function(df, ...) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Initial formatting   ---------
@@ -383,135 +121,452 @@ dlw_clean.pipgd <- function(df, cpfw, ...) {
   gd <- copy(df)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Rename variables --------
+  ## Area --------
+  gd <- add_area(gd)
 
-  #--- Is this necessary?
-  gd[, survey_year := cpfw$survey_year]
+  # NEED TO CHECK FORMATTING TO WELFARE AND WEIGHT IN WBPIP!
 
-  gd[, area := fcase(urban == 1, "urban",
-                     urban == 0, "rural",
-                     is.na(urban), "national",
-                     default = "")]
+  # sorting
+  varsort <- c("area", "welfare") # Why area in group and not in micro?
+  setorderv(gd, varsort)
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Wbpip clean (need to updata) --------
+
+  gd <- wbpip_clean(gd)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Format types --------
 
-  string <- c("country_code", "survey_acronym", "area", "welfare_type", "gd_type")
-  nume   <- c("surveyid_year", "survey_year", "weight", "welfare")
+  gd <- pip_vars(gd)
 
-  gd[, (string) := lapply(.SD, as.character),
-     .SDcols = string]
+  return(gd)
+}
 
-  gd[, (nume) := lapply(.SD, as.numeric),
-     .SDcols = nume]
+#' Format weight variable for micro data
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#' @keywords internal
+format_wgt <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Clean weight variable   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      variables <- colnames(dt)
+
+      if (!c("weight") %in% variables) {
+
+        if (c("weight_p") %in% variables){
+          setnames(dt, old = "weight_p", new = "weight")
+        }
+        else if (c("weight_h") %in% variables){
+          setnames(dt, old = "weight_h", new = "weight")
+        }
+        else{
+
+          dt[, weight := 1 / .N]
+
+          survey_id <- .pipdataenv$survey_id
+
+          pipfun::log_add(event = "warning",
+                          message = "Weight variable missing in DLW",
+                          name = "pipdata_log",
+                          logmeta = list(warning = "mn_wgt_inf",
+                                      survey = survey_id)
+                          )
+
+        }
+      }
+
+      dt[, weight := as.double(weight)]
 
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # data level vars   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 
-  if (cpfw$ppp_domain == 1) {
+}
 
-    gd[, ppp_data_level := "national"]
+#' Format welfare variable for micro data
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#'
+#' @keywords internal
+format_wlf <- function(dt) {
 
-  } else if (cpfw$ppp_domain == 2) {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    gd[, ppp_data_level := area]
+  dt[, welfare := as.double(welfare)]
 
-  } else {
+  dt[, welfare := welfare / 365]
 
-    gd[, ppp_data_level := as.character()]
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Recoding education variables
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#' @keywords internal
+recode_edu <- function(dt) {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Education   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  variables <- colnames(dt)
+
+  # educy
+  if (c("educy") %in% variables) {
+    dt <- dt |>
+      collapse::fmutate(educy = as.double(educy)) |>
+      collapse::ftransform(
+        educy = dplyr::case_when(
+          educy < 0 ~ NA_real_,
+          educy >= 0 & educy <= 50 ~ educy,
+          educy > 50 ~ NA_real_,
+          .default = NA_real_
+        )
+      )
+  }
+
+  # educat4
+  if (c("educat4") %in% variables) {
+    # dt <- dt |>
+    #   collapse::ftransform(educat4 = dplyr::case_when(
+    #     educat4 == 1 ~ "No education",
+    #     educat4 == 2 ~ "Primary",
+    #     educat4 == 3 ~ "Secondary",
+    #     educat4 == 4 ~ "Tertiary",
+    #     .default = NA_character_))
+
+    dt <- dt |>
+      collapse::ftransform(
+        educat4 = haven::as_factor(educat4)
+      )
+  }
+
+  # educat5
+  if (c("educat5") %in% variables) {
+    # dt <- dt |>
+    #   collapse::ftransform(educat5 = dplyr::case_when(
+    #     educat5 == 1 ~ "No education",
+    #     educat5 == 2 ~ "Primary incomplete",
+    #     educat5 == 3 ~ "Primary complete but secondary incomplete",
+    #     educat5 == 4 ~ "Secondary complete",
+    #     educat5 == 5 ~ "Some tertiary/post-secondary",
+    #     .default = NA_character_))
+
+    dt <- dt |>
+      collapse::ftransform(
+        educat5 = haven::as_factor(educat5)
+      )
+  }
+
+  # educat5
+  if (c("educat7") %in% variables) {
+    # dt <- dt |>
+    #   collapse::ftransform(educat7 = dplyr::case_when(
+    #     educat7 == 1 ~ "No education",
+    #     educat7 == 2 ~ "Primary incomplete",
+    #     educat7 == 3 ~ "Primary complete but secondary incomplete",
+    #     educat7 == 4 ~ "Secondary incomplete",
+    #     educat7 == 5 ~ "Secondary complete ",
+    #     educat7 == 6 ~ "Post secondary but not university",
+    #     educat7 == 7 ~ "university incomplete or complete",
+    #     .default = NA_character_))
+
+    dt <- dt |>
+      collapse::ftransform(
+        educat7 = haven::as_factor(educat7)
+      )
+  }
+
+  # literacy
+  if (c("literacy") %in% variables) {
+    dt <- dt |>
+      collapse::ftransform(
+        literacy = dplyr::case_when(
+          literacy == 1 ~ "yes",
+          literacy == 0 ~ "no",
+          .default = NA_character_
+        )
+      )
+  }
+
+  # school
+  if (c("school") %in% variables) {
+    dt <- dt |>
+      collapse::ftransform(
+        school = dplyr::case_when(
+          school == 1 ~ "yes",
+          school == 0 ~ "no",
+          .default = NA_character_
+        )
+      )
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+}
+
+#' Recoding gender variable
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#' @keywords internal
+recode_gndr <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Recode male to string   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  if (c("male") %in% colnames(dt)){
+
+    dt <- dt |>
+      collapse::ftransform(gender = dplyr::case_when(
+        male == 1 ~ "male",
+        male == 0 ~ "female",
+        .default = NA_character_))
+
+  } # Do we need message about not having this variable?
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
+
+#' Recoding age variable
+#'
+#' @inheritParams dlw_clean
+#'
+#' @return data.table
+#' @keywords internal
+recode_age <- function(dt) {
+  if (c("age") %in% colnames(dt)) {
+    dt <- dt |>
+      collapse::fmutate(age = as.double(age)) |>
+      collapse::ftransform(
+        age = dplyr::case_when(
+          age < 0 ~ NA_real_,
+          age >= 0 & age <= 110 ~ age,
+          age > 110 ~ NA_real_,
+          .default = NA_real_
+        )
+      )
+  }
+
+  return(dt)
+}
+
+#' Recode urban to area (lower level, S3 methods)
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @export
+add_area <- function(dt) {
+  UseMethod("add_area")
+}
+
+#' Recode urban to area for micro data
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @method add_area pipmd
+#' @export
+add_area.pipmd <- function(dt) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  if ("subnatid" %in% colnames(dt)) {
+    # Find all subnatid columns with numbers
+    subnatid_cols <- grep("^subnatid[0-9]+$", colnames(dt), value = TRUE)
+
+    # Extract the maximum number
+    if (length(subnatid_cols) > 0) {
+      nums <- as.numeric(gsub("subnatid", "", subnatid_cols))
+      max_num <- max(nums)
+    } else {
+      max_num <- 0
+    }
+
+    # Rename from largest to smallest to avoid conflicts
+    for (i in max_num:1) {
+      old_name <- paste0("subnatid", i)
+      new_name <- paste0("subnatid", i + 1)
+      if (old_name %in% colnames(dt)) {
+        setnames(dt, old_name, new_name)
+      }
+    }
+
+    # Finally rename subnatid to subnatid1
+    setnames(dt, "subnatid", "subnatid1")
+  }
+
+  # Abort if not urban variable
+  if (!any(c("urban", "area") %in% colnames(dt))){
+
+    survey_id <- c(.pipdataenv$survey_id)
+
+    pipfun::log_add(event = "info",
+                    message = "There is no urban variable",
+                    name = "pipdata_log",
+                    logmeta = list(info = "urb_var",
+                                   survey = survey_id))
+
+    dt[, area := ""]
+
+    return(dt)
+
+  }else if(c("urban") %in% colnames(dt)){
+
+    # Recode urban to area
+
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "",
+                       default = "")]
 
   }
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 
-  pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-  data_level_vars  <- glue("{pref}_data_level")
-  domain_vars      <- glue("{pref}_domain")
+}
 
-  trows <- nrow(gd)
+#' Recode urban to area for group data
+#'
+#' @inheritParams cpfw_merge
+#'
+#' @return data.table
+#' @method add_area pipgd
+#' @export
+add_area.pipgd <- function(dt) {
 
-  gd[,
-     (data_level_vars) :=
-       lapply(domain_vars, \(x) {
-
-         if (cpfw[[x]] == 1) {
-
-           y <- rep("national", times = trows)
-
-         } else if (cpfw[[x]] == 2) {
-           y <-  area
-         } else {
-           y <- ""
-         }
-         y
-
-       })
-  ]
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Distribution type   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Abort if not urban variable
+  if (!any(c("urban", "area") %in% colnames(dt))){
 
-  gd[,
-     distribution_type := {
+    survey_id <- c(.pipdataenv$survey_id)
 
-       if (cpfw$pop_domain == 1) {
+    pipfun::log_add(event = "info",
+                    message = "There is no urban or area variable",
+                    name = "pipdata_log",
+                    logmeta = list(info = "urb_var",
+                                   survey = survey_id))
 
-         # y <- rep("national", times = trows)
-         y <- "group"
+    dt[, area := ""]
 
-       } else if (cpfw$pop_domain ==  2) {
+    return(dt)
 
-         larea <- length(unique(area))
+  }else if(c("urban") %in% colnames(dt)){
 
-         if (larea %in% c(0, 1)) {
-           y <- "group"
-         } else {
-           y <- "aggregate"
-         }
+    # Recode urban to area
 
-       } else {
-         y <- ""
-       }
-       y
+    dt[, area := fcase(urban == 1, "urban",
+                       urban == 0, "rural",
+                       is.na(urban), "national",
+                       default = "")]
 
-     }
-  ]
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
+
+}
 
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Create variables that do not exist   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#' Final formating of pip variables
+#'
+#' @inheritParams dlw_clean
+#' @return data.table
+#'
+#' @keywords internal
+pip_vars <- function(dt) {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Add missing pip variables   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  variables <- colnames(dt)
 
   # get from internal data `pip_var_type`
-  pip_vars  <- pip_var_type$pip_vars_pc
-  pip_type  <- pip_var_type$pip_vars_pc_class
+  # pip_vars  <- pip_var_type$pip_vars_pc
+  # pip_type  <- pip_var_type$pip_vars_pc_class
 
-  miss_ind  <- !(pip_vars %in% names(gd))
-  miss_vars <- pip_vars[miss_ind]
-  miss_type <- pip_type[miss_ind]
+  # add education to pip_vars
+  pip_vars <- c("welfare", "weight", "area")
 
-  miss_type <- glue("as.{miss_type}")
+  if (any(class(dt) == "pipmd")) {
+    pip_vars_all <- c(
+      pip_vars,
+      "educy",
+      "educat4",
+      "educat5",
+      "literacy",
+      "school",
+      "age",
+      "gender"
+    )
+  } else if (any(class(dt) == "pipgd")) {
+    pip_vars_all <- pip_vars
+  }
 
-  gd[,
-     (miss_vars) := lapply(miss_type, \(x) get(x)())]
+  # pip_type  <- c(pip_type, "character","character","character")
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Order and format --------
+  # no_att_vars <- !(pip_vars %in% var_att_svy)
+  # pip_vars_col <- pip_vars[no_att_vars]
+  # pip_type_col <- pip_type[no_att_vars]
 
-  # select columns
-  gd <- gd[,  .SD, .SDcols = pip_vars]
+  # miss_ind <- !(pip_vars_col %in% names(dt))
+  # miss_vars <- pip_vars_col[miss_ind]
+  # miss_type <- pip_type_col[miss_ind]
 
+  # miss_type <- glue("as.{miss_type}")
 
-  # of variable (columns)
-  setcolorder(gd, pip_vars)
+  # dt[,
+  # (miss_vars) := lapply(miss_type, \(x) get(x)())
+  # ]
 
-  # sorting
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Final Formatting   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  varsort <- c("country_code", "surveyid_year", "area", "welfare")
-  setorderv(gd, varsort)
+  # order columns in correct order
+  pip_vars_all <- pip_vars_all[pip_vars_all %in% colnames(dt)]
+  setcolorder(dt, pip_vars_all)
+  dt <- dt[, .SD, .SDcols = pip_vars_all]
 
-  return(gd)
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 }

@@ -85,7 +85,10 @@ if (getRversion() >= "2.15.1") {
       "wght",
       "..c_col",
       "..nm",
-      "..vars"
+      "..vars",
+      "label",
+      "file_hash",
+      "pipeline_version"
     ),
     package = utils::packageName()
   )

@@ -9,7 +9,7 @@ Description: prepare data to be ingested in PIP pipeline.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports: 
     cli,
     collapse,
@@ -17,10 +17,17 @@ Imports:
     fs,
     glue,
     joyn,
-    pipfun (>= 0.0.0.9017),
+    pipfun (>= 0.2.0),
     pipload (>= 0.2.0.9005),
     purrr,
-    wbpip (>= 0.0.3)
+    wbpip (>= 0.0.3),
+    data.validator,
+    assertr,
+    labelled,
+    DT,
+    dlw,
+    pins,
+    stamp (>= 0.0.5)
 Suggests: 
     knitr,
     rmarkdown,
@@ -28,9 +35,9 @@ Suggests:
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
-Remotes: 
-    github::pip-technical-team/wbpip@dev,
-    github::PIP-Technical-Team/pipload@new_pipeline,
-    github::PIP-Technical-team/pipfun@ongoing
+Remotes:  
+    github::pip-technical-team/wbpip@DEV_v2,
+    github::PIP-Technical-Team/pipload@DEV_v2,
+    github::PIP-Technical-team/pipfun@DEV_v2
 VignetteBuilder: knitr
 URL: https://pip-technical-team.github.io/pipdata/
