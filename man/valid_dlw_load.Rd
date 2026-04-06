@@ -57,6 +57,7 @@ Other pd_process_data pipeline:
 \code{\link{format_vrs}()},
 \code{\link{inv_dlw_load}()},
 \code{\link{inv_to_process}()},
+\code{\link{log_report}()},
 \code{\link{pd_aux_attr}()},
 \code{\link{save_pip_data}()},
 \code{\link{survey_id_to_attr}()},
