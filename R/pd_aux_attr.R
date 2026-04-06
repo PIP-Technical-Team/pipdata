@@ -1,3 +1,23 @@
+#' Build auxiliary metadata attributes for cleaned survey data
+#'
+#' Takes the list of cleaned survey data.tables and a named list of
+#' auxiliary datasets (CPI, PPP, population, GDP, PCE). For each
+#' cleaned data.table, it extracts existing attributes and appends the
+#' matching auxiliary values (filtered by country, year, and survey).
+#' The result is a list of attribute lists suitable for saving as
+#' survey metadata.
+#'
+#' @param clean_data A named list of cleaned `data.table` objects, as
+#'   returned by [pd_dlw_clean()].
+#' @param aux_list A named list of auxiliary data.tables. Expected names
+#'   include `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, and `"pce"`.
+#'   Typically built via `lapply(measures, pipload::load_aux_data)`.
+#'
+#' @return A named list of attribute lists, one per element of
+#'   `clean_data`, enriched with auxiliary metadata.
+#'
+#' @family pd_process_data pipeline
+#' @export
 pd_aux_attr <- function(
   clean_data,
   aux_list
@@ -40,6 +60,23 @@ pd_aux_attr <- function(
   return(aux_attr)
 }
 
+#' Add a single auxiliary measure as an attribute to a survey attribute list
+#'
+#' Matches the survey's identifying keys (country, year, acronym) against
+#' the auxiliary dataset, filters the relevant rows, and appends the
+#' result as a named element of the attribute list.
+#'
+#' @param ls A named list of existing survey attributes.
+#' @param measure Character scalar. The auxiliary measure name
+#'   (e.g., `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`).
+#' @param aux_data A `data.table` of auxiliary data for the given measure.
+#' @param keys Character vector of primary-key column names for `aux_data`.
+#'
+#' @return The input `ls` with a new element named `measure` appended,
+#'   or unmodified if no matching auxiliary rows were found.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 add_attr <- function(ls, measure, aux_data, keys) {
   # Find the keys in survey
   if ("year" %in% keys) {
@@ -71,6 +108,24 @@ add_attr <- function(ls, measure, aux_data, keys) {
   return(ls)
 }
 
+#' Filter auxiliary data by measure type and survey identifiers
+#'
+#' Applies measure-specific filtering logic: CPI is filtered by
+#' country, year, and survey acronym; PPP by country only (with a
+#' computed `ppp_version` column); population, GDP, and PCE by
+#' country and year.
+#'
+#' @param measure Character scalar. One of `"cpi"`, `"ppp"`, `"pop"`,
+#'   `"gdp"`, `"pce"`.
+#' @param aux_data A `data.table` of the auxiliary dataset.
+#' @param id A named list of survey identifiers (e.g., `country_code`,
+#'   `surveyid_year`, `survey_acronym`).
+#'
+#' @return A filtered `data.table` with only the rows matching the
+#'   survey identifiers.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 filter_aux_data <- function(measure, aux_data, id) {
   if (measure == "cpi") {
     # Filter for CPI data
@@ -117,6 +172,20 @@ filter_aux_data <- function(measure, aux_data, id) {
   return(aux_data)
 }
 
+#' Create a named attribute vector from filtered auxiliary data
+#'
+#' Extracts the value column for a given measure and names each element
+#' with a combination of version/year and reporting level.
+#'
+#' @param measure Character scalar. One of `"cpi"`, `"ppp"`, `"pop"`,
+#'   `"gdp"`, `"pce"`.
+#' @param filtered_aux A `data.table` of already-filtered auxiliary data,
+#'   as returned by [filter_aux_data()].
+#'
+#' @return A named numeric vector of auxiliary values.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 create_attr <- function(measure, filtered_aux) {
   if (measure == "cpi") {
     aux_attr <- filtered_aux$cpi_value

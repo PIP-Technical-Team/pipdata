@@ -1,3 +1,31 @@
+#' Determine which DLW surveys need processing
+#'
+#' Compares the current DLW inventory against previously cleaned data
+#' and auxiliary-file changes to identify surveys that require
+#' (re-)processing. Returns the filtered inventory of surveys to clean.
+#'
+#' The function:
+#' 1. Detects changes in auxiliary files (PFW, CPI, PPP, etc.) and
+#'    identifies affected surveys.
+#' 2. Filters the inventory to requested modules.
+#' 3. Selects the latest version of each survey via [last_ver_inv()].
+#' 4. Unless `force = TRUE`, removes surveys already cleaned in the
+#'    master inventory via [inv_to_process()].
+#' 5. Combines DLW-new and aux-changed surveys into a single inventory.
+#'
+#' @param inv A `data.table` of the full DLW inventory.
+#' @param aux_measures Character vector of auxiliary measures to check
+#'   for changes. Default: `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
+#' @param modules Character vector of survey modules to include.
+#'   Default: `c("ALL", "GROUP", "HIST", "GPWG", "BIN")`.
+#' @param force Logical. If `TRUE`, skip the comparison against the
+#'   master inventory and process all surveys.
+#' @param verbose Logical. Print progress messages.
+#'
+#' @return A `data.table` of surveys to process, or `NULL` if none.
+#'
+#' @family pd_process_data pipeline
+#' @export
 valid_dlw_load <- function(
   inv,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
@@ -74,6 +102,21 @@ valid_dlw_load <- function(
 }
 
 
+#' Filter DLW inventory by auxiliary-data changes
+#'
+#' For each auxiliary dataset that has changed, normalises the year
+#' variable and merges the changes against the DLW inventory to
+#' identify surveys affected by those changes.
+#'
+#' @param inv A `data.table` of the DLW inventory.
+#' @param changes_aux A list of `data.table` objects representing changed
+#'   rows in an auxiliary dataset, as returned by [valid_aux_load()].
+#'
+#' @return A `data.table` of affected surveys (latest version only),
+#'   or `NULL` if no changes apply.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 filter_aux_inv <- function(inv, changes_aux) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -123,6 +166,19 @@ filter_aux_inv <- function(inv, changes_aux) {
   return(inv_aux)
 }
 
+#' Normalise the year variable name in an auxiliary change table
+#'
+#' Finds the column whose name contains `"year"`, renames it to
+#' `"surveyid_year"` if needed, and returns a unique two-column
+#' `data.table` of `country_code` and `surveyid_year`.
+#'
+#' @param dt A `data.table` from an auxiliary-change comparison.
+#'
+#' @return A `data.table` with columns `country_code` and
+#'   `surveyid_year`.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 fix_year_var <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -162,6 +218,19 @@ fix_year_var <- function(dt) {
   return(dt_selected)
 }
 
+#' Remove surveys already cleaned from the processing inventory
+#'
+#' Anti-joins the current DLW inventory against the PIP master inventory
+#' to keep only surveys that have not yet been cleaned. If the master
+#' inventory cannot be loaded, all surveys are returned.
+#'
+#' @param inv A `data.table` of DLW surveys (latest versions).
+#'
+#' @return A `data.table` of surveys still needing processing, or
+#'   `NULL` if all surveys have already been cleaned.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 inv_to_process <- function(inv) {
   # Select valid surveys and compare to previous cleaning
   inv_svy <- tryCatch(

@@ -1,3 +1,24 @@
+#' Update the PIP master and release inventories with newly cleaned data
+#'
+#' After surveys are processed by [process_data()], this function
+#' merges the version metadata for data and metadata files, removes
+#' skipped surveys, appends the new entries to the existing master
+#' inventory, and writes both the master and release inventories
+#' to storage via [pipload::pip_write()].
+#'
+#' @param inv_to_clean A `data.table` of the DLW surveys that were
+#'   sent for processing (as returned by [valid_dlw_load()]).
+#' @param proc_dta A named list of processing results, one per survey.
+#'   Each element is a list with `pip_names`, `versions_data`, and
+#'   `versions_metadata`, or `NULL` for failed surveys.
+#' @param date_valid A `POSIXct` timestamp. Only surveys validated
+#'   before this date are included in the release inventory.
+#'   Defaults to the maximum `date_validated` in `inv_to_clean`.
+#'
+#' @return A `data.table`: the updated PIP master inventory.
+#'
+#' @family pd_process_data pipeline
+#' @export
 update_pip_inventory <- function(
   inv_to_clean,
   proc_dta,
@@ -182,6 +203,22 @@ update_pip_inventory <- function(
   return(pip_inv)
 }
 
+#' Reshape version metadata from processing results into a data.table
+#'
+#' Extracts either `"versions_data"` or `"versions_metadata"` from each
+#' survey's processing result and row-binds them into a single
+#' `data.table` with a `survey_id` column.
+#'
+#' @param process_data A named list of processing results (non-NULL
+#'   entries only).
+#' @param version Character scalar. Which version list to extract:
+#'   `"versions_data"` or `"versions_metadata"`.
+#'
+#' @return A `data.table` with columns `survey_id`, `pip_id`, and
+#'   version metadata fields.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 format_vrs <- function(
   process_data,
   version = c("versions_data", "versions_metadata")

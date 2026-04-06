@@ -1,3 +1,16 @@
+#' Load DLW survey data and prepare it for the PIP pipeline
+#'
+#' Loads a survey from the datalibweb (DLW) storage using
+#' [pipload::load_dlw_data()], converts it to a `data.table`, attaches
+#' survey-ID components as attributes, and adds the PIP class.
+#'
+#' @param inv A one-row data.frame (or data.table) from the DLW inventory.
+#'   Must contain a `survey_id` column.
+#'
+#' @return A `data.table` with PIP class and survey-ID attributes.
+#'
+#' @family pd_process_data pipeline
+#' @export
 inv_dlw_load <- function(inv) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
@@ -17,6 +30,20 @@ inv_dlw_load <- function(inv) {
   return(dt)
 }
 
+#' Convert loaded DLW data to a data.table with survey attributes
+#'
+#' Ensures the input is a `data.table`, parses the `survey_id` into
+#' individual attributes, and assigns the PIP S3 class via
+#' [pipload::as_pip()].
+#'
+#' @param dt A data.frame or data.table of survey micro-data.
+#' @param survey_id Character scalar. The survey identifier string
+#'   (e.g., `"ALB_2012_LSMS_V01_M_V01_A_PIP_ALL"`).
+#'
+#' @return A `data.table` with PIP class and survey-ID attributes.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 data_to_dt <- function(dt, survey_id) {
   #--------- defenses --------------------------
 
@@ -67,6 +94,20 @@ data_to_dt <- function(dt, survey_id) {
 #   return(dt)
 # }
 
+#' Parse a survey ID string and attach its components as data.table attributes
+#'
+#' Splits `survey_id` on `"_"` into country code, year, survey acronym,
+#' master/alt versions, collection, and module.
+#' Sets derived attributes (`tool`, `gd_type`, `survey_id`) and subsets
+#' columns to only welfare, weight, and demographic variables.
+#'
+#' @param dt A `data.table` of survey micro-data.
+#' @param survey_id Character scalar. The full survey identifier string.
+#'
+#' @return The input `data.table` with added attributes and reduced columns.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
 survey_id_to_attr <- function(dt, survey_id) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
