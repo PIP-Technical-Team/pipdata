@@ -36,8 +36,8 @@ Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
 Remotes:  
-    github::pip-technical-team/wbpip@dev,
-    github::PIP-Technical-Team/pipload@new_pipeline,
-    github::PIP-Technical-team/pipfun@ongoing
+    github::pip-technical-team/wbpip@DEV_v2,
+    github::PIP-Technical-Team/pipload@DEV_v2,
+    github::PIP-Technical-team/pipfun@DEV_v2
 VignetteBuilder: knitr
 URL: https://pip-technical-team.github.io/pipdata/

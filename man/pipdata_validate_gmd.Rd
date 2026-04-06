@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_validate_gmd.R
 \name{pipdata_validate_gmd}
 \alias{pipdata_validate_gmd}
-\title{Validate GMD pinned data and generate inventory report data}
+\title{Validate GMD data and generate inventory report data}
 \usage{
 pipdata_validate_gmd(log = TRUE, save_log = TRUE)
 }
@@ -15,7 +15,7 @@ pipdata_validate_gmd(log = TRUE, save_log = TRUE)
 data.table, inventory report
 }
 \description{
-Validate GMD pinned data and generate inventory report data
+Validate GMD data and generate inventory report data
 }
 \examples{
 \dontrun{

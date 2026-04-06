@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_get_gmd.R
 \name{pipdata_get_gmd}
 \alias{pipdata_get_gmd}
-\title{Retrieve and Pin GMD Catalog Datasets to a Local Directory}
+\title{Retrieve and Save GMD Catalog Datasets to a Local Directory}
 \usage{
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
@@ -21,14 +21,19 @@ pipdata_get_gmd(
 \item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
 }
 \value{
-A \code{data.table} object pinned in the local folder.
+A \code{data.table} object saved in the local folder.
 }
 \description{
-This wrapper function automates the process of managing GMD catalog datasets by performing the following tasks:
+This wrapper function automates the process of managing GMD catalog
+datasets by performing the following tasks:
 \enumerate{
-\item Checks for new datasets in the GMD catalog using the inventory file (\code{dlw_gmd_inv}), which contains the current list of available GMD datasets.
-\item If new datasets are found (specifically \code{"GPWG"}, \code{"GROUP"}, \code{"BIN"}, \code{"HIST"}, \code{"ALL"}, \code{"ASPIRE"}, and \code{"L"}), downloads them using \code{dlw::dlw_get_gmd} and pins them to the local directory.
-\item Updates the inventory file (\code{dlw_gmd_inv}) with information about the newly downloaded datasets.
+\item Checks for new datasets in the GMD catalog using the inventory
+file (\code{dlw_gmd_inv}), which contains the current list of available GMD datasets.
+\item If new datasets are found (specifically \code{"GPWG"}, \code{"GROUP"},
+\code{"BIN"}, \code{"HIST"}, \code{"ALL"}, \code{"ASPIRE"}, and \code{"L"}), downloads them
+using \code{dlw::dlw_get_gmd} and save them to the local directory.
+\item Updates the inventory file (\code{dlw_gmd_inv}) with information about
+the newly downloaded datasets.
 }
 }
 \examples{

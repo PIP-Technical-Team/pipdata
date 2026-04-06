@@ -1,102 +1,80 @@
- save_pip_data <- function(data,
-                           board,
-                           test = FALSE) {
-
+#' Save cleaned PIP data or metadata to versioned storage
+#'
+#' Iterates over a named list of cleaned `data.table` objects and writes
+#' each one to the PIP storage backend via [pipload::pip_write()].
+#' Errors during individual saves are caught, logged, and returned as
+#' `NULL` so that remaining surveys can continue.
+#'
+#' @param data A named list of `data.table` objects to save. Names
+#'   are used as the `id` argument to [pipload::pip_write()].
+#' @param alias Character scalar. The storage alias passed to
+#'   [pipload::pip_write()] (e.g., `"pip"` for survey data,
+#'   `"pip_meta"` for metadata).
+#'
+#' @return A named list of version metadata returned by
+#'   [pipload::pip_write()], with `NULL` entries for failed saves.
+#'
+#' @family pd_process_data pipeline
+#' @export
+save_pip_data <- function(data, alias) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   # if(test){
-   #
-   #   if(board == "pip_data"){
-   #
-   #     board <- pins::board_folder("//tsclient/P/03.pip/pip_data/surveys")
-   #
-   #   }else if(board == "pip_metadata"){
-   #
-   #     board <- pins::board_folder("//tsclient/P/03.pip/pip_data/surveys_metadata")
-   #
-   #   }else{
-   #
-   #     cli::cli_abort("Need to specified the board")
-   #
-   #   }
-   #
-   # }else{
+  versions <- purrr::map2(.x = data, .y = names(data), .f = \(x, y) {
+    # on.exit ------------
+    on.exit({
+      rm(id_name, envir = .pipdataenv)
+    })
 
-     if(board == "pip_data"){
+    id_name <- y
 
-       board <- pipfun::get_pins_boards()$pip_data
+    assign("id_name", id_name, envir = .pipdataenv)
 
-     }else if(board == "pip_metadata"){
+    tryCatch(
+      expr = {
+        # Sys.sleep(.9)
 
-       board <- pipfun::get_pins_boards()$pip_metadata
+        # Save data
+        res <- pipload::pip_write(x = x, id = y, alias = alias)
 
-     }else{
+        # if ("skipped" %in% names(res) && res$skipped == TRUE) {
+        #   pipfun::log_add(
+        #     event = "warning",
+        #     message = "The cleaned survey or metadata was not saved because it is identical to the previous version",
+        #     name = "pipdata_log",
+        #     logmeta = list(
+        #       warning = "identical_version",
+        #       id_name = id_name,
+        #       status = "This survey or metadata was cleaned even though it has no changes compared to the previous version. Check why it was not filtered out before cleaning."
+        #     )
+        #   )
+        #   return(NULL)
+        # }
+        return(res)
+      },
+      error = function(cnd) {
+        id_name <- c(.pipdataenv$id_name)
 
-       cli::cli_abort("Need to specified the board")
+        pipfun::log_add(
+          event = "error",
+          message = cnd$message,
+          name = "pipdata_log",
+          # .trace = cnd$call,
+          logmeta = list(
+            error = "save_error",
+            id_name = id_name,
+            status = "The cleaned survey was not saved"
+          )
+        )
 
-     }
-
-   # }
-
-   versions <- purrr::map2(.x = data,
-                           .y = names(data),
-                           .f = \(x, y){
-
-                             # on.exit ------------
-                             on.exit({
-                               rm(pin_name,
-                                  envir = .pipdataenv)
-                             })
-
-                             pin <- y
-
-                             assign("pin_name",
-                                    pin,
-                                    envir = .pipdataenv)
-
-                             tryCatch(
-                               expr = {
-
-                                 Sys.sleep(.9)
-
-                                 # Save data
-
-                                 pipload::pip_write(board                 = board,
-                                                    x                     = x,
-                                                    pin_name              = y)
-
-                                 # Get last version
-
-                                 vers <- pins::pin_versions(board = board,
-                                                    name  = y)
-
-                                 vers[rev(order(vers$created)),][1,]
-
-                               },
-                               error = function(cnd){
-
-                                 pin_name <- c(.pipdataenv$pin_name)
-
-                                 pipfun::log_add(event = "error",
-                                                 message = cnd$message,
-                                                 name = "pipdata_log",
-                                                 .trace = cnd$call,
-                                                 logmeta = list(error = "save_error",
-                                                                pin_name = pin_name,
-                                                                status = "The cleaned survey was not saved"))
-
-                                 NULL
-
-                               }
-                             )
-                           })
+        NULL
+      }
+    )
+  })
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(versions)
-
- }
-
+}

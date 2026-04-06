@@ -1,66 +1,57 @@
-m_inv_load <- function(folder = "DLW-OUTPUT",
-                       name_inv = "pip_raw_inventory_20250203_TEST.qs") {
-
+m_inv_load <- function(
+  folder = "DLW-OUTPUT",
+  name_inv = "pip_raw_inventory_20250203_TEST.qs"
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # inv_files <- fs::dir_ls(fs::path(Sys.getenv("PIP_ROOT_DIR"),folder,"/_Inventory/_release"))
 
-  inv   <- qs::qread(fs::path(Sys.getenv("PIP_ROOT_DIR"),
-                              folder,
-                              "/_Inventory/_release",
-                              name_inv))
+  inv <- qs::qread(fs::path(
+    Sys.getenv("PIP_ROOT_DIR"),
+    folder,
+    "/_Inventory/_release",
+    name_inv
+  ))
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(inv)
-
 }
 
-m_inv_valid <- function(inv,
-                        filter = "compare",
-                        seed = 1089,
-                        n = 20) {
-
+m_inv_valid <- function(inv, filter = "compare", seed = 1089, n = 20) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Select only valid surveys
-  inv_valid <- inv[inv$status == "valid",]
+  inv_valid <- inv[inv$status == "valid", ]
 
-  if(filter == "all"){
-
+  if (filter == "all") {
     inv_clean <- inv_valid[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
 
     return(inv_clean)
-
-  }else if(filter == "compare"){
-
-     # Compare to previous cleaning with master file
-    master_pip_inv <- pipload::load_pip_master_inventory()|>
-      collapse::fselect(survey_id, version_dlw)|>
+  } else if (filter == "compare") {
+    # Compare to previous cleaning with master file
+    master_pip_inv <- pipload::load_pip_master_inventory() |>
+      collapse::fselect(survey_id, version_dlw) |>
       collapse::frename(version = "version_dlw")
 
-    inv_valid <- inv_valid[!master_pip_inv, on = .( survey_id, version)]
+    inv_valid <- inv_valid[!master_pip_inv, on = .(survey_id, version)]
 
     inv_clean <- inv_valid[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
 
     return(inv_clean)
-
-  }else if(filter == "random"){
-
+  } else if (filter == "random") {
     set.seed(seed)
 
     inv_smp <- inv_clean[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
-    inv_smp <- inv_smp[,.SD[sample(.N, min(floor(n/5), .N))], by = module]
+    inv_smp <- inv_smp[, .SD[sample(.N, min(floor(n / 5), .N))], by = module]
 
     return(inv_smp)
-
-  }else{
-
+  } else {
     cli::cli_abort("Need to select a filter")
   }
 
@@ -68,13 +59,9 @@ m_inv_valid <- function(inv,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(NULL)
-
 }
 
-m_inv_filter <- function(inv,
-                         seed = 1089,
-                         n = 20) {
-
+m_inv_filter <- function(inv, seed = 1089, n = 20) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,8 +70,8 @@ m_inv_filter <- function(inv,
   # selected   <- sample(1:nrow(inv), n) # Needs to be changed to filter by status
   # inv_smp    <- inv[selected,]
 
-  inv_smp <- inv[module %in% c("ALL","GROUP","HIST",  "GPWG", "BIN")]
-  inv_smp <- inv_smp[,.SD[sample(.N, min(floor(n/5), .N))], by = module]
+  inv_smp <- inv[module %in% c("ALL", "GROUP", "HIST", "GPWG", "BIN")]
+  inv_smp <- inv_smp[, .SD[sample(.N, min(floor(n / 5), .N))], by = module]
 
   ## Add Philipines and China
   # inv_phl12 <- inv[inv$country_code == "PHL" & inv$surveyid_year == 2012,]
@@ -94,7 +81,7 @@ m_inv_filter <- function(inv,
   # inv_chn11 <- inv[inv$country_code == "CHN" & inv$surveyid_year == 2011,]
   #
   # inv_othr <- rbind(inv_phl12, inv_phl94, inv_chn11, fill = TRUE)
-  #
+
   # inv_othr <- last_ver_inv(inv_othr)
 
   # Bind lists
@@ -111,12 +98,10 @@ m_inv_filter <- function(inv,
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(inv_smp)
-
 }
 
 
 m_compare_aux_release <- function() {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,12 +111,10 @@ m_compare_aux_release <- function() {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(changes)
-
 }
 
 
 m_svy_id_to_att <- function(dt) {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,47 +128,49 @@ m_svy_id_to_att <- function(dt) {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
-
 }
 
 
-fix_inv <- function(inv,
-                    inv_to_clean) {
-
+fix_inv <- function(inv, inv_to_clean) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  inv_dlw_vrs <- inv[, .(dlw_version = unlist(pin_version)[[1]]),
-                     by = survey_id]
+  inv_dlw_vrs <- inv[,
+    .(dlw_version = unlist(pin_version)[[1]]),
+    by = survey_id
+  ]
 
   inv_to_clean <- inv_to_clean |>
-    joyn::left_join(inv_dlw_vrs, by = "survey_id",
-                    reportvar = FALSE,
-                    verbose = FALSE)
+    joyn::left_join(
+      inv_dlw_vrs,
+      by = "survey_id",
+      reportvar = FALSE,
+      verbose = FALSE
+    )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(inv_to_clean)
-
 }
 
-date_valid <- function(inv,
-                       position) {
-
+date_valid <- function(inv, position) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Check dates of validation
-  dates <- data.frame(date = unique(inv$date_validated|>
-                                      as.Date()))
+  dates <- data.frame(
+    date = unique(
+      inv$date_validated |>
+        as.Date()
+    )
+  )
 
   # Select one of the first ones
-  date_valid <- as.POSIXct(dates[rev(order(dates$date)),][position])
+  date_valid <- as.POSIXct(dates[rev(order(dates$date)), ][position])
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(date_valid)
-
 }

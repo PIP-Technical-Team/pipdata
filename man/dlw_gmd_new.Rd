@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_dlw_compare.R
 \name{dlw_gmd_new}
 \alias{dlw_gmd_new}
-\title{Compare local and server GMD datasets to get new entries}
+\title{Compare the local GMD dataset list with the server version to identify new entries.}
 \usage{
 dlw_gmd_new(check_missing = TRUE)
 }
@@ -13,10 +13,11 @@ dlw_gmd_new(check_missing = TRUE)
 A data.table with new or unmatched GMD datasets.
 }
 \description{
-Compare local and server GMD datasets to get new entries
+Compare the local GMD dataset list with the server version to identify new entries.
 }
 \examples{
 \dontrun{
-dlw_gmd_new(inv_gmd_list = "dlw_gmd_inv")
+df <- dlw_gmd_new()
+head(df)
 }
 }
