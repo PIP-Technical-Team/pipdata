@@ -55,7 +55,7 @@ pipdata_get_gmd <- function(
   ### -------------------------------------------------------------------------
 
   # 1) check if there is any new GMD datasets
-  inv_gmd <- dlw_gmd_new(check_missing = check_missing)
+  inv_gmd <- dlw_gmd_new(check_missing = check_missing, update_inventory = TRUE)
 
 
   if (is.null(inv_gmd) || nrow(inv_gmd) == 0) cli::cli_abort("There is no new data on GMD catalog")
@@ -73,18 +73,17 @@ pipdata_get_gmd <- function(
   # inv_gmd <- inv_gmd[(Country %in% ctry_partial & Module %in% module_partial), ]
   inv_gmd <- inv_gmd[(Module %in% module_partial), ]
 
-  for (i in seq_along(1:nrow(inv_gmd))){
-
+  for (i in seq_along(1:nrow(inv_gmd))) {
     # extract relevant information for the current row to get the data
-    country     <- inv_gmd[["Country"]][i]
-    year        <- inv_gmd[["Year"]][i]
+    country <- inv_gmd[["Country"]][i]
+    year <- inv_gmd[["Year"]][i]
     svy_acronym <- inv_gmd[["Survey_acronym"]][i]
-    vermst      <- inv_gmd[["Vermast"]][i]
-    veralt      <- inv_gmd[["Veralt"]][i]
-    md_type     <- inv_gmd[["Module"]][i]
-    coll        <- inv_gmd[["Collection"]][i]
+    vermst <- inv_gmd[["Vermast"]][i]
+    veralt <- inv_gmd[["Veralt"]][i]
+    md_type <- inv_gmd[["Module"]][i]
+    coll <- inv_gmd[["Collection"]][i]
 
-    filename    <- inv_gmd[["FileName"]][i] |>
+    filename <- inv_gmd[["FileName"]][i] |>
       fs::path_ext_remove()
 
     filename <- paste0(filename, ".qs2")
@@ -103,27 +102,29 @@ pipdata_get_gmd <- function(
 
         # Mark data as available if download is successful
         inv_gmd$data_available[i] <- "Yes"
-
       },
       error = function(e) {
-
         msg <- glue::glue(
           'Could not download a file: ({country}, {year}, {svy_acronym}, {md_type}, {vermst}, {veralt})'
-          )
+        )
 
         if (log) {
-
           # "Failed to download .dta file"
-          pipfun::log_add("error", msg,
-                          name = "pipdata_log",
-                          args = list(country      = country,
-                                      year         = year,
-                                      survey       = svy_acronym,
-                                      module       = md_type,
-                                      vermast      = vermst,
-                                      veralt       = veralt,
-                                      local_dir    = pip_folders$dlw_data),
-                          logmeta = list(error = e))
+          pipfun::log_add(
+            "error",
+            msg,
+            name = "pipdata_log",
+            args = list(
+              country = country,
+              year = year,
+              survey = svy_acronym,
+              module = md_type,
+              vermast = vermst,
+              veralt = veralt,
+              local_dir = pip_folders$dlw_data
+            ),
+            logmeta = list(error = e)
+          )
         }
 
         cli::cli_inform(msg)
@@ -132,7 +133,6 @@ pipdata_get_gmd <- function(
     )
 
     cli::cli_progress_update()
-
   }
 
   # Done processing all raw dta files
@@ -145,7 +145,9 @@ pipdata_get_gmd <- function(
 
   if (!is.null(inv_gmd_match) & nrow(inv_gmd_match) != 0){
 
-     inv_gmd <- rbind(inv_gmd, inv_gmd_match, ignore.attr=TRUE, fill = TRUE)
+    inv_gmd <- rbind(inv_gmd, inv_gmd_match, ignore.attr=TRUE, fill = TRUE)
+    inv_gmd <- unique(inv_gmd)
+
   }
 
   pipload::pip_write(x = inv_gmd,

@@ -98,7 +98,7 @@ pipdata_dlw_process <- function(
         )
       )
 
-      dlw_gen_gmd_list()
+      dlw_gmd_list()
     }
 
   }
