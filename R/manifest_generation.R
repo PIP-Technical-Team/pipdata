@@ -279,9 +279,9 @@ build_manifest_entry <- function(country_code,
 #' )
 #' }
 generate_release_manifest <- function(release,
-                                      arrow_root,
+                                      arrow_root = getOption("pipdata.arrow_repo"),
                                       release_inventory,
-                                      output_path,
+                                      output_path = getOption("pipdata.manifest_root"),
                                       set_as_current = FALSE) {
 
   # --- Input validation -------------------------------------------------------
@@ -315,7 +315,13 @@ generate_release_manifest <- function(release,
     )
   }
 
+  # Expand directory path to a file path before deriving output_dir
+  if (dir.exists(output_path)) {
+    output_path <- file.path(output_path, paste0("manifest_", release, ".json"))
+  }
+
   output_dir <- dirname(output_path)
+
   if (!dir.exists(output_dir)) {
     cli::cli_abort(
       "Output directory does not exist: {.path {output_dir}}"

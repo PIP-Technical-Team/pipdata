@@ -1,7 +1,8 @@
 
 pipdata_default_options <- list(
   pipdata.verbose  = TRUE,
-  pipdata.arrow_repo = "Y:/PIP_ingestion_pipeline_v2/pip_repository/tm_data/arrow"
+  pipdata.arrow_repo = "Y:/PIP_ingestion_pipeline_v2/pip_repository/tm_data/arrow",
+  pipdata.manifest_root = "Y:/PIP_ingestion_pipeline_v2/pip_repository/tm_data/manifests"
 )
 
 .onLoad <- function(libname, pkgname) {
