@@ -197,6 +197,43 @@ update_pip_inventory <- function(
     error = function(e) NULL
   )
 
+  # Verify that successfully processed surveys are in the master inventory
+  successful_ids <- names(process_data_clean)
+  confirmed <- if (!is.null(pip_inv)) {
+    successful_ids[successful_ids %in% pip_inv$survey_id]
+  } else {
+    character(0)
+  }
+  missing_ids <- setdiff(successful_ids, confirmed)
+
+  if (length(missing_ids) == 0L) {
+    pipfun::log_info(
+      "Master inventory verification complete.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "inv_update_inf",
+        n_expected = length(successful_ids),
+        n_confirmed = length(confirmed),
+        n_missing = 0L,
+        surveys_confirmed = confirmed,
+        surveys_missing = character(0)
+      )
+    )
+  } else {
+    pipfun::log_error(
+      "Some successfully cleaned surveys are missing from the master inventory.",
+      name = "pipdata_log",
+      logmeta = list(
+        error = "inv_update_inf",
+        n_expected = length(successful_ids),
+        n_confirmed = length(confirmed),
+        n_missing = length(missing_ids),
+        surveys_confirmed = confirmed,
+        surveys_missing = missing_ids
+      )
+    )
+  }
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -64,6 +64,24 @@ pd_process_data <- function(
   results <- purrr::map(inv_ls, process_data, aux_list = aux_list)
   names(results) <- inv_to_clean$survey_id
 
+  # Log processing summary
+  n_total <- length(results)
+  n_success <- sum(!vapply(results, is.null, logical(1)))
+  n_failed <- n_total - n_success
+  successful <- names(Filter(Negate(is.null), results))
+
+  pipfun::log_info(
+    "Processing complete.",
+    name = "pipdata_log",
+    logmeta = list(
+      info = "process_summary_inf",
+      n_total = n_total,
+      n_success = n_success,
+      n_failed = n_failed,
+      surveys_success = successful
+    )
+  )
+
   # Update inventory with new versions of clean data
   new_pip_inv <- update_pip_inventory(
     inv_to_clean = inv_to_clean,

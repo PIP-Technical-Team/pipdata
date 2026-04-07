@@ -19,11 +19,19 @@
 #' @details
 #' The report contains:
 #' \itemize{
-#'   \item Run metadata (time window, total entries).
+#'   \item Run metadata (time window, total entries, success/fail counts).
+#'   \item Processing summary: total, cleaned, and failed counts
+#'     (from `process_summary_inf` log entry).
+#'   \item Auxiliary file changes: which measures changed and how many
+#'     surveys were affected (from `aux_changes_inf` log entry).
 #'   \item Summary table by error / info type.
 #'   \item Country-level breakdown of errors.
+#'   \item Inventory verification: confirmed vs missing surveys
+#'     (from `inv_update_inf` log entry).
 #'   \item List of surveys that failed processing (`null_svys_inf` entry).
 #' }
+#' Sections that rely on a specific logmeta entry are silently omitted when
+#' that entry is absent from the log.
 #'
 #' @family pd_process_data pipeline
 #' @export
@@ -59,16 +67,21 @@ log_report <- function(
   dt <- parse_log_meta(log)
 
   # --- Build report sections -----------------------------------------------
-  lines <- c(
-    build_header(dt, title),
-    "",
-    build_type_summary(dt),
-    "",
-    build_country_table(dt),
-    "",
-    build_null_surveys(log),
-    ""
+  # Filter out empty sections to avoid orphan blank lines when optional
+  # entries are absent from the log.
+  sections <- Filter(
+    length,
+    list(
+      build_header(dt, title),
+      build_processing_summary(dt),
+      build_aux_changes(dt),
+      build_type_summary(dt),
+      build_country_table(dt),
+      build_inventory_additions(dt),
+      build_null_surveys(dt)
+    )
   )
+  lines <- unlist(lapply(sections, \(s) c(s, "")))
 
   # --- Write or return -----------------------------------------------------
   if (!is.null(path)) {
@@ -151,6 +164,24 @@ build_header <- function(dt, title) {
   n_errors <- dt[event == "error", .N]
   n_info <- dt[event == "info", .N]
 
+  # Enrich header with survey counts when process_summary_inf is present
+  ps_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "process_summary_inf"),
+    logical(1)
+  ))
+  ps_line <- if (length(ps_idx) > 0L) {
+    ps <- dt$logmeta[[ps_idx[1L]]]
+    sprintf(
+      "**Surveys processed:** %d total \u2014 %d cleaned, %d failed",
+      ps$n_total,
+      ps$n_success,
+      ps$n_failed
+    )
+  } else {
+    NULL
+  }
+
   c(
     sprintf("# %s", title),
     "",
@@ -161,11 +192,12 @@ build_header <- function(dt, title) {
       as.numeric(duration)
     ),
     sprintf(
-      "**Total entries:** %d (%d errors, %d info)",
+      "**Log entries:** %d total (%d errors, %d info)",
       nrow(dt),
       n_errors,
       n_info
-    )
+    ),
+    ps_line
   )
 }
 
@@ -177,7 +209,11 @@ build_header <- function(dt, title) {
 #' @return Character vector of markdown lines.
 #' @keywords internal
 build_type_summary <- function(dt) {
-  tbl <- dt[, .N, by = .(event, error_type, message)][
+  tbl <- dt[
+    !error_type %in% .log_internal_types,
+    .N,
+    by = .(event, error_type, message)
+  ][
     order(event, -N)
   ]
 
@@ -226,7 +262,7 @@ build_country_table <- function(dt) {
   ]
 
   if (nrow(ct) == 0L) {
-    return("## Errors by Country\n\nNo country-level entries found.")
+    return(c("## Breakdown by Country", "", "No country-level entries found."))
   }
 
   # Pivot to wide format
@@ -273,18 +309,14 @@ build_country_table <- function(dt) {
 #' Extracts the `null_svys_inf` entry (if present) which lists all surveys
 #' that were not cleaned.
 #'
-#' @param log The original `piplog` object.
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
 #'
 #' @return Character vector of markdown lines.
 #' @keywords internal
-build_null_surveys <- function(log) {
-  dt <- data.table::as.data.table(log)
-
+build_null_surveys <- function(dt) {
   null_idx <- which(vapply(
     dt$logmeta,
-    \(x) {
-      identical(x$info, "null_svys_inf")
-    },
+    \(x) identical(x$info, "null_svys_inf"),
     logical(1)
   ))
 
@@ -292,7 +324,7 @@ build_null_surveys <- function(log) {
     return(character(0))
   }
 
-  surveys <- dt$logmeta[[null_idx[1]]]$surveys
+  surveys <- dt$logmeta[[null_idx[1L]]]$surveys
 
   if (is.null(surveys) || length(surveys) == 0L) {
     return(character(0))
@@ -303,4 +335,155 @@ build_null_surveys <- function(log) {
     "",
     vapply(surveys, \(s) sprintf("- `%s`", s), character(1))
   )
+}
+
+
+#' Build the processing summary section
+#'
+#' Renders counts from the `process_summary_inf` log entry written by
+#' [pd_process_data()]. Returns an empty character vector when the entry
+#' is absent.
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#'
+#' @return Character vector of markdown lines.
+#' @keywords internal
+build_processing_summary <- function(dt) {
+  ps_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "process_summary_inf"),
+    logical(1)
+  ))
+
+  if (length(ps_idx) == 0L) {
+    return(character(0))
+  }
+
+  ps <- dt$logmeta[[ps_idx[1L]]]
+
+  c(
+    "## Processing Summary",
+    "",
+    "| Metric | Count |",
+    "|--------|------:|",
+    sprintf("| Surveys sent for processing | %d |", ps$n_total),
+    sprintf("| Successfully cleaned | %d |", ps$n_success),
+    sprintf("| Failed | %d |", ps$n_failed)
+  )
+}
+
+
+#' Build the auxiliary file changes section
+#'
+#' Renders changed measures and affected survey counts from the
+#' `aux_changes_inf` log entry written by [valid_dlw_load()]. Returns an
+#' empty character vector when the entry is absent (no aux changes).
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#'
+#' @return Character vector of markdown lines.
+#' @keywords internal
+build_aux_changes <- function(dt) {
+  ac_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "aux_changes_inf"),
+    logical(1)
+  ))
+
+  if (length(ac_idx) == 0L) {
+    return(character(0))
+  }
+
+  # Aggregate across all aux_changes_inf entries (in case of multiple runs)
+  measures_all  <- unique(unlist(lapply(ac_idx, \(i) dt$logmeta[[i]]$measures)))
+  n_affected    <- sum(vapply(
+    ac_idx,
+    \(i) {
+      n <- dt$logmeta[[i]]$n_surveys_affected
+      if (is.null(n)) 0L else as.integer(n)
+    },
+    integer(1)
+  ))
+  surveys_all <- unique(unlist(lapply(
+    ac_idx,
+    \(i) dt$logmeta[[i]]$surveys_affected
+  )))
+
+  survey_lines <- if (length(surveys_all) > 0L) {
+    c(
+      "",
+      "**Surveys affected by aux changes:**",
+      "",
+      vapply(surveys_all, \(s) sprintf("- `%s`", s), character(1))
+    )
+  } else {
+    character(0)
+  }
+
+  c(
+    "## Auxiliary File Changes",
+    "",
+    sprintf(
+      "**Measures changed (%d):** %s",
+      length(measures_all),
+      paste(sprintf("`%s`", measures_all), collapse = ", ")
+    ),
+    sprintf("**Surveys affected:** %d", n_affected),
+    survey_lines
+  )
+}
+
+
+#' Build the inventory verification section
+#'
+#' Renders the cross-check between successfully cleaned surveys and the master
+#' inventory, from the `inv_update_inf` log entry written by
+#' [update_pip_inventory()]. Lists any surveys confirmed missing.
+#' Returns an empty character vector when the entry is absent.
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#'
+#' @return Character vector of markdown lines.
+#' @keywords internal
+build_inventory_additions <- function(dt) {
+  # Entry is info when all surveys confirmed, error when some are missing
+  iv_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "inv_update_inf") ||
+         identical(x$error, "inv_update_inf"),
+    logical(1)
+  ))
+
+  if (length(iv_idx) == 0L) {
+    return(character(0))
+  }
+
+  iv <- dt$logmeta[[iv_idx[1L]]]
+
+  # Guard against malformed logmeta entries
+  if (is.null(iv$n_expected) || is.null(iv$n_confirmed) || is.null(iv$n_missing)) {
+    return(character(0))
+  }
+
+  lines <- c(
+    "## Inventory Verification",
+    "",
+    "| Metric | Count |",
+    "|--------|------:|",
+    sprintf("| Expected (successfully cleaned) | %d |", iv$n_expected),
+    sprintf("| Confirmed in master inventory | %d |", iv$n_confirmed),
+    sprintf("| Missing from master inventory | %d |", iv$n_missing)
+  )
+
+  if (!is.null(iv$surveys_missing) && length(iv$surveys_missing) > 0L) {
+    lines <- c(
+      lines,
+      "",
+      "**Surveys missing from inventory:**",
+      "",
+      vapply(iv$surveys_missing, \(s) sprintf("- `%s`", s), character(1))
+    )
+  }
+
+  return(lines)
 }

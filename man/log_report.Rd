@@ -31,11 +31,19 @@ affected surveys.
 \details{
 The report contains:
 \itemize{
-\item Run metadata (time window, total entries).
+\item Run metadata (time window, total entries, success/fail counts).
+\item Processing summary: total, cleaned, and failed counts
+(from \code{process_summary_inf} log entry).
+\item Auxiliary file changes: which measures changed and how many
+surveys were affected (from \code{aux_changes_inf} log entry).
 \item Summary table by error / info type.
 \item Country-level breakdown of errors.
+\item Inventory verification: confirmed vs missing surveys
+(from \code{inv_update_inf} log entry).
 \item List of surveys that failed processing (\code{null_svys_inf} entry).
 }
+Sections that rely on a specific logmeta entry are silently omitted when
+that entry is absent from the log.
 }
 \examples{
 \dontrun{
