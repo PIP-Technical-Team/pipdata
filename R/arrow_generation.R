@@ -57,8 +57,8 @@
 # Partition structure
 # -------------------
 #   <arrow_repo_path>/
-#     country=<country_code>/
-#       year=<surveyid_year>/
+#     country_code=<country_code>/
+#       surveyid_year=<surveyid_year>/
 #         welfare_type=<welfare_type>/
 #           version=<version>/
 #             <pip_id>-0.parquet
@@ -125,10 +125,10 @@
                                  version) {
   file.path(
     arrow_repo_path,
-    paste0("country=",      country_code),
-    paste0("year=",         surveyid_year),
-    paste0("welfare_type=", welfare_type),
-    paste0("version=",      version)
+    paste0("country_code=",   country_code),
+    paste0("surveyid_year=",  surveyid_year),
+    paste0("welfare_type=",   welfare_type),
+    paste0("version=",        version)
   )
 }
 
@@ -351,8 +351,8 @@
 #' Partition structure:
 #' ```
 #' <arrow_repo_path>/
-#'   country=<country_code>/
-#'     year=<surveyid_year>/
+#'   country_code=<country_code>/
+#'     surveyid_year=<surveyid_year>/id_year>/
 #'       welfare_type=<welfare_type>/
 #'         version=<version>/
 #'           <pip_id>-0.parquet
@@ -442,10 +442,10 @@ write_survey_parquet <- function(dt,
     partition_dir, .build_parquet_filename(pip_id_val)
   )
   rel_path       <- file.path(
-    paste0("country=",      country_code),
-    paste0("year=",         surveyid_year),
-    paste0("welfare_type=", welfare_type),
-    paste0("version=",      version),
+    paste0("country_code=",  country_code),
+    paste0("surveyid_year=", surveyid_year),
+    paste0("welfare_type=",  welfare_type),
+    paste0("version=",       version),
     .build_parquet_filename(pip_id_val)
   )
 

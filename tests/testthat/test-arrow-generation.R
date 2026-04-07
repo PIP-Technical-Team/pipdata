@@ -45,10 +45,14 @@ test_that(".build_partition_dir returns a 4-level Hive path including version=",
     version         = "v01_v02"
   )
 
-  expect_true(grepl("country=COL",     result))
-  expect_true(grepl("year=2010",        result))
-  expect_true(grepl("welfare_type=INC", result))
-  expect_true(grepl("version=v01_v02",  result))
+  # Partition directory keys must match the exact data column names
+  expect_true(grepl("country_code=COL",     result))
+  expect_true(grepl("surveyid_year=2010",   result))
+  expect_true(grepl("welfare_type=INC",     result))
+  expect_true(grepl("version=v01_v02",      result))
+  # Must NOT use the old mismatched names
+  expect_false(grepl("country=COL",  result))
+  expect_false(grepl("/year=2010",   result))
 })
 
 test_that(".build_partition_dir path components are in correct order", {
@@ -65,8 +69,8 @@ test_that(".build_partition_dir path components are in correct order", {
 
   expect_match(parts[length(parts)],     "^version=")
   expect_match(parts[length(parts) - 1], "^welfare_type=")
-  expect_match(parts[length(parts) - 2], "^year=")
-  expect_match(parts[length(parts) - 3], "^country=")
+  expect_match(parts[length(parts) - 2], "^surveyid_year=")
+  expect_match(parts[length(parts) - 3], "^country_code=")
 })
 
 # ===========================================================================

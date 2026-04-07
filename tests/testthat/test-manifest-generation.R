@@ -83,10 +83,10 @@ write_fixture_parquet <- function(arrow_root, dt,
                                   version       = "v01_v02") {
   partition_dir <- file.path(
     arrow_root,
-    paste0("country=",      country_code),
-    paste0("year=",         surveyid_year),
-    paste0("welfare_type=", welfare_type),
-    paste0("version=",      version)
+    paste0("country_code=",  country_code),
+    paste0("surveyid_year=", surveyid_year),
+    paste0("welfare_type=",  welfare_type),
+    paste0("version=",       version)
   )
   dir.create(partition_dir, recursive = TRUE, showWarnings = FALSE)
   out_file <- file.path(partition_dir, paste0(pip_id, "-0.parquet"))
@@ -124,12 +124,12 @@ test_that(".derive_parquet_path includes version= segment in returned path", {
     pip_id        = "COL_2010_ECH_V01_M_V02_A_INC"
   )
 
-  expect_match(path, "country=COL")
-  expect_match(path, "year=2010")
+  expect_match(path, "country_code=COL")
+  expect_match(path, "surveyid_year=2010")
   expect_match(path, "welfare_type=INC")
   expect_match(path, "version=v01_v02")
   expect_match(path, "COL_2010_ECH_V01_M_V02_A_INC-0.parquet")
-  # Must be 4-level: country/year/welfare_type/version/filename
+  # Must be 4-level: country_code/surveyid_year/welfare_type/version/filename
   parts <- strsplit(path, "/")[[1L]]
   expect_length(parts, 5L)
 })
@@ -144,8 +144,8 @@ test_that(".derive_parquet_path uses correct segment order", {
   )
   parts <- strsplit(path, "/")[[1L]]
 
-  expect_match(parts[[1L]], "^country=")
-  expect_match(parts[[2L]], "^year=")
+  expect_match(parts[[1L]], "^country_code=")
+  expect_match(parts[[2L]], "^surveyid_year=")
   expect_match(parts[[3L]], "^welfare_type=")
   expect_match(parts[[4L]], "^version=")
   expect_match(parts[[5L]], "\\.parquet$")

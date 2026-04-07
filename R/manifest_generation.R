@@ -19,7 +19,7 @@
 #     "created_at": "<ISO 8601>",
 #   "surveys": [ ... one entry per pip_id ... ]
 #   }
-#   where file_path follows: country=<cc>/year=<yr>/welfare_type=<wt>/version=<ver>/<pip_id>-0.parquet
+#   where file_path follows: country_code=<cc>/surveyid_year=<yr>/welfare_type=<wt>/version=<ver>/<pip_id>-0.parquet
 #
 # Workflow
 # --------
@@ -49,7 +49,7 @@
 #' filter keys instead.
 #'
 #' Follows the 4-level partition convention established in arrow-schema.json:
-#'   `country=<cc>/year=<yr>/welfare_type=<wt>/version=<version>/<pip_id>-0.parquet`
+#'   `country_code=<cc>/surveyid_year=<yr>/welfare_type=<wt>/version=<version>/<pip_id>-0.parquet`
 #'
 #' @param country_code  ISO3 country code (character scalar).
 #' @param surveyid_year Survey year (integer scalar).
@@ -66,10 +66,10 @@
                                  version,
                                  pip_id) {
   paste(
-    paste0("country=",      country_code),
-    paste0("year=",         surveyid_year),
-    paste0("welfare_type=", welfare_type),
-    paste0("version=",      version),
+    paste0("country_code=",  country_code),
+    paste0("surveyid_year=", surveyid_year),
+    paste0("welfare_type=",  welfare_type),
+    paste0("version=",       version),
     paste0(pip_id, "-0.parquet"),
     sep = "/"
   )
