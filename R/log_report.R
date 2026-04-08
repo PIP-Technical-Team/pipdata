@@ -28,6 +28,8 @@
 #'   \item Country-level breakdown of errors.
 #'   \item Inventory verification: confirmed vs missing surveys
 #'     (from `inv_update_inf` log entry).
+#'   \item Surveys skipped during data processing or metadata creation
+#'     (`skipped_svys_data` / `skipped_svys_metadata` entries), with reasons.
 #'   \item List of surveys that failed processing (`null_svys_inf` entry).
 #' }
 #' Sections that rely on a specific logmeta entry are silently omitted when
@@ -78,6 +80,7 @@ log_report <- function(
       build_type_summary(dt),
       build_country_table(dt),
       build_inventory_additions(dt),
+      build_skipped_surveys(dt),
       build_null_surveys(dt)
     )
   )
@@ -486,4 +489,69 @@ build_inventory_additions <- function(dt) {
   }
 
   return(lines)
+}
+
+
+#' Build the skipped-surveys section
+#'
+#' Reads `skipped_svys_data` and `skipped_svys_metadata` log entries written
+#' by [update_pip_inventory()] and renders each group with its skip reasons.
+#' Returns an empty character vector when no skipped-survey entries exist.
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#'
+#' @return Character vector of markdown lines.
+#' @keywords internal
+build_skipped_surveys <- function(dt) {
+  data_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "skipped_svys_data"),
+    logical(1)
+  ))
+  meta_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "skipped_svys_metadata"),
+    logical(1)
+  ))
+
+  if (length(data_idx) == 0L && length(meta_idx) == 0L) {
+    return(character(0))
+  }
+
+  collect_rows <- function(indices, stage_label) {
+    surveys <- unique(unlist(lapply(indices, \(i) dt$logmeta[[i]]$surveys)))
+    reasons <- unique(unlist(lapply(indices, \(i) dt$logmeta[[i]]$reasons)))
+    if (length(surveys) == 0L) return(character(0))
+    rows <- vapply(
+      seq_along(surveys),
+      \(i) {
+        reason <- if (!is.null(reasons) && i <= length(reasons) && !is.na(reasons[i]))
+          reasons[i] else "unknown"
+        sprintf("- `%s` — %s", surveys[i], reason)
+      },
+      character(1)
+    )
+    c(
+      sprintf("**Skipped during %s (%d):**", stage_label, length(surveys)),
+      "",
+      rows
+    )
+  }
+
+  data_rows <- collect_rows(data_idx, "data processing")
+  meta_rows <- collect_rows(meta_idx, "metadata creation")
+
+  n_total <- length(unique(unlist(lapply(
+    c(data_idx, meta_idx), \(i) dt$logmeta[[i]]$surveys
+  ))))
+
+  sep <- if (length(data_rows) > 0L && length(meta_rows) > 0L) "" else character(0)
+
+  c(
+    sprintf("## Skipped Surveys (%d)", n_total),
+    "",
+    data_rows,
+    sep,
+    meta_rows
+  )
 }

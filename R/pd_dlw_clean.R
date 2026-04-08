@@ -563,7 +563,7 @@ pip_vars <- function(dt) {
   # order columns in correct order
   pip_vars_all <- pip_vars_all[pip_vars_all %in% colnames(dt)]
   setcolorder(dt, pip_vars_all)
-  dt <- dt[, .SD, .SDcols = pip_vars_all]
+  # dt <- dt[, .SD, .SDcols = pip_vars_all]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
