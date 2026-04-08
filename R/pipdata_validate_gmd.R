@@ -41,7 +41,7 @@ pipdata_validate_gmd <- function(
 
   ### -------------------------------------------------------------------------
   # 1) get list of local gmd datasets that are not yet validated
-  gmd_new <- gmd_inv_new()
+  gmd_new <- dlw_gmd_unvalidated()
 
   if (is.null(gmd_new) || nrow(gmd_new) == 0){
 
@@ -136,7 +136,7 @@ pipdata_validate_gmd <- function(
     data_avail <- gmd_new[["data_available"]][i]
     Checksum   <- gmd_new[["Checksum"]][i]
 
-    pipeline_version  = 1
+    pipeline_version  = 1L
 
     file_id  <- file_name |>
       fs::path_ext_remove() |>
@@ -192,7 +192,7 @@ pipdata_validate_gmd <- function(
       # Update the new_inv entry based on previous processes
       if (!is.null(validate_this) && (nm %in% validate_this$survey_id)) {
         row_svyid <- validate_this[survey_id == nm, "pipeline_version"]
-        workflow_vrs <- row_svyid$pipeline_version + 1
+        workflow_vrs <- row_svyid$pipeline_version + 1L
         new_inv[[i]] <- data.table(
           survey_id = nm,
           pipeline_version = workflow_vrs,
@@ -247,7 +247,7 @@ pipdata_validate_gmd <- function(
     tidyr::as_tibble() |>
     # tidyr::unnest(pin_version, keep_empty = TRUE) |>
     data.table::as.data.table()
-  final_inv <- final_inv[, pipeline_version := fifelse(is.na(pipeline_version), 1, pipeline_version)]
+  final_inv <- final_inv[, pipeline_version := fifelse(is.na(pipeline_version), 1L, pipeline_version)]
 
   # update inventory file with the newly validated data
   if (!is.null(validated_data) && nrow(validated_data) !=0){
