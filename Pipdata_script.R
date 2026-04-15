@@ -35,7 +35,15 @@ waldo::compare(old_pip_inv, new_pip_inv)
 
 # Check report
 log <- pipfun::log_filter(name = "pipdata_log")
-report <- log_report(log, path = "log_report.md", overwrite = TRUE)
+report <- log_report(log, path = "log_reports\\log_report.md", overwrite = TRUE)
+
+
+stamp::st_init(
+  root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_logs"),
+  alias = "piplog"
+)
+
+stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 
 #------ Load data tests -----
 # # Load cleaned data for a survey
