@@ -37,7 +37,7 @@ waldo::compare(old_pip_inv, new_pip_inv)
 log <- pipfun::log_filter(name = "pipdata_log")
 report <- log_report(log, path = "log_reports\\log_report.md", overwrite = TRUE)
 
-
+# Save log
 stamp::st_init(
   root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_logs"),
   alias = "piplog"

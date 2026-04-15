@@ -4,10 +4,10 @@
 \alias{build_null_surveys}
 \title{Build the null-surveys section}
 \usage{
-build_null_surveys(log)
+build_null_surveys(dt)
 }
 \arguments{
-\item{log}{The original \code{piplog} object.}
+\item{dt}{Parsed log \code{data.table} (output of \code{\link[=parse_log_meta]{parse_log_meta()}}).}
 }
 \value{
 Character vector of markdown lines.

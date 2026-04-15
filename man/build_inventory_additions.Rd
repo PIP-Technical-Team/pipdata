@@ -4,10 +4,10 @@
 \alias{build_inventory_additions}
 \title{Build the inventory verification section}
 \usage{
-build_inventory_additions(log)
+build_inventory_additions(dt)
 }
 \arguments{
-\item{log}{The original \code{piplog} object.}
+\item{dt}{Parsed log \code{data.table} (output of \code{\link[=parse_log_meta]{parse_log_meta()}}).}
 }
 \value{
 Character vector of markdown lines.

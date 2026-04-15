@@ -40,6 +40,8 @@ surveys were affected (from \code{aux_changes_inf} log entry).
 \item Country-level breakdown of errors.
 \item Inventory verification: confirmed vs missing surveys
 (from \code{inv_update_inf} log entry).
+\item Surveys skipped during data processing or metadata creation
+(\code{skipped_svys_data} / \code{skipped_svys_metadata} entries), with reasons.
 \item List of surveys that failed processing (\code{null_svys_inf} entry).
 }
 Sections that rely on a specific logmeta entry are silently omitted when
