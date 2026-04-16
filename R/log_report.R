@@ -1,4 +1,4 @@
-#' Generate a markdown report from a pipeline log
+﻿#' Generate a markdown report from a pipeline log
 #'
 #' Parses a `piplog` object produced by `pipfun::log_filter()` and writes a
 #' structured markdown document summarising errors, informational messages, and
@@ -96,7 +96,7 @@ log_report <- function(
 }
 
 
-# ── Internal helpers ─────────────────────────────────────────────────────────
+# -- Internal helpers -------------------------------------------------------
 
 #' Parse logmeta into a flat data.table
 #'
@@ -254,7 +254,7 @@ build_type_summary <- function(dt) {
 }
 
 
-#' Build the country × error_type table
+#' Build the country x error_type table
 #'
 #' @inheritParams build_header
 #'
@@ -528,7 +528,7 @@ build_skipped_surveys <- function(dt) {
       \(i) {
         reason <- if (!is.null(reasons) && i <= length(reasons) && !is.na(reasons[i]))
           reasons[i] else "unknown"
-        sprintf("- `%s` — %s", surveys[i], reason)
+        sprintf("- `%s` \u2014 %s", surveys[i], reason)
       },
       character(1)
     )

@@ -102,7 +102,7 @@ add_attr <- function(ls, measure, aux_data, keys) {
   aux_attr <- create_attr(measure = measure, filtered_aux = filtered_aux)
 
   # Add to other attributes under the measure name
-  ls <- append(ls, setNames(list(aux_attr), measure))
+  ls <- append(ls, stats::setNames(list(aux_attr), measure))
 
   # Return   ---------
   return(ls)

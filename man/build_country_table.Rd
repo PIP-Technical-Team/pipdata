@@ -2,7 +2,7 @@
 % Please edit documentation in R/log_report.R
 \name{build_country_table}
 \alias{build_country_table}
-\title{Build the country × error_type table}
+\title{Build the country x error_type table}
 \usage{
 build_country_table(dt)
 }
@@ -13,6 +13,6 @@ build_country_table(dt)
 Character vector of markdown lines.
 }
 \description{
-Build the country × error_type table
+Build the country x error_type table
 }
 \keyword{internal}
