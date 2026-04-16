@@ -114,7 +114,7 @@ test_that("build_processing_summary returns correct table rows", {
       )
     )
   )
-  out <- build_processing_summary(log)
+  out <- build_processing_summary(parse_log_meta(log))
   expect_true(any(grepl("10", out)))
   expect_true(any(grepl("8", out)))
   expect_true(any(grepl("2", out)))
@@ -129,7 +129,7 @@ test_that("build_processing_summary returns empty when entry absent", {
       list(error = "unknown_error", survey = "X_2000")
     )
   )
-  expect_length(build_processing_summary(log), 0L)
+  expect_length(build_processing_summary(parse_log_meta(log)), 0L)
 })
 
 # ── build_aux_changes ─────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ test_that("build_aux_changes lists changed measures, survey count, and survey ID
       )
     )
   )
-  out <- build_aux_changes(log)
+  out <- build_aux_changes(parse_log_meta(log))
   expect_true(any(grepl("cpi", out)))
   expect_true(any(grepl("ppp", out)))
   expect_true(any(grepl("2", out)))
@@ -164,7 +164,7 @@ test_that("build_aux_changes returns empty when entry absent", {
       list(error = "unknown_error", survey = "X_2000")
     )
   )
-  expect_length(build_aux_changes(log), 0L)
+  expect_length(build_aux_changes(parse_log_meta(log)), 0L)
 })
 
 test_that("build_aux_changes aggregates multiple aux_changes_inf entries", {
@@ -188,7 +188,7 @@ test_that("build_aux_changes aggregates multiple aux_changes_inf entries", {
       )
     )
   )
-  out <- build_aux_changes(log)
+  out <- build_aux_changes(parse_log_meta(log))
   # Total n_affected should be 5 + 3 = 8
   expect_true(any(grepl("8", out)))
   # Unique measures: cpi, ppp (2 total)
@@ -212,7 +212,7 @@ test_that("build_inventory_additions shows confirmed and missing counts", {
       )
     )
   )
-  out <- build_inventory_additions(log)
+  out <- build_inventory_additions(parse_log_meta(log))
   expect_true(any(grepl("5", out)))
   expect_true(any(grepl("4", out)))
   expect_true(any(grepl("1", out)))
@@ -235,7 +235,7 @@ test_that("build_inventory_additions detects error-level inv_update_inf (missing
       )
     )
   )
-  out <- build_inventory_additions(log)
+  out <- build_inventory_additions(parse_log_meta(log))
   expect_true(any(grepl("Inventory Verification", out)))
   expect_true(any(grepl("C_2002", out)))
   expect_true(any(grepl("1", out)))
@@ -256,7 +256,7 @@ test_that("build_inventory_additions omits missing-surveys list when none missin
       )
     )
   )
-  out <- build_inventory_additions(log)
+  out <- build_inventory_additions(parse_log_meta(log))
   expect_false(any(grepl(
     "missing from inventory:\\*\\*",
     out,
@@ -272,7 +272,160 @@ test_that("build_inventory_additions returns empty when entry absent", {
       list(error = "unknown_error", survey = "X_2000")
     )
   )
-  expect_length(build_inventory_additions(log), 0L)
+  expect_length(build_inventory_additions(parse_log_meta(log)), 0L)
+})
+
+# ── build_null_surveys ───────────────────────────────────────────────────────
+
+test_that("build_null_surveys lists surveys not cleaned", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Some surveys not cleaned.",
+      list(
+        info = "null_svys_inf",
+        surveys = c("BOL_1990_EPF", "IND_2011_NSS")
+      )
+    )
+  )
+  out <- build_null_surveys(parse_log_meta(log))
+  expect_true(any(grepl("Surveys Not Cleaned", out)))
+  expect_true(any(grepl("BOL_1990_EPF", out)))
+  expect_true(any(grepl("IND_2011_NSS", out)))
+  expect_true(any(grepl("2", out))) # count in heading
+})
+
+test_that("build_null_surveys returns empty when entry absent", {
+  log <- make_piplog(
+    make_entry("error", "oops", list(error = "x", survey = "X_2000"))
+  )
+  expect_length(build_null_surveys(parse_log_meta(log)), 0L)
+})
+
+test_that("build_null_surveys returns empty when surveys is empty", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "No failed surveys.",
+      list(info = "null_svys_inf", surveys = character(0))
+    )
+  )
+  expect_length(build_null_surveys(parse_log_meta(log)), 0L)
+})
+
+# ── build_country_table ───────────────────────────────────────────────────────
+
+test_that("build_country_table pivots to wide markdown table", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "No gd_type.",
+      list(error = "gd_type_miss", survey = "BOL_1990_EPF")
+    ),
+    make_entry(
+      "error",
+      "No gd_type.",
+      list(error = "gd_type_miss", survey = "IND_2011_NSS")
+    ),
+    make_entry(
+      "error",
+      "Bad welfare.",
+      list(error = "welfare_miss", survey = "BOL_2000_EH")
+    )
+  )
+  out <- build_country_table(parse_log_meta(log))
+  expect_true(any(grepl("Breakdown by Country", out)))
+  expect_true(any(grepl("BOL", out)))
+  expect_true(any(grepl("IND", out)))
+  expect_true(any(grepl("gd_type_miss", out)))
+})
+
+test_that("build_country_table reports no entries when all surveys are NA", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "done",
+      list(info = "null_svys_inf", surveys = character(0))
+    )
+  )
+  out <- build_country_table(parse_log_meta(log))
+  expect_true(any(grepl("No country-level entries found", out)))
+})
+
+test_that("build_country_table uses em-dash for missing country/type combos", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "No gd_type.",
+      list(error = "gd_type_miss", survey = "BOL_1990_EPF")
+    ),
+    make_entry(
+      "error",
+      "Bad welfare.",
+      list(error = "welfare_miss", survey = "IND_2011_NSS")
+    )
+  )
+  out <- build_country_table(parse_log_meta(log))
+  # BOL has no welfare_miss row: cell should be em-dash
+  bol_row <- out[grepl("^\\| BOL", out)]
+  expect_true(any(grepl("\u2014", bol_row)))
+})
+
+# ── build_skipped_surveys ─────────────────────────────────────────────────────
+
+test_that("build_skipped_surveys lists data and metadata skips", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Skipped data.",
+      list(
+        info = "skipped_svys_data",
+        surveys = c("BOL_1990_EPF", "IND_2011_NSS"),
+        reasons = c("missing_welfare", "bad_weights")
+      )
+    ),
+    make_entry(
+      "info",
+      "Skipped metadata.",
+      list(
+        info = "skipped_svys_metadata",
+        surveys = "CHN_2005_CHN",
+        reasons = "no_pfw_match"
+      )
+    )
+  )
+  out <- build_skipped_surveys(parse_log_meta(log))
+  expect_true(any(grepl("Skipped Surveys", out)))
+  expect_true(any(grepl("BOL_1990_EPF", out)))
+  expect_true(any(grepl("missing_welfare", out)))
+  expect_true(any(grepl("CHN_2005_CHN", out)))
+  expect_true(any(grepl("no_pfw_match", out)))
+})
+
+test_that("build_skipped_surveys returns empty when no skipped entries", {
+  log <- make_piplog(
+    make_entry("error", "oops", list(error = "x", survey = "X_2000"))
+  )
+  expect_length(build_skipped_surveys(parse_log_meta(log)), 0L)
+})
+
+test_that("build_skipped_surveys uses 'unknown' when reasons vector is shorter than surveys", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Skipped data.",
+      list(
+        info = "skipped_svys_data",
+        surveys = c("BOL_1990_EPF", "IND_2011_NSS", "CHN_2005_CHN"),
+        reasons = "missing_welfare" # only one reason for three surveys
+      )
+    )
+  )
+  out <- build_skipped_surveys(parse_log_meta(log))
+  # Second and third surveys should fall back to "unknown"
+  expect_true(sum(grepl("unknown", out)) >= 2L)
+  # First survey should still get its actual reason
+  expect_true(any(grepl("missing_welfare", out)))
 })
 
 # ── build_header ─────────────────────────────────────────────────────────────

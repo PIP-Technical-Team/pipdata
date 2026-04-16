@@ -35,7 +35,11 @@ waldo::compare(old_pip_inv, new_pip_inv)
 
 # Check report
 log <- pipfun::log_filter(name = "pipdata_log")
-report <- log_report(log, path = "log_reports\\log_report.md", overwrite = TRUE)
+report <- log_report(
+  log,
+  path = file.path("log_reports", "log_report.md"),
+  overwrite = TRUE
+)
 
 # Save log
 stamp::st_init(

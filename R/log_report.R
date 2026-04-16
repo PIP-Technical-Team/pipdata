@@ -185,6 +185,7 @@ build_header <- function(dt, title) {
     NULL
   }
 
+  # NULL ps_line is silently dropped by c() when process_summary_inf is absent.
   c(
     sprintf("# %s", title),
     "",
