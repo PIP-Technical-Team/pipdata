@@ -64,6 +64,23 @@ valid_dlw_load <- function(
       collapse::funique()
   }
 
+  # Log aux changes if any were detected
+  if (!is.null(all_changes_aux)) {
+    changed_measures <- unique(unlist(lapply(all_changes_aux, names)))
+    n_affected <- if (is.null(inv_aux)) 0L else nrow(inv_aux)
+    survey_ids_aux <- if (is.null(inv_aux)) character(0) else inv_aux$survey_id
+    pipfun::log_info(
+      "Auxiliary file changes detected.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "aux_changes_inf",
+        measures = changed_measures,
+        n_surveys_affected = n_affected,
+        surveys_affected = survey_ids_aux
+      )
+    )
+  }
+
   # Filter inventory for specific modules and select last version of each survey (and random sample if needed)
   # inv <- m_inv_valid(inv, seed = seed) # Mock function to select 20 random surveys from valid inventory
   inv <- inv[module %in% modules]

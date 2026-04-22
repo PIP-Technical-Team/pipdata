@@ -164,22 +164,22 @@ survey_id_to_attr <- function(dt, survey_id) {
     }
   }
 
-  # Remove variables
+  # # Remove variables
 
-  fnames <- c(
-    grep("^(welf|weight|subnatid|edu)", names(dt), value = TRUE),
-    "urban",
-    "area",
-    "age",
-    "male",
-    "gender",
-    "literacy",
-    "school"
-  )
+  # fnames <- c(
+  #   grep("^(welf|weight|subnatid|edu)", names(dt), value = TRUE),
+  #   "urban",
+  #   "area",
+  #   "age",
+  #   "male",
+  #   "gender",
+  #   "literacy",
+  #   "school"
+  # )
 
-  to_keep <- names(dt)[names(dt) %in% fnames]
+  # to_keep <- names(dt)[names(dt) %in% fnames]
 
-  dt <- dt[, ..to_keep]
+  # dt <- dt[, ..to_keep]
 
   # Temporary fix for it to work on pip_class:
 

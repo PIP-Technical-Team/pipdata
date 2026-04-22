@@ -143,16 +143,25 @@ update_pip_inventory <- function(
       content_hash = "content_hash_dlw",
       Checksum = "Checksum_dlw",
       file_path = "path_dlw"
+    ) |>
+    # Extract welfare_type from pip_id (format: country_year_acronym_welfare_module).
+    # Survey acronyms use hyphens not underscores, so the 4th _-segment is always
+    # the welfare type (e.g. "BOL_2022_EH_INC_ALL" -> "INC").
+    collapse::fmutate(
+      welfare_type = data.table::tstrsplit(pip_id, "_", fixed = TRUE)[[4L]]
     )
 
   # Save master inventory
-
+  # NOTE: exclude old entries for the same survey_ids only after the join, so
+  # surveys dropped by the inner_join (e.g. due to missing version metadata)
+  # are not silently removed from the existing inventory.
   old_pip_inv <- tryCatch(
-    pipload::load_pip_master_inventory(),
+    expr = {
+      old_inv <- pipload::load_pip_master_inventory()
+      old_inv[!old_inv$survey_id %in% pip_inv$survey_id, ]
+    },
     error = function(e) NULL
   )
-
-  old_pip_inv <- old_pip_inv[!old_pip_inv$survey_id %in% pip_inv$survey_id, ]
 
   new_pip_inv <- pip_inv |>
     collapse::rowbind(old_pip_inv, fill = TRUE) |>
@@ -197,6 +206,43 @@ update_pip_inventory <- function(
     error = function(e) NULL
   )
 
+  # Verify that successfully processed surveys are in the master inventory
+  successful_ids <- names(process_data_clean)
+  confirmed <- if (!is.null(pip_inv)) {
+    successful_ids[successful_ids %in% pip_inv$survey_id]
+  } else {
+    character(0)
+  }
+  missing_ids <- setdiff(successful_ids, confirmed)
+
+  if (length(missing_ids) == 0L) {
+    pipfun::log_info(
+      "Master inventory verification complete.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "inv_update_inf",
+        n_expected = length(successful_ids),
+        n_confirmed = length(confirmed),
+        n_missing = 0L,
+        surveys_confirmed = confirmed,
+        surveys_missing = character(0)
+      )
+    )
+  } else {
+    pipfun::log_error(
+      "Some successfully cleaned surveys are missing from the master inventory.",
+      name = "pipdata_log",
+      logmeta = list(
+        error = "inv_update_inf",
+        n_expected = length(successful_ids),
+        n_confirmed = length(confirmed),
+        n_missing = length(missing_ids),
+        surveys_confirmed = confirmed,
+        surveys_missing = missing_ids
+      )
+    )
+  }
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -233,13 +279,23 @@ format_vrs <- function(
       process_data,
 
       \(x) {
-        pip_name <- unlist(x$pip_names)
+        pip_names <- unlist(x$pip_names)
 
-        # Safely access nested lists using [[ ]] and handle missing entries
-        vlist <- NULL
+        # Safely access nested lists using [[ ]] and handle missing entries.
+        # Iterate over each pip_name separately: x[[version]][[pip_name]] with
+        # a length > 1 vector performs recursive indexing in R, not multi-key
+        # lookup, silently returning NULL for surveys with multiple pip_names.
+        if (is.null(x[[version]])) {
+          return(NULL)
+        }
 
-        if (!is.null(x[[version]]) && !is.null(x[[version]][[pip_name]])) {
+        rows <- lapply(pip_names, \(pip_name) {
+          if (is.null(x[[version]][[pip_name]])) {
+            return(NULL)
+          }
+
           ventry <- x[[version]][[pip_name]]
+          vlist <- NULL
           if (!is.null(ventry$metadata) && length(ventry$metadata) > 0) {
             vlist <- ventry$metadata
           }
@@ -248,13 +304,16 @@ format_vrs <- function(
             vlist$skipped <- TRUE
             vlist$reason <- ventry$reason
           }
+          vlist$parents <- NULL
+          vlist$attrs <- NULL
+          vlist
+        })
+
+        non_null <- Filter(Negate(is.null), rows)
+        if (length(non_null) == 0L) {
+          return(NULL)
         }
-
-        # Remove parents and attrs
-        vlist$parents <- NULL
-        vlist$attrs <- NULL
-
-        return(vlist)
+        data.table::rbindlist(non_null, fill = TRUE)
       }
     ),
 
