@@ -1,4 +1,105 @@
 {
     "schemaVersion": "compound-gpid-roadmap-v1",
-    "milestones": []
+    "milestones": [
+        {
+            "title": "Code Quality & Refactoring",
+            "description": "Systematic improvements to code structure, performance, and maintainability",
+            "ideas": [
+                {
+                    "id": "env-setup",
+                    "title": "Unified environment configuration",
+                    "description": "Create a single environment for the whole package (either .pipdata or .pipdataenv) instead of scattered configs",
+                    "tags": [
+                        "environment",
+                        "setup",
+                        "infrastructure"
+                    ]
+                },
+                {
+                    "id": "logging-refactor",
+                    "title": "Standardize logging approach",
+                    "description": "Review and standardize log = TRUE argument vs. if statement pattern across functions. Enforce consistent logging style",
+                    "tags": [
+                        "logging",
+                        "code-quality",
+                        "api-design"
+                    ]
+                },
+                {
+                    "id": "loop-to-apply",
+                    "title": "Replace explicit loops with apply functions",
+                    "description": "Audit codebase for explicit for/while loops and replace with purrr::map(), collapse operations, or data.table vectorized patterns",
+                    "tags": [
+                        "performance",
+                        "vectorization",
+                        "code-quality"
+                    ]
+                },
+                {
+                    "id": "nested-tryCatch",
+                    "title": "Audit nested tryCatch patterns",
+                    "description": "Review nested tryCatch blocks for necessity, clarity, and error handling best practices. Consolidate where appropriate",
+                    "tags": [
+                        "error-handling",
+                        "code-quality"
+                    ]
+                },
+                {
+                    "id": "dlw-release-check",
+                    "title": "Review get_wrk_release() in DLW functions",
+                    "description": "Determine if get_wrk_release() checks are necessary in dlw functions or if they can be moved to entry points",
+                    "tags": [
+                        "dlw",
+                        "refactoring"
+                    ]
+                },
+                {
+                    "id": "dplyr-to-collapse",
+                    "title": "Migrate from dplyr to collapse/data.table",
+                    "description": "Replace dplyr dependencies with collapse (weighted stats) and data.table (:= operations) per project style guide",
+                    "tags": [
+                        "refactoring",
+                        "performance",
+                        "dependencies"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Function Decomposition & Cleanup",
+            "description": "Break down large functions and remove dead code",
+            "ideas": [
+                {
+                    "id": "subfunctions",
+                    "title": "Create subfunctions for long functions",
+                    "description": "Identify functions with excessive lines or complexity and extract subfunctions to improve readability and testability",
+                    "tags": [
+                        "refactoring",
+                        "maintainability",
+                        "testing"
+                    ]
+                },
+                {
+                    "id": "survey-id-vars-dedup",
+                    "title": "Audit survey_id_to_vars usage",
+                    "description": "Review if pipload::survey_id_to_vars is repeated across the pipeline and consolidate repeated calls",
+                    "tags": [
+                        "refactoring",
+                        "survey-processing",
+                        "pipload"
+                    ]
+                },
+                {
+                    "id": "utils-cleanup",
+                    "title": "Clean utils.R",
+                    "description": "Audit utils.R for unused functions, remove dead code, and verify remaining utilities are necessary and well-documented",
+                    "tags": [
+                        "cleanup",
+                        "utilities",
+                        "code-quality"
+                    ]
+                }
+            ]
+        }
+    ]
 }
