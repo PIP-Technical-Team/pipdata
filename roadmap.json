@@ -26,6 +26,18 @@
                     ]
                 },
                 {
+                    "id": "unified-logging-report",
+                    "title": "Harmonize logging and reporting across pipdata",
+                    "description": "Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to the same piplog format and produce a single consolidated report via log_report(). Currently DLW functions (pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd) use a separate logging setup from the pipeline functions (pd_process_data, valid_dlw_load, update_pip_inventory) that feed log_report(). Goal: one log, one report, one set of logmeta conventions for the entire package.",
+                    "tags": [
+                        "logging",
+                        "reporting",
+                        "dlw",
+                        "pipeline",
+                        "harmonization"
+                    ]
+                },
+                {
                     "id": "loop-to-apply",
                     "title": "Replace explicit loops with apply functions",
                     "description": "Audit codebase for explicit for/while loops and replace with purrr::map(), collapse operations, or data.table vectorized patterns",
@@ -82,7 +94,8 @@
                 {
                     "id": "survey-id-vars-dedup",
                     "title": "Audit survey_id_to_vars usage",
-                    "description": "Review if pipload::survey_id_to_vars is repeated across the pipeline and consolidate repeated calls",
+                    "description": "Completed 2026-04-23: All 3 calls in pipdata operate on different data objects from different sources (directory scan, newly built inventory rows). No redundancy found. See .cg-docs/plans/2026-04-23-audit-survey-id-to-vars.md.",
+                    "status": "done",
                     "tags": [
                         "refactoring",
                         "survey-processing",
@@ -97,6 +110,23 @@
                         "cleanup",
                         "utilities",
                         "code-quality"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Testing & Documentation",
+            "description": "Enhance test coverage and documentation for existing functionality",
+            "ideas": [
+                {
+                    "id": "logging-integration-tests",
+                    "title": "Integration tests for logging side effects (P2.4)",
+                    "description": "Write integration tests to verify that valid_dlw_load() and update_pip_inventory() emit correct logmeta entries (aux_changes_inf, null_svys_inf, inv_update_inf, skipped surveys). Ensures logging contract stability and prevents regressions.",
+                    "tags": [
+                        "testing",
+                        "logging",
+                        "integration-tests",
+                        "p2-finding"
                     ]
                 }
             ]
