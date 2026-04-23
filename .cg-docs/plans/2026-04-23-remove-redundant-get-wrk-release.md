@@ -1,7 +1,7 @@
 ---
 date: 2026-04-23
 title: "Remove redundant get_wrk_release() guards from DLW call chains"
-status: active
+status: completed
 scope: "Lightweight"
 brainstorm: ~
 language: R

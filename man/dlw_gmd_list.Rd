@@ -16,6 +16,12 @@ A data table containing the list of GMD datasets.
 This function fetches a list of GMD datasets from the server,
 filters them based on Module and file extension.
 }
+\note{
+This function expects a working release to be configured via
+\code{\link[pipfun:setup_working_release]{pipfun::setup_working_release()}}. When called from
+\code{\link[=pipdata_get_gmd]{pipdata_get_gmd()}}, the release is already set. When called
+standalone, ensure \code{setup_working_release()} has been invoked first.
+}
 \examples{
 \dontrun{
 gmd_list <- dlw_gmd_list()

@@ -17,6 +17,12 @@ A data.table with new or unmatched GMD datasets.
 \description{
 Compare the local GMD dataset list with the server version to identify new entries.
 }
+\note{
+This function expects a working release to be configured via
+\code{\link[pipfun:setup_working_release]{pipfun::setup_working_release()}}. When called from
+\code{\link[=pipdata_get_gmd]{pipdata_get_gmd()}}, the release is already set. When called
+standalone, ensure \code{setup_working_release()} has been invoked first.
+}
 \examples{
 \dontrun{
 df <- dlw_gmd_new()

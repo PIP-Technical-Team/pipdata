@@ -59,8 +59,8 @@
                 {
                     "id": "dlw-release-check",
                     "title": "Review get_wrk_release() in DLW functions",
-                    "description": "Determine if get_wrk_release() checks are necessary in dlw functions or if they can be moved to entry points",
-                    "status": "planned",
+                    "description": "Completed 2026-04-23: Removed redundant get_wrk_release() guards from 4 delegate functions (pipdata_get_gmd, pipdata_validate_gmd, dlw_gmd_new, dlw_gmd_list). Guards kept at entry points and standalone utilities. See .cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
                     "tags": [
                         "dlw",
