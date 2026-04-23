@@ -60,6 +60,8 @@
                     "id": "dlw-release-check",
                     "title": "Review get_wrk_release() in DLW functions",
                     "description": "Determine if get_wrk_release() checks are necessary in dlw functions or if they can be moved to entry points",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
                     "tags": [
                         "dlw",
                         "refactoring"

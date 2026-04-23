@@ -100,3 +100,4 @@ expect_message(
 - [testthat: Mocking](https://testthat.r-lib.org/reference/local_mocked_bindings.html)
 - [withr: local functions](https://withr.r-lib.org/)
 - See also `2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md`
+- See also `../git-workflows/2026-04-23-guard-at-entry-point-pattern.md` — the upstream design decision that reduces how many functions need mocking in the first place
