@@ -29,6 +29,12 @@ main variables, creating metadata, and saving new versions of the cleaned
 data and metadata into the pip storage. The function returns an updated
 pip inventory with the new versions recorded.
 }
+\details{
+\strong{Logging}: This function writes a \code{process_summary_inf} entry to the \code{"pipdata_log"}
+summarizing the total number of surveys processed, successfully cleaned, and failed.
+Additional informational entries are logged for auxiliary file changes and inventory
+verification (see \code{\link[=valid_dlw_load]{valid_dlw_load()}} and \code{\link[=update_pip_inventory]{update_pip_inventory()}} for details).
+}
 \examples{
 \dontrun{
 release <- "20250203"

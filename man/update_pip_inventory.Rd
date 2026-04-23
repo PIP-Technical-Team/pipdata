@@ -32,6 +32,17 @@ skipped surveys, appends the new entries to the existing master
 inventory, and writes both the master and release inventories
 to storage via \code{\link[pipload:pip_write]{pipload::pip_write()}}.
 }
+\details{
+\strong{Logging}: This function writes several informational entries to the \code{"pipdata_log"}:
+\itemize{
+\item \code{null_svys_inf}: List of surveys that failed processing (when applicable).
+\item \code{inv_update_inf}: Inventory verification summary showing the number of surveys
+expected, confirmed in master inventory, and missing. Written as an error-level
+entry if any surveys are missing, info-level if all are confirmed.
+\item \code{skipped_svys_data}: Surveys skipped during data processing with reasons.
+\item \code{skipped_svys_metadata}: Surveys skipped during metadata creation with reasons.
+}
+}
 \seealso{
 Other pd_process_data pipeline: 
 \code{\link{add_attr}()},

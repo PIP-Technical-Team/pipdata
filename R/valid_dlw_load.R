@@ -24,6 +24,11 @@
 #'
 #' @return A `data.table` of surveys to process, or `NULL` if none.
 #'
+#' @details
+#' **Logging**: This function writes an `aux_changes_inf` entry to the `"pipdata_log"`
+#' when changes are detected in any of the requested auxiliary measures. The logmeta
+#' entry includes the measures that changed and the number of affected surveys.
+#'
 #' @family pd_process_data pipeline
 #' @export
 valid_dlw_load <- function(

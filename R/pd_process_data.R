@@ -12,6 +12,13 @@
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
+#'
+#' @details
+#' **Logging**: This function writes a `process_summary_inf` entry to the `"pipdata_log"`
+#' summarizing the total number of surveys processed, successfully cleaned, and failed.
+#' Additional informational entries are logged for auxiliary file changes and inventory
+#' verification (see [valid_dlw_load()] and [update_pip_inventory()] for details).
+#'
 #' @export
 #' @examples
 #' \dontrun{

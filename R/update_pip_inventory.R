@@ -17,6 +17,15 @@
 #'
 #' @return A `data.table`: the updated PIP master inventory.
 #'
+#' @details
+#' **Logging**: This function writes several informational entries to the `"pipdata_log"`:
+#' - `null_svys_inf`: List of surveys that failed processing (when applicable).
+#' - `inv_update_inf`: Inventory verification summary showing the number of surveys
+#'   expected, confirmed in master inventory, and missing. Written as an error-level
+#'   entry if any surveys are missing, info-level if all are confirmed.
+#' - `skipped_svys_data`: Surveys skipped during data processing with reasons.
+#' - `skipped_svys_metadata`: Surveys skipped during metadata creation with reasons.
+#'
 #' @family pd_process_data pipeline
 #' @export
 update_pip_inventory <- function(

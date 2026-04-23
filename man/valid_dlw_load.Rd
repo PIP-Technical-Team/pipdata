@@ -45,6 +45,10 @@ identifies affected surveys.
 master inventory via \code{\link[=inv_to_process]{inv_to_process()}}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
+
+\strong{Logging}: This function writes an \code{aux_changes_inf} entry to the \code{"pipdata_log"}
+when changes are detected in any of the requested auxiliary measures. The logmeta
+entry includes the measures that changed and the number of affected surveys.
 }
 \seealso{
 Other pd_process_data pipeline: 
