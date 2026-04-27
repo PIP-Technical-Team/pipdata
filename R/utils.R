@@ -253,18 +253,6 @@ piperr <- function(message, name = "skip") {
   )
 }
 
-# pipwrn <- function(message, call = NULL){
-#   cli::cli_warn(message = message,
-#                 call = call,
-#                  class = c("pipwrn"))
-# }
-#
-# pipmsg <- function(message, call = NULL){
-#   cli::cli_inform(message = message,
-#                   call = call,
-#                 class = c("pipmsg"))
-# }
-
 #' Add errors to a .logenv
 #'
 #' @param line line to be added to the log
@@ -439,13 +427,6 @@ order_ver_inv <- function(dt) {
 find_dt_with_attribute <- function(lst, attr_name, attr_value) {
   Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
 }
-#
-# id_as_att <- function(dt, id_lst) {
-#   # Add the id as an attribute
-#   # attr(dt, "id") <- id_lst
-#   data.table::setattr(dt, "id", id_lst)
-#   return(dt)
-# }
 
 #' Find unique values in PFW according to some key variables
 #'
@@ -463,10 +444,6 @@ find_dt_with_attribute <- function(lst, attr_name, attr_value) {
 #' keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
 #' unq_obs_dt(pfw, keyVar)
 unq_obs_dt <- function(dt, keyVar) {
-  # tryCatch(
-  #
-  #   expr = {
-
   if (uniqueN(dt, by = keyVar) != nrow(dt)) {
     dt_d <- dt[duplicated(dt, by = keyVar)]
     n_rep <- nrow(dt_d)
@@ -476,31 +453,6 @@ unq_obs_dt <- function(dt, keyVar) {
       class = c("piperr", "dup_pfw")
     )
   }
-
-  #   },
-  #
-  #   piperr = function(cnd){
-  #
-  #     survey_id <- c(.pipdataenv$survey_id)
-  #
-  #     pipfun::log_add(event = "error",
-  #                     message = cnd$message,
-  #                     name = "pipdata_log",
-  #                     .trace = cnd$call,
-  #                     logmeta = list(error = class(cnd)[2],
-  #                                    survey = survey_id,
-  #                                    status = "The survey was skipped"))
-  #
-  #
-  #   },
-  #
-  #   finally = {
-  #
-  #      unique(dt, by = keyVar)
-  #
-  #   }
-  #
-  # )
 
   return(dt)
 }
