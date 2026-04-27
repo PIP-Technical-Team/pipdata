@@ -1,7 +1,7 @@
 ---
 date: 2026-04-06
 title: "Enrich log report with success metrics and aux changes"
-status: active
+status: completed
 brainstorm: ~
 language: R
 estimated-effort: medium

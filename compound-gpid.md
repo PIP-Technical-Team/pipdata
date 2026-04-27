@@ -2,7 +2,7 @@
 project-name: "Pipdata package"
 team: "DECDG/GPID"
 created: "2026-04-06"
-last-reviewed: "2026-04-06"
+last-reviewed: "2026-04-27"
 ---
 
 # Pipdata Package
@@ -21,4 +21,4 @@ This project aims to run the initial steps of the new pipeline of PIP. That is, 
 
 ## Current Focus
 
-<!-- TODO: What is the team working on right now? 1-2 sentences. Update whenever priorities shift. -->
+Code Quality & Refactoring milestone: standardizing logging patterns, unifying the logging/reporting infrastructure, replacing loops with vectorized operations, auditing nested tryCatch blocks, and migrating from dplyr to collapse/data.table.
