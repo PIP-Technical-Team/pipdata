@@ -116,3 +116,4 @@ test_that("build_processing_summary returns empty when no entry", {
 
 - [2026-04-07-internal-logmeta-types-polluting-type-summary.md](../bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md) — uses these helpers for regression tests
 - [2026-04-06-documenting-internal-pipeline-functions.md](../testing-patterns/2026-04-06-documenting-internal-pipeline-functions.md)
+- [2026-04-27-contract-testing-for-logging-side-effects.md](./2026-04-27-contract-testing-for-logging-side-effects.md) — complementary pattern for when external deps block direct testing

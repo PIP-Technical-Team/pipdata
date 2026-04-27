@@ -90,6 +90,17 @@ insertion order. Use `keyby` when the output must be sorted, **or** when the
 grouping variable is a factor with defined levels (factor ordering is already
 deterministic with `by`).
 
+**Updated guidance**: If the grouping variable is a `factor` with pre-defined
+levels, prefer `by =` over `keyby =` — the factor levels already enforce order
+and `keyby` adds a redundant sort step:
+
+```r
+# data_status is factor(c(0,1), labels = c("Valid", "In valid"))
+# factor levels determine order — no sort needed
+valid_data[, .(n = .N), by = data_status]   # preferred
+valid_data[, .(n = .N), keyby = data_status] # adds unnecessary sort
+```
+
 ### `tidyr::as_tibble()` → remove
 
 If data already flows through `data.table`-returning functions, `as_tibble()`
@@ -101,6 +112,20 @@ followed immediately by `as.data.table()` is a no-op. Remove both.
   dependencies before they accumulate.
 - Any `pkg::fn()` call must have `pkg` in `DESCRIPTION Imports` or `Suggests`.
 - `devtools::check()` will flag missing Imports as a NOTE.
+- **Always qualify `fcase()` and `fifelse()` with `data.table::`.** These
+  functions are not exported into the package namespace automatically — calling
+  `fcase()` without the prefix works only because `data.table` attaches its
+  namespace when loaded. Explicit `data.table::fcase()` makes the dependency
+  surface visible and avoids ambiguity when `collapse` is also loaded (both
+  export similarly-named functions):
+
+  ```r
+  # Prefer
+  collapse::ftransform(x = data.table::fcase(x > 0, x, default = NA_real_))
+
+  # Avoid
+  collapse::ftransform(x = fcase(x > 0, x, default = NA_real_))
+  ```
 
 ## Related
 

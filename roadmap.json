@@ -137,6 +137,8 @@
                     "id": "logging-integration-tests",
                     "title": "Integration tests for logging side effects (P2.4)",
                     "description": "Write integration tests to verify that valid_dlw_load() and update_pip_inventory() emit correct logmeta entries (aux_changes_inf, null_svys_inf, inv_update_inf, skipped surveys). Ensures logging contract stability and prevents regressions.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-logging-integration-tests.md",
                     "tags": [
                         "testing",
                         "logging",

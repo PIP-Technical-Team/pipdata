@@ -28,6 +28,13 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 - All pipeline steps are logged via `pipfun::log_add()` and `pipfun::log_info()` into a unified `piplog` object
 - Error handling uses custom `piperr` conditions for graceful recovery without silencing failures
 - `dplyr`, `tidyr`, and `tibble` are **not** in `DESCRIPTION Imports` — use `data.table` (`:=`, `rbindlist`, `[, .N, by]`) and `collapse` (`fcase`, `ftransform`, `fmutate`) instead. Do not add new dplyr/tidyr/tibble calls anywhere. `dlw_scan_and_validate.R` still has ~19 legacy dplyr calls (Phase 2 migration, tracked in roadmap as `dplyr-to-collapse-phase2`).
+- Always qualify `fcase()` and `fifelse()` with `data.table::` (i.e. `data.table::fcase(...)`) even when called inside `collapse::ftransform()` or `collapse::fmutate()`. This makes the dependency surface explicit and avoids ambiguity with similarly-named collapse functions.
+- The pipeline emits four canonical logmeta entry types, parsed by `log_report()` to build report sections. Their `info`/`error` field values are:
+  - `"process_summary_inf"` — emitted by `pd_process_data()`
+  - `"aux_changes_inf"` — emitted by `valid_dlw_load()` when auxiliary files change
+  - `"null_svys_inf"` — emitted by `update_pip_inventory()` when surveys fail (NULL)
+  - `"inv_update_inf"` — emitted by `update_pip_inventory()` for inventory verification (info if all confirmed, error if any missing)
+  These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section.
 
 ## Work in Progress
 

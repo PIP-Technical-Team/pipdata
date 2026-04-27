@@ -3,7 +3,7 @@
 **Review depth**: standard
 **Plan**: `.cg-docs/plans/2026-04-06-enrich-log-report.md`
 **Files reviewed**: 5
-**Findings**: 0 P1, 4 P2, 5 P3
+**Findings**: 0 P1, 3 P2 (1 fixed 2026-04-27), 5 P3
 
 ### P1 — CRITICAL (must fix before merge)
 
@@ -53,18 +53,12 @@ _None._
   `process_summary_inf` entry, and assert the internal type does or does not
   appear in the summary.
 
-- **[P2.4]** [cg-testing] `tests/testthat/test-log_report.R` — The plan
-  specified unit tests for the new logging calls in `valid_dlw_load()` (emit
-  `aux_changes_inf` when changes present; omit when absent) and in
-  `update_pip_inventory()` (info path vs error path). None were written.
-  **Why**: The logging logic branches on `!is.null(all_changes_aux)` in
-  `valid_dlw_load()` and on `length(missing_ids) == 0L` in
-  `update_pip_inventory()`; untested branches.
-  **Fix**: These functions have external dependencies (`pipload`, `pipaux`) so
-  full integration tests are hard; at minimum add a test for the
-  `build_inventory_additions()` round-trip using the error-path logmeta (already
-  partially done) and document that pipeline-level tests are deferred to
-  integration tests.
+- **[P2.4]** [cg-testing] `tests/testthat/test-logging-integration.R` — Completed 2026-04-27.
+  Contract-based integration tests verify logging side effects of `valid_dlw_load()` and
+  `update_pip_inventory()`. 22 tests document logmeta structures (null_svys_inf,
+  inv_update_inf, aux_changes_inf) and verify logging conditions. See
+  `.cg-docs/plans/2026-04-27-logging-integration-tests.md`.
+  **Status**: ✅ Fixed
 
 ---
 
