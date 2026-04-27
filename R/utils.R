@@ -2,13 +2,7 @@
 #' @param x data frame.
 #'
 #' @return character vector of unique variable names
-#' @examples
-#' \dontrun{
-#'  df <- data.frame(a = 1, b = rnorm(5), c = 4)
-#'  uniq_vars(df)
-#' }
-#'
-#' @export
+#' @noRd
 uniq_vars <- function(x) {
   x <- check_data_table(x)
   N_vars <- x[, lapply(.SD, uniqueN)]
@@ -32,12 +26,7 @@ check_data_table <- function(x) {
 #' @param x data frame.
 #'
 #' @return list of single-value variables from dataframe `x`
-#' @examples
-#' \dontrun{
-#'  df <- data.frame::data.frame(a = 1, b = rnorm(5), c = 4)
-#'  uniq_vars_to_list(df)
-#' }
-#' @export
+#' @noRd
 uniq_vars_to_list <- function(x) {
   uni_vars <- uniq_vars(x)
 
@@ -296,7 +285,7 @@ add_log <- function(line, error = NULL, class = "piperr") {
 #' @param new_attrs list with new attributes
 #'
 #' @return data.table
-#' @export
+#' @noRd
 add_attributes <- function(dt, new_attrs) {
   for (name in names(new_attrs)) {
     attr(dt, name) <- new_attrs[[name]]
@@ -405,28 +394,6 @@ last_ver_inv <- function(dt) {
   return(dt)
 }
 
-order_ver_inv <- function(dt) {
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  dt <- dt[
-    order(-vermast, -veralt, -pipeline_version)
-  ][
-    status == "valid"
-  ][
-    module %in% c("GPWG", "GROUP", "BIN", "ALL", "HIST")
-  ]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-}
-
-find_dt_with_attribute <- function(lst, attr_name, attr_value) {
-  Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
-}
 
 #' Find unique values in PFW according to some key variables
 #'

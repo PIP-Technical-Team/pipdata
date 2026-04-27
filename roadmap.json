@@ -122,8 +122,8 @@
                 {
                     "id": "utils-cleanup",
                     "title": "Clean utils.R",
-                    "description": "Phase A complete (2026-04-27): removed 3 dead comment blocks. Phase B pending: usage audit shows zero calls to any exported utils function outside utils.R itself — decisions needed on keep/deprecate/remove for uniq_vars*, vars_to_attr, num_vars_to_attr, add_attributes, unq_obs_dt, pipdata_int. See .cg-docs/plans/2026-04-27-utils-cleanup.md.",
-                    "status": "active",
+                    "description": "Completed 2026-04-27: Phase A removed 3 dead comment blocks. Phase B audited all exported utils — demoted uniq_vars, uniq_vars_to_list, add_attributes to internal; removed dead code order_ver_inv, find_dt_with_attribute; kept uniq_vars_to_attr, vars_to_attr, num_vars_to_attr, unq_obs_dt, pipdata_int as exported. See .cg-docs/plans/2026-04-27-utils-cleanup.md.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-04-27-utils-cleanup.md",
                     "tags": [
                         "cleanup",

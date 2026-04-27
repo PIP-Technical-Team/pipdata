@@ -2,7 +2,11 @@
 ---
 date: 2026-04-27
 title: "Error handling audit: utils.R cleanup and nested tryCatch patterns"
-status: in-progress
+status: superseded
+superseded-date: 2026-04-27
+superseded-by:
+  - .cg-docs/plans/2026-04-27-utils-cleanup.md
+  - .cg-docs/plans/2026-04-27-nested-trycatch.md
 scope: "Standard"
 language: R
 estimated-effort: small

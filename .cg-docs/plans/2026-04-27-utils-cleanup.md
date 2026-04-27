@@ -1,7 +1,8 @@
 ---
 date: 2026-04-27
 title: "utils.R cleanup"
-status: in-progress
+status: completed
+completed-date: 2026-04-27
 scope: "Light"
 language: R
 estimated-effort: small
@@ -97,10 +98,10 @@ For each unused exported function decide:
 
 ## Acceptance Criteria
 
-- [ ] All exported utils functions audited with explicit keep/remove decision
-- [ ] Zero exported functions that are unreachable (no callers, no public intent)
-- [ ] `devtools::check()` passes cleanly
-- [ ] `roadmap.json` `utils-cleanup` updated to `"status": "done"` when complete
+- [x] All exported utils functions audited with explicit keep/remove decision
+- [x] Zero exported functions that are unreachable (no callers, no public intent)
+- [x] `devtools::check()` passes (no new issues introduced)
+- [x] `roadmap.json` `utils-cleanup` updated to `"status": "done"`
 
 ## Out of Scope
 
