@@ -243,11 +243,12 @@ pipdata_validate_gmd <- function(
   # ##############################################################################
 
   # 4. merge new_inv rows into final_inv ---------------------------------------
-  final_inv <- dplyr::bind_rows(new_inv) |>
-    pipload::survey_id_to_vars() |>
-    tidyr::as_tibble() |>
-    # tidyr::unnest(pin_version, keep_empty = TRUE) |>
-    data.table::as.data.table()
+  # Note: Filter(Negate(is.null), ...) is not needed here because all lapply
+  # branches explicitly return a data.table (even on load failure). Kept as
+  # documentation for future developers if that assumption ever changes.
+  final_inv <- data.table::rbindlist(new_inv, fill = TRUE) |>
+    pipload::survey_id_to_vars()
+  # tidyr::unnest(pin_version, keep_empty = TRUE)
   final_inv <- final_inv[,
     pipeline_version := fifelse(is.na(pipeline_version), 1L, pipeline_version)
   ]
@@ -338,7 +339,10 @@ pipdata_validate_gmd <- function(
 
     if (!is.null(old_valid_report)) {
       old_valid_report <- old_valid_report[!(table_name %in% valid_all_names), ]
-      valid_report <- old_valid_report |> dplyr::bind_rows(valid_report)
+      valid_report <- data.table::rbindlist(
+        list(old_valid_report, valid_report),
+        fill = TRUE
+      )
     }
 
     pipload::pip_write(

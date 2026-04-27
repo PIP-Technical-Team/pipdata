@@ -80,7 +80,7 @@ get_data_status <- function(){
     valid_data <- valid_data[, data_status := factor(count_valid,
                                                      levels = c(0, 1),
                                                      labels = c("Valid", "In valid"))]
-    valid_data |> dplyr::count(data_status)
+    valid_data[, .(n = .N), keyby = data_status]
   }
 }
 

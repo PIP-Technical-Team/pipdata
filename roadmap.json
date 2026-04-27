@@ -69,12 +69,25 @@
                 },
                 {
                     "id": "dplyr-to-collapse",
-                    "title": "Migrate from dplyr to collapse/data.table",
-                    "description": "Replace dplyr dependencies with collapse (weighted stats) and data.table (:= operations) per project style guide",
+                    "title": "Migrate from dplyr to collapse/data.table (Phase 1)",
+                    "description": "Replace dplyr/tidyr/tibble calls in pd_dlw_clean.R, pipdata_validate_gmd.R, and pipdata_validation_report.R with collapse/data.table equivalents. Phase 1 of 2.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
                     "tags": [
                         "refactoring",
                         "performance",
                         "dependencies"
+                    ]
+                },
+                {
+                    "id": "dplyr-to-collapse-phase2",
+                    "title": "Migrate dlw_scan_and_validate.R from dplyr to data.table (Phase 2)",
+                    "description": "Replace ~20 dplyr calls (full_join, filter, mutate, case_when, bind_rows, tibble) in dlw_scan_and_validate.R with data.table equivalents. Loop-heavy logic with joins requires careful translation. Phase 2 of dplyr migration.",
+                    "tags": [
+                        "refactoring",
+                        "performance",
+                        "dependencies",
+                        "dlw"
                     ]
                 }
             ]
