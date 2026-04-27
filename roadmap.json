@@ -50,7 +50,9 @@
                 {
                     "id": "nested-tryCatch",
                     "title": "Audit nested tryCatch patterns",
-                    "description": "Review nested tryCatch blocks for necessity, clarity, and error handling best practices. Consolidate where appropriate",
+                    "description": "Completed 2026-04-27: Audited 20 tryCatch instances across codebase. Found no true nested patterns (tryCatch inside tryCatch), only conditional blocks and independent sequential handlers. Documented findings and flagged 2-3 conditional patterns for Phase C design review. See .cg-docs/plans/2026-04-27-error-handling-audit.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-error-handling-audit.md",
                     "tags": [
                         "error-handling",
                         "code-quality"
@@ -120,7 +122,9 @@
                 {
                     "id": "utils-cleanup",
                     "title": "Clean utils.R",
-                    "description": "Audit utils.R for unused functions, remove dead code, and verify remaining utilities are necessary and well-documented",
+                    "description": "Completed 2026-04-27 (Phase A): Removed 3 dead code comment blocks from utils.R: deprecated pipwrn/pipmsg error handlers (~12 lines), obsolete id_as_att function wrapper (~9 lines), and commented-out tryCatch in unq_obs_dt (~40 lines). Phase B (usage verification) and Phase C (refactoring decisions) deferred as design review items. See .cg-docs/plans/2026-04-27-error-handling-audit.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-error-handling-audit.md",
                     "tags": [
                         "cleanup",
                         "utilities",
