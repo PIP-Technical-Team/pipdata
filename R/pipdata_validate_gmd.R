@@ -339,6 +339,13 @@ pipdata_validate_gmd <- function(
 
     if (!is.null(old_valid_report)) {
       old_valid_report <- old_valid_report[!(table_name %in% valid_all_names), ]
+      # Check for schema drift: warn if column sets diverge
+      cols_old <- setdiff(names(old_valid_report), names(valid_report))
+      if (length(cols_old) > 0) {
+        cli::cli_warn("Schema drift detected in validation_report: 
+          columns {cli::qty(cols_old)}{?are/is} {.val {cols_old}} 
+          in old report but missing in new.")
+      }
       valid_report <- data.table::rbindlist(
         list(old_valid_report, valid_report),
         fill = TRUE

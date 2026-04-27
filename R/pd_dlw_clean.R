@@ -233,10 +233,10 @@ recode_edu <- function(dt) {
     dt <- dt |>
       collapse::fmutate(educy = as.double(educy)) |>
       collapse::ftransform(
-        educy = fcase(
-          educy < 0, NA_real_,
-          educy >= 0 & educy <= 50, educy,
-          educy > 50, NA_real_,
+        educy = data.table::fcase(
+          educy < 0                , NA_real_ ,
+          educy >= 0 & educy <= 50 , educy    ,
+          educy > 50               , NA_real_ ,
           default = NA_real_
         )
       )
@@ -298,9 +298,9 @@ recode_edu <- function(dt) {
   if (c("literacy") %in% variables) {
     dt <- dt |>
       collapse::ftransform(
-        literacy = fcase(
-          literacy == 1, "yes",
-          literacy == 0, "no",
+        literacy = data.table::fcase(
+          literacy == 1 , "yes" ,
+          literacy == 0 , "no"  ,
           default = NA_character_
         )
       )
@@ -310,9 +310,9 @@ recode_edu <- function(dt) {
   if (c("school") %in% variables) {
     dt <- dt |>
       collapse::ftransform(
-        school = fcase(
-          school == 1, "yes",
-          school == 0, "no",
+        school = data.table::fcase(
+          school == 1 , "yes" ,
+          school == 0 , "no"  ,
           default = NA_character_
         )
       )
@@ -339,10 +339,13 @@ recode_gndr <- function(dt) {
   if (c("male") %in% colnames(dt)){
 
     dt <- dt |>
-      collapse::ftransform(gender = fcase(
-        male == 1, "male",
-        male == 0, "female",
-        default = NA_character_))
+      collapse::ftransform(
+        gender = data.table::fcase(
+          male == 1 , "male"   ,
+          male == 0 , "female" ,
+          default = NA_character_
+        )
+      )
 
   } # Do we need message about not having this variable?
 
@@ -364,10 +367,10 @@ recode_age <- function(dt) {
     dt <- dt |>
       collapse::fmutate(age = as.double(age)) |>
       collapse::ftransform(
-        age = fcase(
-          age < 0, NA_real_,
-          age >= 0 & age <= 110, age,
-          age > 110, NA_real_,
+        age = data.table::fcase(
+          age < 0               , NA_real_ ,
+          age >= 0 & age <= 110 , age      ,
+          age > 110             , NA_real_ ,
           default = NA_real_
         )
       )
@@ -443,10 +446,14 @@ add_area.pipmd <- function(dt) {
 
     # Recode urban to area
 
-    dt[, area := fcase(urban == 1, "urban",
-                       urban == 0, "rural",
-                       is.na(urban), "",
-                       default = "")]
+    dt[,
+      area := data.table::fcase(
+        urban == 1   , "urban" ,
+        urban == 0   , "rural" ,
+        is.na(urban) , ""      ,
+        default = ""
+      )
+    ]
 
   }
 
@@ -490,10 +497,14 @@ add_area.pipgd <- function(dt) {
 
     # Recode urban to area
 
-    dt[, area := fcase(urban == 1, "urban",
-                       urban == 0, "rural",
-                       is.na(urban), "national",
-                       default = "")]
+    dt[,
+      area := data.table::fcase(
+        urban == 1   , "urban"    ,
+        urban == 0   , "rural"    ,
+        is.na(urban) , "national" ,
+        default = ""
+      )
+    ]
 
   }
 
