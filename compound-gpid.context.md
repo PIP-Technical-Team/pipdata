@@ -27,11 +27,12 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 - Auxiliary data refresh must complete before survey cleaning begins (strict ordering)
 - All pipeline steps are logged via `pipfun::log_add()` and `pipfun::log_info()` into a unified `piplog` object
 - Error handling uses custom `piperr` conditions for graceful recovery without silencing failures
+- `dplyr`, `tidyr`, and `tibble` are **not** in `DESCRIPTION Imports` — use `data.table` (`:=`, `rbindlist`, `[, .N, by]`) and `collapse` (`fcase`, `ftransform`, `fmutate`) instead. Do not add new dplyr/tidyr/tibble calls anywhere. `dlw_scan_and_validate.R` still has ~19 legacy dplyr calls (Phase 2 migration, tracked in roadmap as `dplyr-to-collapse-phase2`).
 
 ## Work in Progress
 
 Currently tracked via `.cg-docs/plans/`:
-- **Active**: Enrich log report with success metrics and auxiliary changes (2026-04-06, status: active)
+- **Active**: Code Quality & Refactoring milestone — standardizing logging patterns, migrating dplyr to collapse/data.table, decomposing large functions, and expanding test coverage. See `roadmap.json` for individual feature tracking.
 
 ## Workspace Notes
 
