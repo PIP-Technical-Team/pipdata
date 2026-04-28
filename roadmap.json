@@ -50,8 +50,8 @@
                 {
                     "id": "nested-tryCatch",
                     "title": "Audit nested tryCatch patterns",
-                    "description": "Scan complete: 22 tryCatch instances catalogued, zero true nested patterns found. One open issue: conditional tryCatch in dlw_scan_and_validate.R:54-77 has asymmetric error guards (log=TRUE guarded, log=FALSE unguarded). Decision pending. See .cg-docs/plans/2026-04-27-nested-trycatch.md.",
-                    "status": "active",
+                    "description": "Completed 2026-04-28: 22 tryCatch instances catalogued, zero true nested patterns found. The only open issue (conditional tryCatch in dlw_scan_and_validate.R:54-77) is moot — that file is legacy code slated for archival under Pipeline Alignment Audit. See .cg-docs/plans/2026-04-27-nested-trycatch.md.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-04-27-nested-trycatch.md",
                     "tags": [
                         "error-handling",
@@ -84,7 +84,8 @@
                 {
                     "id": "dplyr-to-collapse-phase2",
                     "title": "Migrate dlw_scan_and_validate.R from dplyr to data.table (Phase 2)",
-                    "description": "Replace ~20 dplyr calls (full_join, filter, mutate, case_when, bind_rows, tibble) in dlw_scan_and_validate.R with data.table equivalents. Loop-heavy logic with joins requires careful translation. Phase 2 of dplyr migration.",
+                    "description": "Retired 2026-04-28: dlw_scan_and_validate.R identified as legacy pre-stamp code not called by either pipeline wrapper. File will be archived under the Pipeline Alignment Audit milestone instead of migrated.",
+                    "status": "done",
                     "tags": [
                         "refactoring",
                         "performance",
@@ -148,6 +149,63 @@
                         "logging",
                         "integration-tests",
                         "p2-finding"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Pipeline Alignment Audit",
+            "description": "Align pipdata codebase with the canonical three-wrapper architecture (pipeline_overview.qmd). Identify, archive, or reposition code not part of either wrapper's call tree.",
+            "ideas": [
+                {
+                    "id": "archive-legacy-dlw",
+                    "title": "Archive legacy DLW files",
+                    "description": "Move dlw_scan_and_validate.R, dlw_dta_to_qs.R, dlw_get_dta.R, and update_dlw_inventory.R to old_files/. These are pre-stamp workflow files not called by either pipeline wrapper. Remove exports, delete .Rd files, update NAMESPACE.",
+                    "tags": [
+                        "cleanup",
+                        "legacy",
+                        "dlw",
+                        "architecture"
+                    ]
+                },
+                {
+                    "id": "archive-dead-pip-vars",
+                    "title": "Archive pd_add_pip_vars.R (dead code)",
+                    "description": "pd_add_pip_vars.R defines pd_add_pip_vars(), add_pip_vars(), adjust_population() — none called by process_data() or any active pipeline path. Move to old_files/, remove exports.",
+                    "tags": [
+                        "cleanup",
+                        "dead-code",
+                        "architecture"
+                    ]
+                },
+                {
+                    "id": "position-deflation",
+                    "title": "Position pd_deflation.R as future pipeline step",
+                    "description": "pd_deflation.R contains deflation/PPP machinery not yet integrated into process_data(). Document its intended role in the pipeline, add @note or @details explaining it is a future step, ensure it stays buildable.",
+                    "tags": [
+                        "documentation",
+                        "architecture",
+                        "deflation"
+                    ]
+                },
+                {
+                    "id": "relocate-mock-funs",
+                    "title": "Relocate mock_funs.R to tests/ and audit",
+                    "description": "Move mock_funs.R to tests/testthat/helper-mock_funs.R. Audit which mocks are still needed (remove stale ones). Add cross-references in exported function roxygen to indicate which mock can be used for testing.",
+                    "tags": [
+                        "testing",
+                        "cleanup",
+                        "architecture"
+                    ]
+                },
+                {
+                    "id": "audit-copy-dlw-meta",
+                    "title": "Audit pipdata_copy_dlw_meta.R standalone utility",
+                    "description": "copy_dlw_metadata() is a standalone admin utility not called by either wrapper. Confirm it is intentionally standalone, document its role, and verify it works with current stamp/pipload APIs.",
+                    "tags": [
+                        "documentation",
+                        "admin-utility",
+                        "dlw"
                     ]
                 }
             ]

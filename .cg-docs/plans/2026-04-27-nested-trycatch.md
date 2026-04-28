@@ -1,7 +1,8 @@
 ---
 date: 2026-04-27
 title: "Audit nested tryCatch patterns"
-status: in-progress
+status: completed
+completed-date: 2026-04-28
 scope: "Light"
 language: R
 estimated-effort: small
