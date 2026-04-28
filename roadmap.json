@@ -150,6 +150,18 @@
                         "integration-tests",
                         "p2-finding"
                     ]
+                },
+                {
+                    "id": "code-review-findings-2026-04-16",
+                    "title": "Resolve code review findings (2026-04-16)",
+                    "description": "Completed 2026-04-28: Fixed all 5 findings from 2026-04-16 review. P2.1: Added 9 edge-case tests for build_skipped_surveys/build_null_surveys/build_country_table. P2.2: Verified test contracts already correct (parse_log_meta usage). P2.3: Verified misaligned-vectors test exists and passing. P3.1: Verified file.path() used for portability. P3.2: Enhanced NULL-handling comment in build_header(). See .cg-docs/reviews/2026-04-16-review.md.",
+                    "status": "done",
+                    "plan": null,
+                    "tags": [
+                        "testing",
+                        "code-quality",
+                        "review-findings"
+                    ]
                 }
             ]
         },
