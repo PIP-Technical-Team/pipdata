@@ -9,6 +9,8 @@
                     "id": "env-setup",
                     "title": "Unified environment configuration",
                     "description": "Create a single environment for the whole package (either .pipdata or .pipdataenv) instead of scattered configs",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-env-setup.md",
                     "tags": [
                         "environment",
                         "setup",
@@ -41,6 +43,8 @@
                     "id": "loop-to-apply",
                     "title": "Replace explicit loops with apply functions",
                     "description": "Audit codebase for explicit for/while loops and replace with purrr::map(), collapse operations, or data.table vectorized patterns",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-loop-to-apply.md",
                     "tags": [
                         "performance",
                         "vectorization",
