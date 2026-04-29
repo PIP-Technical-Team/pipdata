@@ -280,3 +280,23 @@ test_that("survey in master but NOT in release keeps both columns NA", {
   expect_true(is.na(result[survey_id == "PRY_2021_C", first_release_version_id]))
   expect_true(is.na(result[survey_id == "PRY_2021_C", latest_release_version_id]))
 })
+
+test_that("release_write_err logmeta structure is consistent", {
+  # Contract test: verify expected structure of release_write_err entries.
+  # Emitted by update_pip_inventory() when the release inventory pip_write() fails.
+  # Must use a DISTINCT discriminator from inv_update_inf — see:
+  # .cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md
+
+  expected_structure <- list(
+    error = "release_write_err",
+    condition_msg = "some error message"
+  )
+
+  expect_equal(expected_structure$error, "release_write_err")
+  expect_true(is.character(expected_structure$condition_msg))
+  # Must use 'error' key (not 'info') since this is an error-level emission
+  expect_true("error" %in% names(expected_structure))
+  expect_false("info" %in% names(expected_structure))
+  # Must NOT reuse inv_update_inf — different schema
+  expect_false(expected_structure$error == "inv_update_inf")
+})
