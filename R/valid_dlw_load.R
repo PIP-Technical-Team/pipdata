@@ -36,7 +36,6 @@ valid_dlw_load <- function(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  # date_valid = .pipdataenv$date_valid,
   verbose = getOption("pipdata.verbose", default = FALSE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,9 +91,7 @@ valid_dlw_load <- function(
   inv_svy <- last_ver_inv(inv)
 
   # Select valid surveys and compare to previous cleaning
-  if (force) {
-    inv_svy <- inv_svy
-  } else {
+  if (!force) {
     inv_svy <- inv_to_process(inv_svy)
   }
 
@@ -107,9 +104,6 @@ valid_dlw_load <- function(
 
   # Bind with inventory from aux changes
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
-
-  # Only those after specific date validated
-  # inv_to_clean <- inv_to_clean[date_validated < date_valid]
 
   # Choose only unique
   inv_to_clean <- unique(inv_to_clean)
@@ -283,7 +277,7 @@ inv_to_process <- function(inv) {
     },
     error = function(e) {
       cli::cli_alert_warning(
-        "Could not load or master inventory. Returning all valid surveys without comparing to previous cleaning."
+        "Could not load PIP master inventory. Returning all valid surveys without comparing to previous cleaning."
       )
       return(inv)
     }
