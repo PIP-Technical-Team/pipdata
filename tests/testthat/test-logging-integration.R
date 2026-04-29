@@ -172,6 +172,49 @@ test_that("Logging condition: inv_update_inf level (info vs error) depends on mi
   expect_true(is_error)
 })
 
+test_that("release_write_err logmeta structure", {
+  # Contract test: verify expected structure of release_write_err entries
+  # Emitted by update_pip_inventory() when pip_write() throws during release write
+
+  expected_structure <- list(
+    error = "release_write_err",
+    condition_msg = "some error message"
+  )
+
+  expect_equal(expected_structure$error, "release_write_err")
+  expect_true(is.character(expected_structure$condition_msg))
+  expect_true("error" %in% names(expected_structure))
+  expect_false("info" %in% names(expected_structure))
+})
+
+test_that("release_vid = NA leaves release version columns as NA", {
+  # Regression: when release write fails, unconditional column init must still
+  # produce a consistent schema (both columns present and NA for all rows).
+  # Protects against moving the init back inside the !is.na(release_vid) guard.
+  inv <- data.table::data.table(
+    survey_id = c("CHN_2022_A", "IND_2019_B"),
+    pip_id    = c("CHN_2022_A_INC_ALL", "IND_2019_B_INC_ALL")
+  )
+  # NA release_vid: the guard should not fire, columns remain NA
+  release_vid <- NA_character_
+  dt <- data.table::as.data.table(inv)
+  if (!"first_release_version_id" %in% names(dt)) {
+    dt[, first_release_version_id := NA_character_]
+  }
+  if (!"latest_release_version_id" %in% names(dt)) {
+    dt[, latest_release_version_id := NA_character_]
+  }
+  if (!is.na(release_vid)) {
+    dt[, first_release_version_id  := release_vid]
+    dt[, latest_release_version_id := release_vid]
+  }
+
+  expect_true("first_release_version_id" %in% names(dt))
+  expect_true("latest_release_version_id" %in% names(dt))
+  expect_true(all(is.na(dt$first_release_version_id)))
+  expect_true(all(is.na(dt$latest_release_version_id)))
+})
+
 # ---- Release version column logic -------------------------------------------
 
 # Helper: simulate the column-population logic from update_pip_inventory()

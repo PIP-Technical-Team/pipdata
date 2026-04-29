@@ -91,9 +91,7 @@ valid_dlw_load <- function(
   inv_svy <- last_ver_inv(inv)
 
   # Select valid surveys and compare to previous cleaning
-  if (force) {
-    inv_svy <- inv_svy
-  } else {
+  if (!force) {
     inv_svy <- inv_to_process(inv_svy)
   }
 
@@ -279,7 +277,7 @@ inv_to_process <- function(inv) {
     },
     error = function(e) {
       cli::cli_alert_warning(
-        "Could not load or master inventory. Returning all valid surveys without comparing to previous cleaning."
+        "Could not load PIP master inventory. Returning all valid surveys without comparing to previous cleaning."
       )
       return(inv)
     }
