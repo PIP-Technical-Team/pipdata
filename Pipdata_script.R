@@ -22,6 +22,9 @@ pipfun::setup_working_release(
   verbose = FALSE
 )
 
+# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process, 
+# then continue with the rest of the script.
+
 # ----- Load inventory to clean -----
 inv <- pipload::load_gmd_valid_inv()
 
@@ -49,6 +52,8 @@ stamp::st_init(
 
 stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 
+# Do not run from now on, as the rest of the script is for testing purposes only. 
+# The next steps are to load the cleaned data and check that it is correct.
 #------ Load data tests -----
 # # Load cleaned data for a survey
 # BOL <- pipload::load_pip_data(

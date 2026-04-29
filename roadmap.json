@@ -21,6 +21,8 @@
                     "id": "logging-refactor",
                     "title": "Standardize logging approach",
                     "description": "Review and standardize log = TRUE argument vs. if statement pattern across functions. Enforce consistent logging style",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
                     "tags": [
                         "logging",
                         "code-quality",
@@ -31,6 +33,8 @@
                     "id": "unified-logging-report",
                     "title": "Harmonize logging and reporting across pipdata",
                     "description": "Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to the same piplog format and produce a single consolidated report via log_report(). Currently DLW functions (pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd) use a separate logging setup from the pipeline functions (pd_process_data, valid_dlw_load, update_pip_inventory) that feed log_report(). Goal: one log, one report, one set of logmeta conventions for the entire package.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
                     "tags": [
                         "logging",
                         "reporting",
@@ -95,6 +99,27 @@
                         "performance",
                         "dependencies",
                         "dlw"
+                    ]
+                },
+                {
+                    "id": "dlw-wrapper-rewrite",
+                    "title": "Rewrite DLW wrapper to mirror pipeline architecture",
+                    "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",
+                    "tags": [
+                        "architecture",
+                        "dlw",
+                        "refactoring",
+                        "logging"
+                    ]
+                },
+                {
+                    "id": "unified-log-folder",
+                    "title": "Consolidate log checkpoint storage into a single folder/alias",
+                    "description": "Review the possibility of using a single stamp alias and folder for all log checkpoints (DLW and pipeline), instead of writing DLW checkpoints to dlw_meta and pipeline checkpoints to piplog. Simplifies log discovery and retrieval.",
+                    "tags": [
+                        "logging",
+                        "infrastructure",
+                        "stamp"
                     ]
                 }
             ]
@@ -222,6 +247,17 @@
                         "documentation",
                         "admin-utility",
                         "dlw"
+                    ]
+                },
+                {
+                    "id": "new-orchestration-script",
+                    "title": "Create new pipeline orchestration script to replace Pipdata_script.R",
+                    "description": "Write a new orchestration script with all pipeline wrappers (DLW acquisition, survey cleaning, report generation) using the unified logging conventions. Deprecate Pipdata_script.R which uses the old log/save_log API.",
+                    "tags": [
+                        "pipeline",
+                        "orchestration",
+                        "logging",
+                        "cleanup"
                     ]
                 }
             ]
