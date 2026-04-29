@@ -4,11 +4,7 @@
 \alias{update_pip_inventory}
 \title{Update the PIP master and release inventories with newly cleaned data}
 \usage{
-update_pip_inventory(
-  inv_to_clean,
-  proc_dta,
-  date_valid = max(inv_to_clean$date_validated)
-)
+update_pip_inventory(inv_to_clean, proc_dta)
 }
 \arguments{
 \item{inv_to_clean}{A \code{data.table} of the DLW surveys that were
@@ -17,13 +13,16 @@ sent for processing (as returned by \code{\link[=valid_dlw_load]{valid_dlw_load(
 \item{proc_dta}{A named list of processing results, one per survey.
 Each element is a list with \code{pip_names}, \code{versions_data}, and
 \code{versions_metadata}, or \code{NULL} for failed surveys.}
-
-\item{date_valid}{A \code{POSIXct} timestamp. Only surveys validated
-before this date are included in the release inventory.
-Defaults to the maximum \code{date_validated} in \code{inv_to_clean}.}
 }
 \value{
-A \code{data.table}: the updated PIP master inventory.
+A \code{data.table}: the updated PIP master inventory, including two
+new columns tracking release membership:
+\itemize{
+\item \code{first_release_version_id}: stamp version ID of the release inventory
+when this survey first appeared.
+\item \code{latest_release_version_id}: stamp version ID of the most recent release
+inventory that confirmed this survey.
+}
 }
 \description{
 After surveys are processed by \code{\link[=process_data]{process_data()}}, this function
@@ -33,6 +32,10 @@ inventory, and writes both the master and release inventories
 to storage via \code{\link[pipload:pip_write]{pipload::pip_write()}}.
 }
 \details{
+Release inventory vintages are tracked via stamp's built-in version history.
+To load a previous release inventory snapshot:
+\code{pipload::pip_read("pip_release_inventory", version = -1, alias = "pip_inv")}
+
 \strong{Logging}: This function writes several informational entries to the \code{"pipdata_log"}:
 \itemize{
 \item \code{null_svys_inf}: List of surveys that failed processing (when applicable).

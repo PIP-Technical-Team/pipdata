@@ -13,7 +13,8 @@
   "inv_update_inf",
   "null_svys_inf",
   "skipped_svys_data",
-  "skipped_svys_metadata"
+  "skipped_svys_metadata",
+  "release_write_err"
 )
 
 # Suppress R CMD check notes for unquoted data.table column names and other
@@ -34,8 +35,9 @@ utils::globalVariables(c(
   "country",
   "data_available",
   "data_status",
-  "date_validated",
   "description",
+  "first_release_version_id",
+  "latest_release_version_id",
   "dlw_meta",
   "educat7",
   "educy",

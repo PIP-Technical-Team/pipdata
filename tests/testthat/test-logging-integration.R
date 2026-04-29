@@ -171,3 +171,69 @@ test_that("Logging condition: inv_update_inf level (info vs error) depends on mi
   is_error <- length(missing_ids) > 0L
   expect_true(is_error)
 })
+
+# ---- Release version column logic -------------------------------------------
+
+# Helper: simulate the column-population logic from update_pip_inventory()
+# mirrors: R/update_pip_inventory.R — "Initialise release version columns" block
+# Update this helper if the production column-population logic changes.
+.apply_release_vid <- function(new_pip_inv, release_ids, release_vid) {
+  dt <- data.table::as.data.table(new_pip_inv)
+  if (!"first_release_version_id" %in% names(dt)) {
+    dt[, first_release_version_id := NA_character_]
+  }
+  if (!"latest_release_version_id" %in% names(dt)) {
+    dt[, latest_release_version_id := NA_character_]
+  }
+  dt[
+    survey_id %in% release_ids & is.na(first_release_version_id),
+    first_release_version_id := release_vid
+  ]
+  dt[
+    survey_id %in% release_ids,
+    latest_release_version_id := release_vid
+  ]
+  dt
+}
+
+test_that("new surveys in release get both version columns set to release_vid", {
+  inv <- data.table::data.table(
+    survey_id = c("CHN_2022_A", "IND_2019_B"),
+    pip_id    = c("CHN_2022_A_INC_ALL", "IND_2019_B_INC_ALL")
+  )
+  result <- .apply_release_vid(inv, c("CHN_2022_A", "IND_2019_B"), "vid-001")
+
+  expect_equal(result$first_release_version_id, c("vid-001", "vid-001"))
+  expect_equal(result$latest_release_version_id, c("vid-001", "vid-001"))
+})
+
+test_that("repeat run preserves first_release_version_id and updates latest", {
+  # Simulate: survey already has first_release_version_id from v1
+  inv <- data.table::data.table(
+    survey_id              = "CHN_2022_A",
+    pip_id                 = "CHN_2022_A_INC_ALL",
+    first_release_version_id  = "vid-001",
+    latest_release_version_id = "vid-001"
+  )
+  result <- .apply_release_vid(inv, "CHN_2022_A", "vid-002")
+
+  expect_equal(result$first_release_version_id,  "vid-001")  # Not overwritten
+  expect_equal(result$latest_release_version_id, "vid-002")  # Updated
+})
+
+test_that("survey in master but NOT in release keeps both columns NA", {
+  inv <- data.table::data.table(
+    survey_id = c("CHN_2022_A", "PRY_2021_C"),
+    pip_id    = c("CHN_2022_A_INC_ALL", "PRY_2021_C_INC_ALL")
+  )
+  # Only CHN in release
+  result <- .apply_release_vid(inv, "CHN_2022_A", "vid-001")
+
+  # CHN: both columns set
+  expect_equal(result[survey_id == "CHN_2022_A", first_release_version_id],  "vid-001")
+  expect_equal(result[survey_id == "CHN_2022_A", latest_release_version_id], "vid-001")
+
+  # PRY: columns stay NA
+  expect_true(is.na(result[survey_id == "PRY_2021_C", first_release_version_id]))
+  expect_true(is.na(result[survey_id == "PRY_2021_C", latest_release_version_id]))
+})

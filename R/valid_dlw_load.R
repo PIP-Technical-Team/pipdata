@@ -36,7 +36,6 @@ valid_dlw_load <- function(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  # date_valid = .pipdataenv$date_valid,
   verbose = getOption("pipdata.verbose", default = FALSE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -107,9 +106,6 @@ valid_dlw_load <- function(
 
   # Bind with inventory from aux changes
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
-
-  # Only those after specific date validated
-  # inv_to_clean <- inv_to_clean[date_validated < date_valid]
 
   # Choose only unique
   inv_to_clean <- unique(inv_to_clean)
