@@ -68,7 +68,10 @@ cat(res$notes, sep = "\n")
 
 ## Prevention
 
-- Put `utils::globalVariables()` in `R/aaa.R` (runs first alphabetically).
+- Put `utils::globalVariables()` in `R/aaa.R` (runs first alphabetically) — **one declaration only**.
+  Adding a second `utils::globalVariables()` call in another file (e.g., `R/utils.R`) creates
+  a duplicate registry. All NSE symbols must be consolidated into the single block in `R/aaa.R`.
+  When adding new symbols after refactoring, append to the existing list; never create a new call.
 - After any new `.R` file is added with data.table NSE, re-run `check()` and
   add newly flagged names to the declaration.
 - Always use `stats::setNames()` or `base::setNames()` — never bare `setNames()`.
