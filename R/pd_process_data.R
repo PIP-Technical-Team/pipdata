@@ -10,6 +10,11 @@
 #' downloaded using `pipload::load_gmd_valid_inv()`.
 #' @param aux_measures A character vector of auxiliary measures to load and merge
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
+#' @param force Logical. If `TRUE`, forces reprocessing of all surveys by
+#'   switching stamp versioning to `"timestamp"` and bypassing the master
+#'   inventory comparison. Default `FALSE`.
+#' @param verbose Logical. Print progress messages. Default:
+#'   `getOption("pipdata.verbose", default = FALSE)`.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
 #'
@@ -104,7 +109,8 @@ pd_process_data <- function(
 #' Process datalibweb data: merge PFW data and clean variables
 #'
 #' @param inv inventory with survey_id and pins folder
-#' @param pfw PFW
+#' @param aux_list Named list of auxiliary data frames; expected keys:
+#'   `"pfw"`, `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`.
 #' @param ...  other parameters
 #'
 #' @return data.table

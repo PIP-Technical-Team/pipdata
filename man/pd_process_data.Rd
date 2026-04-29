@@ -17,6 +17,13 @@ downloaded using \code{pipload::load_gmd_valid_inv()}.}
 
 \item{aux_measures}{A character vector of auxiliary measures to load and merge
 with the DLW data. The default is \code{c("pfw", "cpi", "ppp", "pop", "gdp", "pce")}.}
+
+\item{force}{Logical. If \code{TRUE}, forces reprocessing of all surveys by
+switching stamp versioning to \code{"timestamp"} and bypassing the master
+inventory comparison. Default \code{FALSE}.}
+
+\item{verbose}{Logical. Print progress messages. Default:
+\code{getOption("pipdata.verbose", default = FALSE)}.}
 }
 \value{
 A data.frame: updated pip inventory (\code{new_pip_inv}) with new

@@ -40,9 +40,9 @@ The function:
 \item Detects changes in auxiliary files (PFW, CPI, PPP, etc.) and
 identifies affected surveys.
 \item Filters the inventory to requested modules.
-\item Selects the latest version of each survey via \code{\link[=last_ver_inv]{last_ver_inv()}}.
+\item Selects the latest version of each survey via \code{last_ver_inv()}.
 \item Unless \code{force = TRUE}, removes surveys already cleaned in the
-master inventory via \code{\link[=inv_to_process]{inv_to_process()}}.
+master inventory via \code{inv_to_process()}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
 

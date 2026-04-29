@@ -1,12 +1,13 @@
 ---
 plan: null
 findings:
-  P2.1: open
-  P2.2: open
-  P2.3: open
-  P3.1: open
-  P3.2: open
-  P3.3: open
+  P2.1: fixed
+  P2.2: fixed
+  P2.3: fixed
+  P3.1: fixed
+  P3.2: fixed
+  P3.3: fixed
+resolved_date: 2026-04-29
 ---
 
 ## Review Report
@@ -15,6 +16,8 @@ findings:
 **Scope**: Full branch diff `DEV_v2`→`to_dos`  
 **Files reviewed**: 13 (`R/pd_dlw_clean.R`, `R/pd_process_data.R`, `R/pipdata_dlw_compare.R`, `R/pipdata_dlw_process.R`, `R/pipdata_get_gmd.R`, `R/pipdata_validate_gmd.R`, `R/pipdata_validation_report.R`, `R/update_pip_inventory.R`, `R/utils.R`, `R/valid_dlw_load.R`, `tests/testthat/test-logging-integration.R`, `tests/testthat/test-pd_dlw_clean.R`, `tests/testthat/test-pipdata_validation_report.R`)  
 **Findings**: 6 (P0: 0, P1: 0, P2: 3, P3: 3)
+
+### Status: ✅ ALL RESOLVED (2026-04-29)
 
 ---
 
@@ -46,10 +49,8 @@ _None._
 
 - **[P2.3]** [cg-code-quality] `R/pd_dlw_clean.R:recode_edu` — R CMD check emits a NOTE: `recode_edu: no visible binding for global variable 'school'`. The `school` variable inside `collapse::ftransform(school = fcase(school == ...))` is not visible to R's static analysis.  
   **Why**: R's static analyser cannot see column names passed to `collapse::ftransform()` as LHS symbols, so it flags them as undefined globals. The NOTE pollutes `R CMD check` output even though the code is correct at runtime.  
-  **Fix**: Add a `utils::globalVariables()` declaration in `R/utils.R` (or a dedicated `R/globals.R`):
-  ```r
-  utils::globalVariables(c("school"))
-  ```
+  **Fix**: Add `"school"` to the existing `utils::globalVariables()` declaration in `R/aaa.R` for centralized NSE symbol management.  
+  **✅ RESOLVED**: Consolidated `"school"` into the existing `utils::globalVariables(c(...))` block in `R/aaa.R:29`, maintaining the package-wide NSE symbol registry in one location.
 
 ---
 
@@ -90,7 +91,7 @@ _None._
 
 ### ✅ Passed
 
-- **cg-code-quality**: `fcase()` consistently qualified with `data.table::` throughout all recode functions. Dead code removal in `utils.R` clean. No new linting issues beyond the pre-existing `school` global variable NOTE (P2.3).
+- **cg-code-quality**: `fcase()` consistently qualified with `data.table::` throughout all recode functions. Dead code removal in `utils.R` clean. `school` global variable NOTE (P2.3) resolved by consolidation into aaa.R NSE symbol registry.
 - **cg-testing**: 37+ new tests: 15 in `test-pd_dlw_clean.R` covering recode boundary/edge cases, 22 in `test-logging-integration.R` documenting logging contracts, 3+ in `test-pipdata_validation_report.R` covering the return-type contract of `get_data_status()`. All pass. `:::` triple-colon access for unexported functions is the correct testthat pattern.
 - **cg-version-control**: No secrets or hardcoded paths. Conventional commit messages used throughout. `.cg-docs/` correctly excluded from package build via `.Rbuildignore`.
 - **cg-reproducibility**: No statistical seeds required. All transformations are pure. Release management relies on `pipfun::setup_working_release()` — no hardcoded paths.

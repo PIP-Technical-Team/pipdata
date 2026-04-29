@@ -8,9 +8,9 @@
 #' 1. Detects changes in auxiliary files (PFW, CPI, PPP, etc.) and
 #'    identifies affected surveys.
 #' 2. Filters the inventory to requested modules.
-#' 3. Selects the latest version of each survey via [last_ver_inv()].
+#' 3. Selects the latest version of each survey via `last_ver_inv()`.
 #' 4. Unless `force = TRUE`, removes surveys already cleaned in the
-#'    master inventory via [inv_to_process()].
+#'    master inventory via `inv_to_process()`.
 #' 5. Combines DLW-new and aux-changed surveys into a single inventory.
 #'
 #' @param inv A `data.table` of the full DLW inventory.

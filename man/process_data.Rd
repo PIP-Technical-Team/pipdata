@@ -9,9 +9,10 @@ process_data(inv, aux_list, ...)
 \arguments{
 \item{inv}{inventory with survey_id and pins folder}
 
-\item{...}{other parameters}
+\item{aux_list}{Named list of auxiliary data frames; expected keys:
+\code{"pfw"}, \code{"cpi"}, \code{"ppp"}, \code{"pop"}, \code{"gdp"}, \code{"pce"}.}
 
-\item{pfw}{PFW}
+\item{...}{other parameters}
 }
 \value{
 data.table
