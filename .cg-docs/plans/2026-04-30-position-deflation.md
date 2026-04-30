@@ -1,7 +1,8 @@
 ---
 date: 2026-04-30
 title: "Position pd_deflation.R as future pipeline step"
-status: active
+status: completed
+completed-date: 2026-04-30
 scope: "Lightweight"
 estimated-effort: small
 tags: [documentation, architecture, deflation, inline]

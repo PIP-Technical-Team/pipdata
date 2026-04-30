@@ -117,18 +117,22 @@ pd_process_data <- function(
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
 #'
 #' pfw <- pipload::load_aux_data("pfw")
 #'
 #' gd  <- pipload::load_aux_data("CHN", 2015)
-#' gd  <- pipdata:::m_svy_id_to_att(gd)
+#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
+#' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' process_data(gd, pfw)
 #'
 #' md   <- pipload::load_aux_data(country = "PRY", 2012)
-#' md  <- pipdata:::m_svy_id_to_att(md)
+#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
+#' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' process_data(md, pfw)
+#' }
 process_data <- function(inv, aux_list, ...) {
   # on.exit ------------
   on.exit({

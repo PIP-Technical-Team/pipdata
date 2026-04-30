@@ -1,7 +1,8 @@
 ---
 date: 2026-04-30
 title: "Archive legacy DLW files"
-status: active
+status: completed
+completed-date: 2026-04-30
 scope: "Lightweight"
 estimated-effort: small
 tags: [cleanup, legacy, dlw, architecture, inline]

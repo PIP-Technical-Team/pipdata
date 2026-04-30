@@ -8,6 +8,15 @@
 #' @return list
 #' @export
 #'
+#' @note This function is not yet integrated into the active pipeline
+#'   (`pd_process_data()`). It is a future pipeline step — deflation/PPP
+#'   machinery intended to replace the current deflation implementation once
+#'   the pipeline is ready to incorporate it. Until then, it remains buildable
+#'   and documented but is not called by any active pipeline wrapper.
+#'   When deflation is integrated, `.logenv` consumers (`piperr()`, `add_log()`,
+#'   `log_failure()`, `get_ordered_level()`) should also migrate to the unified
+#'   `.pipdataenv` environment (roadmap: `env-setup`).
+#'
 #' @examples
 #' \dontrun{
 #' release <- "20250203"
@@ -579,4 +588,51 @@ get_welfare_ppp <- function(dt_wlcu, base_year) {
   #   ____________________________________________________________________________
   #   Return                                                                  ####
   return(dt_wlcu)
+}
+
+# Helper: scale subnational population weights to national accounts (WDI).
+# Moved here from pd_add_pip_vars.R (archived 2026-04-30) since pd_deflation.R
+# is the only active caller. Not exported — internal to deflation machinery.
+#' @noRd
+adjust_population <- function(df, pop) {
+
+  spop <- df[,
+             .(weight = sum(weight, na.rm = TRUE)),
+             by = c("country_code", "survey_year", "reporting_level")]
+
+  dpop <- joyn::merge(pop, spop,
+                      by         = c("country_code",
+                                     "pop_data_level = reporting_level"),
+                      match_type =  "m:1",
+                      keep       = "inner",
+                      reportvar  =  FALSE)
+
+  dpop <-
+    dpop[,
+         diff_year := abs(year - survey_year)
+    ][,
+      .SD[diff_year == min(diff_year)],
+      by = pop_data_level
+    ][,
+      wght := data.table::fifelse(diff_year == 0, 1, 1/diff_year)]
+
+  fact <-
+    dpop[,
+         lapply(.SD, stats::weighted.mean, w = wght),
+         by = "pop_data_level",
+         .SDcols = c("pop", "weight")
+    ][,
+      pop_fact := pop/weight
+    ][,
+      c("pop", "weight") := NULL]
+
+  df <- joyn::merge(x  = df,
+                    y  = fact,
+                    by = c("reporting_level = pop_data_level"),
+                    match_type = "m:1",
+                    reportvar = FALSE)
+
+  df[, weight := weight * pop_fact]
+
+  return(df)
 }

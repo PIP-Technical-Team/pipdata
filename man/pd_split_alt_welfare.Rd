@@ -21,12 +21,15 @@ Split data into two dataframes when there is alternative welfare in the same
 survey
 }
 \examples{
+\dontrun{
 release <- "20250203"
 pipfun::setup_working_release(release)
 
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-md  <- pipdata:::m_svy_id_to_att(md)
+# m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
+md  <- survey_id_to_attr(md, unique(md$survey_id))
 pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
 df   <- pd_split_alt_welfare(md, cpfw)
+}
 }

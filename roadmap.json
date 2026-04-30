@@ -216,6 +216,8 @@
                     "id": "archive-legacy-dlw",
                     "title": "Archive legacy DLW files",
                     "description": "Move dlw_scan_and_validate.R, dlw_dta_to_qs.R, dlw_get_dta.R, and update_dlw_inventory.R to old_files/. These are pre-stamp workflow files not called by either pipeline wrapper. Remove exports, delete .Rd files, update NAMESPACE.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-archive-legacy-dlw.md",
                     "tags": [
                         "cleanup",
                         "legacy",
@@ -227,6 +229,8 @@
                     "id": "archive-dead-pip-vars",
                     "title": "Archive pd_add_pip_vars.R (dead code)",
                     "description": "pd_add_pip_vars.R defines pd_add_pip_vars(), add_pip_vars(), adjust_population() — none called by process_data() or any active pipeline path. Move to old_files/, remove exports.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-archive-dead-pip-vars.md",
                     "tags": [
                         "cleanup",
                         "dead-code",
@@ -237,6 +241,8 @@
                     "id": "position-deflation",
                     "title": "Position pd_deflation.R as future pipeline step",
                     "description": "pd_deflation.R contains deflation/PPP machinery not yet integrated into process_data(). Document its intended role in the pipeline, add @note or @details explaining it is a future step, ensure it stays buildable.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-position-deflation.md",
                     "tags": [
                         "documentation",
                         "architecture",
@@ -247,6 +253,8 @@
                     "id": "relocate-mock-funs",
                     "title": "Relocate mock_funs.R to tests/ and audit",
                     "description": "Move mock_funs.R to tests/testthat/helper-mock_funs.R. Audit which mocks are still needed (remove stale ones). Add cross-references in exported function roxygen to indicate which mock can be used for testing.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-relocate-mock-funs.md",
                     "tags": [
                         "testing",
                         "cleanup",

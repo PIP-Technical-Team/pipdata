@@ -7,17 +7,21 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
 #'
 #' pfw  <- pipload::pip_load_aux("pfw")
 #' md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' md  <- pipdata:::m_svy_id_to_att(md)
+#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
+#' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' l    <- pd_cpfw_merge(md, pfw)
 #'
 #' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' gd  <- pipdata:::m_svy_id_to_att(gd)
+#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
+#' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' l    <- pd_cpfw_merge(gd, pfw)
+#' }
 pd_cpfw_merge <- function(dt, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

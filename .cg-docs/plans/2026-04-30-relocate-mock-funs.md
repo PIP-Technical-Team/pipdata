@@ -1,7 +1,8 @@
 ---
 date: 2026-04-30
 title: "Relocate mock_funs.R to tests/"
-status: active
+status: completed
+completed-date: 2026-04-30
 scope: "Lightweight"
 estimated-effort: small
 tags: [testing, cleanup, architecture, inline]

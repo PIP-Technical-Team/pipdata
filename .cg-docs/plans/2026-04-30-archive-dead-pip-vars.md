@@ -1,7 +1,8 @@
 ---
 date: 2026-04-30
 title: "Archive pd_add_pip_vars.R (dead code)"
-status: active
+status: completed
+completed-date: 2026-04-30
 scope: "Lightweight"
 estimated-effort: small
 tags: [cleanup, dead-code, architecture, inline]

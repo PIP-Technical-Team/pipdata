@@ -39,6 +39,7 @@ To load a previous release inventory snapshot:
 \strong{Logging}: This function writes several informational entries to the \code{"pipdata_log"}:
 \itemize{
 \item \code{null_svys_inf}: List of surveys that failed processing (when applicable).
+\item \code{release_write_err}: Release inventory write failure.
 \item \code{inv_update_inf}: Inventory verification summary showing the number of surveys
 expected, confirmed in master inventory, and missing. Written as an error-level
 entry if any surveys are missing, info-level if all are confirmed.
