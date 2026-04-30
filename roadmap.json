@@ -281,6 +281,27 @@
                         "logging",
                         "cleanup"
                     ]
+                },
+                {
+                    "id": "audit-dontrun-examples",
+                    "title": "Audit and fix \\dontrun{} examples",
+                    "description": "Review all @examples blocks currently wrapped in \\dontrun{} across the package. For each: determine whether the example can be made runnable (e.g., by using local test data or mocks), update it, or add a comment explaining why \\dontrun{} is required (e.g., requires network access or a working release). Ensures examples are as useful as possible for documentation readers.",
+                    "tags": [
+                        "documentation",
+                        "examples",
+                        "code-quality"
+                    ]
+                },
+                {
+                    "id": "integrate-deflation",
+                    "title": "Integrate pd_deflation.R into the active pipeline",
+                    "description": "Update pd_deflation() so it can consume the pip survey outputs produced by pd_process_data(). Define the interface between the two steps (input format, required columns, auxiliary data arguments). Wire pd_deflation() into pd_process_data() or as an explicit downstream step. Migrate .logenv consumers (piperr, add_log, log_failure, get_ordered_level) to the unified .pipdataenv environment (prerequisite: env-setup). Add tests against saved pip survey fixtures.",
+                    "tags": [
+                        "deflation",
+                        "pipeline",
+                        "architecture",
+                        "integration"
+                    ]
                 }
             ]
         }
