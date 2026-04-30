@@ -1,40 +1,42 @@
 ---
 date: 2026-04-27
-title: "Testing functions that read from package environments (.pipdata, .pipenv)"
+title: "Testing functions that read from the unified package environment (.pipdataenv)"
 category: "testing-patterns"
 language: "R"
-tags: [testing, environment, injection, .pipdata, withr, on.exit, fixtures]
-root-cause: "Functions reading from package-level environments (.pipdata, .pipenv) cannot be tested without injecting test state into those environments"
+tags: [testing, environment, injection, .pipdataenv, pd_env_set, withr, on.exit, fixtures]
+root-cause: "Functions reading from the package-level environment (.pipdataenv) cannot be tested without injecting test state, because the environment is empty in a fresh test session"
 severity: "P2"
 ---
 
-# Testing Functions That Read from Package Environments
+# Testing Functions That Read from the Package Environment
 
 ## Problem
 
 Several pipdata functions (e.g., `get_data_status()`, `get_validation_report()`)
-read state from the package-level environment `.pipdata`. These functions cannot
-be unit tested without either:
+read state from the unified package-level environment `.pipdataenv`. These
+functions cannot be unit tested without either:
 1. Running the full pipeline (integration test — slow, fragile), or
-2. Directly injecting state into `.pipdata` (unit test — fast, isolated)
+2. Directly injecting state via accessor helpers (unit test — fast, isolated)
 
 ## Root Cause
 
-Package-level environments (`.pipdata`, `.pipenv`) are the persistence mechanism
-for pipeline state. Functions that read from them are not pure — they depend on
-ambient state that doesn't exist in a test session.
+`.pipdataenv` is the persistence mechanism for pipeline state (see
+[environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md](../environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md)).
+Functions that read from it are not pure — they depend on ambient state that
+doesn't exist in a fresh test session.
 
 ## Solution
 
-Use a **scope-limited helper** that injects state into the package environment
-and cleans up via `on.exit()`:
+Use a **scope-limited helper** that injects state via `pd_env_set()` and cleans
+up via `on.exit(pd_env_rm(...))`. **Do not** use direct `$`-assignment or raw
+`assign()` even in tests — go through the accessors.
 
 ```r
-# In tests/testthat/helper-*.R or at the top of the test file
+# In tests/testthat/test-pipdata_validation_report.R (or helper-env.R)
 
 with_validation_report <- function(dt, code) {
-  .pipdata$validation_report <- dt
-  on.exit(rm("validation_report", envir = .pipdata), add = TRUE)
+  pd_env_set("validation_report", dt)
+  on.exit(pd_env_rm("validation_report"), add = TRUE)
   force(code)
 }
 ```
@@ -71,8 +73,8 @@ Always test the guard branch (function called without state set):
 
 ```r
 test_that("get_data_status() aborts when validation_report absent", {
-  if (rlang::env_has(.pipdata, "validation_report")) {
-    rm("validation_report", envir = .pipdata)
+  if (!is.null(pd_env_get("validation_report"))) {
+    pd_env_rm("validation_report")
   }
   expect_error(get_data_status(), class = "rlang_error")
 })
@@ -84,8 +86,8 @@ For test cleanup in `testthat` 3rd edition, `withr::defer()` is equivalent:
 
 ```r
 test_that("...", {
-  .pipdata$validation_report <- make_test_vr()
-  withr::defer(rm("validation_report", envir = .pipdata))
+  pd_env_set("validation_report", make_test_vr())
+  withr::defer(pd_env_rm("validation_report"))
   result <- get_data_status()
   expect_s3_class(result, "data.table")
 })
@@ -93,12 +95,19 @@ test_that("...", {
 
 ## Prevention
 
-- When adding a new function that reads from `.pipdata` or `.pipenv`, write
-  a corresponding `with_<state>()` helper at the same time.
+- When adding a new function that reads from `.pipdataenv`, write a
+  corresponding `with_<state>()` helper at the same time.
 - Keep helpers in `tests/testthat/helper-env.R` so they're available to all test files.
-- Never leave test state in `.pipdata` between tests — always use `on.exit` or `withr::defer`.
+- Never leave test state in `.pipdataenv` between tests — always use
+  `on.exit(pd_env_rm(...))` or `withr::defer(pd_env_rm(...))`.
+- Use `pd_env_set()` / `pd_env_rm()` in tests — never raw `assign()`/`$`/`rm()`.
 
 ## Related
 
-- [testing-patterns/2026-04-16-mocking-external-package-calls-at-function-startup.md](./2026-04-16-mocking-external-package-calls-at-function-startup.md) — related pattern for mocking external calls
-- [testing-patterns/2026-04-07-synthetic-piplog-testing-pattern.md](./2026-04-07-synthetic-piplog-testing-pattern.md) — similar injection pattern for piplog state
+- [environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md](../environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md)
+  — the full accessor-helper architecture: `pd_env_set`, `pd_env_get`,
+  `pd_env_rm`, `pd_env_reset`, `pd_env_append`
+- [testing-patterns/2026-04-16-mocking-external-package-calls-at-function-startup.md](./2026-04-16-mocking-external-package-calls-at-function-startup.md)
+  — related pattern for mocking external calls
+- [testing-patterns/2026-04-07-synthetic-piplog-testing-pattern.md](./2026-04-07-synthetic-piplog-testing-pattern.md)
+  — similar injection pattern for piplog state
