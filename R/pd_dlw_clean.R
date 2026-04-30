@@ -13,14 +13,12 @@
 #' pfw  <- pipload::pip_load_aux("pfw")
 #'
 #' gd    <- pipload::pip_load_dlw("CHN", 2015)
-#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
 #' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' ls    <- pd_cpfw_merge(gd, pfw)
 #' lf    <- pd_dlw_clean(ls)
 #' names(lf)
 #'
 #' md    <- pipload::pip_load_dlw(country = "PHL", 2012)
-#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
 #' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' ls    <- pd_cpfw_merge(md, pfw)
 #' lf    <- pd_dlw_clean(ls)

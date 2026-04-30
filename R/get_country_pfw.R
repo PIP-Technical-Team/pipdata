@@ -8,13 +8,15 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
 #'
 #' pfw <- pipload::pip_load_aux("pfw")
 #' gd   <- pipload::pip_load_dlw("PHL", 2012)
-#' gd  <- pipdata:::m_svy_id_to_att(gd)
+#' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' cpfw <- get_country_pfw(gd, pfw)
+#' }
 get_country_pfw <- function(dt, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

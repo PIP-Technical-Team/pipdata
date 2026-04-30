@@ -124,12 +124,10 @@ pd_process_data <- function(
 #' pfw <- pipload::load_aux_data("pfw")
 #'
 #' gd  <- pipload::load_aux_data("CHN", 2015)
-#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
 #' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' process_data(gd, pfw)
 #'
 #' md   <- pipload::load_aux_data(country = "PRY", 2012)
-#' # m_svy_id_to_att() test helper — source tests/testthat/helper-mock_funs.R
 #' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' process_data(md, pfw)
 #' }
