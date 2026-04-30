@@ -3,8 +3,8 @@ plan: .cg-docs/plans/2026-04-30-archive-legacy-dlw.md
 findings:
   P2.1: fixed
   P2.2: fixed
-  P3.1: open
-  P3.2: open
+  P3.1: skipped
+  P3.2: fixed
 ---
 
 ## Review Report

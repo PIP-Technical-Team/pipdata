@@ -590,9 +590,21 @@ get_welfare_ppp <- function(dt_wlcu, base_year) {
   return(dt_wlcu)
 }
 
-# Helper: scale subnational population weights to national accounts (WDI).
-# Moved here from pd_add_pip_vars.R (archived 2026-04-30) since pd_deflation.R
-# is the only active caller. Not exported — internal to deflation machinery.
+#' Scale subnational population weights to national accounts (WDI).
+#'
+#' Helper moved here from pd_add_pip_vars.R (archived 2026-04-30) since
+#' pd_deflation.R is the only active caller. Not exported.
+#'
+#' @param df  A data.table with columns `country_code`, `survey_year`,
+#'   `reporting_level`, and `weight`. The caller passes a copy so
+#'   reference-semantics mutation does not affect the source object.
+#' @param pop A data.table with columns `country_code`, `year`,
+#'   `pop_data_level`, and `pop` (WDI population totals).
+#' @return `df` with `weight` rescaled so that `sum(weight)` equals the
+#'   WDI population figure for the closest available reference year.
+#'   When `diff_year == 0` the scaling factor is pop/sum(weight);
+#'   when years differ, observations are inverse-distance-weighted before
+#'   the mean factor is computed.
 #' @noRd
 adjust_population <- function(df, pop) {
 
@@ -600,37 +612,49 @@ adjust_population <- function(df, pop) {
              .(weight = sum(weight, na.rm = TRUE)),
              by = c("country_code", "survey_year", "reporting_level")]
 
-  dpop <- joyn::merge(pop, spop,
-                      by         = c("country_code",
-                                     "pop_data_level = reporting_level"),
-                      match_type =  "m:1",
-                      keep       = "inner",
-                      reportvar  =  FALSE)
+  # Rename pop_data_level → reporting_level so both tables share the same key
+  # name, enabling a straightforward two-key inner join without joyn's
+  # by.x/by.y path (which triggers a recycling warning in joyn 0.3.0 when
+  # by.x length > 1 and ncol(x) is not a multiple of length(by.x)).
+  pop_r <- data.table::copy(pop)
+  data.table::setnames(pop_r, "pop_data_level", "reporting_level")
+
+  dpop <- joyn::inner_join(
+    x = pop_r,
+    y = spop,
+    by = c("country_code", "reporting_level"),
+    relationship = "many-to-one",
+    reportvar = FALSE
+  )
 
   dpop <-
     dpop[,
-         diff_year := abs(year - survey_year)
+      diff_year := abs(year - survey_year)
     ][,
       .SD[diff_year == min(diff_year)],
-      by = pop_data_level
+      by = reporting_level
     ][,
-      wght := data.table::fifelse(diff_year == 0, 1, 1/diff_year)]
+      wght := data.table::fifelse(diff_year == 0, 1, 1 / diff_year)
+    ]
 
   fact <-
     dpop[,
-         lapply(.SD, stats::weighted.mean, w = wght),
-         by = "pop_data_level",
-         .SDcols = c("pop", "weight")
+      lapply(.SD, stats::weighted.mean, w = wght),
+      by = "reporting_level",
+      .SDcols = c("pop", "weight")
     ][,
-      pop_fact := pop/weight
+      pop_fact := pop / weight
     ][,
-      c("pop", "weight") := NULL]
+      c("pop", "weight") := NULL
+    ]
 
-  df <- joyn::merge(x  = df,
-                    y  = fact,
-                    by = c("reporting_level = pop_data_level"),
-                    match_type = "m:1",
-                    reportvar = FALSE)
+  df <- joyn::left_join(
+    x = df,
+    y = fact,
+    by = "reporting_level",
+    relationship = "many-to-one",
+    reportvar = FALSE
+  )
 
   df[, weight := weight * pop_fact]
 
