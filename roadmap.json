@@ -10,7 +10,7 @@
                     "title": "Unified environment configuration",
                     "description": "Create a single environment for the whole package (either .pipdata or .pipdataenv) instead of scattered configs",
                     "status": "planned",
-                    "plan": ".cg-docs/plans/2026-04-28-env-setup.md",
+                    "plan": ".cg-docs/plans/2026-04-30-env-setup-v2.md",
                     "tags": [
                         "environment",
                         "setup",
