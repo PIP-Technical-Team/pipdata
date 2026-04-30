@@ -245,13 +245,16 @@ piperr <- function(message, name = "skip") {
 #' Add errors to the package environment
 #'
 #' @param line line to be added to the log
-#' @param class PIP error or warning class
+#' @param class PIP error or warning class. Values are stored in `.pipdataenv`
+#'   under the key `paste0("log_", class)`. Currently used values:
+#'   `"piperr"` (stored as `"log_piperr"`) and `"unk_err"` (stored as
+#'   `"log_unk_err"`). Retrieve with `pd_env_get(paste0("log_", class))`.
 #' @param error name of error or warning list
 #'
-#' @return Updated error list stored in .pipdataenv
+#' @return Updated error list stored in `.pipdataenv` under `paste0("log_", class)`.
 #' @keywords internal
 add_log <- function(line, error = NULL, class = "piperr") {
-  # Check if the pip class exists
+  # Key convention: paste0("log_", class) — e.g. class="piperr" => "log_piperr"
   log_key <- paste0("log_", class)
   if (is.null(pd_env_get(log_key))) {
     pd_env_set(log_key, list())

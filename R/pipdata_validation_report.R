@@ -10,7 +10,7 @@
 get_validation_report <- function(){
 
   if (is.null(pd_env_get("validation_report"))) {
-    cli::cli_abort("Validation data is not available the environment varaible")
+    cli::cli_abort("Validation data is not available in the package environment")
   } else {
     validation_report <- pd_env_get("validation_report")[,
       -c("assertion.id", "call", "error_df")
@@ -66,7 +66,7 @@ get_validation_report <- function(){
 get_data_status <- function(){
 
   if (is.null(pd_env_get("validation_report"))) {
-    cli::cli_abort("Validation data is not available the environment varaible")
+    cli::cli_abort("Validation data is not available in the package environment")
   } else {
     valid_data <- pd_env_get("validation_report")[, .(table_name, type)]
     valid_data <- valid_data[, status := fifelse(type == "error", 1, 0)]
