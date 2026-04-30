@@ -20,6 +20,7 @@ Imports:
     pipfun (>= 0.2.0),
     pipload (>= 0.2.0.9005),
     purrr,
+    rlang,
     wbpip (>= 0.0.3),
     data.validator,
     assertr,
