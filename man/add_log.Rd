@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_log}
 \alias{add_log}
-\title{Add errors to a .logenv}
+\title{Add errors to the package environment}
 \usage{
 add_log(line, error = NULL, class = "piperr")
 }
@@ -14,9 +14,9 @@ add_log(line, error = NULL, class = "piperr")
 \item{class}{PIP error or warning class}
 }
 \value{
-a message in .logenv
+Updated error list stored in .pipdataenv
 }
 \description{
-Add errors to a .logenv
+Add errors to the package environment
 }
 \keyword{internal}

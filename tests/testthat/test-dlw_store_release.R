@@ -75,8 +75,8 @@ if (FALSE) {
     df <- data.frame(a = 1:3)
 
     # Clear logs
-    if ("piperr" %in% ls(.logenv)) {
-      rm("piperr", envir = .logenv)
+    if (!is.null(pd_env_get("log_piperr"))) {
+      pd_env_rm("log_piperr")
     }
 
     out <- dlw_store_release(
@@ -100,7 +100,7 @@ if (FALSE) {
     expect_true(file.exists(release_file)) # The first step can succeed if the folder is valid
 
     # But the master list was not saved (master_path = "")
-    pip_logs <- get("piperr", envir = .logenv)
+    pip_logs <- pd_env_get("log_piperr")
     idx <- which(names(pip_logs) == "store_release_err")
     expect_true(length(idx) >= 1)
     expect_match(

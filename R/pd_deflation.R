@@ -13,9 +13,8 @@
 #'   machinery intended to replace the current deflation implementation once
 #'   the pipeline is ready to incorporate it. Until then, it remains buildable
 #'   and documented but is not called by any active pipeline wrapper.
-#'   When deflation is integrated, `.logenv` consumers (`piperr()`, `add_log()`,
-#'   `log_failure()`, `get_ordered_level()`) should also migrate to the unified
-#'   `.pipdataenv` environment (roadmap: `env-setup`).
+#'   All package-level environment access now uses the unified `.pipdataenv`
+#'   via accessor helpers (`pd_env_set()`, `pd_env_get()`, `pd_env_rm()`).
 #'
 #' @examples
 #' \dontrun{
@@ -102,14 +101,11 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
   ### Small fix ---------
   dt_c <- copy(dt)
 
-  assign("survey_id",
-         attributes(dt_c)$survey_id$values,
-         envir = .logenv)
+  pd_env_set("log_survey_id", attributes(dt_c)$survey_id$values)
 
   # on.exit ------------
   on.exit({
-    rm(survey_id,
-       envir = .logenv)
+    pd_env_rm("log_survey_id")
   })
 
   dt_f <- tryCatch(
@@ -150,7 +146,7 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 
     error = function(cnd){
 
-      survey_id <- c(.logenv$survey_id)
+      survey_id <- c(pd_env_get("log_survey_id"))
 
       cli::cli_alert("The survey {survey_id} was skipped")
 
@@ -196,14 +192,11 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
   ### Small fix ---------
   dt_c <- copy(dt)
 
-  assign("survey_id",
-         attributes(dt_c)$survey_id$values,
-         envir = .logenv)
+  pd_env_set("log_survey_id", attributes(dt_c)$survey_id$values)
 
   # on.exit ------------
   on.exit({
-    rm(survey_id,
-       envir = .logenv)
+    pd_env_rm("log_survey_id")
   })
 
   dt_f <- tryCatch(
@@ -235,7 +228,7 @@ deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
 
     error = function(cnd){
 
-      survey_id <- c(.logenv$survey_id)
+      survey_id <- c(pd_env_get("log_survey_id"))
 
       cli::cli_alert("The survey {survey_id} was skipped")
 

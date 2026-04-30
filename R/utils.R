@@ -231,7 +231,7 @@ num_vars_to_attr <- function(df, num_var, name_var) {
 #' @return error
 #' @keywords internal
 piperr <- function(message, name = "skip") {
-  svy <- .logenv$survey_id
+  svy <- pd_env_get("log_survey_id")
 
   rlang::abort(
     message = message,
@@ -242,22 +242,23 @@ piperr <- function(message, name = "skip") {
   )
 }
 
-#' Add errors to a .logenv
+#' Add errors to the package environment
 #'
 #' @param line line to be added to the log
 #' @param class PIP error or warning class
 #' @param error name of error or warning list
 #'
-#' @return a message in .logenv
+#' @return Updated error list stored in .pipdataenv
 #' @keywords internal
 add_log <- function(line, error = NULL, class = "piperr") {
   # Check if the pip class exists
-  if (!rlang::env_has(class, env = .logenv)) {
-    rlang::env_poke(.logenv, class, list())
+  log_key <- paste0("log_", class)
+  if (is.null(pd_env_get(log_key))) {
+    pd_env_set(log_key, list())
   }
 
   # load list
-  log_list <- get(class, envir = .logenv)
+  log_list <- pd_env_get(log_key)
 
   key <- if (is.null(error)) "unknown errors" else error
 
@@ -268,12 +269,7 @@ add_log <- function(line, error = NULL, class = "piperr") {
     log_list[[key]] <- list(line)
   }
 
-  assign(
-    class,
-    log_list,
-
-    envir = .logenv
-  )
+  pd_env_set(paste0("log_", class), log_list)
 
   invisible()
 }

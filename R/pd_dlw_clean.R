@@ -171,7 +171,7 @@ format_wgt <- function(dt) {
 
           dt[, weight := 1 / .N]
 
-          survey_id <- .pipdataenv$survey_id
+          survey_id <- pd_env_get("process_survey_id")
 
           pipfun::log_add(event = "warning",
                           message = "Weight variable missing in DLW",
@@ -432,7 +432,7 @@ add_area.pipmd <- function(dt) {
   # Abort if not urban variable
   if (!any(c("urban", "area") %in% colnames(dt))){
 
-    survey_id <- c(.pipdataenv$survey_id)
+    survey_id <- c(pd_env_get("process_survey_id"))
 
     pipfun::log_add(event = "info",
                     message = "There is no urban variable",
@@ -483,7 +483,7 @@ add_area.pipgd <- function(dt) {
   # Abort if not urban variable
   if (!any(c("urban", "area") %in% colnames(dt))){
 
-    survey_id <- c(.pipdataenv$survey_id)
+    survey_id <- c(pd_env_get("process_survey_id"))
 
     pipfun::log_add(event = "info",
                     message = "There is no urban or area variable",

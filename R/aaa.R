@@ -1,16 +1,10 @@
 
-.pipdata <- new.env(parent = emptyenv())
-
-.logenv <- new.env(parent = emptyenv())
-
 # Unified package-level environment. Stores mutable state for both pipeline
 # wrappers using namespaced keys:
 #   save_*      — save_pip.R / pd_process_data.R save context
 #   process_*   — pd_process_data.R survey-loop context
 #   validation_ — DLW validation accumulator (was .pipdata)
 #   log_*       — deflation error log (was .logenv)
-# .pipdata and .logenv are kept for now and will be removed once all
-# consumers are migrated in subsequent steps.
 .pipdataenv <- new.env(parent = emptyenv())
 
 # ---------------------------------------------------------------------------

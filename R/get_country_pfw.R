@@ -94,7 +94,7 @@ report_lvl <- function(cpfw) {
 
       }else if(nrow(cpfw)>1){
 
-        survey_id <- c(.pipdataenv$survey_id)
+        survey_id <- c(pd_env_get("process_survey_id"))
 
         pipfun::log_add(event = "info",
                         message = "More than one value for country/year PFW",

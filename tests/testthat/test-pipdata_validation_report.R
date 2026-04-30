@@ -1,7 +1,7 @@
-# Helper: build a minimal validation_report data.table and inject into .pipdata
+# Helper: build a minimal validation_report data.table and inject into .pipdataenv
 with_validation_report <- function(dt, code) {
-  .pipdata$validation_report <- dt
-  on.exit(rm("validation_report", envir = .pipdata), add = TRUE)
+  pd_env_set("validation_report", dt)
+  on.exit(pd_env_rm("validation_report"), add = TRUE)
   force(code)
 }
 
@@ -38,10 +38,10 @@ test_that("get_data_status() counts Valid and Invalid surveys correctly", {
   })
 })
 
-test_that("get_data_status() aborts when validation_report is not in .pipdata", {
+test_that("get_data_status() aborts when validation_report is not in .pipdataenv", {
   # Ensure validation_report is absent
-  if (rlang::env_has(.pipdata, "validation_report")) {
-    rm("validation_report", envir = .pipdata)
+  if (!is.null(pd_env_get("validation_report"))) {
+    pd_env_rm("validation_report")
   }
   expect_error(get_data_status(), class = "rlang_error")
 })

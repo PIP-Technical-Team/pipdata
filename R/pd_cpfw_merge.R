@@ -112,7 +112,7 @@ add_main_att <- function(dt, cpfw) {
 
   if(length(att_missing)>0){
 
-    survey_id <- c(.pipdataenv$survey_id)
+    survey_id <- c(pd_env_get("process_survey_id"))
 
     vars <- cli::cli_vec(att_missing, list("vec-trunc" = 3))
 

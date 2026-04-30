@@ -27,9 +27,8 @@ This function is not yet integrated into the active pipeline
 machinery intended to replace the current deflation implementation once
 the pipeline is ready to incorporate it. Until then, it remains buildable
 and documented but is not called by any active pipeline wrapper.
-When deflation is integrated, \code{.logenv} consumers (\code{piperr()}, \code{add_log()},
-\code{log_failure()}, \code{get_ordered_level()}) should also migrate to the unified
-\code{.pipdataenv} environment (roadmap: \code{env-setup}).
+All package-level environment access now uses the unified \code{.pipdataenv}
+via accessor helpers (\code{pd_env_set()}, \code{pd_env_get()}, \code{pd_env_rm()}).
 }
 \examples{
 \dontrun{
