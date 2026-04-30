@@ -134,12 +134,12 @@ pd_process_data <- function(
 process_data <- function(inv, aux_list, ...) {
   # on.exit ------------
   on.exit({
-    rm(survey_id, envir = .pipdataenv)
+    pd_env_rm("process_survey_id")
   })
 
   svy <- inv$survey_id
 
-  assign("survey_id", svy, envir = .pipdataenv)
+  pd_env_set("process_survey_id", svy)
 
   # Computations -------
   res <- tryCatch(
@@ -175,7 +175,7 @@ process_data <- function(inv, aux_list, ...) {
       )
     },
     piperr = function(cnd) {
-      survey_id <- c(.pipdataenv$survey_id)
+      survey_id <- c(pd_env_get("process_survey_id"))
 
       pipfun::log_add(
         event = "error",
@@ -192,7 +192,7 @@ process_data <- function(inv, aux_list, ...) {
     },
 
     error = function(cnd) {
-      survey_id <- c(.pipdataenv$survey_id)
+      survey_id <- c(pd_env_get("process_survey_id"))
 
       # purrr::map() wraps the original condition; traverse the parent chain
       # to recover the root cause (e.g. a piperr thrown inside map())
