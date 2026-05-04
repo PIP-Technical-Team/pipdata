@@ -43,6 +43,14 @@ corresponding data and metadata stamp versions. So given a `pip_id` +
 optional data version, the deflation function can look up the matching
 metadata version from the master inventory and load it automatically.
 
+**Design decision — metadata format contract**: The metadata is saved as
+named lists (named numeric vectors per aux variable, e.g.,
+`meta$cpi = c("2017_national" = 87.2)`). This is intentional and will NOT
+be changed. Instead, the deflation internals (`add_ppp()`, `add_cpi()`,
+`adjust_population()`) will be rewritten to accept this named-vector
+format directly. This is a one-time adaptation done when `pd_aux_attr()`'s
+format was established — no per-load reconstruction is needed.
+
 **Master inventory columns** (relevant subset):
 - `survey_id`, `pip_id`
 - Version metadata from stamp (version_id, content_hash, etc.) for both
@@ -125,7 +133,7 @@ error handler). A `safe_deflation()` helper can encapsulate this.
       version = meta_version
     )
 
-    # Extract CPI, PPP, pop from metadata attributes
+    # Return named-vector metadata directly (no reconstruction needed)
     list(cpi = meta$cpi, ppp = meta$ppp, pop = meta$pop)
   }
   ```
@@ -133,10 +141,10 @@ error handler). A `safe_deflation()` helper can encapsulate this.
   verification (comes from `format_vrs()` output — likely `version_id_data`
   and `version_id_metadata` after the join with `_data`/`_metadata` suffixes).
 
-  This helper must reconstruct the `data.table` format that `add_aux()`,
-  `add_ppp()`, `add_cpi()`, and `adjust_population()` expect, or the
-  internal helpers need adaptation to accept the metadata-attribute format
-  directly.
+  The returned `cpi`, `ppp`, `pop` are named numeric vectors (as produced
+  by `pd_aux_attr()`). The deflation internals (`add_ppp()`, `add_cpi()`,
+  `adjust_population()`) will be rewritten in Step 3 to accept this format
+  directly — no data.table reconstruction is needed.
 
   **Design decision**: The cleanest approach is to adapt `pd_deflation()`
   to accept either:
@@ -307,7 +315,7 @@ error handler). A `safe_deflation()` helper can encapsulate this.
 
 | Risk | Mitigation |
 |------|-----------|
-| Metadata format mismatch: `pd_aux_attr()` stores CPI/PPP/pop as named numeric vectors, but `add_ppp()`/`add_cpi()` expect full `data.table` inputs | `.load_deflation_aux()` must reconstruct the data.table format, or internal helpers must be adapted to accept both formats. Investigate metadata structure first (Step 1) |
+| Deflation internal rewrite: `add_ppp()`/`add_cpi()`/`adjust_population()` currently expect full `data.table` inputs but metadata is stored as named numeric vectors | Rewrite these internals to accept the named-vector format directly (design decision: metadata format is authoritative, deflation adapts). Done once — no per-load transformation needed |
 | Master inventory unavailable or stale: `load_pip_master_inventory()` may fail if stamp storage is inaccessible | Wrap in tryCatch; abort with informative error ("Run pd_process_data first") |
 | Version column names: `format_vrs()` joins produce suffixed column names (`_data`, `_metadata`) that may vary across releases | Verify exact names from a real inventory; add assertion in `.load_deflation_aux()` |
 | Attribute loss in stamp round-trip: `pipload::pip_read()` may not preserve all custom attributes (class, survey_id, etc.) | Test round-trip explicitly; if attributes lost, re-attach from inventory metadata after load |
@@ -330,5 +338,5 @@ error handler). A `safe_deflation()` helper can encapsulate this.
 - Performance optimization of the formals-copy loop pattern (already flagged
   in loop-to-apply as "keep: metaprogramming") — partially addressed by
   `safe_deflation()` but not fully eliminated
-- Changing the metadata structure produced by `pd_aux_attr()` — this plan
-  adapts to its current output format
+- Changing the metadata structure produced by `pd_aux_attr()` — the
+  named-list format is authoritative; deflation internals adapt to it
