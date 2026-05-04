@@ -6,6 +6,10 @@
 \usage{
 welfare_lcu(dt)
 }
+\arguments{
+\item{dt}{A single cleaned survey \code{data.table} (class \code{pipmd} or \code{pipgd}),
+or \code{NULL} when \code{pip_id} is given instead.}
+}
 \value{
 data.table
 }

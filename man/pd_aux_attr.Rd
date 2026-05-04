@@ -38,6 +38,7 @@ Other pd_process_data pipeline:
 \code{\link{inv_dlw_load}()},
 \code{\link{inv_to_process}()},
 \code{\link{log_report}()},
+\code{\link{pd_deflation}()},
 \code{\link{save_pip_data}()},
 \code{\link{survey_id_to_attr}()},
 \code{\link{update_pip_inventory}()},

@@ -4,46 +4,104 @@
 \alias{pd_deflation}
 \title{Deflation of welfare using auxiliary data}
 \usage{
-pd_deflation(lf, cpi, ppp, pop)
+pd_deflation(
+  dt = NULL,
+  cpi = NULL,
+  ppp = NULL,
+  pop = NULL,
+  pip_id = NULL,
+  version = NULL
+)
 }
 \arguments{
-\item{lf}{cleaned DLW surveys from \code{pd_wbpip_clean}}
+\item{dt}{A single cleaned survey \code{data.table} (class \code{pipmd} or \code{pipgd}),
+or \code{NULL} when \code{pip_id} is given instead.}
 
-\item{cpi}{aux_cpi from \code{pipload::pip_load_aux}}
+\item{cpi}{Named numeric vector of CPI values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("cpi")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
 
-\item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
+\item{ppp}{Named numeric vector of PPP values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("ppp")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
 
-\item{pop}{aux_pop from \code{pipload::pip_load_aux}}
+\item{pop}{Named numeric vector of population values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("pop")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
+
+\item{pip_id}{Character scalar. Survey identifier for Mode B (load from
+stamp). Ignored when \code{dt} is provided.}
+
+\item{version}{Character scalar or \code{NULL}. Stamp version used when loading
+the survey (Mode B) or resolving the metadata version from the master
+inventory.}
 }
 \value{
-list
+The input survey \code{data.table} augmented with \code{welfare_lcu} and
+\verb{welfare_ppp_*} columns. Returns \code{NA} when deflation fails (error is
+logged via \code{log_failure()}).
 }
 \description{
-Deflation of welfare using auxiliary data
+Deflates a single cleaned survey \code{data.table}. Two input modes:
+}
+\details{
+\itemize{
+\item \strong{Mode A} (\code{dt}): pass the cleaned survey directly. When
+\code{cpi}/\code{ppp}/\code{pop} are \code{NULL}, auxiliary metadata is loaded automatically
+from stamp via the master inventory.
+\item \strong{Mode B} (\code{pip_id}): pass a survey identifier and optional stamp
+version. The survey and metadata are both loaded automatically.
+}
+
+To deflate many surveys in a batch, use the future \code{pd_deflate_pipeline()}
+wrapper (tracked in the roadmap as \code{deflate-pipeline-wrapper}), which
+calls \code{pd_deflation()} for each survey in an inventory.
 }
 \note{
-This function is not yet integrated into the active pipeline
-(\code{pd_process_data()}). It is a future pipeline step — deflation/PPP
-machinery intended to replace the current deflation implementation once
-the pipeline is ready to incorporate it. Until then, it remains buildable
-and documented but is not called by any active pipeline wrapper.
-All package-level environment access now uses the unified \code{.pipdataenv}
-via accessor helpers (\code{pd_env_set()}, \code{pd_env_get()}, \code{pd_env_rm()}).
+\code{pd_deflation()} is a single-survey deflation helper. When
+\code{cpi}/\code{ppp}/\code{pop} are \code{NULL} (the default), it resolves the matching
+metadata version from the master inventory and loads CPI/PPP/pop
+automatically. All package-level environment access uses the unified
+\code{.pipdataenv} via accessor helpers (\code{pd_env_set()}, \code{pd_env_get()},
+\code{pd_env_rm()}).
 }
 \examples{
 \dontrun{
+# Mode A: pass survey directly, aux loaded automatically from master inventory
 release <- "20250203"
 pipfun::setup_working_release(release)
-
 pfw <- pipload::pip_load_aux("pfw")
-ppp  <- pipload::pip_load_aux("ppp")
-cpi  <- pipload::pip_load_aux("cpi")
-pop  <- pipload::pip_load_aux("pop")
+gd  <- pipload::pip_load_dlw("CHN", 2015)
+ls  <- pd_cpfw_merge(gd, pfw)
+x   <- pd_dlw_clean(gd)[["CHN_2015_CHIP_INC_D1"]]
+pd_deflation(x)
 
-gd   <- pipload::pip_load_dlw("CHN", 2015)
-ls   <- pd_cpfw_merge(gd, pfw)
-x    <- pd_dlw_clean(gd)
-
+# Legacy Mode A: explicit aux tables
+ppp <- pipload::pip_load_aux("ppp")
+cpi <- pipload::pip_load_aux("cpi")
+pop <- pipload::pip_load_aux("pop")
 pd_deflation(x, cpi = cpi, ppp = ppp, pop = pop)
+
+# Mode B: load by survey id
+pd_deflation(pip_id = "CHN_2015_CHIP_INC_D1")
 }
 }
+\seealso{
+Other pd_process_data pipeline: 
+\code{\link{add_attr}()},
+\code{\link{create_attr}()},
+\code{\link{data_to_dt}()},
+\code{\link{filter_aux_data}()},
+\code{\link{filter_aux_inv}()},
+\code{\link{fix_year_var}()},
+\code{\link{format_vrs}()},
+\code{\link{inv_dlw_load}()},
+\code{\link{inv_to_process}()},
+\code{\link{log_report}()},
+\code{\link{pd_aux_attr}()},
+\code{\link{save_pip_data}()},
+\code{\link{survey_id_to_attr}()},
+\code{\link{update_pip_inventory}()},
+\code{\link{valid_dlw_load}()}
+}
+\concept{pd_process_data pipeline}

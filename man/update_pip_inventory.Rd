@@ -60,6 +60,7 @@ Other pd_process_data pipeline:
 \code{\link{inv_to_process}()},
 \code{\link{log_report}()},
 \code{\link{pd_aux_attr}()},
+\code{\link{pd_deflation}()},
 \code{\link{save_pip_data}()},
 \code{\link{survey_id_to_attr}()},
 \code{\link{valid_dlw_load}()}

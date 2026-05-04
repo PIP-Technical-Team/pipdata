@@ -1,63 +1,222 @@
+#' Validate a single cleaned survey for deflation
+#'
+#' @param dt A cleaned survey `data.table` with class `pipmd` or `pipgd`.
+#' @return Invisibly `TRUE` if valid; aborts with an informative error otherwise.
+#' @noRd
+.validate_deflation_input <- function(dt) {
+  if (!data.table::is.data.table(dt)) {
+    cli::cli_abort(
+      "Input must be a {.cls data.table}, not {.cls {class(dt)[1]}}.",
+      class = c("validate_deflation_input", "piperr")
+    )
+  }
+  if (!any(c("pipmd", "pipgd") %in% class(dt))) {
+    cli::cli_abort(
+      "Input must have class {.cls pipmd} or {.cls pipgd}.",
+      class = c("validate_deflation_input", "piperr")
+    )
+  }
+  required_cols <- c("welfare", "weight")
+  missing_cols  <- setdiff(required_cols, names(dt))
+  if (length(missing_cols) > 0L) {
+    cli::cli_abort(
+      "Input is missing required columns: {.field {missing_cols}}.",
+      class = c("validate_deflation_input", "piperr")
+    )
+  }
+  required_attrs <- c(
+    "survey_id", "country_code", "survey_year",
+    "survey_acronym", "reporting_level",
+    "ppp_data_level", "cpi_data_level"
+  )
+  missing_attrs <- setdiff(required_attrs, names(attributes(dt)))
+  if (length(missing_attrs) > 0L) {
+    cli::cli_abort(
+      "Input is missing required attributes: {.field {missing_attrs}}.",
+      class = c("validate_deflation_input", "piperr")
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Load CPI, PPP, and population metadata for a survey from stamp
+#'
+#' Uses the master inventory to resolve the metadata stamp version that
+#' corresponds to the given `pip_id` and optional data version, then loads
+#' the metadata from stamp and returns the CPI, PPP, and population as
+#' named numeric vectors (the format produced by [pd_aux_attr()]).
+#'
+#' @param pip_id Character scalar. The survey identifier (e.g.
+#'   `"CHN_2015_CHIP_INC_D1"`).
+#' @param version Character scalar or `NULL`. If `NULL`, the most recent
+#'   inventory entry for `pip_id` is used.
+#' @return A named list with elements `cpi`, `ppp`, and `pop`, each a named
+#'   numeric vector as stored in the `pip_meta` stamp alias.
+#' @noRd
+.load_deflation_aux <- function(pip_id, version = NULL) {
+  inv <- pipload::load_pip_master_inventory()
+
+  row <- inv[inv$pip_id == pip_id, ]
+  if (nrow(row) == 0L) {
+    cli::cli_abort(
+      paste0(
+        "No inventory entry found for {.val {pip_id}}. ",
+        "Run pd_process_data() first to populate the master inventory."
+      ),
+      class = c("load_deflation_aux", "piperr")
+    )
+  }
+
+  if (!is.null(version)) {
+    row <- row[row$version_id_data == version, ]
+    if (nrow(row) == 0L) {
+      cli::cli_abort(
+        "No inventory entry for {.val {pip_id}} at data version {.val {version}}.",
+        class = c("load_deflation_aux", "piperr")
+      )
+    }
+  } else {
+    row <- utils::head(row, 1L)  # most recent entry
+  }
+
+  if (!"version_id_metadata" %in% names(row)) {
+    cli::cli_abort(
+      paste0(
+        "Master inventory is missing 'version_id_metadata' column. ",
+        "Re-run update_pip_inventory() to rebuild the inventory."
+      ),
+      class = c("load_deflation_aux", "piperr")
+    )
+  }
+
+  meta_version <- row$version_id_metadata[[1L]]
+  meta <- pipload::pip_read(
+    id      = pip_id,
+    alias   = "pip_meta",
+    version = meta_version
+  )
+
+  list(cpi = meta$cpi, ppp = meta$ppp, pop = meta$pop)
+}
+
 #' Deflation of welfare using auxiliary data
 #'
-#' @param lf cleaned DLW surveys from `pd_wbpip_clean`
-#' @param cpi aux_cpi from `pipload::pip_load_aux`
-#' @param ppp aux_ppp from `pipload::pip_load_aux`
-#' @param pop aux_pop from `pipload::pip_load_aux`
+#' Deflates a single cleaned survey `data.table`. Two input modes:
 #'
-#' @return list
+#' - **Mode A** (`dt`): pass the cleaned survey directly. When
+#'   `cpi`/`ppp`/`pop` are `NULL`, auxiliary metadata is loaded automatically
+#'   from stamp via the master inventory.
+#' - **Mode B** (`pip_id`): pass a survey identifier and optional stamp
+#'   version. The survey and metadata are both loaded automatically.
+#'
+#' To deflate many surveys in a batch, use the future `pd_deflate_pipeline()`
+#' wrapper (tracked in the roadmap as `deflate-pipeline-wrapper`), which
+#' calls `pd_deflation()` for each survey in an inventory.
+#'
+#' @param dt A single cleaned survey `data.table` (class `pipmd` or `pipgd`),
+#'   or `NULL` when `pip_id` is given instead.
+#' @param cpi Named numeric vector of CPI values (as returned by
+#'   [pd_aux_attr()]), or a `data.table` from `pipload::pip_load_aux("cpi")`
+#'   for the legacy interface. `NULL` triggers inventory-based loading.
+#' @param ppp Named numeric vector of PPP values (as returned by
+#'   [pd_aux_attr()]), or a `data.table` from `pipload::pip_load_aux("ppp")`
+#'   for the legacy interface. `NULL` triggers inventory-based loading.
+#' @param pop Named numeric vector of population values (as returned by
+#'   [pd_aux_attr()]), or a `data.table` from `pipload::pip_load_aux("pop")`
+#'   for the legacy interface. `NULL` triggers inventory-based loading.
+#' @param pip_id Character scalar. Survey identifier for Mode B (load from
+#'   stamp). Ignored when `dt` is provided.
+#' @param version Character scalar or `NULL`. Stamp version used when loading
+#'   the survey (Mode B) or resolving the metadata version from the master
+#'   inventory.
+#'
+#' @return The input survey `data.table` augmented with `welfare_lcu` and
+#'   `welfare_ppp_*` columns. Returns `NA` when deflation fails (error is
+#'   logged via `log_failure()`).
 #' @export
 #'
-#' @note This function is not yet integrated into the active pipeline
-#'   (`pd_process_data()`). It is a future pipeline step — deflation/PPP
-#'   machinery intended to replace the current deflation implementation once
-#'   the pipeline is ready to incorporate it. Until then, it remains buildable
-#'   and documented but is not called by any active pipeline wrapper.
-#'   All package-level environment access now uses the unified `.pipdataenv`
-#'   via accessor helpers (`pd_env_set()`, `pd_env_get()`, `pd_env_rm()`).
+#' @note `pd_deflation()` is a single-survey deflation helper. When
+#'   `cpi`/`ppp`/`pop` are `NULL` (the default), it resolves the matching
+#'   metadata version from the master inventory and loads CPI/PPP/pop
+#'   automatically. All package-level environment access uses the unified
+#'   `.pipdataenv` via accessor helpers (`pd_env_set()`, `pd_env_get()`,
+#'   `pd_env_rm()`).
+#'
+#' @family pd_process_data pipeline
 #'
 #' @examples
 #' \dontrun{
+#' # Mode A: pass survey directly, aux loaded automatically from master inventory
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
-#'
 #' pfw <- pipload::pip_load_aux("pfw")
-#' ppp  <- pipload::pip_load_aux("ppp")
-#' cpi  <- pipload::pip_load_aux("cpi")
-#' pop  <- pipload::pip_load_aux("pop")
+#' gd  <- pipload::pip_load_dlw("CHN", 2015)
+#' ls  <- pd_cpfw_merge(gd, pfw)
+#' x   <- pd_dlw_clean(gd)[["CHN_2015_CHIP_INC_D1"]]
+#' pd_deflation(x)
 #'
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' ls   <- pd_cpfw_merge(gd, pfw)
-#' x    <- pd_dlw_clean(gd)
-#'
+#' # Legacy Mode A: explicit aux tables
+#' ppp <- pipload::pip_load_aux("ppp")
+#' cpi <- pipload::pip_load_aux("cpi")
+#' pop <- pipload::pip_load_aux("pop")
 #' pd_deflation(x, cpi = cpi, ppp = ppp, pop = pop)
+#'
+#' # Mode B: load by survey id
+#' pd_deflation(pip_id = "CHN_2015_CHIP_INC_D1")
 #' }
-pd_deflation <- function(lf, cpi, ppp, pop) {
-
+pd_deflation <- function(
+  dt = NULL,
+  cpi = NULL,
+  ppp = NULL,
+  pop = NULL,
+  pip_id = NULL,
+  version = NULL
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
+  # Input resolution   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  # PPP manipulation
-  ppp <- ppp_to_wide(ppp = ppp)
-
-  # CPI manipulation
-  if ("cpi2005_SM21" %in% names(cpi)) {
-    setnames(cpi, "cpi2005_SM21", "cpi2005") # temporal solution
+  # Mode B: load single survey from stamp by pip_id
+  if (is.null(dt)) {
+    if (is.null(pip_id)) {
+      cli::cli_abort(
+        "Either {.arg dt} or {.arg pip_id} must be provided.",
+        class = c("pd_deflation", "piperr")
+      )
+    }
+    dt <- pipload::pip_read(id = pip_id, alias = "pip", version = version)
   }
 
-  # deflate per list
-  rl <- purrr::map(.x = lf,
-                   .f = deflation,
-                   cpi = cpi,
-                   ppp = ppp,
-                   pop = pop)
+  # Resolve pip_id from survey attributes when not supplied by the caller
+  if (is.null(pip_id)) {
+    pip_id <- attributes(dt)$pip_names$values[[1L]]
+    if (is.null(pip_id)) {
+      pip_id <- attributes(dt)$survey_id$values[[1L]]
+    }
+  }
+
+  # Determine whether aux was provided explicitly (legacy path)
+  use_legacy <- !is.null(cpi) && !is.null(ppp) && !is.null(pop)
+
+  if (use_legacy) {
+    if (data.table::is.data.table(ppp)) {
+      ppp <- ppp_to_wide(ppp = ppp)
+    }
+    if (data.table::is.data.table(cpi) && "cpi2005_SM21" %in% names(cpi)) {
+      data.table::setnames(cpi, "cpi2005_SM21", "cpi2005") # temporal solution
+    }
+  } else {
+    aux <- .load_deflation_aux(pip_id = pip_id, version = version)
+    cpi <- aux$cpi
+    ppp <- aux$ppp
+    pop <- aux$pop
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
+  # Deflate   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(rl)
 
+  deflation(dt, cpi = cpi, ppp = ppp, pop = pop)
 }
 
 #' Deflation of welfare using auxiliary data (lower level)
@@ -77,91 +236,9 @@ deflation <- function(dt,  cpi, ppp, pop,...) {
 #' @inheritParams deflation
 #' @return data.table
 #' @export
-deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  # Defenses (Make copy -> need to fix)
-  fnms <- names(formals())
-  fnms <- fnms[!fnms %in% "..."]
-
-  for (i in seq_along(fnms)) {
-    rr <- get(fnms[[i]])
-    if (inherits(rr, "data.table")) {
-      assign(fnms[i], copy(rr))
-
-    } else {
-      assign(fnms[i], qDT(rr))
-    }
-
-  }
-
-  ### Small fix ---------
-  dt_c <- copy(dt)
-
-  pd_env_set("log_survey_id", attributes(dt_c)$survey_id$values)
-
-  # on.exit ------------
-  on.exit({
-    pd_env_rm("log_survey_id")
-  })
-
-  dt_f <- tryCatch(
-    expr = {
-
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Add reporting level --------
-
-      dt_c <- add_rep_lvl(dt_c) # Maybe not needed with Tefera new aux data.
-
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Deflation --------
-
-      ### Merge survey with ppp and cpi ---------
-
-      dt_c <- add_aux(dt_c, ppp, cpi)
-
-      ### Welfare LCU ---------
-
-      dt_c <- welfare_lcu(dt_c)
-
-      ### Delfate welfare vector ------
-
-      dt_c <- deflate_wlf(dt_c)
-
-      ### Scale Subnational Population to National accounts (WDI) ----
-
-      if (length(dt_c[, unique(reporting_level)]) > 1)  { # Needed??
-
-        dt_c <- adjust_population(dt_c, pop)
-
-      }
-
-      ### Format vars  ---------
-
-      char_to_fct(dt_c)
-    },
-
-    error = function(cnd){
-
-      survey_id <- c(pd_env_get("log_survey_id"))
-
-      cli::cli_alert("The survey {survey_id} was skipped")
-
-      log_failure(cnd)
-
-      NA
-
-    }
-  )
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt_f)
-
+deflation.pipmd <- function(dt, cpi, ppp, pop, ...) {
+  .validate_deflation_input(dt)
+  safe_deflation(dt, cpi, ppp, pop, .deflation_pipmd_core)
 }
 
 #' Deflation of welfare for group data
@@ -169,81 +246,84 @@ deflation.pipmd <- function(dt,  cpi, ppp, pop,...) {
 #' @inheritParams deflation
 #' @return data.table
 #' @export
-deflation.pipgd <- function(dt,  cpi, ppp, pop,...) {
+deflation.pipgd <- function(dt, cpi, ppp, pop, ...) {
+  .validate_deflation_input(dt)
+  safe_deflation(dt, cpi, ppp, pop, .deflation_pipgd_core)
+}
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Defenses (Make copy -> need to fix)
-  fnms <- names(formals())
-  fnms <- fnms[!fnms %in% "..."]
+#' Shared tryCatch scaffold for deflation S3 methods
+#'
+#' Sets the `log_survey_id` environment variable, wraps `deflation_fn` in a
+#' tryCatch, and returns `NA` with a log entry on failure.
+#'
+#' @param dt A cleaned survey `data.table`.
+#' @param cpi CPI aux (named numeric vector or `data.table`).
+#' @param ppp PPP aux (named numeric vector or `data.table`).
+#' @param pop Population aux (named numeric vector or `data.table`).
+#' @param deflation_fn A function accepting `(dt, cpi, ppp, pop)` that
+#'   performs the actual deflation logic.
+#' @return The result of `deflation_fn`, or `NA` if it errors.
+#' @noRd
+safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
+  pd_env_set("log_survey_id", attributes(dt)$survey_id$values)
+  on.exit(pd_env_rm("log_survey_id"))
 
-  for (i in seq_along(fnms)) {
-    rr <- get(fnms[[i]])
-    if (inherits(rr, "data.table")) {
-      assign(fnms[i], copy(rr))
-
-    } else {
-      assign(fnms[i], qDT(rr))
-    }
-
-  }
-
-  ### Small fix ---------
-  dt_c <- copy(dt)
-
-  pd_env_set("log_survey_id", attributes(dt_c)$survey_id$values)
-
-  # on.exit ------------
-  on.exit({
-    pd_env_rm("log_survey_id")
-  })
-
-  dt_f <- tryCatch(
-    expr = {
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Add reporting level --------
-
-      dt_c <- add_rep_lvl(dt_c) # Maybe not needed with Tefera new aux data.
-
-      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Deflation --------
-
-      ### Merge survey with ppp and cpi ---------
-
-      dt_c <- add_aux(dt_c, ppp, cpi)
-
-      ### Welfare LCU ---------
-
-      dt_c <- welfare_lcu(dt_c)
-
-      ### Delfate welfare vector ------
-
-      dt_c <- deflate_wlf(dt_c)
-
-      ### Format vars  ---------
-
-      char_to_fct(dt_c)
-    },
-
-    error = function(cnd){
-
-      survey_id <- c(pd_env_get("log_survey_id"))
-
+  tryCatch(
+    expr = deflation_fn(dt, cpi, ppp, pop),
+    error = function(cnd) {
+      survey_id <- pd_env_get("log_survey_id")
       cli::cli_alert("The survey {survey_id} was skipped")
-
       log_failure(cnd)
-
       NA
-
     }
   )
+}
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt_f)
+#' Core deflation logic for micro-data surveys
+#'
+#' @param dt Cleaned `pipmd` data.table (copy will be made internally).
+#' @param cpi CPI aux (named numeric vector or `data.table`).
+#' @param ppp PPP aux (named numeric vector or wide `data.table` after
+#'   [ppp_to_wide()]).
+#' @param pop Population aux (named numeric vector or `data.table`).
+#' @return Deflated `data.table` with `welfare_lcu` and `welfare_ppp_*`
+#'   columns plus factor-formatted character columns.
+#' @noRd
+.deflation_pipmd_core <- function(dt, cpi, ppp, pop) {
+  dt_c <- data.table::copy(dt)
+  cpi <- if (data.table::is.data.table(cpi)) data.table::copy(cpi) else cpi
+  ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
+  pop <- if (data.table::is.data.table(pop)) data.table::copy(pop) else pop
 
+  dt_c <- add_rep_lvl(dt_c)
+  dt_c <- add_aux(dt_c, ppp, cpi)
+  dt_c <- welfare_lcu(dt_c)
+  dt_c <- deflate_wlf(dt_c)
+
+  if (length(dt_c[, unique(reporting_level)]) > 1L) {
+    dt_c <- adjust_population(dt_c, pop)
+  }
+
+  char_to_fct(dt_c)
+}
+
+#' Core deflation logic for grouped-data surveys
+#'
+#' @inheritParams .deflation_pipmd_core
+#' @return Deflated `data.table` with `welfare_lcu` and `welfare_ppp_*`
+#'   columns plus factor-formatted character columns.
+#' @noRd
+.deflation_pipgd_core <- function(dt, cpi, ppp, pop) {
+  dt_c <- data.table::copy(dt)
+  cpi <- if (data.table::is.data.table(cpi)) data.table::copy(cpi) else cpi
+  ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
+
+  dt_c <- add_rep_lvl(dt_c)
+  dt_c <- add_aux(dt_c, ppp, cpi)
+  dt_c <- welfare_lcu(dt_c)
+  dt_c <- deflate_wlf(dt_c)
+
+  char_to_fct(dt_c)
 }
 
 
@@ -355,146 +435,177 @@ add_aux <- function(dt, ppp ,cpi) {
 
 #' Merge survey with PPP
 #'
-#' @param dt data.table of the survey
-#' @inheritParams pd_deflation
+#' Accepts either a named numeric vector (format produced by [pd_aux_attr()])
+#' or a wide `data.table` (legacy format from [ppp_to_wide()]).
 #'
-#' @return data.table with specific ppp
+#' Named vector names follow the pattern
+#' `ppp_{ppp_year}_{release_version}_{adaptation_version}_{reporting_level}`,
+#' e.g. `"ppp_2017_01_01_national"`. Each unique version becomes a column in
+#' `dt` with the matching value looked up via `ppp_data_level`.
+#'
+#' @param dt A cleaned survey `data.table` with a `ppp_data_level` column.
+#' @param ppp Named numeric vector or wide `data.table`.
+#' @return `dt` augmented with one column per PPP version and a `ppp_versions`
+#'   attribute listing the version names.
 #' @keywords internal
 add_ppp <- function(dt, ppp) {
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (data.table::is.data.table(ppp)) {
+    # Legacy data.table path: ppp already in wide format from ppp_to_wide()
+    ppp_c <- ppp[ppp$country_code == attributes(dt)$country_code$values]
+    dt <- joyn::merge(
+      dt,
+      ppp_c,
+      by = "ppp_data_level",
+      match_type = "m:1",
+      keep = "left",
+      reportvar = FALSE,
+      verbose = FALSE
+    )
+    return(dt)
+  }
 
-  ppp_c <- ppp[ppp$country_code==attributes(dt)$country_code$values]
-
-  dt <- joyn::merge(dt, ppp_c,
-                    by         = c("ppp_data_level"),
-                    match_type = "m:1",
-                    keep       = "left",
-                    reportvar  = FALSE,
-                    verbose    = FALSE
+  # Named-vector path: names = "{ppp_version}_{reporting_level}"
+  # ppp_version = "ppp_{year}_{rel}_{adapt}" (exactly 4 underscore-separated
+  # segments), so split at position 5 to separate version from reporting level.
+  nm <- names(ppp)
+  parts <- strsplit(nm, "_", fixed = TRUE)
+  ppp_versions <- vapply(
+    parts,
+    function(p) paste(p[seq_len(4L)], collapse = "_"),
+    character(1L)
+  )
+  report_levels <- vapply(
+    parts,
+    function(p) paste(p[-seq_len(4L)], collapse = "_"),
+    character(1L)
   )
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
+  unique_versions <- unique(ppp_versions)
+  for (v in unique_versions) {
+    idx <- ppp_versions == v
+    lev_map <- stats::setNames(ppp[idx], report_levels[idx])
+    dt[, (v) := lev_map[ppp_data_level]]
+  }
 
+  data.table::setattr(dt, "ppp_versions", unique_versions)
+  return(dt)
 }
 
 #' Merge survey with CPI
 #'
-#' @param dt survey
-#' @inheritParams pd_deflation
+#' Accepts either a named numeric vector (format produced by [pd_aux_attr()])
+#' or a `data.table` (legacy format from `pipload::pip_load_aux("cpi")`).
 #'
-#' @return data.table with all cpi
+#' Named vector names follow the pattern `{cpi_year}_{reporting_level}`,
+#' e.g. `"2017_national"`. Each unique year becomes a `cpiYYYY` column in `dt`
+#' with the matching value looked up via `cpi_data_level`.
+#'
+#' @param dt A cleaned survey `data.table` with a `cpi_data_level` column.
+#' @param cpi Named numeric vector or `data.table`.
+#' @return `dt` augmented with one `cpiYYYY` column per base year and a
+#'   `cpi_years` attribute listing the year strings.
 #' @keywords internal
 add_cpi <- function(dt, cpi) {
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (data.table::is.data.table(cpi)) {
+    # Legacy data.table path
+    con <- attributes(dt)$country_code$value
+    svy_year <- attributes(dt)$survey_year$value
+    svy_acr <- attributes(dt)$survey_acronym$value
+    cpi_c <- cpi[
+      country_code == con & survey_year == svy_year & survey_acronym == svy_acr
+    ]
+    cpi_vars <- grep("^cpi[0-9]{4}$", names(cpi_c), value = TRUE)
+    cpi_years <- gsub("cpi([0-9]+)", "\\1", cpi_vars) |> unique() |> sort()
+    data.table::setattr(dt, "cpi_years", cpi_years)
+    cpi_to_keep <- c("cpi_data_level", cpi_vars)
+    cpi_c <- cpi_c[, ..cpi_to_keep]
+    dt <- joyn::merge(
+      dt,
+      cpi_c,
+      by = "cpi_data_level",
+      match_type = "m:1",
+      keep = "left",
+      reportvar = FALSE,
+      verbose = FALSE
+    )
+    return(dt)
+  }
 
-  ### Country cpi ---------
+  # Named-vector path: names = "{cpi_year}_{reporting_level}"
+  # cpi_year is a 4-digit integer, always the first underscore-delimited segment.
+  nm <- names(cpi)
+  cpi_years <- sub("^([0-9]+)_.*$", "\\1", nm)
+  report_levels <- sub("^[0-9]+_(.+)$", "\\1", nm)
 
-  con <- attributes(dt)$country_code$value
-  svy_year <- attributes(dt)$survey_year$value
-  svy_acr <- attributes(dt)$survey_acronym$value
+  unique_years <- unique(cpi_years)
+  data.table::setattr(dt, "cpi_years", unique_years)
 
-  cpi_c <- cpi[(country_code == con &
-              survey_year == svy_year &
-              survey_acronym == svy_acr)] # Check that is only one value?
+  for (yr in unique_years) {
+    col <- paste0("cpi", yr)
+    idx <- cpi_years == yr
+    lev_map <- stats::setNames(cpi[idx], report_levels[idx])
+    dt[, (col) := lev_map[cpi_data_level]]
+  }
 
-  ### Variables and year ---------
-
-  cpi_vars <- grep("^cpi[0-9]{4}$", names(cpi_c), value = TRUE)
-
-  cpi_years <- gsub("cpi([0-9]+)", "\\1", cpi_vars)|> unique() |> sort()
-
-  # attr(dt, "cpi_years") <- cpi_years
-  setattr(dt, "cpi_years", cpi_years)
-
-  cpi_to_keep <- c("cpi_data_level", cpi_vars)
-  cpi_c <- cpi_c[, ..cpi_to_keep]
-
-  ### Join all cpi ---------
-
-  dt <- joyn::merge(dt, cpi_c,
-                    by = "cpi_data_level",
-                    match_type = "m:1",
-                    keep = "left",
-                    reportvar = FALSE,
-                    verbose = FALSE
-  )
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
-
 }
 
 #' Identify base years for deflation
 #'
-#' @inheritParams pd_deflation
+#' Compares available CPI and PPP years (from `dt` attributes set by
+#' [add_cpi()] and [add_ppp()]) and sets a `base_years` attribute on `dt`.
+#' When `ppp` is a named numeric vector the PPP versions are read from the
+#' `ppp_versions` attribute of `dt` (set by [add_ppp()]); when `ppp` is a
+#' `data.table` the versions come from its own `ppp_versions` attribute.
 #'
-#' @return data.table
+#' @param dt A `data.table` that has already been processed by [add_cpi()] and
+#'   [add_ppp()].
+#' @param ppp Named numeric vector or wide PPP `data.table` (used only to
+#'   locate the `ppp_versions` attribute).
+#' @param log_err,skip_err Unused; kept for backward compatibility.
+#' @return `dt` with a `base_years` attribute.
 #' @keywords internal
-cpi_ppp_years <- function(dt, ppp, log_err=TRUE, skip_err=TRUE) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cpi_ppp_years <- function(dt, ppp, log_err = TRUE, skip_err = TRUE) {
   tryCatch(
     expr = {
+      # Named-vector path: ppp_versions attribute was placed on dt by add_ppp().
+      # Legacy DT path: ppp_versions attribute lives on the ppp data.table.
+      ppp_versions <- attr(dt, "ppp_versions") %||% attr(ppp, "ppp_versions")
 
-      ppp_versions  <- attr(ppp, "ppp_versions")
-      ppp_years     <-
-        gsub("ppp_([0-9]+)(_.*)", "\\1", ppp_versions) |>
+      if (is.null(ppp_versions)) {
+        cli::cli_abort(
+          "Cannot determine ppp_versions. Ensure add_ppp() ran before cpi_ppp_years()."
+        )
+      }
+
+      ppp_years <- gsub("ppp_([0-9]+)(.*)", "\\1", ppp_versions) |>
         unique() |>
         sort()
 
       cpi_years <- attributes(dt)$cpi_years
 
-      if (setequal(cpi_years , ppp_years)) {
-
-        # attr(dt, "base_years") <-  cpi_years # deflate years
-        data.table::setattr(dt, "base_years",  cpi_years) # deflate years
-
+      if (setequal(cpi_years, ppp_years)) {
+        data.table::setattr(dt, "base_years", cpi_years)
       } else {
-        # attr(dt, "base_years") <-  intersect(cpi_years , ppp_years)
-        data.table::setattr(dt, "base_years",intersect(cpi_years , ppp_years))
-
-        piperr(message = "CPI and PPP years available do NOT match.
-                              Only the intersect will be used: {.field {base_years}}",
-               name = "cpi_ppp")
-
-        # svy <- attributes(dt)$survey_id$values
-        #
-        # cli::cli_abort(message = "CPI and PPP years available do NOT match.
-        #                       Only the intersect will be used: {.field {base_years}}",
-        #                class = c("cpi_ppp", "piperr"),
-        #                log = log_err,
-        #                skip = skip_err,
-        #                link =  svy,
-        #                call = sys.call())
-
+        base_ys <- intersect(cpi_years, ppp_years)
+        data.table::setattr(dt, "base_years", base_ys)
+        piperr(
+          message = paste0(
+            "CPI and PPP years available do NOT match. ",
+            "Only the intersect will be used: {.field {base_ys}}"
+          ),
+          name = "cpi_ppp"
+        )
       }
     },
-    cpi_ppp = function(cnd){
-
-        log_failure(cnd)
-
+    cpi_ppp = function(cnd) {
+      log_failure(cnd)
     }
-
   )
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
-
 }
 
 
@@ -585,61 +696,112 @@ get_welfare_ppp <- function(dt_wlcu, base_year) {
 
 #' Scale subnational population weights to national accounts (WDI).
 #'
+#' Accepts either a named numeric vector (format produced by [pd_aux_attr()])
+#' or a `data.table` (legacy format from `pipload::pip_load_aux("pop")`).
+#'
+#' Named vector names follow the pattern `{year}_{reporting_level}`,
+#' e.g. `"2015_national"`. For each reporting level in `df`, the entry with
+#' the closest year to `survey_year` is used as the WDI population figure;
+#' when multiple entries tie on distance they are inverse-distance-weighted.
+#'
 #' Helper moved here from pd_add_pip_vars.R (archived 2026-04-30) since
 #' pd_deflation.R is the only active caller. Not exported.
 #'
-#' @param df  A data.table with columns `country_code`, `survey_year`,
+#' @param df  A `data.table` with columns `country_code`, `survey_year`,
 #'   `reporting_level`, and `weight`. The caller passes a copy so
 #'   reference-semantics mutation does not affect the source object.
-#' @param pop A data.table with columns `country_code`, `year`,
-#'   `pop_data_level`, and `pop` (WDI population totals).
-#' @return `df` with `weight` rescaled so that `sum(weight)` equals the
-#'   WDI population figure for the closest available reference year.
-#'   When `diff_year == 0` the scaling factor is pop/sum(weight);
-#'   when years differ, observations are inverse-distance-weighted before
-#'   the mean factor is computed.
+#' @param pop Named numeric vector or a `data.table` with columns
+#'   `country_code`, `year`, `pop_data_level`, and `pop`.
+#' @return `df` with `weight` rescaled to match the WDI population figure.
 #' @noRd
 adjust_population <- function(df, pop) {
 
-  spop <- df[,
-             .(weight = sum(weight, na.rm = TRUE)),
-             by = c("country_code", "survey_year", "reporting_level")]
-
-  # Rename pop_data_level → reporting_level so both tables share the same key
-  # name, enabling a straightforward two-key inner join without joyn's
-  # by.x/by.y path (which triggers a recycling warning in joyn 0.3.0 when
-  # by.x length > 1 and ncol(x) is not a multiple of length(by.x)).
-  pop_r <- data.table::copy(pop)
-  data.table::setnames(pop_r, "pop_data_level", "reporting_level")
-
-  dpop <- joyn::inner_join(
-    x = pop_r,
-    y = spop,
-    by = c("country_code", "reporting_level"),
-    relationship = "many-to-one",
-    reportvar = FALSE
-  )
-
-  dpop <-
-    dpop[,
-      diff_year := abs(year - survey_year)
-    ][,
-      .SD[diff_year == min(diff_year)],
-      by = reporting_level
-    ][,
-      wght := data.table::fifelse(diff_year == 0, 1, 1 / diff_year)
+  if (data.table::is.data.table(pop)) {
+    # Legacy data.table path — original implementation.
+    spop <- df[,
+      .(weight = sum(weight, na.rm = TRUE)),
+      by = c("country_code", "survey_year", "reporting_level")
     ]
-
-  fact <-
-    dpop[,
-      lapply(.SD, stats::weighted.mean, w = wght),
+    # Rename pop_data_level → reporting_level for a clean two-key join
+    # (avoids by.x/by.y recycling warning in joyn 0.3.0).
+    pop_r <- data.table::copy(pop)
+    data.table::setnames(pop_r, "pop_data_level", "reporting_level")
+    dpop <- joyn::inner_join(
+      x = pop_r,
+      y = spop,
+      by = c("country_code", "reporting_level"),
+      relationship = "many-to-one",
+      reportvar = FALSE
+    )
+    dpop <-
+      dpop[,
+        diff_year := abs(year - survey_year)
+      ][,
+        .SD[diff_year == min(diff_year)],
+        by = reporting_level
+      ][,
+        wght := data.table::fifelse(diff_year == 0, 1, 1 / diff_year)
+      ]
+    fact <-
+      dpop[,
+        lapply(.SD, stats::weighted.mean, w = wght),
+        by = "reporting_level",
+        .SDcols = c("pop", "weight")
+      ][,
+        pop_fact := pop / weight
+      ][,
+        c("pop", "weight") := NULL
+      ]
+    df <- joyn::left_join(
+      x = df,
+      y = fact,
       by = "reporting_level",
-      .SDcols = c("pop", "weight")
-    ][,
-      pop_fact := pop / weight
-    ][,
-      c("pop", "weight") := NULL
-    ]
+      relationship = "many-to-one",
+      reportvar = FALSE
+    )
+    df[, weight := weight * pop_fact]
+    return(df)
+  }
+
+  # Named-vector path: names = "{year}_{reporting_level}"
+  survey_year <- df$survey_year[[1L]]
+  nm <- names(pop)
+  pop_years <- as.integer(sub("^([0-9]+)_.*$", "\\1", nm))
+  pop_levels <- sub("^[0-9]+_(.+)$", "\\1", nm)
+
+  spop <- df[,
+    .(weight = sum(weight, na.rm = TRUE)),
+    by = "reporting_level"
+  ]
+
+  fact_rows <- lapply(spop$reporting_level, function(rl) {
+    idx <- pop_levels == rl
+    if (!any(idx)) {
+      return(NULL)
+    }
+    yrs <- pop_years[idx]
+    vals <- pop[idx]
+    diffs <- abs(yrs - survey_year)
+    min_d <- min(diffs)
+    keep <- diffs == min_d
+    if (sum(keep) == 1L || min_d == 0L) {
+      pop_val <- vals[which(keep)[[1L]]]
+    } else {
+      wts <- 1 / diffs[keep]
+      pop_val <- stats::weighted.mean(vals[keep], w = wts)
+    }
+    sw <- spop[spop$reporting_level == rl, weight]
+    data.table::data.table(reporting_level = rl, pop_fact = pop_val / sw)
+  })
+
+  fact <- data.table::rbindlist(Filter(Negate(is.null), fact_rows))
+
+  if (nrow(fact) == 0L) {
+    cli::cli_abort(
+      "No population data found for reporting levels in survey.",
+      class = c("adjust_population", "piperr")
+    )
+  }
 
   df <- joyn::left_join(
     x = df,
@@ -648,8 +810,6 @@ adjust_population <- function(df, pop) {
     relationship = "many-to-one",
     reportvar = FALSE
   )
-
   df[, weight := weight * pop_fact]
-
   return(df)
 }

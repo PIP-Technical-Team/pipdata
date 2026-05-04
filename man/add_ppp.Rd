@@ -7,14 +7,22 @@
 add_ppp(dt, ppp)
 }
 \arguments{
-\item{dt}{data.table of the survey}
+\item{dt}{A cleaned survey \code{data.table} with a \code{ppp_data_level} column.}
 
-\item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
+\item{ppp}{Named numeric vector or wide \code{data.table}.}
 }
 \value{
-data.table with specific ppp
+\code{dt} augmented with one column per PPP version and a \code{ppp_versions}
+attribute listing the version names.
 }
 \description{
-Merge survey with PPP
+Accepts either a named numeric vector (format produced by \code{\link[=pd_aux_attr]{pd_aux_attr()}})
+or a wide \code{data.table} (legacy format from \code{\link[=ppp_to_wide]{ppp_to_wide()}}).
+}
+\details{
+Named vector names follow the pattern
+\verb{ppp_\{ppp_year\}_\{release_version\}_\{adaptation_version\}_\{reporting_level\}},
+e.g. \code{"ppp_2017_01_01_national"}. Each unique version becomes a column in
+\code{dt} with the matching value looked up via \code{ppp_data_level}.
 }
 \keyword{internal}

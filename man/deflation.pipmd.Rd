@@ -9,11 +9,17 @@
 \arguments{
 \item{dt}{data.table of cleaned DLW survey from \code{wbpip_clean}}
 
-\item{cpi}{aux_cpi from \code{pipload::pip_load_aux}}
+\item{cpi}{Named numeric vector of CPI values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("cpi")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
 
-\item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
+\item{ppp}{Named numeric vector of PPP values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("ppp")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
 
-\item{pop}{aux_pop from \code{pipload::pip_load_aux}}
+\item{pop}{Named numeric vector of population values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("pop")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
 
 \item{...}{extra arguments}
 }

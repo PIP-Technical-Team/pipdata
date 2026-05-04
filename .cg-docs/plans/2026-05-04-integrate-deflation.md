@@ -1,7 +1,8 @@
 ---
 date: 2026-05-04
 title: "Integrate pd_deflation.R into the active pipeline"
-status: active
+status: completed
+completed-date: 2026-05-04
 scope: "Standard"
 brainstorm: null
 language: R
@@ -13,12 +14,15 @@ tags: [deflation, pipeline, architecture, integration, refactoring]
 
 ## Objective
 
-Make `pd_deflation()` usable as a self-contained helper: given a cleaned
-survey (or its identifying keys + stamp version), it internally loads the
-corresponding metadata (CPI, PPP, pop) and returns the same survey enriched
-with deflated welfare vectors. Also extract a shared `safe_deflation()`
-helper from the duplicated `deflation.pipmd()`/`deflation.pipgd()` tryCatch
-structure.
+Make `pd_deflation()` usable as a self-contained single-survey helper: given
+one cleaned survey `data.table` (or its `pip_id` + stamp version), it
+internally loads the corresponding metadata (CPI, PPP, pop) and returns the
+same survey enriched with deflated welfare vectors. Also extract a shared
+`safe_deflation()` helper from the duplicated `deflation.pipmd()`/
+`deflation.pipgd()` tryCatch structure.
+
+Iteration over many surveys (batch deflation) is intentionally **out of scope**
+and belongs to the future `pd_deflate_pipeline()` wrapper.
 
 ## Context
 

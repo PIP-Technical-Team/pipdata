@@ -295,8 +295,8 @@
                 {
                     "id": "integrate-deflation",
                     "title": "Integrate pd_deflation.R into the active pipeline",
-                    "description": "Update pd_deflation() so it can be called with just a cleaned survey (or survey keys/version) and internally loads the corresponding metadata (CPI, PPP, pop) to return the deflated version. No external aux args required. Extract safe_deflation() helper to deduplicate S3 methods.",
-                    "status": "planned",
+                    "description": "Update pd_deflation() so it can be called with a single cleaned survey data.table (or pip_id/version) and internally loads the corresponding metadata (CPI, PPP, pop) to return the deflated survey. No external aux args required. Batch iteration over many surveys belongs to pd_deflate_pipeline(). Extract safe_deflation() helper to deduplicate S3 methods.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
                     "tags": [
                         "deflation",
