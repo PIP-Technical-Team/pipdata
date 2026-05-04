@@ -284,7 +284,7 @@ error handler). A `safe_deflation()` helper can encapsulate this.
   - Update the `@note` to reflect that `pd_deflation()` is now actively
     usable as a self-contained deflation helper.
   - Update `@param` docs: document `cpi`/`ppp`/`pop` NULL defaults and
-    new `survey_id`/`version` args
+    new `pip_id`/`version` args
   - Add `@family pd_process_data pipeline` tag
   - Run `devtools::document()`
 - **Acceptance criteria**: `@note` no longer says "not yet integrated";
@@ -321,8 +321,6 @@ error handler). A `safe_deflation()` helper can encapsulate this.
 | Attribute loss in stamp round-trip: `pipload::pip_read()` may not preserve all custom attributes (class, survey_id, etc.) | Test round-trip explicitly; if attributes lost, re-attach from inventory metadata after load |
 | `joyn::merge` / `joyn::inner_join` recycling warnings (known issue in joyn 0.3.0) | Use `suppressMessages()` or switch to data.table `[.data.table` joins if warnings persist |
 | `ppp_to_wide()` uses `dcast` without qualifying `data.table::dcast` — potential masking | Qualify with `data.table::dcast()` during refactoring |
-| `deflate_wlf()` modifies `dt_c` by reference but returns a subset — potential data loss pattern | Investigate and fix: either return modified `dt_c` or `cbind` welfare columns back to preserve original columns |
-| `char_to_fct()` is called in `deflation.pipmd` but does not exist in current source | Verify if it's from wbpip or collapse; add `@importFrom` or replace with explicit factor conversion |
 
 ## Out of Scope
 

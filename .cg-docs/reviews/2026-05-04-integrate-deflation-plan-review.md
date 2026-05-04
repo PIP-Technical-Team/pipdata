@@ -2,10 +2,10 @@
 plan: .cg-docs/plans/2026-05-04-integrate-deflation.md
 findings:
   P1.1: resolved
-  P2.1: open
-  P2.2: open
-  P2.3: open
-  P3.1: open
+  P2.1: resolved
+  P2.2: resolved
+  P2.3: resolved
+  P3.1: resolved
 ---
 
 ## Plan Review Report
@@ -55,6 +55,8 @@ findings:
   churn.
   **Fix**: Reorder steps: current Step 3 becomes Step 2, current Step 2 becomes
   Step 3.
+  **Resolution**: Implemented in P2.1-recommended order (safe_deflation extracted
+  before interface refactor). Plan risk table cleaned of false-alarm entries.
 
 - **[P2.2]** [false-alarm] `deflate_wlf()` return value risk is incorrect.
   The plan flags it as "modifies by reference but returns a subset — potential
@@ -65,11 +67,11 @@ findings:
   columns PLUS all welfare columns added by reference. This is not a bug.
   **Fix**: Remove this risk entry to avoid wasting time investigating during
   implementation.
-
-- **[P2.3]** [false-alarm] `char_to_fct()` existence is already verified — it's
+  **Resolution**: Removed from plan risk table. [false-alarm] `char_to_fct()` existence is already verified — it's
   in `R/utils.R:296`. The risk entry "does not exist in current source" is
   incorrect.
   **Fix**: Remove this risk entry.
+  **Resolution**: Removed from plan risk table.
 
 ---
 
@@ -78,6 +80,7 @@ findings:
 - **[P3.1]** [documentation] Step 5 `@param` docs reference `survey_id`/`version`
   while the code signature in Step 2 uses `pip_id`/`version`. Minor inconsistency.
   **Fix**: Update Step 5 to reference `pip_id`/`version`.
+  **Resolution**: Fixed in plan.
 
 ---
 
