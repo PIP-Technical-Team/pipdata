@@ -295,12 +295,24 @@
                 {
                     "id": "integrate-deflation",
                     "title": "Integrate pd_deflation.R into the active pipeline",
-                    "description": "Update pd_deflation() so it can consume the pip survey outputs produced by pd_process_data(). Define the interface between the two steps (input format, required columns, auxiliary data arguments). Wire pd_deflation() into pd_process_data() or as an explicit downstream step. Migrate .logenv consumers (piperr, add_log, log_failure, get_ordered_level) to the unified .pipdataenv environment (prerequisite: env-setup). Add tests against saved pip survey fixtures.",
+                    "description": "Update pd_deflation() so it can be called with just a cleaned survey (or survey keys/version) and internally loads the corresponding metadata (CPI, PPP, pop) to return the deflated version. No external aux args required. Extract safe_deflation() helper to deduplicate S3 methods.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
                     "tags": [
                         "deflation",
                         "pipeline",
                         "architecture",
                         "integration"
+                    ]
+                },
+                {
+                    "id": "deflate-pipeline-wrapper",
+                    "title": "Create pd_deflate_pipeline() batch orchestrator",
+                    "description": "Build a pipeline wrapper that iterates over an entire inventory of cleaned surveys, applies pd_deflation() to each, saves deflated outputs to a stamp alias (e.g. pip_deflated), and logs a summary entry. Prerequisite: integrate-deflation must be completed first.",
+                    "tags": [
+                        "deflation",
+                        "pipeline",
+                        "orchestration"
                     ]
                 }
             ]
