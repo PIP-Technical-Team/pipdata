@@ -4,7 +4,7 @@
 \alias{cpi_ppp_years}
 \title{Identify base years for deflation}
 \usage{
-cpi_ppp_years(dt, ppp, log_err = TRUE, skip_err = TRUE)
+cpi_ppp_years(dt, ppp)
 }
 \arguments{
 \item{dt}{A \code{data.table} that has already been processed by \code{\link[=add_cpi]{add_cpi()}} and
@@ -12,8 +12,6 @@ cpi_ppp_years(dt, ppp, log_err = TRUE, skip_err = TRUE)
 
 \item{ppp}{Named numeric vector or wide PPP \code{data.table} (used only to
 locate the \code{ppp_versions} attribute).}
-
-\item{log_err, skip_err}{Unused; kept for backward compatibility.}
 }
 \value{
 \code{dt} with a \code{base_years} attribute.

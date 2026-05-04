@@ -116,8 +116,9 @@ test_that(".load_deflation_aux returns cpi/ppp/pop from metadata", {
 
   fake_inv <- data.table::data.table(
     pip_id = "ABC_2015_TST_INC_D1",
-    version_id_data = "v1",
-    version_id_metadata = "meta_v1"
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    created_at_metadata = "2026-01-01T00:00:00Z"
   )
 
   testthat::local_mocked_bindings(
@@ -136,8 +137,9 @@ test_that(".load_deflation_aux returns cpi/ppp/pop from metadata", {
 test_that(".load_deflation_aux aborts for unknown pip_id", {
   fake_inv <- data.table::data.table(
     pip_id = character(0),
-    version_id_data = character(0),
-    version_id_metadata = character(0)
+    content_hash_data = character(0),
+    content_hash_metadata = character(0),
+    created_at_metadata = character(0)
   )
 
   testthat::local_mocked_bindings(
@@ -151,11 +153,12 @@ test_that(".load_deflation_aux aborts for unknown pip_id", {
   )
 })
 
-test_that(".load_deflation_aux aborts when version_id_metadata missing from inventory", {
+test_that(".load_deflation_aux aborts when content_hash_metadata missing from inventory", {
   fake_inv <- data.table::data.table(
     pip_id = "ABC_2015_TST_INC_D1",
-    version_id_data = "v1"
-    # no version_id_metadata
+    content_hash_data = "abc123",
+    created_at_metadata = "2026-01-01T00:00:00Z"
+    # no content_hash_metadata
   )
 
   testthat::local_mocked_bindings(
@@ -308,9 +311,10 @@ test_that("pd_deflation Mode A: single dt, mocked aux, returns data.table or NA"
 
   meta_obj <- list(cpi = cpi, ppp = ppp, pop = pop)
   fake_inv <- data.table::data.table(
-    pip_id              = "ABC_2015_TST_INC_D1",
-    version_id_data     = "v1",
-    version_id_metadata = "meta_v1"
+    pip_id = "ABC_2015_TST_INC_D1",
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    created_at_metadata = "2026-01-01T00:00:00Z"
   )
 
   testthat::local_mocked_bindings(
@@ -340,9 +344,10 @@ test_that("pd_deflation Mode B: loads single survey via pip_id", {
 
   meta_obj <- list(cpi = cpi, ppp = ppp, pop = pop)
   fake_inv <- data.table::data.table(
-    pip_id              = "ABC_2015_TST_INC_D1",
-    version_id_data     = "v1",
-    version_id_metadata = "meta_v1"
+    pip_id = "ABC_2015_TST_INC_D1",
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    created_at_metadata = "2026-01-01T00:00:00Z"
   )
 
   testthat::local_mocked_bindings(

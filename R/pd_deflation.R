@@ -49,7 +49,8 @@
 #' @param pip_id Character scalar. The survey identifier (e.g.
 #'   `"CHN_2015_CHIP_INC_D1"`).
 #' @param version Character scalar or `NULL`. If `NULL`, the most recent
-#'   inventory entry for `pip_id` is used.
+#'   inventory entry for `pip_id` (by `created_at_metadata`) is used. When
+#'   supplied, it must match the `content_hash_data` column in the inventory.
 #' @return A named list with elements `cpi`, `ppp`, and `pop`, each a named
 #'   numeric vector as stored in the `pip_meta` stamp alias.
 #' @noRd
@@ -68,7 +69,7 @@
   }
 
   if (!is.null(version)) {
-    row <- row[row$version_id_data == version, ]
+    row <- row[row$content_hash_data == version, ]
     if (nrow(row) == 0L) {
       cli::cli_abort(
         "No inventory entry for {.val {pip_id}} at data version {.val {version}}.",
@@ -76,20 +77,23 @@
       )
     }
   } else {
-    row <- utils::head(row, 1L)  # most recent entry
+    # Sort descending on created_at_metadata (ISO timestamp) so head() reliably
+    # selects the most recent inventory entry.
+    row <- row[order(row$created_at_metadata, decreasing = TRUE), ]
+    row <- utils::head(row, 1L)
   }
 
-  if (!"version_id_metadata" %in% names(row)) {
+  if (!"content_hash_metadata" %in% names(row)) {
     cli::cli_abort(
       paste0(
-        "Master inventory is missing 'version_id_metadata' column. ",
+        "Master inventory is missing 'content_hash_metadata' column. ",
         "Re-run update_pip_inventory() to rebuild the inventory."
       ),
       class = c("load_deflation_aux", "piperr")
     )
   }
 
-  meta_version <- row$version_id_metadata[[1L]]
+  meta_version <- row$content_hash_metadata[[1L]]
   meta <- pipload::pip_read(
     id      = pip_id,
     alias   = "pip_meta",
@@ -564,10 +568,9 @@ add_cpi <- function(dt, cpi) {
 #'   [add_ppp()].
 #' @param ppp Named numeric vector or wide PPP `data.table` (used only to
 #'   locate the `ppp_versions` attribute).
-#' @param log_err,skip_err Unused; kept for backward compatibility.
 #' @return `dt` with a `base_years` attribute.
 #' @keywords internal
-cpi_ppp_years <- function(dt, ppp, log_err = TRUE, skip_err = TRUE) {
+cpi_ppp_years <- function(dt, ppp) {
   tryCatch(
     expr = {
       # Named-vector path: ppp_versions attribute was placed on dt by add_ppp().
@@ -649,9 +652,10 @@ deflate_wlf <- function(dt) {
 
   dt_c <- copy(dt) # Fix copy
 
-  dt_w <- purrr::map(.x = base_years,
-                     .f = get_welfare_ppp,
-                     dt = dt_c)
+  # get_welfare_ppp mutates dt_c in-place via data.table := assignment.
+  # purrr::walk is used instead of purrr::map to make the side-effect
+  # intent explicit and avoid silently discarding the return values.
+  purrr::walk(base_years, get_welfare_ppp, dt = dt_c)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -665,6 +669,7 @@ deflate_wlf <- function(dt) {
 #' @param base_year numeric: base year
 #'
 #' @return data.table with welfare in PPP values
+#' @noRd
 get_welfare_ppp <- function(dt_wlcu, base_year) {
 
   #   ____________________________________________________________________________

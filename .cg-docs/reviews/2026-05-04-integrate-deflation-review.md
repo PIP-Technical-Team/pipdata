@@ -4,6 +4,13 @@ plan: 2026-05-04-integrate-deflation
 depth: standard
 reviewers: [cg-code-quality, cg-testing, cg-documentation, cg-version-control, cg-reproducibility, cg-performance, cg-architecture, cg-data-quality]
 status: complete
+findings:
+  P1.1: fixed
+  P2.1: fixed
+  P2.2: skipped
+  P2.3: fixed
+  P3.1: fixed
+  P3.2: fixed
 ---
 
 # Review: integrate-deflation implementation
@@ -79,34 +86,37 @@ return(dt_c)
 ### P2.2 — Test file is untracked (`??`) in git
 
 **Agent**: cg-version-control  
-**File**: `tests/testthat/test-pd-deflation.R`
+**File**: `tests/testthat/test-pd-deflation.R`  
+**Status**: ⏭ SKIPPED — already resolved
 
-`git status` shows this file as `??` (untracked). It must be staged before the
-commit so CI sees the tests.
-
-```bash
-git add tests/testthat/test-pd-deflation.R
-```
+`git status` showed this file as `??` (untracked) at review time. However, a
+check of `git log` confirmed the file had already been committed in the prior
+session (commit `d4778f2`: "Defaltion task with tests and doc"). No action
+needed.
 
 ### P2.3 — `.load_deflation_aux` uses `utils::head(row, 1L)` to select "most recent" without ordering
 
 **Agent**: cg-data-quality  
-**File**: `R/pd_deflation.R` — `.load_deflation_aux()`
+**File**: `R/pd_deflation.R` — `.load_deflation_aux()`  
+**Status**: ✅ FIXED in fix-triage session
 
-When `version = NULL`, the code picks `utils::head(row, 1L)` from the
-inventory — "the first row". The assumption is that the inventory is ordered
-newest-first, but this is implicit. If `load_pip_master_inventory()` returns
-rows in insertion order (oldest-first) or unsorted, the wrong metadata version
-is loaded silently.
+When `version = NULL`, the code picked `utils::head(row, 1L)` from the
+inventory — "the first row" — with no explicit sort. Additionally, the
+`version_id_data` and `version_id_metadata` column names used throughout this
+function did not exist in the real inventory (`old_pip_inv`). The real
+columns are `content_hash_data`, `content_hash_metadata`, and
+`created_at_metadata`.
 
-**Recommendation**: add an explicit sort on a date/version column before
-`head()`, or document the contract that `load_pip_master_inventory()` returns
-rows ordered newest-first.
+All three column references were corrected and an explicit descending sort on
+`created_at_metadata` was added before `head()`. Matching mock objects in
+`tests/testthat/test-pd-deflation.R` were updated to use the real column names.
 
 ```r
-# Safer: explicit descending sort on version column
-row <- row[order(row$version_id_data, decreasing = TRUE), ]
+# Fixed: sort on real timestamp column, use real hash column for version lookup
+row <- row[order(row$created_at_metadata, decreasing = TRUE), ]
 row <- utils::head(row, 1L)
+# ...
+meta_version <- row$content_hash_metadata[[1L]]
 ```
 
 ---
@@ -145,15 +155,16 @@ helpers in this file (all marked `@noRd` or `@keywords internal`).
 | Priority | Count | Status |
 |----------|-------|--------|
 | P1       | 1     | ✅ all fixed |
-| P2       | 3     | 🔲 action required |
+| P2       | 3     | ✅ P2.1 fixed, P2.2 skipped (already committed), P2.3 fixed |
 | P3       | 2     | 🔲 optional |
 
-**Blocking**: None remaining — P1 was fixed in this session. P2.2 (untracked
-test file) is the most urgent remaining item before the commit.
+**Blocking**: None.
 
 ---
 
 ## Applied fixes in this session
 
-- **P1.1**: Replaced `%||%` with `if (is.null(...))` in `cpi_ppp_years()`
-  (`R/pd_deflation.R` line 575).
+- **P1.1**: Replaced `%||%` with `if (is.null(...))` in `cpi_ppp_years()` (`R/pd_deflation.R`).
+- **P2.1**: Replaced `purrr::map` with `purrr::walk` in `deflate_wlf()` to make the side-effect intent explicit.
+- **P2.2**: Skipped — `tests/testthat/test-pd-deflation.R` was already committed in the prior session (commit `d4778f2`).
+- **P2.3**: Fixed wrong inventory column names (`version_id_data`/`version_id_metadata` → `content_hash_data`/`content_hash_metadata`); added explicit sort on `created_at_metadata` before `head()`. Mock objects in tests updated to match.
