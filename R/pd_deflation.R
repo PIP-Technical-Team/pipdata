@@ -572,7 +572,10 @@ cpi_ppp_years <- function(dt, ppp, log_err = TRUE, skip_err = TRUE) {
     expr = {
       # Named-vector path: ppp_versions attribute was placed on dt by add_ppp().
       # Legacy DT path: ppp_versions attribute lives on the ppp data.table.
-      ppp_versions <- attr(dt, "ppp_versions") %||% attr(ppp, "ppp_versions")
+      ppp_versions <- attr(dt, "ppp_versions")
+      if (is.null(ppp_versions)) {
+        ppp_versions <- attr(ppp, "ppp_versions")
+      }
 
       if (is.null(ppp_versions)) {
         cli::cli_abort(
