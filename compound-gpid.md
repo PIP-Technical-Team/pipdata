@@ -2,7 +2,7 @@
 project-name: "Pipdata package"
 team: "DECDG/GPID"
 created: "2026-04-06"
-last-reviewed: "2026-04-27"
+last-reviewed: "2026-05-04"
 ---
 
 # Pipdata Package
@@ -17,8 +17,8 @@ This project aims to run the initial steps of the new pipeline of PIP. That is, 
 
 ## Constraints
 
-<!-- TODO: Add hard constraints, e.g. reproducibility requirements, data privacy rules. -->
+- R packages good standards
 
 ## Current Focus
 
-Code Quality & Refactoring milestone: standardizing logging patterns, unifying the logging/reporting infrastructure, replacing loops with vectorized operations, auditing nested tryCatch blocks, and migrating from dplyr to collapse/data.table.
+Pipeline Alignment Audit: aligning the pipdata codebase with the canonical three-wrapper architecture. Currently integrating pd_deflation.R into the active pipeline and auditing utility functions (copy_dlw_meta, dontrun examples) to ensure all code serves the pipeline wrappers or is properly documented as a standalone admin tool.
