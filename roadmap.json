@@ -296,13 +296,26 @@
                     "id": "integrate-deflation",
                     "title": "Integrate pd_deflation.R into the active pipeline",
                     "description": "Update pd_deflation() so it can be called with a single cleaned survey data.table (or pip_id/version) and internally loads the corresponding metadata (CPI, PPP, pop) to return the deflated survey. No external aux args required. Batch iteration over many surveys belongs to pd_deflate_pipeline(). Extract safe_deflation() helper to deduplicate S3 methods.",
-                    "status": "done",
+                    "status": "active",
                     "plan": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
                     "tags": [
                         "deflation",
                         "pipeline",
                         "architecture",
                         "integration"
+                    ]
+                },
+                {
+                    "id": "store-version-id-in-inventory",
+                    "title": "Store version_id in master inventory (not just content_hash)",
+                    "description": "format_vrs() currently saves only ventry$metadata (the stamp metadata dict) into the master inventory, which contains content_hash but drops version_id from the top level of pip_write()'s return value. This means .load_deflation_aux() must resolve version_id via an expensive hash lookup, which fails when the exact artifact has been replaced by a newer pd_process_data() run. Fix: capture ventry$version_id in format_vrs() and store it as version_id_data / version_id_metadata in the master inventory. Then pd_deflation() can load directly via pip_read(version = row$version_id_metadata) without any hash resolution.",
+                    "status": "planned",
+                    "tags": [
+                        "deflation",
+                        "inventory",
+                        "stamp",
+                        "architecture",
+                        "reliability"
                     ]
                 },
                 {

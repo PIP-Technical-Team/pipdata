@@ -32,7 +32,7 @@ make_pipmd <- function(
   data.table::setattr(dt, "class", c("pipmd", "data.table", "data.frame"))
   data.table::setattr(dt, "survey_id", list(values = "ABC_2015_TST_INC_D1"))
   data.table::setattr(dt, "country_code", list(values = country))
-  data.table::setattr(dt, "survey_year", list(values = survey_year))
+  data.table::setattr(dt, "surveyid_year", list(values = survey_year))
   data.table::setattr(dt, "survey_acronym", list(values = survey_acronym))
   data.table::setattr(dt, "reporting_level", list(values = reporting_level))
   data.table::setattr(dt, "ppp_data_level", list(values = ppp_data_level))
@@ -123,7 +123,16 @@ test_that(".load_deflation_aux returns cpi/ppp/pop from metadata", {
 
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) fake_inv,
-    pip_read = function(id, alias, version) meta_obj,
+    pip_read = function(id, alias, version = NULL, ...) {
+      if (identical(version, "available")) {
+        data.table::data.table(
+          version_id = "ver_abc123",
+          content_hash = "meta_abc123"
+        )
+      } else {
+        meta_obj
+      }
+    },
     .package = "pipload"
   )
 
@@ -319,7 +328,16 @@ test_that("pd_deflation Mode A: single dt, mocked aux, returns data.table or NA"
 
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) fake_inv,
-    pip_read = function(...) meta_obj,
+    pip_read = function(id, alias, version = NULL, ...) {
+      if (identical(version, "available")) {
+        data.table::data.table(
+          version_id = "ver_abc123",
+          content_hash = "meta_abc123"
+        )
+      } else {
+        meta_obj
+      }
+    },
     .package = "pipload"
   )
 
@@ -334,6 +352,57 @@ test_that("pd_deflation Mode A: single dt, mocked aux, returns data.table or NA"
 
 test_that("pd_deflation aborts when neither dt nor pip_id provided", {
   expect_error(pd_deflation(), class = "pd_deflation")
+})
+
+# ---------------------------------------------------------------------------
+# Bug: stale content_hash_metadata in master inventory
+# https://github.com/GPID-WB/pipdata/issues — 2026-05-05
+#
+# Scenario: the master inventory has a row for a pip_id whose
+# content_hash_metadata references a pip_meta artifact that was replaced
+# by a subsequent pd_process_data() run.  The old artifact is no longer
+# available in stamp, so .load_deflation_aux() cannot match the hash and
+# aborts with "Could not find a stamp version matching content hash".
+#
+# The fix should allow .load_deflation_aux() to fall back to the latest
+# available pip_meta version when the exact hash is absent.
+# ---------------------------------------------------------------------------
+
+test_that(".load_deflation_aux falls back gracefully when master inventory hash is stale", {
+  stale_hash   <- "95aebaad1b534585"   # hash recorded in inventory — artifact gone
+  current_hash <- "b12a64d9c220df0d"   # hash of the currently available pip_meta
+
+  fake_inv <- data.table::data.table(
+    pip_id                = "BOL_2022_EH_INC_ALL",
+    content_hash_data     = "data_hash_xyz",
+    content_hash_metadata = stale_hash,          # stale — not present in stamp
+    created_at_metadata   = "2026-04-01T00:00:00Z"
+  )
+
+  cpi <- stats::setNames(87.2, "2017_national")
+  ppp <- stats::setNames(c(1.6, 1.6), c("2017_national_01", "2017_national_02"))
+  pop <- stats::setNames(11500000, "national")
+  meta_obj <- list(cpi = cpi, ppp = ppp, pop = pop)
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) fake_inv,
+    pip_read = function(id, alias, version = NULL, ...) {
+      # Only the latest version is available — stale_hash is absent
+      if (identical(version, "available")) {
+        data.table::data.table(
+          version_id   = "2a7390b149cf8e5b",
+          content_hash = current_hash
+        )
+      } else {
+        meta_obj
+      }
+    },
+    .package = "pipload"
+  )
+
+  # Should NOT abort — expected to fall back and return valid aux list
+  result <- pipdata:::.load_deflation_aux("BOL_2022_EH_INC_ALL")
+  expect_named(result, c("cpi", "ppp", "pop"))
 })
 
 test_that("pd_deflation Mode B: loads single survey via pip_id", {
@@ -352,8 +421,17 @@ test_that("pd_deflation Mode B: loads single survey via pip_id", {
 
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) fake_inv,
-    pip_read = function(id, alias, version) {
-      if (alias == "pip") dt else meta_obj
+    pip_read = function(id, alias, version = NULL, ...) {
+      if (identical(alias, "pip")) {
+        dt
+      } else if (identical(version, "available")) {
+        data.table::data.table(
+          version_id = "ver_abc123",
+          content_hash = "meta_abc123"
+        )
+      } else {
+        meta_obj
+      }
     },
     .package = "pipload"
   )

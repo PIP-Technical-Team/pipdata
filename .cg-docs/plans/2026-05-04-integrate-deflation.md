@@ -1,8 +1,8 @@
 ---
 date: 2026-05-04
 title: "Integrate pd_deflation.R into the active pipeline"
-status: completed
-completed-date: 2026-05-04
+status: active
+completed-date: null
 scope: "Standard"
 brainstorm: null
 language: R

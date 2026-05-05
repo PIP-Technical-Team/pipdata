@@ -25,9 +25,13 @@
     )
   }
   required_attrs <- c(
-    "survey_id", "country_code", "survey_year",
-    "survey_acronym", "reporting_level",
-    "ppp_data_level", "cpi_data_level"
+    "survey_id",
+    "country_code",
+    "surveyid_year",
+    "survey_acronym",
+    "reporting_level",
+    "ppp_data_level",
+    "cpi_data_level"
   )
   missing_attrs <- setdiff(required_attrs, names(attributes(dt)))
   if (length(missing_attrs) > 0L) {
@@ -93,10 +97,49 @@
     )
   }
 
-  meta_version <- row$content_hash_metadata[[1L]]
+  # content_hash_metadata in the inventory is stamp's *content hash*, not its
+  # internal version_id. Resolve the correct version_id by listing available
+  # pip_meta versions via pip_read() — this uses the same stamp path resolution
+  # that the subsequent load call will use, avoiding registry mismatches from
+  # calling stamp::st_versions() directly on the raw UNC path.
+  meta_content_hash <- row$content_hash_metadata[[1L]]
+
+  avail_meta <- pipload::pip_read(
+    id = pip_id,
+    alias = "pip_meta",
+    version = "available"
+  )
+  idx <- which(avail_meta$content_hash == meta_content_hash)
+  if (length(idx) == 0L) {
+    # The exact hash from the master inventory is no longer present in stamp
+    # (artifact was replaced by a subsequent pd_process_data() run).
+    # Abort if nothing is available at all; otherwise warn and use row 1
+    # (pip_read(..., "available") returns rows newest-first, so row 1 is latest).
+    if (nrow(avail_meta) == 0L) {
+      cli::cli_abort(
+        paste0(
+          "No fallback version available for {.val {pip_id}} in the ",
+          "{.val pip_meta} alias. Re-run pd_process_data() to rebuild metadata."
+        ),
+        class = c("load_deflation_aux", "piperr")
+      )
+    }
+    cli::cli_warn(
+      paste0(
+        "Could not find a stamp version matching content hash ",
+        "{.val {meta_content_hash}} for {.val {pip_id}}. ",
+        "The artifact may have been replaced by a newer run. ",
+        "Falling back to the most recent available version."
+      ),
+      class = c("load_deflation_aux_stale_hash", "pipwrn")
+    )
+    idx <- 1L
+  }
+  meta_version <- avail_meta$version_id[[idx[[1L]]]]
+
   meta <- pipload::pip_read(
-    id      = pip_id,
-    alias   = "pip_meta",
+    id = pip_id,
+    alias = "pip_meta",
     version = meta_version
   )
 
@@ -189,6 +232,19 @@ pd_deflation <- function(
       )
     }
     dt <- pipload::pip_read(id = pip_id, alias = "pip", version = version)
+    # stamp round-trips strip the pip S3 class prefix — restore it.
+    # Prefer assign_pipclass() (reads the `module` column); fall back to
+    # inferring from the pip_id last segment when module was dropped on save.
+    if ("module" %in% names(dt)) {
+      dt <- pipload::assign_pipclass(dt)
+    } else {
+      pip_module <- utils::tail(strsplit(pip_id, "_", fixed = TRUE)[[1L]], 1L)
+      dt <- if (grepl("GROUP", pip_module, ignore.case = TRUE)) {
+        pipload::as_pipgd(dt)
+      } else {
+        pipload::as_pipmd(dt)
+      }
+    }
   }
 
   # Resolve pip_id from survey attributes when not supplied by the caller
@@ -269,7 +325,7 @@ deflation.pipgd <- function(dt, cpi, ppp, pop, ...) {
 #' @return The result of `deflation_fn`, or `NA` if it errors.
 #' @noRd
 safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
-  pd_env_set("log_survey_id", attributes(dt)$survey_id$values)
+  pd_env_set("log_survey_id", attributes(dt)$survey_id)
   on.exit(pd_env_rm("log_survey_id"))
 
   tryCatch(
@@ -299,6 +355,7 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
   pop <- if (data.table::is.data.table(pop)) data.table::copy(pop) else pop
 
+  dt_c <- restore_data_level_cols(dt_c)
   dt_c <- add_rep_lvl(dt_c)
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
@@ -322,6 +379,7 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   cpi <- if (data.table::is.data.table(cpi)) data.table::copy(cpi) else cpi
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
 
+  dt_c <- restore_data_level_cols(dt_c)
   dt_c <- add_rep_lvl(dt_c)
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
@@ -330,6 +388,29 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   char_to_fct(dt_c)
 }
 
+
+#' Restore data-level columns from attributes
+#'
+#' When surveys are round-tripped through stamp, `ppp_data_level`,
+#' `cpi_data_level`, and `pop_data_level` are stored as object attributes
+#' rather than columns. This function materialises them as constant columns so
+#' that `add_ppp()`, `add_cpi()`, and `adjust_population()` can join on them.
+#'
+#' @param dt A `data.table`.
+#' @return `dt` with any missing `*_data_level` columns added.
+#' @keywords internal
+restore_data_level_cols <- function(dt) {
+  level_attrs <- c("ppp_data_level", "cpi_data_level", "pop_data_level")
+  for (col in level_attrs) {
+    if (!col %in% names(dt)) {
+      val <- attr(dt, col)
+      if (!is.null(val)) {
+        dt[, (col) := val]
+      }
+    }
+  }
+  dt
+}
 
 #' Convert PPP data from `pipload` to wide format
 #'
@@ -392,11 +473,29 @@ add_rep_lvl <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   dl_var        <- grep("data_level", names(dt), value = TRUE) # data_level vars
-  ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(dt, .x))
-  report_lvl_cpfw <- as.numeric(attributes(dt)$reporting_level)
-  select_var    <- dl_var[ordered_level==report_lvl_cpfw]
 
-  dt[, reporting_level := get(select_var[1])]
+  if (length(dl_var) == 0L) {
+    # data_level info is stored as attributes (stamp round-trip strips columns)
+    dt_attrs <- attributes(dt)
+    rep_lvl <- if (!is.null(dt_attrs$ppp_data_level)) {
+      dt_attrs$ppp_data_level
+    } else {
+      dt_attrs$cpi_data_level
+    }
+    if (is.null(rep_lvl)) {
+      cli::cli_abort(
+        "Cannot determine reporting level: no {.val data_level} columns or \\
+         attributes found in {.arg dt}.",
+        class = c("add_rep_lvl", "piperr")
+      )
+    }
+    dt[, reporting_level := rep_lvl]
+  } else {
+    ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(dt, .x))
+    report_lvl_cpfw <- as.numeric(attributes(dt)$reporting_level)
+    select_var <- dl_var[ordered_level == report_lvl_cpfw]
+    dt[, reporting_level := get(select_var[1])]
+  }
 
   setorder(dt, reporting_level)
 
@@ -514,9 +613,15 @@ add_cpi <- function(dt, cpi) {
 
   if (data.table::is.data.table(cpi)) {
     # Legacy data.table path
-    con <- attributes(dt)$country_code$value
-    svy_year <- attributes(dt)$survey_year$value
-    svy_acr <- attributes(dt)$survey_acronym$value
+    # Attributes may be stored as list(values = X) (pipeline path) or as plain
+    # scalars (stamp round-trip path). Handle both forms.
+    get_attr_val <- function(dt, nm) {
+      v <- attr(dt, nm)
+      if (is.list(v)) v[["values"]] else v
+    }
+    con <- get_attr_val(dt, "country_code")
+    svy_year <- get_attr_val(dt, "surveyid_year")
+    svy_acr <- get_attr_val(dt, "survey_acronym")
     cpi_c <- cpi[
       country_code == con & survey_year == svy_year & survey_acronym == svy_acr
     ]

@@ -3,9 +3,10 @@ review-date: 2026-05-04
 plan: 2026-05-04-integrate-deflation
 depth: standard
 reviewers: [cg-code-quality, cg-testing, cg-documentation, cg-version-control, cg-reproducibility, cg-performance, cg-architecture, cg-data-quality]
-status: complete
+status: open
 findings:
   P1.1: fixed
+  P1.2: open
   P2.1: fixed
   P2.2: skipped
   P2.3: fixed

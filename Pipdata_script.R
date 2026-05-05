@@ -95,3 +95,19 @@ stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 # "BOL_1990_EPF_v01_M_v01_A_GMD_GROUP"
 
 
+# ----- Test pd_deflation -----
+
+# Mode B: load survey and metadata from stamp by pip_id
+bol_deflated <- pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")
+
+# Inspect result
+class(bol_deflated)
+names(bol_deflated)
+
+# Check welfare_lcu and welfare_ppp columns were created
+grep("^welfare", names(bol_deflated), value = TRUE)
+
+# Quick sanity check: no all-NA welfare_ppp column
+welfare_ppp_cols <- grep("^welfare_ppp", names(bol_deflated), value = TRUE)
+sapply(bol_deflated[, welfare_ppp_cols, with = FALSE], \(x) mean(is.na(x)))
+
