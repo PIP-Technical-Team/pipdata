@@ -114,3 +114,5 @@ a separate version identifier field.
 
 - `.cg-docs/solutions/testing-patterns/2026-04-16-mocking-external-package-calls-at-function-startup.md`
   — pattern for mocking `pipload` functions in tests
+- `.cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md`
+  — sister finding: `content_hash_metadata` is stamp's `content_hash`, not `version_id`; use `pip_read(..., version="available")` to resolve
