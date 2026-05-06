@@ -32,14 +32,14 @@ make_pipmd <- function(
     cpi_data_level = cpi_data_level
   )
   data.table::setattr(dt, "class", c("pipmd", "data.table", "data.frame"))
-  data.table::setattr(dt, "survey_id", list(values = "ABC_2015_TST_INC_D1"))
-  data.table::setattr(dt, "country_code", list(values = country))
-  data.table::setattr(dt, "surveyid_year", list(values = survey_year))
-  data.table::setattr(dt, "survey_acronym", list(values = survey_acronym))
-  data.table::setattr(dt, "reporting_level", list(values = reporting_level))
-  data.table::setattr(dt, "ppp_data_level", list(values = ppp_data_level))
-  data.table::setattr(dt, "cpi_data_level", list(values = cpi_data_level))
-  data.table::setattr(dt, "pip_names", list(values = "ABC_2015_TST_INC_D1"))
+  data.table::setattr(dt, "survey_id", "ABC_2015_TST_INC_D1")
+  data.table::setattr(dt, "country_code", country)
+  data.table::setattr(dt, "surveyid_year", survey_year)
+  data.table::setattr(dt, "survey_acronym", survey_acronym)
+  data.table::setattr(dt, "reporting_level", reporting_level)
+  data.table::setattr(dt, "ppp_data_level", ppp_data_level)
+  data.table::setattr(dt, "cpi_data_level", cpi_data_level)
+  data.table::setattr(dt, "pip_names", "ABC_2015_TST_INC_D1")
   data.table::setattr(dt, "welfare_type", welfare_type)
   data.table::setattr(dt, "module", module)
   dt
@@ -113,18 +113,6 @@ test_that("restore_data_level_cols materialises plain scalar attrs as columns", 
   expect_true("cpi_data_level" %in% names(result))
   expect_equal(unique(result$ppp_data_level), "national")
   expect_equal(unique(result$cpi_data_level), "national")
-})
-
-test_that("restore_data_level_cols unwraps list(values=...) attrs", {
-  dt <- make_pipmd_stamp()
-  # Override with pipeline-style list attrs
-  data.table::setattr(dt, "ppp_data_level", list(values = "rural"))
-  data.table::setattr(dt, "cpi_data_level", list(values = "rural"))
-
-  result <- pipdata:::restore_data_level_cols(dt)
-
-  expect_equal(unique(result$ppp_data_level), "rural")
-  expect_type(result$ppp_data_level, "character")
 })
 
 test_that("restore_data_level_cols skips columns already present", {

@@ -347,8 +347,7 @@ deflation.pipgd <- function(dt, cpi, ppp, pop, ...) {
 #' @return The result of `deflation_fn`, or `NA` if it errors.
 #' @noRd
 safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
-  sv <- attributes(dt)$survey_id
-  pd_env_set("log_survey_id", if (is.list(sv)) sv[["values"]] else sv)
+  pd_env_set("log_survey_id", attr(dt, "survey_id"))
   on.exit(pd_env_rm("log_survey_id"))
 
   tryCatch(
@@ -430,7 +429,6 @@ restore_data_level_cols <- function(dt) {
     if (!col %in% names(dt)) {
       val <- attr(dt, col)
       if (!is.null(val)) {
-        val <- if (is.list(val)) val[["values"]] else val
         dt[, (col) := val]
       }
     }
@@ -508,13 +506,9 @@ add_rep_lvl <- function(dt) {
     } else {
       dt_attrs$cpi_data_level
     }
-    # Attributes may be stored as list(values = X) (pipeline path) or as plain
-    # scalars (stamp round-trip path). Unwrap if needed.
-    rep_lvl <- if (is.list(rep_lvl)) rep_lvl[["values"]] else rep_lvl
     if (is.null(rep_lvl)) {
       cli::cli_abort(
-        "Cannot determine reporting level: no {.val data_level} columns or \\
-         attributes found in {.arg dt}.",
+        "Cannot determine reporting level: no {.val data_level} columns or attributes found in {.arg dt}.",
         class = c("add_rep_lvl", "piperr")
       )
     }
@@ -642,15 +636,9 @@ add_cpi <- function(dt, cpi) {
 
   if (data.table::is.data.table(cpi)) {
     # Legacy data.table path
-    # Attributes may be stored as list(values = X) (pipeline path) or as plain
-    # scalars (stamp round-trip path). Handle both forms.
-    get_attr_val <- function(dt, nm) {
-      v <- attr(dt, nm)
-      if (is.list(v)) v[["values"]] else v
-    }
-    con <- get_attr_val(dt, "country_code")
-    svy_year <- get_attr_val(dt, "surveyid_year")
-    svy_acr <- get_attr_val(dt, "survey_acronym")
+    con <- attr(dt, "country_code")
+    svy_year <- attr(dt, "surveyid_year")
+    svy_acr <- attr(dt, "survey_acronym")
     cpi_c <- cpi[
       country_code == con & survey_year == svy_year & survey_acronym == svy_acr
     ]

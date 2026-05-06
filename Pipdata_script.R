@@ -97,6 +97,8 @@ stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 
 # ----- Test pd_deflation -----
 
+dt <- pipload::pip_read(id = "BOL_2022_EH_INC_ALL", alias = "pip")
+
 # Mode B: load survey and metadata from stamp by pip_id
 bol_deflated <- pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")
 

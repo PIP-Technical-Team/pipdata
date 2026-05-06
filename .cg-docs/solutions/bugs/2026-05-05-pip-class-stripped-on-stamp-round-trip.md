@@ -71,6 +71,7 @@ if ("module" %in% names(dt)) {
 
 ## Related
 
+- `.cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md` — generalised pattern for `list(values=...)` vs plain scalar attrs across all stamp round-trips
 - `.cg-docs/solutions/bugs/2026-05-05-data-level-columns-stripped-on-stamp-round-trip.md` — same root cause: `ppp_data_level`/`cpi_data_level` columns also stripped; fixed with `restore_data_level_cols()`
 - `.cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md`
 - Roadmap: `store-version-id-in-inventory` — same plan should also capture pip
