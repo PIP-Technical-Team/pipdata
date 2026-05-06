@@ -21,7 +21,9 @@ make_pipmd <- function(
   survey_acronym = "TST",
   ppp_data_level = "national",
   cpi_data_level = "national",
-  reporting_level = 1L
+  reporting_level = 1L,
+  welfare_type = "income",
+  module = "D1"
 ) {
   dt <- data.table::data.table(
     welfare = as.numeric(welfare),
@@ -38,6 +40,41 @@ make_pipmd <- function(
   data.table::setattr(dt, "ppp_data_level", list(values = ppp_data_level))
   data.table::setattr(dt, "cpi_data_level", list(values = cpi_data_level))
   data.table::setattr(dt, "pip_names", list(values = "ABC_2015_TST_INC_D1"))
+  data.table::setattr(dt, "welfare_type", welfare_type)
+  data.table::setattr(dt, "module", module)
+  dt
+}
+
+# Mirrors what stamp produces on a round-trip: no data_level columns,
+# all relevant attrs are plain character scalars (not list(values=...)).
+make_pipmd_stamp <- function(
+  welfare = c(5, 10, 15),
+  weight = c(100, 200, 100),
+  country = "ABC",
+  survey_year = 2015L,
+  survey_acronym = "TST",
+  ppp_data_level = "national",
+  cpi_data_level = "national",
+  reporting_level = "1",
+  welfare_type = "income",
+  module = "D1"
+) {
+  dt <- data.table::data.table(
+    welfare = as.numeric(welfare),
+    weight = as.numeric(weight)
+    # no ppp_data_level / cpi_data_level columns — stripped by vars_to_attr()
+  )
+  data.table::setattr(dt, "class", c("pipmd", "data.table", "data.frame"))
+  data.table::setattr(dt, "survey_id", "ABC_2015_TST_INC_D1")
+  data.table::setattr(dt, "country_code", country)
+  data.table::setattr(dt, "surveyid_year", survey_year)
+  data.table::setattr(dt, "survey_acronym", survey_acronym)
+  data.table::setattr(dt, "reporting_level", reporting_level)
+  data.table::setattr(dt, "ppp_data_level", ppp_data_level)
+  data.table::setattr(dt, "cpi_data_level", cpi_data_level)
+  data.table::setattr(dt, "pip_names", "ABC_2015_TST_INC_D1")
+  data.table::setattr(dt, "welfare_type", welfare_type)
+  data.table::setattr(dt, "module", module)
   dt
 }
 
@@ -60,6 +97,44 @@ make_ppp_vec <- function(
 make_pop_vec <- function(year = "2015", level = "national", value = 1e6) {
   stats::setNames(value, paste0(year, "_", level))
 }
+
+# ---------------------------------------------------------------------------
+# restore_data_level_cols() — stamp round-trip path
+# ---------------------------------------------------------------------------
+
+test_that("restore_data_level_cols materialises plain scalar attrs as columns", {
+  dt <- make_pipmd_stamp()
+  expect_false("ppp_data_level" %in% names(dt))
+  expect_false("cpi_data_level" %in% names(dt))
+
+  result <- pipdata:::restore_data_level_cols(dt)
+
+  expect_true("ppp_data_level" %in% names(result))
+  expect_true("cpi_data_level" %in% names(result))
+  expect_equal(unique(result$ppp_data_level), "national")
+  expect_equal(unique(result$cpi_data_level), "national")
+})
+
+test_that("restore_data_level_cols unwraps list(values=...) attrs", {
+  dt <- make_pipmd_stamp()
+  # Override with pipeline-style list attrs
+  data.table::setattr(dt, "ppp_data_level", list(values = "rural"))
+  data.table::setattr(dt, "cpi_data_level", list(values = "rural"))
+
+  result <- pipdata:::restore_data_level_cols(dt)
+
+  expect_equal(unique(result$ppp_data_level), "rural")
+  expect_type(result$ppp_data_level, "character")
+})
+
+test_that("restore_data_level_cols skips columns already present", {
+  dt <- make_pipmd()  # already has ppp_data_level as a column
+  original_vals <- dt$ppp_data_level
+
+  result <- pipdata:::restore_data_level_cols(dt)
+
+  expect_equal(result$ppp_data_level, original_vals)
+})
 
 # ---------------------------------------------------------------------------
 # .validate_deflation_input()
@@ -313,14 +388,15 @@ test_that("adjust_population (named vector) errors when no matching level found"
 # ---------------------------------------------------------------------------
 
 test_that("pd_deflation Mode A: single dt, mocked aux, returns data.table or NA", {
-  dt  <- make_pipmd()
+  # pip_id constructed as: country_surveyid_year_acronym_INC/CON_module
+  dt <- make_pipmd() # welfare_type="income" → INC, module="D1"
   cpi <- make_cpi_vec()
   ppp <- make_ppp_vec()
   pop <- make_pop_vec()
 
   meta_obj <- list(cpi = cpi, ppp = ppp, pop = pop)
   fake_inv <- data.table::data.table(
-    pip_id = "ABC_2015_TST_INC_D1",
+    pip_id = "ABC_2015_TST_INC_D1", # matches constructed pip_id
     content_hash_data = "abc123",
     content_hash_metadata = "meta_abc123",
     created_at_metadata = "2026-01-01T00:00:00Z"
@@ -406,7 +482,9 @@ test_that(".load_deflation_aux falls back gracefully when master inventory hash 
 })
 
 test_that("pd_deflation Mode B: loads single survey via pip_id", {
-  dt  <- make_pipmd()
+  # make_pipmd_stamp() mirrors what stamp produces: no data_level columns,
+  # plain scalar attrs — exercises restore_data_level_cols() for real.
+  dt <- make_pipmd_stamp()
   cpi <- make_cpi_vec()
   ppp <- make_ppp_vec()
   pop <- make_pop_vec()

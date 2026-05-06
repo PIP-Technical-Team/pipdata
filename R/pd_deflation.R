@@ -247,12 +247,34 @@ pd_deflation <- function(
     }
   }
 
-  # Resolve pip_id from survey attributes when not supplied by the caller
+  # Resolve pip_id from survey attributes when not supplied by the caller.
+  # Construct using the same logic as cache_id():
+  #   {country_code}_{surveyid_year}_{survey_acronym}_{INC|CON}_{module}
   if (is.null(pip_id)) {
-    pip_id <- attributes(dt)$pip_names$values[[1L]]
-    if (is.null(pip_id)) {
-      pip_id <- attributes(dt)$survey_id$values[[1L]]
+    required_id_attrs <- c(
+      "country_code",
+      "surveyid_year",
+      "survey_acronym",
+      "welfare_type",
+      "module"
+    )
+    missing_id_attrs <- setdiff(required_id_attrs, names(attributes(dt)))
+    if (length(missing_id_attrs) > 0L) {
+      cli::cli_abort(
+        "Cannot construct {.arg pip_id}: missing attributes {.field {missing_id_attrs}}.",
+        class = c("pd_deflation", "piperr")
+      )
     }
+    wt_map <- c(income = "INC", consumption = "CON")
+    wt <- wt_map[attr(dt, "welfare_type")]
+    pip_id <- paste(
+      attr(dt, "country_code"),
+      attr(dt, "surveyid_year"),
+      attr(dt, "survey_acronym"),
+      wt,
+      attr(dt, "module"),
+      sep = "_"
+    )
   }
 
   # Determine whether aux was provided explicitly (legacy path)
@@ -325,7 +347,8 @@ deflation.pipgd <- function(dt, cpi, ppp, pop, ...) {
 #' @return The result of `deflation_fn`, or `NA` if it errors.
 #' @noRd
 safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
-  pd_env_set("log_survey_id", attributes(dt)$survey_id)
+  sv <- attributes(dt)$survey_id
+  pd_env_set("log_survey_id", if (is.list(sv)) sv[["values"]] else sv)
   on.exit(pd_env_rm("log_survey_id"))
 
   tryCatch(
@@ -398,6 +421,8 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
 #'
 #' @param dt A `data.table`.
 #' @return `dt` with any missing `*_data_level` columns added.
+#' @note Mutates `dt` by reference via `:=`. Pass `data.table::copy(dt)` if
+#'   the original must be preserved.
 #' @keywords internal
 restore_data_level_cols <- function(dt) {
   level_attrs <- c("ppp_data_level", "cpi_data_level", "pop_data_level")
@@ -405,6 +430,7 @@ restore_data_level_cols <- function(dt) {
     if (!col %in% names(dt)) {
       val <- attr(dt, col)
       if (!is.null(val)) {
+        val <- if (is.list(val)) val[["values"]] else val
         dt[, (col) := val]
       }
     }
@@ -482,6 +508,9 @@ add_rep_lvl <- function(dt) {
     } else {
       dt_attrs$cpi_data_level
     }
+    # Attributes may be stored as list(values = X) (pipeline path) or as plain
+    # scalars (stamp round-trip path). Unwrap if needed.
+    rep_lvl <- if (is.list(rep_lvl)) rep_lvl[["values"]] else rep_lvl
     if (is.null(rep_lvl)) {
       cli::cli_abort(
         "Cannot determine reporting level: no {.val data_level} columns or \\
