@@ -377,7 +377,6 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
   pop <- if (data.table::is.data.table(pop)) data.table::copy(pop) else pop
 
-  dt_c <- restore_data_level_cols(dt_c)
   dt_c <- add_rep_lvl(dt_c)
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
@@ -401,7 +400,6 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   cpi <- if (data.table::is.data.table(cpi)) data.table::copy(cpi) else cpi
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
 
-  dt_c <- restore_data_level_cols(dt_c)
   dt_c <- add_rep_lvl(dt_c)
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
@@ -410,31 +408,6 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   char_to_fct(dt_c)
 }
 
-
-#' Restore data-level columns from attributes
-#'
-#' When surveys are round-tripped through stamp, `ppp_data_level`,
-#' `cpi_data_level`, and `pop_data_level` are stored as object attributes
-#' rather than columns. This function materialises them as constant columns so
-#' that `add_ppp()`, `add_cpi()`, and `adjust_population()` can join on them.
-#'
-#' @param dt A `data.table`.
-#' @return `dt` with any missing `*_data_level` columns added.
-#' @note Mutates `dt` by reference via `:=`. Pass `data.table::copy(dt)` if
-#'   the original must be preserved.
-#' @keywords internal
-restore_data_level_cols <- function(dt) {
-  level_attrs <- c("ppp_data_level", "cpi_data_level", "pop_data_level")
-  for (col in level_attrs) {
-    if (!col %in% names(dt)) {
-      val <- attr(dt, col)
-      if (!is.null(val)) {
-        dt[, (col) := val]
-      }
-    }
-  }
-  dt
-}
 
 #' Convert PPP data from `pipload` to wide format
 #'
@@ -496,29 +469,16 @@ add_rep_lvl <- function(dt) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  dl_var        <- grep("data_level", names(dt), value = TRUE) # data_level vars
-
-  if (length(dl_var) == 0L) {
-    # data_level info is stored as attributes (stamp round-trip strips columns)
-    dt_attrs <- attributes(dt)
-    rep_lvl <- if (!is.null(dt_attrs$ppp_data_level)) {
-      dt_attrs$ppp_data_level
-    } else {
-      dt_attrs$cpi_data_level
-    }
-    if (is.null(rep_lvl)) {
-      cli::cli_abort(
-        "Cannot determine reporting level: no {.val data_level} columns or attributes found in {.arg dt}.",
-        class = c("add_rep_lvl", "piperr")
-      )
-    }
-    dt[, reporting_level := rep_lvl]
-  } else {
-    ordered_level <- purrr::map_dbl(dl_var, ~ get_ordered_level(dt, .x))
-    report_lvl_cpfw <- as.numeric(attributes(dt)$reporting_level)
-    select_var <- dl_var[ordered_level == report_lvl_cpfw]
-    dt[, reporting_level := get(select_var[1])]
+  # Data-level info is always stored as attributes; never as columns.
+  ppp_lvl <- attr(dt, "ppp_data_level")
+  rep_lvl <- if (!is.null(ppp_lvl)) ppp_lvl else attr(dt, "cpi_data_level")
+  if (is.null(rep_lvl)) {
+    cli::cli_abort(
+      "Cannot determine reporting level: no {.field ppp_data_level} or {.field cpi_data_level} attribute found in {.arg dt}.",
+      class = c("add_rep_lvl", "piperr")
+    )
   }
+  dt[, reporting_level := rep_lvl]
 
   setorder(dt, reporting_level)
 
@@ -607,11 +567,12 @@ add_ppp <- function(dt, ppp) {
     character(1L)
   )
 
+  ppp_lvl <- attr(dt, "ppp_data_level")
   unique_versions <- unique(ppp_versions)
   for (v in unique_versions) {
     idx <- ppp_versions == v
     lev_map <- stats::setNames(ppp[idx], report_levels[idx])
-    dt[, (v) := lev_map[ppp_data_level]]
+    dt[, (v) := lev_map[ppp_lvl]]
   }
 
   data.table::setattr(dt, "ppp_versions", unique_versions)
@@ -665,6 +626,7 @@ add_cpi <- function(dt, cpi) {
   cpi_years <- sub("^([0-9]+)_.*$", "\\1", nm)
   report_levels <- sub("^[0-9]+_(.+)$", "\\1", nm)
 
+  cpi_lvl <- attr(dt, "cpi_data_level")
   unique_years <- unique(cpi_years)
   data.table::setattr(dt, "cpi_years", unique_years)
 
@@ -672,7 +634,7 @@ add_cpi <- function(dt, cpi) {
     col <- paste0("cpi", yr)
     idx <- cpi_years == yr
     lev_map <- stats::setNames(cpi[idx], report_levels[idx])
-    dt[, (col) := lev_map[cpi_data_level]]
+    dt[, (col) := lev_map[cpi_lvl]]
   }
 
   return(dt)

@@ -46,10 +46,12 @@ attr(dt, "ppp_versions")    # c("2017_01_01", "2021_01_01")        chr vector
 attr(dt, "cpi_years")       # c("2017", "2021")                    chr vector
 ```
 
-**There is no `list(values=...)` wrapping on any path.** The only difference
-between pipeline-path and stamp-path objects is whether `ppp_data_level` /
-`cpi_data_level` / `pop_data_level` exist as **columns** (pipeline path) or
-only as **attributes** (stamp round-trip path, after `vars_to_attr()` strips them).
+**There is no `list(values=...)` wrapping on any path.** Data-level metadata
+(`ppp_data_level`, `cpi_data_level`, `pop_data_level`) is **always stored as
+attributes only**. These values are never materialised as columns in the
+survey data.table — `add_ppp()`, `add_cpi()`, and `add_rep_lvl()` read them
+directly from `attr(dt, ...)`.  The `restore_data_level_cols()` helper that
+previously materialised them as columns has been removed.
 
 ## Correct Pattern
 
@@ -65,15 +67,17 @@ helper is incorrect and should be removed.
 
 ## What to Watch For
 
-The only real stamp round-trip divergence is **column presence**:
+Data-level attributes are scalars. `add_ppp()` and `add_cpi()` use them to
+look up the correct value from a named vector:
 
-- **Pipeline path**: `ppp_data_level`, `cpi_data_level`, `pop_data_level`
-  exist as **columns** AND as **attributes**.
-- **Stamp round-trip path**: those columns are stripped by `vars_to_attr()`;
-  they exist only as attributes.
+```r
+ppp_lvl <- attr(dt, "ppp_data_level")   # e.g. "national"
+dt[, (v) := lev_map[ppp_lvl]]           # scalar lookup, not per-row column
+```
 
-`restore_data_level_cols()` in `pd_deflation.R` handles this by materialising
-the attrs back into columns before the deflation pipeline runs.
+This means **a single survey object must have one `ppp_data_level`** (surveys
+with multiple reporting levels are handled upstream by splitting before
+deflation, not by mixing levels within a single `dt`).
 
 ## Related
 
