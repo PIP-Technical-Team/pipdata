@@ -139,6 +139,10 @@ if (length(dl_var) == 0L) {
 
 ## Related
 
+- `.cg-docs/solutions/bugs/2026-05-06-subnational-deflation-area-attribute-not-resolved.md`
+  — follow-on bug: the attribute-only `add_rep_lvl()` introduced here still
+  does not handle `ppp_data_level == "area"` (column-pointer semantics) —
+  results in NA deflation for all subnational surveys.
 - `.cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md` — generalised pattern: any attr that may be `list(values=...)` or plain scalar needs the canonical unwrapper
 - `.cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md` — `make_pipmd_stamp()` fixture for testing stamp-path code
 - `.cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md` — same root cause: stamp round-trip strips object-level metadata (class and columns-as-attributes alike)

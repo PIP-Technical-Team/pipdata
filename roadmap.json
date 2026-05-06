@@ -327,6 +327,19 @@
                         "pipeline",
                         "orchestration"
                     ]
+                },
+                {
+                    "id": "explicit-data-level-semantics",
+                    "title": "Make *_data_level attribute semantics explicit",
+                    "description": "Currently ppp_data_level/cpi_data_level attributes use 'area' as an implicit pointer to a column name, while 'national' is a literal level value. This dual semantics is confusing. Refactor to make the convention explicit — either use a structured encoding (e.g., list(column='area', values=c('rural','urban'))), or always store resolved level values directly. Requires changes across add_dom_vars(), pd_aux_attr(), add_ppp(), add_cpi(), add_rep_lvl(), and corresponding tests.",
+                    "status": "idea",
+                    "tags": [
+                        "deflation",
+                        "architecture",
+                        "attributes",
+                        "subnational",
+                        "code-quality"
+                    ]
                 }
             ]
         }
