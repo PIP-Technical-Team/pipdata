@@ -52,7 +52,7 @@ stamp::st_init(
 
 stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 
-# Do not run from now on, as the rest of the script is for testing purposes only. 
+# Do not run from now on, as the rest of the script is for testing purposes only.
 # The next steps are to load the cleaned data and check that it is correct.
 #------ Load data tests -----
 # # Load cleaned data for a survey
@@ -66,7 +66,6 @@ stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 # BOL2 <- pipload::load_pip_data(id_name = "BOL_2022_EH_INC_ALL")
 
 # NGA <- dlw::dlw_get_gmd(country_code = "NGA", year = 2022, module = "ALL")
-
 
 # # load validation inventory
 # validation_inv_list <- pipload::load_gmd_valid_inv()
@@ -90,14 +89,19 @@ stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 #     joyn::inner_join(
 #       vrs,
 #       by = c("survey_id", "pip_id")
-#     ) 
+#     )
 
 # "BOL_1990_EPF_v01_M_v01_A_GMD_GROUP"
 
-
 # ----- Test pd_deflation -----
 
-dt <- pipload::pip_read(id = "BOL_2022_EH_INC_ALL", alias = "pip")
+dt_meta <- pipload::pip_read(
+  id = "CHN_2011_CRHS-CUHS_CON_GROUP",
+  alias = "pip_meta"
+)
+
+
+dt <- pipload::pip_read(id = "CHN_2011_CRHS-CUHS_CON_GROUP", alias = "pip")
 
 # Mode B: load survey and metadata from stamp by pip_id
 bol_deflated <- pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")

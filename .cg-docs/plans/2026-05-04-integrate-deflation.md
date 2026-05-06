@@ -24,6 +24,11 @@ same survey enriched with deflated welfare vectors. Also extract a shared
 Iteration over many surveys (batch deflation) is intentionally **out of scope**
 and belongs to the future `pd_deflate_pipeline()` wrapper.
 
+**⚠️ Prerequisite**: Step 0 must be completed first. The subnational-deflation-fast-fix 
+plan (`.cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md`) fixes a critical 
+bug where subnational surveys receive `NA` deflation values. This fix must be done before 
+Step 3 (S3 method refactoring) to ensure the refactored code works for all survey types.
+
 ## Context
 
 `pd_deflation()` is currently exported, buildable, and documented (see
@@ -95,6 +100,19 @@ error handler). A `safe_deflation()` helper can encapsulate this.
 | R8  | `pd_deflation()` `@note` updated to reflect active integration status | documentation |
 
 ## Implementation Steps
+
+### 0. PREREQUISITE: Fix subnational deflation area attribute resolution
+
+- **Plan**: `.cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md`
+- **Status**: planned (not started)
+- **Summary**: Fix broken subnational deflation by modifying `add_rep_lvl()`, 
+  `add_ppp()`, and `add_cpi()` to resolve `"area"` attributes to per-row `dt$area` 
+  column values. Without this fix, Step 3 (refactoring S3 methods) could introduce 
+  regressions for subnational surveys (e.g., CHN grouped data).
+- **Duration**: ~2–3 hours (fast fix)
+- **Start this after**: Finish Step 0 before proceeding to Step 1
+
+**Do not start Step 1 until subnational deflation is fixed.**
 
 ### 1. Define the input validation and metadata-loading helper
 
