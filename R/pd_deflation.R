@@ -386,7 +386,7 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
     dt_c <- adjust_population(dt_c, pop)
   }
 
-  char_to_fct(dt_c)
+  finalize_deflation_output(char_to_fct(dt_c))
 }
 
 #' Core deflation logic for grouped-data surveys
@@ -405,9 +405,47 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   dt_c <- welfare_lcu(dt_c)
   dt_c <- deflate_wlf(dt_c)
 
-  char_to_fct(dt_c)
+  finalize_deflation_output(char_to_fct(dt_c))
 }
 
+
+#' Reorder columns and rows in deflation output
+#'
+#' Columns: `welfare`, `weight` first; then `welfare_lcu`, `welfare_ppp_*`
+#' (newest base year first); then all remaining columns.
+#' Rows: sorted ascending by the newest `welfare_ppp_*` column, then `weight`.
+#'
+#' @param dt Deflated `data.table` (after `char_to_fct()`).
+#' @return `dt` with columns and rows reordered (mutates by reference).
+#' @keywords internal
+finalize_deflation_output <- function(dt) {
+  nms <- names(dt)
+
+  # Helper: sort a character vector of column names by the first 4-digit year
+  # found in the name, descending (newest first).
+  sort_by_year_desc <- function(cols) {
+    yrs <- as.integer(regmatches(cols, regexpr("[0-9]{4}", cols)))
+    cols[order(-yrs)]
+  }
+
+  wlf_ppp <- sort_by_year_desc(grep("^welfare_ppp_", nms, value = TRUE))
+  ppp_cols <- sort_by_year_desc(grep("^ppp_[0-9]{4}", nms, value = TRUE))
+  cpi_cols <- sort_by_year_desc(grep("^cpi[0-9]{4}", nms, value = TRUE))
+
+  new_block <- intersect(
+    c("welfare_lcu", wlf_ppp, "reporting_level", "area", ppp_cols, cpi_cols),
+    nms
+  )
+  anchor <- intersect(c("welfare", "weight"), nms)
+  rest <- setdiff(nms, c(anchor, new_block))
+  data.table::setcolorder(dt, c(anchor, new_block, rest))
+
+  if (length(wlf_ppp) > 0L) {
+    data.table::setorderv(dt, c(wlf_ppp[[1L]], "weight"))
+  }
+
+  dt
+}
 
 #' Convert PPP data from `pipload` to wide format
 #'
