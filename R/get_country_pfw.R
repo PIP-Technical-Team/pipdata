@@ -17,6 +17,20 @@
 #' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' cpfw <- get_country_pfw(gd, pfw)
 #' }
+
+# Domain columns used by report_lvl() to compute per-row reporting_level.
+# reporting_level = max across all domain columns:
+#   "1" = national (all domains == 1)
+#   "2" = subnational (at least one domain == 2, e.g. cpi_domain == 2
+#         when urban/rural CPI values are available)
+# Tracked for migration to sysdata.rda (see roadmap: sysdata-domain-cols).
+.DOMAIN_COLS <- c(
+  "cpi_domain",
+  "ppp_domain",
+  "gdp_domain",
+  "pce_domain",
+  "pop_domain"
+)
 get_country_pfw <- function(dt, pfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,23 +60,26 @@ get_country_pfw <- function(dt, pfw) {
 
 #' Add reporting level variable to country PFW
 #'
-#' @param cpfw data.table with country Price Framework
+#' Computes `reporting_level` as the per-row maximum across the five domain
+#' columns (CPI, PPP, GDP, PCE, pop). Values are stored as character:
+#' `"1"` = national (all domains are national); `"2"` = subnational (at least
+#' one domain, e.g. `cpi_domain`, is 2 meaning urban/rural-specific data are
+#' available). This value is later read by `add_main_att()` as the integer
+#' `reporting_level` attribute on the survey `data.table`.
 #'
-#' @return data.table
+#' @param cpfw data.table with country Price Framework containing the five
+#'   `*_domain` columns (see `.DOMAIN_COLS`) and an `inpovcal` indicator.
+#'
+#' @return `cpfw` with a new `reporting_level` character column (`"1"` or
+#'   `"2"`) added by reference. Rows with `inpovcal != 1` are dropped.
 #' @keywords internal
 report_lvl <- function(cpfw) {
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # computations   ---------
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      dcols <- c( # We need to include to sysdata
-        "cpi_domain",
-        "ppp_domain",
-        "gdp_domain",
-        "pce_domain",
-        "pop_domain"
-      )
+      dcols <- .DOMAIN_COLS
 
       missing_dcols <- setdiff(dcols, names(cpfw))
       if (length(missing_dcols) > 0L) {
@@ -72,10 +89,13 @@ report_lvl <- function(cpfw) {
         )
       }
 
+      # Filter to inpovcal rows first so nrow() checks below reflect the
+      # actual number of usable PFW observations.
+      cpfw <- cpfw[inpovcal == 1]
+
       # do.call(pmax, .SD) computes per-row max across domain columns in a
       # single vectorised C call — avoids apply(MARGIN=1) R-level loop.
-      cpfw[
-        inpovcal == 1,
+      cpfw[,
         reporting_level := as.character(do.call(pmax, .SD)),
         .SDcols = dcols
       ]
@@ -171,10 +191,17 @@ report_lvl <- function(cpfw) {
 
 #' Create cache ID for country PFW
 #'
-#' @param cpfw country PFW data.table
-#' @param att survey attributes
+#' Constructs a `cache_id` string of the form
+#' `{country_code}_{surveyid_year}_{survey_acronym}_{INC|CON}_{module}`
+#' and adds it as a column to `cpfw`. The table is then split by `cache_id`
+#' and returned as a named list — one element per welfare type.
 #'
-#' @return data.table
+#' @param cpfw data.table with country Price Framework, containing at minimum
+#'   `welfare_type` and `reporting_level` columns.
+#' @param att Named list of survey attributes (from `attributes(dt)`).
+#'   Must contain: `country_code`, `surveyid_year`, `survey_acronym`, `module`.
+#'
+#' @return Named list of data.tables, one element per unique `cache_id`.
 #' @keywords internal
 cache_id <- function(att,
                      cpfw) {
