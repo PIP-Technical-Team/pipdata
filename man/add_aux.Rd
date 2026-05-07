@@ -7,9 +7,16 @@
 add_aux(dt, ppp, cpi)
 }
 \arguments{
-\item{ppp}{aux_ppp from \code{pipload::pip_load_aux}}
+\item{dt}{A single cleaned survey \code{data.table} (class \code{pipmd} or \code{pipgd}),
+or \code{NULL} when \code{pip_id} is given instead.}
 
-\item{cpi}{aux_cpi from \code{pipload::pip_load_aux}}
+\item{ppp}{Named numeric vector of PPP values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("ppp")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
+
+\item{cpi}{Named numeric vector of CPI values (as returned by
+\code{\link[=pd_aux_attr]{pd_aux_attr()}}), or a \code{data.table} from \code{pipload::pip_load_aux("cpi")}
+for the legacy interface. \code{NULL} triggers inventory-based loading.}
 }
 \value{
 data.table

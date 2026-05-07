@@ -17,6 +17,13 @@ downloaded using \code{pipload::load_gmd_valid_inv()}.}
 
 \item{aux_measures}{A character vector of auxiliary measures to load and merge
 with the DLW data. The default is \code{c("pfw", "cpi", "ppp", "pop", "gdp", "pce")}.}
+
+\item{force}{Logical. If \code{TRUE}, forces reprocessing of all surveys by
+switching stamp versioning to \code{"timestamp"} and bypassing the master
+inventory comparison. Default \code{FALSE}.}
+
+\item{verbose}{Logical. Print progress messages. Default:
+\code{getOption("pipdata.verbose", default = FALSE)}.}
 }
 \value{
 A data.frame: updated pip inventory (\code{new_pip_inv}) with new
@@ -28,6 +35,12 @@ merging auxiliary data (PFW, CPI, PPP, population, GDP, PCE), cleaning
 main variables, creating metadata, and saving new versions of the cleaned
 data and metadata into the pip storage. The function returns an updated
 pip inventory with the new versions recorded.
+}
+\details{
+\strong{Logging}: This function writes a \code{process_summary_inf} entry to the \code{"pipdata_log"}
+summarizing the total number of surveys processed, successfully cleaned, and failed.
+Additional informational entries are logged for auxiliary file changes and inventory
+verification (see \code{\link[=valid_dlw_load]{valid_dlw_load()}} and \code{\link[=update_pip_inventory]{update_pip_inventory()}} for details).
 }
 \examples{
 \dontrun{

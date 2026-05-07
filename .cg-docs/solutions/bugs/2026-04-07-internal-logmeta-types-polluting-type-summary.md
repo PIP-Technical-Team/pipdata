@@ -112,3 +112,4 @@ test_that("build_type_summary returns table with only genuine errors when mixed"
 ## Related
 
 - [2026-04-07-synthetic-piplog-testing-pattern.md](../testing-patterns/2026-04-07-synthetic-piplog-testing-pattern.md) — test helpers used in the regression tests above
+- [2026-04-29-duplicate-logmeta-discriminator-key.md](./2026-04-29-duplicate-logmeta-discriminator-key.md) — later bug: two different events reusing the same discriminator string causes malformed report sections

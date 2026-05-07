@@ -40,11 +40,15 @@ The function:
 \item Detects changes in auxiliary files (PFW, CPI, PPP, etc.) and
 identifies affected surveys.
 \item Filters the inventory to requested modules.
-\item Selects the latest version of each survey via \code{\link[=last_ver_inv]{last_ver_inv()}}.
+\item Selects the latest version of each survey via \code{last_ver_inv()}.
 \item Unless \code{force = TRUE}, removes surveys already cleaned in the
-master inventory via \code{\link[=inv_to_process]{inv_to_process()}}.
+master inventory via \code{inv_to_process()}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
+
+\strong{Logging}: This function writes an \code{aux_changes_inf} entry to the \code{"pipdata_log"}
+when changes are detected in any of the requested auxiliary measures. The logmeta
+entry includes the measures that changed and the number of affected surveys.
 }
 \seealso{
 Other pd_process_data pipeline: 
@@ -59,6 +63,7 @@ Other pd_process_data pipeline:
 \code{\link{inv_to_process}()},
 \code{\link{log_report}()},
 \code{\link{pd_aux_attr}()},
+\code{\link{pd_deflation}()},
 \code{\link{save_pip_data}()},
 \code{\link{survey_id_to_attr}()},
 \code{\link{update_pip_inventory}()}

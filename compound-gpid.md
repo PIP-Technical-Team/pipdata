@@ -2,7 +2,7 @@
 project-name: "Pipdata package"
 team: "DECDG/GPID"
 created: "2026-04-06"
-last-reviewed: "2026-04-06"
+last-reviewed: "2026-05-04"
 ---
 
 # Pipdata Package
@@ -17,8 +17,8 @@ This project aims to run the initial steps of the new pipeline of PIP. That is, 
 
 ## Constraints
 
-<!-- TODO: Add hard constraints, e.g. reproducibility requirements, data privacy rules. -->
+- R packages good standards
 
 ## Current Focus
 
-<!-- TODO: What is the team working on right now? 1-2 sentences. Update whenever priorities shift. -->
+Pipeline Alignment Audit: aligning the pipdata codebase with the canonical three-wrapper architecture. Currently fixing subnational deflation (`ppp_data_level = "area"` resolution) so that surveys with urban/rural domains deflate correctly using per-row area column values. Also integrating pd_deflation.R into the active pipeline and auditing utility functions (copy_dlw_meta, dontrun examples) to ensure all code serves the pipeline wrappers or is properly documented as a standalone admin tool.

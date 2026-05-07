@@ -58,7 +58,12 @@ dlw_gmd_match <- \() {
 #'
 #' @param check_missing Logical. If TRUE, includes missing datasets from either side.
 #' @param update_inventory Logical. If TRUE, updates the local inventory with new entries. Default is FALSE.
-#' 
+#'
+#' @note This function expects a working release to be configured via
+#'   [pipfun::setup_working_release()]. When called from
+#'   [pipdata_get_gmd()], the release is already set. When called
+#'   standalone, ensure `setup_working_release()` has been invoked first.
+#'
 #' @return A data.table with new or unmatched GMD datasets.
 #' @export
 #'
@@ -68,8 +73,7 @@ dlw_gmd_match <- \() {
 #' head(df)
 #' }
 dlw_gmd_new <- function(check_missing = TRUE, update_inventory = FALSE) {
-  # initialize working release and dlw inventory working folder
-  pipfun::get_wrk_release()
+  # initialize dlw inventory working folder
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence
@@ -117,16 +121,19 @@ dlw_gmd_new <- function(check_missing = TRUE, update_inventory = FALSE) {
 
   # replace NA in data_available with "No"
   gmd_compare <- gmd_compare[,
-     data_available := "No"
+    data_available := "No"
   ]
 
   # if update_inventory, append new entries to local inventory and save
   if (update_inventory) {
-
     # filter local inventory for records that are marked as missing if check_missing is TRUE
     local_gmd_inv <- local_gmd_inv[!data_available %in% c("No", NA)]
 
-    updated_inventory <- rbindlist(list(local_gmd_inv, gmd_compare), use.names = TRUE, fill = TRUE)
+    updated_inventory <- rbindlist(
+      list(local_gmd_inv, gmd_compare),
+      use.names = TRUE,
+      fill = TRUE
+    )
     #updated_inventory <- unique(updated_inventory, by = c("FileName", "Checksum"))
 
     # check if there are duplicates in the updated inventory
@@ -135,14 +142,16 @@ dlw_gmd_new <- function(check_missing = TRUE, update_inventory = FALSE) {
     }
 
     # save the updated inventory in the local dlw_inventory folder
-    pipload::pip_write(x = updated_inventory,
-                       id = "dlw_gmd_inv",
-                       pk = c("Checksum", "FileName"),
-                       alias = "dlw_inv")
+    pipload::pip_write(
+      x = updated_inventory,
+      id = "dlw_gmd_inv",
+      pk = c("Checksum", "FileName"),
+      alias = "dlw_inv"
+    )
   }
 
   return(gmd_compare)
-  }
+}
 
 #' Get un-validated datasets list
 #'
@@ -241,6 +250,11 @@ dlw_gmd_unvalidated <- function(check_missing = TRUE) {
 #'
 #' @inheritParams pipdata_get_gmd
 #'
+#' @note This function expects a working release to be configured via
+#'   [pipfun::setup_working_release()]. When called from
+#'   [pipdata_get_gmd()], the release is already set. When called
+#'   standalone, ensure `setup_working_release()` has been invoked first.
+#'
 #' @return A data table containing the list of GMD datasets.
 #' @export
 #'
@@ -249,8 +263,7 @@ dlw_gmd_unvalidated <- function(check_missing = TRUE) {
 #' gmd_list <- dlw_gmd_list()
 #' head(gmd_list)
 #' }
-dlw_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv"){
-
+dlw_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv") {
   # Step 1: Get current GMD catalog from server --------------------------------
   gmd_list <- dlw::dlw_server_catalog()
 
@@ -263,19 +276,22 @@ dlw_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv"){
 
   # Filter for specific modules and file extension
   gmd_list <- gmd_list[
-    Module %in% c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") & Ext == "dta"
+    Module %in%
+      c("GPWG", "GROUP", "BIN", "HIST", "ALL", "ASPIRE", "L") &
+      Ext == "dta"
   ]
 
   # Save the gmd_list in the local dlw_inventory folder
-  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence
   check_directory(pip_folders$dlw_inventory)
 
   # save the GMD list in the local dlw_inventory folder
-  pipload::pip_write(x = gmd_list,
-                     id = inv_gmd_list,
-                     pk = c("Checksum", "FileName"),
-                     alias = "dlw_inv")
+  pipload::pip_write(
+    x = gmd_list,
+    id = inv_gmd_list,
+    pk = c("Checksum", "FileName"),
+    alias = "dlw_inv"
+  )
 }

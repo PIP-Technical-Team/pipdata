@@ -22,6 +22,9 @@ pipfun::setup_working_release(
   verbose = FALSE
 )
 
+# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process, 
+# then continue with the rest of the script.
+
 # ----- Load inventory to clean -----
 inv <- pipload::load_gmd_valid_inv()
 
@@ -49,6 +52,8 @@ stamp::st_init(
 
 stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 
+# Do not run from now on, as the rest of the script is for testing purposes only.
+# The next steps are to load the cleaned data and check that it is correct.
 #------ Load data tests -----
 # # Load cleaned data for a survey
 # BOL <- pipload::load_pip_data(
@@ -61,7 +66,6 @@ stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 # BOL2 <- pipload::load_pip_data(id_name = "BOL_2022_EH_INC_ALL")
 
 # NGA <- dlw::dlw_get_gmd(country_code = "NGA", year = 2022, module = "ALL")
-
 
 # # load validation inventory
 # validation_inv_list <- pipload::load_gmd_valid_inv()
@@ -85,8 +89,31 @@ stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
 #     joyn::inner_join(
 #       vrs,
 #       by = c("survey_id", "pip_id")
-#     ) 
+#     )
 
 # "BOL_1990_EPF_v01_M_v01_A_GMD_GROUP"
 
+# ----- Test pd_deflation -----
+
+dt_meta <- pipload::pip_read(
+  id = "CHN_2011_CRHS-CUHS_CON_GROUP",
+  alias = "pip_meta"
+)
+
+
+dt <- pipload::pip_read(id = "CHN_2011_CRHS-CUHS_CON_GROUP", alias = "pip")
+
+# Mode B: load survey and metadata from stamp by pip_id
+bol_deflated <- pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")
+
+# Inspect result
+class(bol_deflated)
+names(bol_deflated)
+
+# Check welfare_lcu and welfare_ppp columns were created
+grep("^welfare", names(bol_deflated), value = TRUE)
+
+# Quick sanity check: no all-NA welfare_ppp column
+welfare_ppp_cols <- grep("^welfare_ppp", names(bol_deflated), value = TRUE)
+sapply(bol_deflated[, welfare_ppp_cols, with = FALSE], \(x) mean(is.na(x)))
 

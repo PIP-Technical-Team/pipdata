@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_log}
 \alias{add_log}
-\title{Add errors to a .logenv}
+\title{Add errors to the package environment}
 \usage{
 add_log(line, error = NULL, class = "piperr")
 }
@@ -11,12 +11,15 @@ add_log(line, error = NULL, class = "piperr")
 
 \item{error}{name of error or warning list}
 
-\item{class}{PIP error or warning class}
+\item{class}{PIP error or warning class. Values are stored in \code{.pipdataenv}
+under the key \code{paste0("log_", class)}. Currently used values:
+\code{"piperr"} (stored as \code{"log_piperr"}) and \code{"unk_err"} (stored as
+\code{"log_unk_err"}). Retrieve with \code{pd_env_get(paste0("log_", class))}.}
 }
 \value{
-a message in .logenv
+Updated error list stored in \code{.pipdataenv} under \code{paste0("log_", class)}.
 }
 \description{
-Add errors to a .logenv
+Add errors to the package environment
 }
 \keyword{internal}

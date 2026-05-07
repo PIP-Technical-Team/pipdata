@@ -8,9 +8,9 @@
 #' 1. Detects changes in auxiliary files (PFW, CPI, PPP, etc.) and
 #'    identifies affected surveys.
 #' 2. Filters the inventory to requested modules.
-#' 3. Selects the latest version of each survey via [last_ver_inv()].
+#' 3. Selects the latest version of each survey via `last_ver_inv()`.
 #' 4. Unless `force = TRUE`, removes surveys already cleaned in the
-#'    master inventory via [inv_to_process()].
+#'    master inventory via `inv_to_process()`.
 #' 5. Combines DLW-new and aux-changed surveys into a single inventory.
 #'
 #' @param inv A `data.table` of the full DLW inventory.
@@ -24,6 +24,11 @@
 #'
 #' @return A `data.table` of surveys to process, or `NULL` if none.
 #'
+#' @details
+#' **Logging**: This function writes an `aux_changes_inf` entry to the `"pipdata_log"`
+#' when changes are detected in any of the requested auxiliary measures. The logmeta
+#' entry includes the measures that changed and the number of affected surveys.
+#'
 #' @family pd_process_data pipeline
 #' @export
 valid_dlw_load <- function(
@@ -31,7 +36,6 @@ valid_dlw_load <- function(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  # date_valid = .pipdataenv$date_valid,
   verbose = getOption("pipdata.verbose", default = FALSE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,9 +91,7 @@ valid_dlw_load <- function(
   inv_svy <- last_ver_inv(inv)
 
   # Select valid surveys and compare to previous cleaning
-  if (force) {
-    inv_svy <- inv_svy
-  } else {
+  if (!force) {
     inv_svy <- inv_to_process(inv_svy)
   }
 
@@ -102,9 +104,6 @@ valid_dlw_load <- function(
 
   # Bind with inventory from aux changes
   inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
-
-  # Only those after specific date validated
-  # inv_to_clean <- inv_to_clean[date_validated < date_valid]
 
   # Choose only unique
   inv_to_clean <- unique(inv_to_clean)
@@ -278,7 +277,7 @@ inv_to_process <- function(inv) {
     },
     error = function(e) {
       cli::cli_alert_warning(
-        "Could not load or master inventory. Returning all valid surveys without comparing to previous cleaning."
+        "Could not load PIP master inventory. Returning all valid surveys without comparing to previous cleaning."
       )
       return(inv)
     }

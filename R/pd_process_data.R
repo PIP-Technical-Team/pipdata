@@ -10,8 +10,20 @@
 #' downloaded using `pipload::load_gmd_valid_inv()`.
 #' @param aux_measures A character vector of auxiliary measures to load and merge
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
+#' @param force Logical. If `TRUE`, forces reprocessing of all surveys by
+#'   switching stamp versioning to `"timestamp"` and bypassing the master
+#'   inventory comparison. Default `FALSE`.
+#' @param verbose Logical. Print progress messages. Default:
+#'   `getOption("pipdata.verbose", default = FALSE)`.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
+#'
+#' @details
+#' **Logging**: This function writes a `process_summary_inf` entry to the `"pipdata_log"`
+#' summarizing the total number of surveys processed, successfully cleaned, and failed.
+#' Additional informational entries are logged for auxiliary file changes and inventory
+#' verification (see [valid_dlw_load()] and [update_pip_inventory()] for details).
+#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -97,34 +109,37 @@ pd_process_data <- function(
 #' Process datalibweb data: merge PFW data and clean variables
 #'
 #' @param inv inventory with survey_id and pins folder
-#' @param pfw PFW
+#' @param aux_list Named list of auxiliary data frames; expected keys:
+#'   `"pfw"`, `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`.
 #' @param ...  other parameters
 #'
 #' @return data.table
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
 #'
 #' pfw <- pipload::load_aux_data("pfw")
 #'
 #' gd  <- pipload::load_aux_data("CHN", 2015)
-#' gd  <- pipdata:::m_svy_id_to_att(gd)
+#' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' process_data(gd, pfw)
 #'
 #' md   <- pipload::load_aux_data(country = "PRY", 2012)
-#' md  <- pipdata:::m_svy_id_to_att(md)
+#' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' process_data(md, pfw)
+#' }
 process_data <- function(inv, aux_list, ...) {
   # on.exit ------------
   on.exit({
-    rm(survey_id, envir = .pipdataenv)
+    pd_env_rm("process_survey_id")
   })
 
   svy <- inv$survey_id
 
-  assign("survey_id", svy, envir = .pipdataenv)
+  pd_env_set("process_survey_id", svy)
 
   # Computations -------
   res <- tryCatch(
@@ -160,7 +175,7 @@ process_data <- function(inv, aux_list, ...) {
       )
     },
     piperr = function(cnd) {
-      survey_id <- c(.pipdataenv$survey_id)
+      survey_id <- c(pd_env_get("process_survey_id"))
 
       pipfun::log_add(
         event = "error",
@@ -177,7 +192,7 @@ process_data <- function(inv, aux_list, ...) {
     },
 
     error = function(cnd) {
-      survey_id <- c(.pipdataenv$survey_id)
+      survey_id <- c(pd_env_get("process_survey_id"))
 
       # purrr::map() wraps the original condition; traverse the parent chain
       # to recover the root cause (e.g. a piperr thrown inside map())

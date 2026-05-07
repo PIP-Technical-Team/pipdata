@@ -56,6 +56,10 @@ pipdata_dlw_process <- function(
     verbose = FALSE
   )
 
+  # Guard: assert a working release is configured. Downstream delegates
+
+  # (pipdata_get_gmd, pipdata_validate_gmd, dlw_gmd_new, dlw_gmd_list) rely
+  # on this guard and do not call get_wrk_release() themselves.
   pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 

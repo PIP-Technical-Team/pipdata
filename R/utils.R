@@ -2,13 +2,7 @@
 #' @param x data frame.
 #'
 #' @return character vector of unique variable names
-#' @examples
-#' \dontrun{
-#'  df <- data.frame(a = 1, b = rnorm(5), c = 4)
-#'  uniq_vars(df)
-#' }
-#'
-#' @export
+#' @noRd
 uniq_vars <- function(x) {
   x <- check_data_table(x)
   N_vars <- x[, lapply(.SD, uniqueN)]
@@ -32,12 +26,7 @@ check_data_table <- function(x) {
 #' @param x data frame.
 #'
 #' @return list of single-value variables from dataframe `x`
-#' @examples
-#' \dontrun{
-#'  df <- data.frame::data.frame(a = 1, b = rnorm(5), c = 4)
-#'  uniq_vars_to_list(df)
-#' }
-#' @export
+#' @noRd
 uniq_vars_to_list <- function(x) {
   uni_vars <- uniq_vars(x)
 
@@ -160,27 +149,6 @@ pipdata_int <- function(file = NULL) {
 }
 
 
-#' get ordered level of data_level variables
-#'
-#' @param dt cleaned dataframe
-#' @param x data_level variable name
-#'
-#' @return integer
-#' @noRd
-get_ordered_level <- function(dt, x) {
-  x_level <- unique(dt[[x]])
-  d1 <- c("national")
-  d2 <- c("rural", "urban")
-
-  if (identical(x_level, d1)) {
-    1
-  } else if (identical(x_level, d2)) {
-    2
-  } else {
-    piperr(message = "Reporting level is not 1 or 2")
-  }
-}
-
 #' Make vars as attributes
 #'
 #' @param df A data.frame
@@ -242,7 +210,7 @@ num_vars_to_attr <- function(df, num_var, name_var) {
 #' @return error
 #' @keywords internal
 piperr <- function(message, name = "skip") {
-  svy <- .logenv$survey_id
+  svy <- pd_env_get("log_survey_id")
 
   rlang::abort(
     message = message,
@@ -253,34 +221,26 @@ piperr <- function(message, name = "skip") {
   )
 }
 
-# pipwrn <- function(message, call = NULL){
-#   cli::cli_warn(message = message,
-#                 call = call,
-#                  class = c("pipwrn"))
-# }
-#
-# pipmsg <- function(message, call = NULL){
-#   cli::cli_inform(message = message,
-#                   call = call,
-#                 class = c("pipmsg"))
-# }
-
-#' Add errors to a .logenv
+#' Add errors to the package environment
 #'
 #' @param line line to be added to the log
-#' @param class PIP error or warning class
+#' @param class PIP error or warning class. Values are stored in `.pipdataenv`
+#'   under the key `paste0("log_", class)`. Currently used values:
+#'   `"piperr"` (stored as `"log_piperr"`) and `"unk_err"` (stored as
+#'   `"log_unk_err"`). Retrieve with `pd_env_get(paste0("log_", class))`.
 #' @param error name of error or warning list
 #'
-#' @return a message in .logenv
+#' @return Updated error list stored in `.pipdataenv` under `paste0("log_", class)`.
 #' @keywords internal
 add_log <- function(line, error = NULL, class = "piperr") {
-  # Check if the pip class exists
-  if (!rlang::env_has(class, env = .logenv)) {
-    rlang::env_poke(.logenv, class, list())
+  # Key convention: paste0("log_", class) — e.g. class="piperr" => "log_piperr"
+  log_key <- paste0("log_", class)
+  if (is.null(pd_env_get(log_key))) {
+    pd_env_set(log_key, list())
   }
 
   # load list
-  log_list <- get(class, envir = .logenv)
+  log_list <- pd_env_get(log_key)
 
   key <- if (is.null(error)) "unknown errors" else error
 
@@ -291,12 +251,7 @@ add_log <- function(line, error = NULL, class = "piperr") {
     log_list[[key]] <- list(line)
   }
 
-  assign(
-    class,
-    log_list,
-
-    envir = .logenv
-  )
+  pd_env_set(paste0("log_", class), log_list)
 
   invisible()
 }
@@ -308,7 +263,7 @@ add_log <- function(line, error = NULL, class = "piperr") {
 #' @param new_attrs list with new attributes
 #'
 #' @return data.table
-#' @export
+#' @noRd
 add_attributes <- function(dt, new_attrs) {
   for (name in names(new_attrs)) {
     attr(dt, name) <- new_attrs[[name]]
@@ -417,35 +372,6 @@ last_ver_inv <- function(dt) {
   return(dt)
 }
 
-order_ver_inv <- function(dt) {
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  dt <- dt[
-    order(-vermast, -veralt, -pipeline_version)
-  ][
-    status == "valid"
-  ][
-    module %in% c("GPWG", "GROUP", "BIN", "ALL", "HIST")
-  ]
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-}
-
-find_dt_with_attribute <- function(lst, attr_name, attr_value) {
-  Filter(function(dt) attr(dt, attr_name) == attr_value, lst)
-}
-#
-# id_as_att <- function(dt, id_lst) {
-#   # Add the id as an attribute
-#   # attr(dt, "id") <- id_lst
-#   data.table::setattr(dt, "id", id_lst)
-#   return(dt)
-# }
 
 #' Find unique values in PFW according to some key variables
 #'
@@ -456,17 +382,13 @@ find_dt_with_attribute <- function(lst, attr_name, attr_value) {
 #' @export
 #'
 #' @examples
-#' release <- "20250203"
+#' release <- "20260401"
 #' pipfun::setup_working_release(release)
 #'
-#' pfw <- pipload::pip_load_aux("pfw")
+#' pfw <- pipload::load_aux_data("pfw")
 #' keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
 #' unq_obs_dt(pfw, keyVar)
 unq_obs_dt <- function(dt, keyVar) {
-  # tryCatch(
-  #
-  #   expr = {
-
   if (uniqueN(dt, by = keyVar) != nrow(dt)) {
     dt_d <- dt[duplicated(dt, by = keyVar)]
     n_rep <- nrow(dt_d)
@@ -476,31 +398,6 @@ unq_obs_dt <- function(dt, keyVar) {
       class = c("piperr", "dup_pfw")
     )
   }
-
-  #   },
-  #
-  #   piperr = function(cnd){
-  #
-  #     survey_id <- c(.pipdataenv$survey_id)
-  #
-  #     pipfun::log_add(event = "error",
-  #                     message = cnd$message,
-  #                     name = "pipdata_log",
-  #                     .trace = cnd$call,
-  #                     logmeta = list(error = class(cnd)[2],
-  #                                    survey = survey_id,
-  #                                    status = "The survey was skipped"))
-  #
-  #
-  #   },
-  #
-  #   finally = {
-  #
-  #      unique(dt, by = keyVar)
-  #
-  #   }
-  #
-  # )
 
   return(dt)
 }

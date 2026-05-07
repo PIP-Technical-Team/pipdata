@@ -16,6 +16,11 @@
 #' @param save_log Logical. Whether to save logging information to a file. Default is `TRUE`.
 #' @param check_missing Logical. Whether to check for and retrieve missing data. Default is `TRUE`.
 #'
+#' @note This function expects a working release to be configured via
+#'   [pipfun::setup_working_release()]. When called from
+#'   [pipdata_dlw_process()], the release is already set. When called
+#'   standalone, ensure `setup_working_release()` has been invoked first.
+#'
 #' @return A `data.table` object saved in the local folder.
 #' @export
 #'
@@ -28,24 +33,24 @@
 #' )
 #' }
 pipdata_get_gmd <- function(
-    inv_gmd_list = "dlw_gmd_inv",
-    log  = TRUE,
-    save_log = TRUE,
-    check_missing = TRUE
+  inv_gmd_list = "dlw_gmd_inv",
+  log = TRUE,
+  save_log = TRUE,
+  check_missing = TRUE
 ) {
-
   #### logging -----------------------------------------------------------------
 
   if (log) {
-
-    pipfun::log_add("info", "Start getting GMD data",
-                    name = "pipdata_log",
-                    args = list(inv_gmd_list = inv_gmd_list))
+    pipfun::log_add(
+      "info",
+      "Start getting GMD data",
+      name = "pipdata_log",
+      args = list(inv_gmd_list = inv_gmd_list)
+    )
   }
 
   #### -------------------------------------------------------------------------
 
-  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence for root, inventory, and data folders
@@ -57,14 +62,14 @@ pipdata_get_gmd <- function(
   # 1) check if there is any new GMD datasets
   inv_gmd <- dlw_gmd_new(check_missing = check_missing, update_inventory = TRUE)
 
-
-  if (is.null(inv_gmd) || nrow(inv_gmd) == 0) cli::cli_abort("There is no new data on GMD catalog")
+  if (is.null(inv_gmd) || nrow(inv_gmd) == 0) {
+    cli::cli_abort("There is no new data on GMD catalog")
+  }
 
   # 2) get the data from GMD catalog and pin to local folder -------------------
   cli::cli_alert_info("Working folder: {.dir {pip_folders$dlw_data}}")
 
-  cli::cli_progress_bar("Downloading GMD files",
-          total = nrow(inv_gmd))
+  cli::cli_progress_bar("Downloading GMD files", total = nrow(inv_gmd))
 
   # inv_gmd$data_available <- NA
 
@@ -143,24 +148,23 @@ pipdata_get_gmd <- function(
   # get list of datasets already saved in the local folder
   inv_gmd_match <- dlw_gmd_match()
 
-  if (!is.null(inv_gmd_match) & nrow(inv_gmd_match) != 0){
-
-    inv_gmd <- rbind(inv_gmd, inv_gmd_match, ignore.attr=TRUE, fill = TRUE)
+  if (!is.null(inv_gmd_match) & nrow(inv_gmd_match) != 0) {
+    inv_gmd <- rbind(inv_gmd, inv_gmd_match, ignore.attr = TRUE, fill = TRUE)
     inv_gmd <- unique(inv_gmd)
-
   }
 
-  pipload::pip_write(x = inv_gmd,
+  pipload::pip_write(
+    x = inv_gmd,
     id = inv_gmd_list,
     pk = c("Checksum", "FileName"),
-    alias = "dlw_inv")
+    alias = "dlw_inv"
+  )
 
   cli::cli_alert_success(
     "GMD inventory file is saved at: {.dir {pip_folders$dlw_inventory}}"
   )
 
   if (log) {
-
     pipfun::log_add(
       "info",
       "Inventory file is saved",
@@ -171,11 +175,13 @@ pipdata_get_gmd <- function(
 
   # 4) save the logging file ---------------------------------------------------
   if (save_log & log) {
-
-    pipfun::log_save(name = "pipdata_log", id = "dlw_gmd_log", alias = "dlw_inv")
+    pipfun::log_save(
+      name = "pipdata_log",
+      id = "dlw_gmd_log",
+      alias = "dlw_inv"
+    )
 
     cli::cli_alert_success("GMD logging file is saved")
-
   }
 
   invisible(NULL)

@@ -7,14 +7,21 @@
 add_cpi(dt, cpi)
 }
 \arguments{
-\item{dt}{survey}
+\item{dt}{A cleaned survey \code{data.table} with a \code{cpi_data_level} column.}
 
-\item{cpi}{aux_cpi from \code{pipload::pip_load_aux}}
+\item{cpi}{Named numeric vector or \code{data.table}.}
 }
 \value{
-data.table with all cpi
+\code{dt} augmented with one \code{cpiYYYY} column per base year and a
+\code{cpi_years} attribute listing the year strings.
 }
 \description{
-Merge survey with CPI
+Accepts either a named numeric vector (format produced by \code{\link[=pd_aux_attr]{pd_aux_attr()}})
+or a \code{data.table} (legacy format from \code{pipload::pip_load_aux("cpi")}).
+}
+\details{
+Named vector names follow the pattern \verb{\{cpi_year\}_\{reporting_level\}},
+e.g. \code{"2017_national"}. Each unique year becomes a \code{cpiYYYY} column in \code{dt}
+with the matching value looked up via \code{cpi_data_level}.
 }
 \keyword{internal}

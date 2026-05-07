@@ -137,18 +137,7 @@ dlw_validation_gpwg <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -270,18 +259,7 @@ dlw_validation_group <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -391,18 +369,7 @@ dlw_validation_bin <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -520,18 +487,7 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -633,18 +589,7 @@ dlw_validation_all <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -735,18 +680,7 @@ dlw_validation_aspire <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -860,18 +794,7 @@ dlw_validation_l <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 
@@ -908,18 +831,7 @@ dlw_validation_skip <- function(dlw_data, svy_id){
 
   err_t <- validation_record[, .(table_name, message, type)]
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    rlang::env_poke(.pipdata, "validation_report", validation_record)
-
-  } else {
-
-    compiled_result <- rbind(.pipdata$validation_report, validation_record, ignore.attr=TRUE)
-    rlang::env_poke(.pipdata, "validation_report", compiled_result)
-
-    cli::cli_inform("Validation report ({.field validation_report}) has been added to the environment varaible ({.field .pipdata}).")
-
-  }
+  pd_env_append("validation_report", validation_record)
 
   return(invisible(err_t))
 

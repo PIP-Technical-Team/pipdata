@@ -569,3 +569,136 @@ test_that("log_report errors on empty log", {
   pipfun::log_reset("test_empty")
   expect_error(log_report(log), class = "rlang_error")
 })
+
+# ── Enhanced edge-case tests for P2.1 ─────────────────────────────────────────
+
+test_that("build_skipped_surveys returns character vector with proper structure", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Skipped data.",
+      list(
+        info = "skipped_svys_data",
+        surveys = "BOL_1990_EPF",
+        reasons = "missing_welfare"
+      )
+    )
+  )
+  out <- build_skipped_surveys(parse_log_meta(log))
+  expect_type(out, "character")
+  expect_true(length(out) > 0L)
+  expect_true(any(grepl("^##", out))) # markdown heading
+})
+
+test_that("build_skipped_surveys formats surveys/reasons as markdown list", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Skipped data.",
+      list(
+        info = "skipped_svys_data",
+        surveys = c("BOL_1990_EPF", "IND_2011_NSS"),
+        reasons = c("missing_income", "bad_weights")
+      )
+    )
+  )
+  out <- build_skipped_surveys(parse_log_meta(log))
+  # Should have markdown list items (starting with -)
+  expect_true(any(grepl("^-", out)))
+  # Both surveys and reasons should appear
+  expect_true(any(grepl("BOL_1990_EPF", out)))
+  expect_true(any(grepl("IND_2011_NSS", out)))
+  expect_true(any(grepl("missing_income", out)))
+  expect_true(any(grepl("bad_weights", out)))
+})
+
+test_that("build_null_surveys formats count correctly in heading", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Surveys not cleaned.",
+      list(
+        info = "null_svys_inf",
+        surveys = c("A", "B", "C")
+      )
+    )
+  )
+  out <- build_null_surveys(parse_log_meta(log))
+  # Heading should include count: "Surveys Not Cleaned (3)"
+  expect_true(any(grepl("\\(3\\)", out)))
+})
+
+test_that("build_null_surveys output is properly formatted markdown", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Surveys not cleaned.",
+      list(
+        info = "null_svys_inf",
+        surveys = c("BOL_1990_EPF", "IND_2011_NSS", "CHN_2005_CHN")
+      )
+    )
+  )
+  out <- build_null_surveys(parse_log_meta(log))
+  expect_type(out, "character")
+  # Should have heading
+  expect_true(any(grepl("^##", out)))
+  # Should have list items for each survey
+  expect_true(sum(grepl("^-", out)) >= 3L)
+})
+
+test_that("build_country_table returns character vector with markdown delimiters", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "Error.",
+      list(error = "gd_type_miss", survey = "BOL_1990_EPF")
+    )
+  )
+  out <- build_country_table(parse_log_meta(log))
+  expect_type(out, "character")
+  expect_true(length(out) > 0L)
+  # Should have markdown table pipes
+  expect_true(any(grepl("\\|", out)))
+})
+
+test_that("build_country_table table has consistent column structure", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "Error 1.",
+      list(error = "type_miss", survey = "BOL_1990_EPF")
+    ),
+    make_entry(
+      "error",
+      "Error 2.",
+      list(error = "welfare_miss", survey = "IND_2011_NSS")
+    )
+  )
+  out <- build_country_table(parse_log_meta(log))
+  # All table rows should have consistent pipe count
+  table_rows <- grep("^\\|", out, value = TRUE)
+  expect_true(length(table_rows) > 0L)
+  # Get pipe counts for each row
+  pipe_counts <- lengths(strsplit(table_rows, "\\|"))
+  # All rows should have same pipe count (consistent columns)
+  expect_true(length(unique(pipe_counts)) == 1L)
+})
+
+test_that("build_country_table formats em-dash for missing values", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "Error.",
+      list(error = "type_a", survey = "BOL_1990_EPF")
+    ),
+    make_entry(
+      "error",
+      "Error.",
+      list(error = "type_b", survey = "IND_2011_NSS")
+    )
+  )
+  out <- build_country_table(parse_log_meta(log))
+  # Should use em-dash (\u2014) for missing cells
+  expect_true(any(grepl("\u2014", out)))
+})

@@ -1,4 +1,361 @@
 {
     "schemaVersion": "compound-gpid-roadmap-v1",
-    "milestones": []
+    "milestones": [
+        {
+            "title": "Code Quality & Refactoring",
+            "description": "Systematic improvements to code structure, performance, and maintainability",
+            "ideas": [
+                {
+                    "id": "env-setup",
+                    "title": "Unified environment configuration",
+                    "description": "Create a single environment for the whole package (either .pipdata or .pipdataenv) instead of scattered configs",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-env-setup-v2.md",
+                    "tags": [
+                        "environment",
+                        "setup",
+                        "infrastructure"
+                    ]
+                },
+                {
+                    "id": "logging-refactor",
+                    "title": "Standardize logging approach",
+                    "description": "Review and standardize log = TRUE argument vs. if statement pattern across functions. Enforce consistent logging style",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
+                    "tags": [
+                        "logging",
+                        "code-quality",
+                        "api-design"
+                    ]
+                },
+                {
+                    "id": "unified-logging-report",
+                    "title": "Harmonize logging and reporting across pipdata",
+                    "description": "Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to the same piplog format and produce a single consolidated report via log_report(). Currently DLW functions (pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd) use a separate logging setup from the pipeline functions (pd_process_data, valid_dlw_load, update_pip_inventory) that feed log_report(). Goal: one log, one report, one set of logmeta conventions for the entire package.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
+                    "tags": [
+                        "logging",
+                        "reporting",
+                        "dlw",
+                        "pipeline",
+                        "harmonization"
+                    ]
+                },
+                {
+                    "id": "loop-to-apply",
+                    "title": "Replace explicit loops with apply functions",
+                    "description": "Audit codebase for explicit for/while loops and replace with purrr::map(), collapse operations, or data.table vectorized patterns",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-04-28-loop-to-apply.md",
+                    "tags": [
+                        "performance",
+                        "vectorization",
+                        "code-quality"
+                    ]
+                },
+                {
+                    "id": "nested-tryCatch",
+                    "title": "Audit nested tryCatch patterns",
+                    "description": "Completed 2026-04-28: 22 tryCatch instances catalogued, zero true nested patterns found. The only open issue (conditional tryCatch in dlw_scan_and_validate.R:54-77) is moot — that file is legacy code slated for archival under Pipeline Alignment Audit. See .cg-docs/plans/2026-04-27-nested-trycatch.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-nested-trycatch.md",
+                    "tags": [
+                        "error-handling",
+                        "code-quality"
+                    ]
+                },
+                {
+                    "id": "dlw-release-check",
+                    "title": "Review get_wrk_release() in DLW functions",
+                    "description": "Completed 2026-04-23: Removed redundant get_wrk_release() guards from 4 delegate functions (pipdata_get_gmd, pipdata_validate_gmd, dlw_gmd_new, dlw_gmd_list). Guards kept at entry points and standalone utilities. See .cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
+                    "tags": [
+                        "dlw",
+                        "refactoring"
+                    ]
+                },
+                {
+                    "id": "dplyr-to-collapse",
+                    "title": "Migrate from dplyr to collapse/data.table (Phase 1)",
+                    "description": "Replace dplyr/tidyr/tibble calls in pd_dlw_clean.R, pipdata_validate_gmd.R, and pipdata_validation_report.R with collapse/data.table equivalents. Phase 1 of 2.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
+                    "tags": [
+                        "refactoring",
+                        "performance",
+                        "dependencies"
+                    ]
+                },
+                {
+                    "id": "dplyr-to-collapse-phase2",
+                    "title": "Migrate dlw_scan_and_validate.R from dplyr to data.table (Phase 2)",
+                    "description": "Retired 2026-04-28: dlw_scan_and_validate.R identified as legacy pre-stamp code not called by either pipeline wrapper. File will be archived under the Pipeline Alignment Audit milestone instead of migrated.",
+                    "status": "done",
+                    "tags": [
+                        "refactoring",
+                        "performance",
+                        "dependencies",
+                        "dlw"
+                    ]
+                },
+                {
+                    "id": "dlw-wrapper-rewrite",
+                    "title": "Rewrite DLW wrapper to mirror pipeline architecture",
+                    "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",
+                    "tags": [
+                        "architecture",
+                        "dlw",
+                        "refactoring",
+                        "logging"
+                    ]
+                },
+                {
+                    "id": "unified-log-folder",
+                    "title": "Consolidate log checkpoint storage into a single folder/alias",
+                    "description": "Review the possibility of using a single stamp alias and folder for all log checkpoints (DLW and pipeline), instead of writing DLW checkpoints to dlw_meta and pipeline checkpoints to piplog. Simplifies log discovery and retrieval.",
+                    "tags": [
+                        "logging",
+                        "infrastructure",
+                        "stamp"
+                    ]
+                },
+                {
+                    "id": "remove-date-valid-filter",
+                    "title": "Replace date_valid filter with stamp-based vintage tracking",
+                    "description": "Remove the date_valid/date_validated filtering from update_pip_inventory() and valid_dlw_load(). All validated surveys get cleaned. Release inventory vintages are handled by stamp versions. Add first_release_version_id and latest_release_version_id columns to master inventory to track release membership.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-29-remove-date-valid-filter.md",
+                    "tags": [
+                        "vintage",
+                        "stamp",
+                        "release-inventory",
+                        "master-inventory",
+                        "cleanup"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Function Decomposition & Cleanup",
+            "description": "Break down large functions and remove dead code",
+            "ideas": [
+                {
+                    "id": "subfunctions",
+                    "title": "Create subfunctions for long functions",
+                    "description": "Identify functions with excessive lines or complexity and extract subfunctions to improve readability and testability",
+                    "tags": [
+                        "refactoring",
+                        "maintainability",
+                        "testing"
+                    ]
+                },
+                {
+                    "id": "survey-id-vars-dedup",
+                    "title": "Audit survey_id_to_vars usage",
+                    "description": "Completed 2026-04-23: All 3 calls in pipdata operate on different data objects from different sources (directory scan, newly built inventory rows). No redundancy found. See .cg-docs/plans/2026-04-23-audit-survey-id-to-vars.md.",
+                    "status": "done",
+                    "tags": [
+                        "refactoring",
+                        "survey-processing",
+                        "pipload"
+                    ]
+                },
+                {
+                    "id": "utils-cleanup",
+                    "title": "Clean utils.R",
+                    "description": "Completed 2026-04-27: Phase A removed 3 dead comment blocks. Phase B audited all exported utils — demoted uniq_vars, uniq_vars_to_list, add_attributes to internal; removed dead code order_ver_inv, find_dt_with_attribute; kept uniq_vars_to_attr, vars_to_attr, num_vars_to_attr, unq_obs_dt, pipdata_int as exported. See .cg-docs/plans/2026-04-27-utils-cleanup.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-utils-cleanup.md",
+                    "tags": [
+                        "cleanup",
+                        "utilities",
+                        "code-quality"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Testing & Documentation",
+            "description": "Enhance test coverage and documentation for existing functionality",
+            "ideas": [
+                {
+                    "id": "logging-integration-tests",
+                    "title": "Integration tests for logging side effects (P2.4)",
+                    "description": "Write integration tests to verify that valid_dlw_load() and update_pip_inventory() emit correct logmeta entries (aux_changes_inf, null_svys_inf, inv_update_inf, skipped surveys). Ensures logging contract stability and prevents regressions.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-27-logging-integration-tests.md",
+                    "tags": [
+                        "testing",
+                        "logging",
+                        "integration-tests",
+                        "p2-finding"
+                    ]
+                },
+                {
+                    "id": "code-review-findings-2026-04-16",
+                    "title": "Resolve code review findings (2026-04-16)",
+                    "description": "Completed 2026-04-28: Fixed all 5 findings from 2026-04-16 review. P2.1: Added 9 edge-case tests for build_skipped_surveys/build_null_surveys/build_country_table. P2.2: Verified test contracts already correct (parse_log_meta usage). P2.3: Verified misaligned-vectors test exists and passing. P3.1: Verified file.path() used for portability. P3.2: Enhanced NULL-handling comment in build_header(). See .cg-docs/reviews/2026-04-16-review.md.",
+                    "status": "done",
+                    "plan": null,
+                    "tags": [
+                        "testing",
+                        "code-quality",
+                        "review-findings"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Pipeline Alignment Audit",
+            "description": "Align pipdata codebase with the canonical three-wrapper architecture (pipeline_overview.qmd). Identify, archive, or reposition code not part of either wrapper's call tree.",
+            "ideas": [
+                {
+                    "id": "archive-legacy-dlw",
+                    "title": "Archive legacy DLW files",
+                    "description": "Move dlw_scan_and_validate.R, dlw_dta_to_qs.R, dlw_get_dta.R, and update_dlw_inventory.R to old_files/. These are pre-stamp workflow files not called by either pipeline wrapper. Remove exports, delete .Rd files, update NAMESPACE.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-archive-legacy-dlw.md",
+                    "tags": [
+                        "cleanup",
+                        "legacy",
+                        "dlw",
+                        "architecture"
+                    ]
+                },
+                {
+                    "id": "archive-dead-pip-vars",
+                    "title": "Archive pd_add_pip_vars.R (dead code)",
+                    "description": "pd_add_pip_vars.R defines pd_add_pip_vars(), add_pip_vars(), adjust_population() — none called by process_data() or any active pipeline path. Move to old_files/, remove exports.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-archive-dead-pip-vars.md",
+                    "tags": [
+                        "cleanup",
+                        "dead-code",
+                        "architecture"
+                    ]
+                },
+                {
+                    "id": "position-deflation",
+                    "title": "Position pd_deflation.R as future pipeline step",
+                    "description": "pd_deflation.R contains deflation/PPP machinery not yet integrated into process_data(). Document its intended role in the pipeline, add @note or @details explaining it is a future step, ensure it stays buildable.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-position-deflation.md",
+                    "tags": [
+                        "documentation",
+                        "architecture",
+                        "deflation"
+                    ]
+                },
+                {
+                    "id": "relocate-mock-funs",
+                    "title": "Relocate mock_funs.R to tests/ and audit",
+                    "description": "Move mock_funs.R to tests/testthat/helper-mock_funs.R. Audit which mocks are still needed (remove stale ones). Add cross-references in exported function roxygen to indicate which mock can be used for testing.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-04-30-relocate-mock-funs.md",
+                    "tags": [
+                        "testing",
+                        "cleanup",
+                        "architecture"
+                    ]
+                },
+                {
+                    "id": "audit-copy-dlw-meta",
+                    "title": "Audit pipdata_copy_dlw_meta.R standalone utility",
+                    "description": "copy_dlw_metadata() is a standalone admin utility not called by either wrapper. Confirm it is intentionally standalone, document its role, and verify it works with current stamp/pipload APIs.",
+                    "tags": [
+                        "documentation",
+                        "admin-utility",
+                        "dlw"
+                    ]
+                },
+                {
+                    "id": "new-orchestration-script",
+                    "title": "Create new pipeline orchestration script to replace Pipdata_script.R",
+                    "description": "Write a new orchestration script with all pipeline wrappers (DLW acquisition, survey cleaning, report generation) using the unified logging conventions. Deprecate Pipdata_script.R which uses the old log/save_log API.",
+                    "tags": [
+                        "pipeline",
+                        "orchestration",
+                        "logging",
+                        "cleanup"
+                    ]
+                },
+                {
+                    "id": "audit-dontrun-examples",
+                    "title": "Audit and fix \\dontrun{} examples",
+                    "description": "Review all @examples blocks currently wrapped in \\dontrun{} across the package. For each: determine whether the example can be made runnable (e.g., by using local test data or mocks), update it, or add a comment explaining why \\dontrun{} is required (e.g., requires network access or a working release). Ensures examples are as useful as possible for documentation readers.",
+                    "tags": [
+                        "documentation",
+                        "examples",
+                        "code-quality"
+                    ]
+                },
+                {
+                    "id": "subnational-deflation-fast-fix",
+                    "title": "Fix subnational deflation: resolve area attribute to column values",
+                    "description": "Fix broken subnational deflation: when ppp_data_level or cpi_data_level are set to 'area' (per-row lookup), the deflation functions must resolve them to dt$area column values. Currently treated as literal level names, causing NA for all subnational surveys (CHN grouped data, etc.). Fast fix: modify add_rep_lvl(), add_ppp(), add_cpi() to handle 'area' sentinel. Prerequisite for integrate-deflation (affects S3 method refactoring in Step 3).",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md",
+                    "tags": [
+                        "deflation",
+                        "subnational",
+                        "area",
+                        "fast-fix",
+                        "prerequisite"
+                    ]
+                },
+                {
+                    "id": "integrate-deflation",
+                    "title": "Integrate pd_deflation.R into the active pipeline",
+                    "description": "Update pd_deflation() so it can be called with a single cleaned survey data.table (or pip_id/version) and internally loads the corresponding metadata (CPI, PPP, pop) to return the deflated survey. No external aux args required. Batch iteration over many surveys belongs to pd_deflate_pipeline(). Extract safe_deflation() helper to deduplicate S3 methods. Prerequisite: subnational-deflation-fast-fix must be completed first (Step 0) so that refactoring in Step 3 and integration tests in Step 4 work for all survey types.",
+                    "status": "active",
+                    "plan": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
+                    "tags": [
+                        "deflation",
+                        "pipeline",
+                        "architecture",
+                        "integration"
+                    ]
+                },
+                {
+                    "id": "store-version-id-in-inventory",
+                    "title": "Store version_id in master inventory (not just content_hash)",
+                    "description": "format_vrs() currently saves only ventry$metadata (the stamp metadata dict) into the master inventory, which contains content_hash but drops version_id from the top level of pip_write()'s return value. This means .load_deflation_aux() must resolve version_id via an expensive hash lookup, which fails when the exact artifact has been replaced by a newer pd_process_data() run. Fix: capture ventry$version_id in format_vrs() and store it as version_id_data / version_id_metadata in the master inventory. Then pd_deflation() can load directly via pip_read(version = row$version_id_metadata) without any hash resolution.",
+                    "status": "planned",
+                    "tags": [
+                        "deflation",
+                        "inventory",
+                        "stamp",
+                        "architecture",
+                        "reliability"
+                    ]
+                },
+                {
+                    "id": "deflate-pipeline-wrapper",
+                    "title": "Create pd_deflate_pipeline() batch orchestrator",
+                    "description": "Build a pipeline wrapper that iterates over an entire inventory of cleaned surveys, applies pd_deflation() to each, saves deflated outputs to a stamp alias (e.g. pip_deflated), and logs a summary entry. Prerequisite: integrate-deflation must be completed first.",
+                    "tags": [
+                        "deflation",
+                        "pipeline",
+                        "orchestration"
+                    ]
+                },
+                {
+                    "id": "explicit-data-level-semantics",
+                    "title": "Make *_data_level attribute semantics explicit",
+                    "description": "Currently ppp_data_level/cpi_data_level attributes use 'area' as an implicit pointer to a column name, while 'national' is a literal level value. This dual semantics is confusing. Refactor to make the convention explicit — either use a structured encoding (e.g., list(column='area', values=c('rural','urban'))), or always store resolved level values directly. Requires changes across add_dom_vars(), pd_aux_attr(), add_ppp(), add_cpi(), add_rep_lvl(), and corresponding tests.",
+                    "status": "idea",
+                    "tags": [
+                        "deflation",
+                        "architecture",
+                        "attributes",
+                        "subnational",
+                        "code-quality"
+                    ]
+                }
+            ]
+        }
+    ]
 }

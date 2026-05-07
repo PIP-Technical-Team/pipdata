@@ -185,7 +185,10 @@ build_header <- function(dt, title) {
     NULL
   }
 
-  # NULL ps_line is silently dropped by c() when process_summary_inf is absent.
+  # Build character vector: NULL ps_line is automatically dropped by c() when
+  # process_summary_inf is absent from the log. This provides clean formatting
+  # for reports that lack process-level metadata. If explicit handling is
+  # preferred, refactor to: Filter(Negate(is.null), c(...))
   c(
     sprintf("# %s", title),
     "",

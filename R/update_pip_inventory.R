@@ -11,27 +11,37 @@
 #' @param proc_dta A named list of processing results, one per survey.
 #'   Each element is a list with `pip_names`, `versions_data`, and
 #'   `versions_metadata`, or `NULL` for failed surveys.
-#' @param date_valid A `POSIXct` timestamp. Only surveys validated
-#'   before this date are included in the release inventory.
-#'   Defaults to the maximum `date_validated` in `inv_to_clean`.
 #'
-#' @return A `data.table`: the updated PIP master inventory.
+#' @return A `data.table`: the updated PIP master inventory, including two
+#'   new columns tracking release membership:
+#'   - `first_release_version_id`: stamp version ID of the release inventory
+#'     when this survey first appeared.
+#'   - `latest_release_version_id`: stamp version ID of the most recent release
+#'     inventory that confirmed this survey.
+#'
+#' @details
+#' Release inventory vintages are tracked via stamp's built-in version history.
+#' To load a previous release inventory snapshot:
+#' `pipload::pip_read("pip_release_inventory", version = -1, alias = "pip_inv")`
+#'
+#' **Logging**: This function writes several informational entries to the `"pipdata_log"`:
+#' - `null_svys_inf`: List of surveys that failed processing (when applicable).
+#' - `release_write_err`: Release inventory write failure.
+#' - `inv_update_inf`: Inventory verification summary showing the number of surveys
+#'   expected, confirmed in master inventory, and missing. Written as an error-level
+#'   entry if any surveys are missing, info-level if all are confirmed.
+#' - `skipped_svys_data`: Surveys skipped during data processing with reasons.
+#' - `skipped_svys_metadata`: Surveys skipped during metadata creation with reasons.
 #'
 #' @family pd_process_data pipeline
 #' @export
 update_pip_inventory <- function(
   inv_to_clean,
-  proc_dta,
-  date_valid = max(inv_to_clean$date_validated)
+  proc_dta
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Defenses
-  if (!inherits(date_valid, "POSIXct")) {
-    cli::cli_abort("date_valid should be POSIXct format")
-  }
-
   # Check null surveys and clean
 
   null_ls <- names(Filter(is.null, proc_dta))
@@ -168,14 +178,7 @@ update_pip_inventory <- function(
     collapse::funique() |>
     as.data.table()
 
-  pipload::pip_write(
-    x = new_pip_inv,
-    id = "pip_master_inventory",
-    alias = "pip_master",
-    pk = c("survey_id", "pip_id")
-  )
-
-  # Save release inventory
+  # Save release inventory first so its version_id can be recorded in the master
 
   pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
 
@@ -189,15 +192,75 @@ update_pip_inventory <- function(
     pfw_release,
     on = .(country_code, surveyid_year, survey_acronym),
     nomatch = 0
-  ][
-    # Need to change it for a warning
-    date_validated < date_valid
   ]
 
+  release_result <- tryCatch(
+    pipload::pip_write(
+      x = release_pip_inv,
+      id = "pip_release_inventory",
+      alias = "pip_inv",
+      pk = c("survey_id", "pip_id")
+    ),
+    error = function(e) {
+      pipfun::log_error(
+        "Release inventory write failed. Master inventory will be saved without release version columns.",
+        name = "pipdata_log",
+        logmeta = list(
+          error = "release_write_err",
+          condition_msg = conditionMessage(e)
+        )
+      )
+      NULL
+    }
+  )
+
+  # Resolve the release inventory stamp version_id.
+  # pip_write() returns list(version_id, ...) but may return skipped = TRUE when
+  # content is unchanged — fall back to st_latest() in that case.
+  release_vid <- if (!is.null(release_result)) {
+    vid <- release_result$version_id
+    if (is.null(vid) || isTRUE(release_result$skipped)) {
+      tryCatch(
+        stamp::st_latest("pip_release_inventory", alias = "pip_inv"),
+        error = function(e) NA_character_
+      )
+    } else {
+      vid
+    }
+  } else {
+    NA_character_
+  }
+
+  # Initialise release version columns unconditionally so the master inventory
+  # schema is consistent regardless of whether the release write succeeded.
+  if (!"first_release_version_id" %in% names(new_pip_inv)) {
+    new_pip_inv[, first_release_version_id := NA_character_]
+  }
+  if (!"latest_release_version_id" %in% names(new_pip_inv)) {
+    new_pip_inv[, latest_release_version_id := NA_character_]
+  }
+
+  # Populate release version columns on master inventory.
+  # - first_release_version_id: set only when currently NA (i.e. first appearance)
+  # - latest_release_version_id: always updated for surveys present in the release
+  if (!is.na(release_vid)) {
+    release_ids <- release_pip_inv$survey_id
+
+    new_pip_inv[
+      survey_id %in% release_ids & is.na(first_release_version_id),
+      first_release_version_id := release_vid
+    ]
+    new_pip_inv[
+      survey_id %in% release_ids,
+      latest_release_version_id := release_vid
+    ]
+  }
+
+  # Save master inventory (after populating release version columns)
   pipload::pip_write(
-    x = release_pip_inv,
-    id = "pip_release_inventory",
-    alias = "pip_inv",
+    x = new_pip_inv,
+    id = "pip_master_inventory",
+    alias = "pip_master",
     pk = c("survey_id", "pip_id")
   )
 
