@@ -64,43 +64,43 @@ report_lvl <- function(cpfw) {
         "pop_domain"
       )
 
-      cpfw <-
-        cpfw[
-          # filter inpovcal data
-          inpovcal == 1
-        ][,
-          # Find MAX domain per obs
-          reporting_level := apply(.SD, MARGIN = 1,
-                                   function(x) {
-                                     y <- max(x)
-                                     as.character(y)
-                                   }),
-          .SDcols = dcols
-        ]
+      missing_dcols <- setdiff(dcols, names(cpfw))
+      if (length(missing_dcols) > 0L) {
+        cli::cli_abort(
+          "PFW is missing expected domain columns: {.field {missing_dcols}}.",
+          class = c("report_lvl", "piperr")
+        )
+      }
+
+      # do.call(pmax, .SD) computes per-row max across domain columns in a
+      # single vectorised C call — avoids apply(MARGIN=1) R-level loop.
+      cpfw[
+        inpovcal == 1,
+        reporting_level := as.character(do.call(pmax, .SD)),
+        .SDcols = dcols
+      ]
 
       n_cpfw_wt <- length(unique(cpfw$welfare_type))
 
-      if(nrow(cpfw)==0){
-
-        rlang::abort(message = "PFW does not contains info for country, surveyid year, and survey_acronym",
-                     class = c("piperr","info_pfw"),
-                     use_cli_format = TRUE)
-
-      }else if(nrow(cpfw) > 1 & n_cpfw_wt ==1){
-
-        rlang::abort(message = "PFW is not unique for country, surveyid year, survey_acronym and welfare_type",
-                     class = c("piperr", "no_unq_pfw"),
-                     use_cli_format = TRUE)
-
-      }else if(nrow(cpfw)>1){
-
+      if (nrow(cpfw) == 0) {
+        cli::cli_abort(
+          "PFW does not contain info for country, surveyid year, and survey_acronym.",
+          class = c("piperr", "info_pfw")
+        )
+      } else if (nrow(cpfw) > 1 & n_cpfw_wt == 1) {
+        cli::cli_abort(
+          "PFW is not unique for country, surveyid year, survey_acronym and welfare_type.",
+          class = c("piperr", "no_unq_pfw")
+        )
+      } else if (nrow(cpfw) > 1) {
         survey_id <- c(pd_env_get("process_survey_id"))
 
-        pipfun::log_add(event = "info",
-                        message = "More than one value for country/year PFW",
-                        name = "pipdata_log",
-                        logmeta = list(info = "othr_wlf_inf",
-                                    survey = survey_id))
+        pipfun::log_add(
+          event = "info",
+          message = "More than one value for country/year PFW",
+          name = "pipdata_log",
+          logmeta = list(info = "othr_wlf_inf", survey = survey_id)
+        )
       }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
