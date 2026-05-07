@@ -369,7 +369,9 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
 #'   [ppp_to_wide()]).
 #' @param pop Population aux (named numeric vector or `data.table`).
 #' @return Deflated `data.table` with `welfare_lcu` and `welfare_ppp_*`
-#'   columns plus factor-formatted character columns.
+#'   columns plus factor-formatted character columns. Includes attributes:
+#'   - `welfare_vars`: character vector of welfare column names
+#'   - `adj_pop`: logical; TRUE if population adjustment was applied
 #' @noRd
 .deflation_pipmd_core <- function(dt, cpi, ppp, pop) {
   dt_c <- data.table::copy(dt)
@@ -381,37 +383,64 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   dt_c <- welfare_lcu(dt_c)
   dt_c <- deflate_wlf(dt_c)
 
+  # Track whether population adjustment was applied
+  adj_pop <- identical(attr(dt_c, "pop_data_level"), "area")
+
   # Branch on the survey's own pop_data_level attr — handles the mixed-domain
   # case where reporting_level == 2 but pop_data_level == "national" correctly.
-  if (identical(attr(dt_c, "pop_data_level"), "area")) {
+  if (adj_pop) {
     dt_c <- adjust_population(dt_c, pop)
   }
 
-  finalize_deflation_output(char_to_fct(dt_c))
+  # Remove welfare column (welfare_lcu is the canonical version after deflation)
+  dt_c[, welfare := NULL]
+
+  result <- finalize_deflation_output(char_to_fct(dt_c))
+
+  # Set welfare_vars attribute (all columns starting with "welfare_")
+  welfare_cols <- grep("^welfare_", names(result), value = TRUE)
+  data.table::setattr(result, "welfare_vars", welfare_cols)
+  data.table::setattr(result, "adj_pop", adj_pop)
+
+  result
 }
 
 #' Core deflation logic for grouped-data surveys
 #'
 #' @inheritParams .deflation_pipmd_core
 #' @return Deflated `data.table` with `welfare_lcu` and `welfare_ppp_*`
-#'   columns plus factor-formatted character columns.
+#'   columns plus factor-formatted character columns. Includes attributes:
+#'   - `welfare_vars`: character vector of welfare column names
+#'   - `adj_pop`: logical; always FALSE for grouped-data (no subnational support)
 #' @noRd
 .deflation_pipgd_core <- function(dt, cpi, ppp, pop) {
   dt_c <- data.table::copy(dt)
   cpi <- if (data.table::is.data.table(cpi)) data.table::copy(cpi) else cpi
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
+  pop <- if (data.table::is.data.table(pop)) data.table::copy(pop) else pop
 
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
   dt_c <- deflate_wlf(dt_c)
 
-  finalize_deflation_output(char_to_fct(dt_c))
+  # Remove welfare column (welfare_lcu is the canonical version after deflation)
+  dt_c[, welfare := NULL]
+
+  result <- finalize_deflation_output(char_to_fct(dt_c))
+
+  # Set welfare_vars attribute (all columns starting with "welfare_")
+  # For grouped-data, population adjustment is never applied (always FALSE)
+  welfare_cols <- grep("^welfare_", names(result), value = TRUE)
+  data.table::setattr(result, "welfare_vars", welfare_cols)
+  data.table::setattr(result, "adj_pop", FALSE)
+
+  result
 }
 
 
 #' Reorder columns and rows in deflation output
 #'
-#' Columns: `welfare`, `weight` first; then `welfare_lcu`, `welfare_ppp_*`
+#' Columns: `welfare_lcu`, `weight` first; then `welfare_ppp_*`
 #' (newest base year first); then all remaining columns.
 #' Rows: sorted ascending by the newest `welfare_ppp_*` column, then `weight`.
 #'
@@ -433,10 +462,10 @@ finalize_deflation_output <- function(dt) {
   cpi_cols <- sort_by_year_desc(grep("^cpi[0-9]{4}", nms, value = TRUE))
 
   new_block <- intersect(
-    c("welfare_lcu", wlf_ppp, "area", ppp_cols, cpi_cols),
+    c(wlf_ppp, "area", ppp_cols, cpi_cols),
     nms
   )
-  anchor <- intersect(c("welfare", "weight"), nms)
+  anchor <- intersect(c("welfare_lcu", "weight"), nms)
   rest <- setdiff(nms, c(anchor, new_block))
   data.table::setcolorder(dt, c(anchor, new_block, rest))
 

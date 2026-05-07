@@ -21,6 +21,7 @@ make_pipmd <- function(
   survey_acronym = "TST",
   ppp_data_level = "national",
   cpi_data_level = "national",
+  pop_data_level = "national",
   reporting_level = 1L,
   welfare_type = "income",
   module = "D1",
@@ -29,7 +30,7 @@ make_pipmd <- function(
   dt <- data.table::data.table(
     welfare = as.numeric(welfare),
     weight = as.numeric(weight)
-    # ppp_data_level / cpi_data_level are attrs only — never columns
+    # ppp_data_level / cpi_data_level / pop_data_level are attrs only — never columns
   )
   if (!is.null(area)) {
     dt[, area := area]
@@ -42,6 +43,7 @@ make_pipmd <- function(
   data.table::setattr(dt, "reporting_level", reporting_level)
   data.table::setattr(dt, "ppp_data_level", ppp_data_level)
   data.table::setattr(dt, "cpi_data_level", cpi_data_level)
+  data.table::setattr(dt, "pop_data_level", pop_data_level)
   data.table::setattr(dt, "pip_names", "ABC_2015_TST_INC_D1")
   data.table::setattr(dt, "welfare_type", welfare_type)
   data.table::setattr(dt, "module", module)
@@ -550,4 +552,82 @@ test_that("pd_deflation Mode B: loads single survey via pip_id", {
   expect_true(
     data.table::is.data.table(result) || is.na(result)
   )
+})
+# ---------------------------------------------------------------------------
+# Deflation output attributes: welfare_vars and adj_pop
+# ---------------------------------------------------------------------------
+
+test_that("deflation output includes welfare_vars attribute with all welfare_ columns", {
+  dt <- make_pipmd()
+  cpi <- make_cpi_vec()
+  ppp <- make_ppp_vec()
+  pop <- make_pop_vec()
+
+  result <- pipdata:::deflation.pipmd(dt, cpi, ppp, pop)
+
+  # welfare column should be removed; only welfare_lcu and welfare_ppp_* should remain
+  expect_false("welfare" %in% names(result))
+  expect_true("welfare_lcu" %in% names(result))
+
+  # Result should have welfare_vars attribute listing welfare_lcu and welfare_ppp_*
+  expect_true("welfare_vars" %in% names(attributes(result)))
+  welfare_vars <- attr(result, "welfare_vars")
+  expect_true("welfare_lcu" %in% welfare_vars)
+  expect_true(any(grepl("^welfare_ppp_", welfare_vars)))
+})
+
+test_that("deflation output includes adj_pop = TRUE when population adjustment applied", {
+  # Subnational survey: reporting_level=2, pop_data_level="area"
+  dt <- make_pipmd(
+    welfare = c(5, 10),
+    weight = c(100, 200),
+    area = c("rural", "urban"),
+    reporting_level = 2L,
+    ppp_data_level = "area",
+    cpi_data_level = "area",
+    pop_data_level = "area"
+  )
+
+  cpi <- make_cpi_vec_subnational()
+  ppp <- make_ppp_vec_subnational()
+  pop <- make_pop_vec_subnational()
+
+  result <- suppressMessages(
+    pipdata:::deflation.pipmd(dt, cpi, ppp, pop)
+  )
+
+  expect_true("adj_pop" %in% names(attributes(result)))
+  expect_true(attr(result, "adj_pop"))
+})
+
+test_that("deflation output includes adj_pop = FALSE when population adjustment not applied", {
+  # National survey: reporting_level=1, pop_data_level="national"
+  dt <- make_pipmd(
+    reporting_level = 1L,
+    ppp_data_level = "national",
+    cpi_data_level = "national"
+  )
+  cpi <- make_cpi_vec()
+  ppp <- make_ppp_vec()
+  pop <- make_pop_vec()
+
+  result <- pipdata:::deflation.pipmd(dt, cpi, ppp, pop)
+
+  expect_true("adj_pop" %in% names(attributes(result)))
+  expect_false(attr(result, "adj_pop"))
+})
+
+test_that("pipgd deflation output includes adj_pop = FALSE always", {
+  # Grouped-data: population adjustment never applies
+  dt <- make_pipmd()
+  data.table::setattr(dt, "class", c("pipgd", "data.table", "data.frame"))
+
+  cpi <- make_cpi_vec()
+  ppp <- make_ppp_vec()
+  pop <- make_pop_vec()
+
+  result <- pipdata:::deflation.pipgd(dt, cpi, ppp, pop)
+
+  expect_true("adj_pop" %in% names(attributes(result)))
+  expect_false(attr(result, "adj_pop"))
 })
