@@ -377,12 +377,13 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
   pop <- if (data.table::is.data.table(pop)) data.table::copy(pop) else pop
 
-  dt_c <- add_rep_lvl(dt_c)
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
   dt_c <- deflate_wlf(dt_c)
 
-  if (length(dt_c[, unique(reporting_level)]) > 1L) {
+  # Branch on the survey's own pop_data_level attr — handles the mixed-domain
+  # case where reporting_level == 2 but pop_data_level == "national" correctly.
+  if (identical(attr(dt_c, "pop_data_level"), "area")) {
     dt_c <- adjust_population(dt_c, pop)
   }
 
@@ -400,7 +401,6 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   cpi <- if (data.table::is.data.table(cpi)) data.table::copy(cpi) else cpi
   ppp <- if (data.table::is.data.table(ppp)) data.table::copy(ppp) else ppp
 
-  dt_c <- add_rep_lvl(dt_c)
   dt_c <- add_aux(dt_c, ppp, cpi)
   dt_c <- welfare_lcu(dt_c)
   dt_c <- deflate_wlf(dt_c)
@@ -433,7 +433,7 @@ finalize_deflation_output <- function(dt) {
   cpi_cols <- sort_by_year_desc(grep("^cpi[0-9]{4}", nms, value = TRUE))
 
   new_block <- intersect(
-    c("welfare_lcu", wlf_ppp, "reporting_level", "area", ppp_cols, cpi_cols),
+    c("welfare_lcu", wlf_ppp, "area", ppp_cols, cpi_cols),
     nms
   )
   anchor <- intersect(c("welfare", "weight"), nms)
@@ -496,36 +496,11 @@ ppp_to_wide <- function(ppp) {
 
 }
 
-#' Identify reporting level from data_level variables
-#'
-#' @param dt data.table
-#'
-#' @return data.table with reporting_level variable
-#' @keywords internal
-add_rep_lvl <- function(dt) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # computations   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Data-level info is always stored as attributes; never as columns.
-  ppp_lvl <- attr(dt, "ppp_data_level")
-  rep_lvl <- if (!is.null(ppp_lvl)) ppp_lvl else attr(dt, "cpi_data_level")
-  if (is.null(rep_lvl)) {
-    cli::cli_abort(
-      "Cannot determine reporting level: no {.field ppp_data_level} or {.field cpi_data_level} attribute found in {.arg dt}.",
-      class = c("add_rep_lvl", "piperr")
-    )
-  }
-  dt[, reporting_level := rep_lvl]
-
-  setorder(dt, reporting_level)
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(dt)
-
-}
+# add_rep_lvl() was removed 2026-05-07. It incorrectly broadcast the literal
+# string "area" from the ppp_data_level attribute to all rows of a
+# reporting_level column, causing NA PPP/CPI lookups for subnational surveys.
+# Each deflation function now branches on its own *_data_level attribute
+# directly — see add_ppp(), add_cpi(), and adjust_population().
 
 #' Add auxiliary data for deflation
 #'
@@ -610,7 +585,21 @@ add_ppp <- function(dt, ppp) {
   for (v in unique_versions) {
     idx <- ppp_versions == v
     lev_map <- stats::setNames(ppp[idx], report_levels[idx])
-    dt[, (v) := lev_map[ppp_lvl]]
+    # Branch on this function's own ppp_data_level attr — handles the
+    # mixed-domain case (e.g. ppp_data_level=="national" but cpi=="area").
+    if (identical(ppp_lvl, "area")) {
+      # Subnational: per-row lookup using the area column values.
+      if (!"area" %in% names(dt)) {
+        cli::cli_abort(
+          "ppp_data_level is \"area\" but {.arg dt} has no {.field area} column.",
+          class = c("add_ppp", "piperr")
+        )
+      }
+      dt[, (v) := lev_map[as.character(area)]]
+    } else {
+      # National (or other literal level): scalar broadcast to all rows.
+      dt[, (v) := lev_map[ppp_lvl]]
+    }
   }
 
   data.table::setattr(dt, "ppp_versions", unique_versions)
@@ -672,7 +661,21 @@ add_cpi <- function(dt, cpi) {
     col <- paste0("cpi", yr)
     idx <- cpi_years == yr
     lev_map <- stats::setNames(cpi[idx], report_levels[idx])
-    dt[, (col) := lev_map[cpi_lvl]]
+    # Branch on this function's own cpi_data_level attr — handles the
+    # mixed-domain case (e.g. cpi_data_level=="area" but ppp=="national").
+    if (identical(cpi_lvl, "area")) {
+      # Subnational: per-row lookup using the area column values.
+      if (!"area" %in% names(dt)) {
+        cli::cli_abort(
+          "cpi_data_level is \"area\" but {.arg dt} has no {.field area} column.",
+          class = c("add_cpi", "piperr")
+        )
+      }
+      dt[, (col) := lev_map[as.character(area)]]
+    } else {
+      # National (or other literal level): scalar broadcast to all rows.
+      dt[, (col) := lev_map[cpi_lvl]]
+    }
   }
 
   return(dt)
@@ -838,8 +841,10 @@ get_welfare_ppp <- function(dt_wlcu, base_year) {
 #' pd_deflation.R is the only active caller. Not exported.
 #'
 #' @param df  A `data.table` with columns `country_code`, `survey_year`,
-#'   `reporting_level`, and `weight`. The caller passes a copy so
-#'   reference-semantics mutation does not affect the source object.
+#'   `area`, and `weight`. The `area` column holds per-row level values
+#'   (`"rural"`, `"urban"`) that must match the suffix keys in the named `pop`
+#'   vector. The caller passes a copy so reference-semantics mutation does not
+#'   affect the source object.
 #' @param pop Named numeric vector or a `data.table` with columns
 #'   `country_code`, `year`, `pop_data_level`, and `pop`.
 #' @return `df` with `weight` rescaled to match the WDI population figure.
@@ -899,12 +904,23 @@ adjust_population <- function(df, pop) {
   pop_years <- as.integer(sub("^([0-9]+)_.*$", "\\1", nm))
   pop_levels <- sub("^[0-9]+_(.+)$", "\\1", nm)
 
+  # Use the area column as the grouping key. For subnational surveys the area
+  # column holds per-row values ("rural", "urban") that match the pop vector
+  # keys (e.g. "2015_rural"). adjust_population() is only called when
+  # pop_data_level == "area" (guard in .deflation_pipmd_core).
+  if (!"area" %in% names(df)) {
+    cli::cli_abort(
+      "{.fn adjust_population} requires an {.field area} column in {.arg df}.",
+      class = c("adjust_population", "piperr")
+    )
+  }
+
   spop <- df[,
     .(weight = sum(weight, na.rm = TRUE)),
-    by = "reporting_level"
+    by = "area"
   ]
 
-  fact_rows <- lapply(spop$reporting_level, function(rl) {
+  fact_rows <- lapply(spop$area, function(rl) {
     idx <- pop_levels == rl
     if (!any(idx)) {
       return(NULL)
@@ -920,15 +936,15 @@ adjust_population <- function(df, pop) {
       wts <- 1 / diffs[keep]
       pop_val <- stats::weighted.mean(vals[keep], w = wts)
     }
-    sw <- spop[spop$reporting_level == rl, weight]
-    data.table::data.table(reporting_level = rl, pop_fact = pop_val / sw)
+    sw <- spop[spop$area == rl, weight]
+    data.table::data.table(area = rl, pop_fact = pop_val / sw)
   })
 
   fact <- data.table::rbindlist(Filter(Negate(is.null), fact_rows))
 
   if (nrow(fact) == 0L) {
     cli::cli_abort(
-      "No population data found for reporting levels in survey.",
+      "No population data found for area levels in survey.",
       class = c("adjust_population", "piperr")
     )
   }
@@ -936,7 +952,7 @@ adjust_population <- function(df, pop) {
   df <- joyn::left_join(
     x = df,
     y = fact,
-    by = "reporting_level",
+    by = "area",
     relationship = "many-to-one",
     reportvar = FALSE
   )

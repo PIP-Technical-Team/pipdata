@@ -5,9 +5,8 @@
 #   .load_deflation_aux()        — inventory-based metadata loading (mocked)
 #   safe_deflation()             — tryCatch scaffold; error → NA
 #   adjust_population()          — named-vector path (data.table path in test-adjust-population.R)
-#   add_ppp()                    — named-vector path
-#   add_cpi()                    — named-vector path
-#   add_rep_lvl()                — attrs-only path
+#   add_ppp()                    — named-vector path (national + subnational)
+#   add_cpi()                    — named-vector path (national + subnational)
 #   pd_deflation()               — Mode A with explicit aux (legacy), Mode A metadata-driven
 
 # ---------------------------------------------------------------------------
@@ -24,13 +23,17 @@ make_pipmd <- function(
   cpi_data_level = "national",
   reporting_level = 1L,
   welfare_type = "income",
-  module = "D1"
+  module = "D1",
+  area = NULL # e.g. c("rural", "urban", "rural") for subnational surveys
 ) {
   dt <- data.table::data.table(
     welfare = as.numeric(welfare),
     weight = as.numeric(weight)
     # ppp_data_level / cpi_data_level are attrs only — never columns
   )
+  if (!is.null(area)) {
+    dt[, area := area]
+  }
   data.table::setattr(dt, "class", c("pipmd", "data.table", "data.frame"))
   data.table::setattr(dt, "survey_id", "ABC_2015_TST_INC_D1")
   data.table::setattr(dt, "country_code", country)
@@ -63,6 +66,33 @@ make_ppp_vec <- function(
 
 make_pop_vec <- function(year = "2015", level = "national", value = 1e6) {
   stats::setNames(value, paste0(year, "_", level))
+}
+
+# Subnational fixture helpers: named vectors with "rural"/"urban" level keys.
+make_ppp_vec_subnational <- function(
+  ppp_year = "2017", rel = "01", adapt = "01"
+) {
+  c(
+    stats::setNames(3.0, paste0("ppp_", ppp_year, "_", rel, "_", adapt, "_rural")),
+    stats::setNames(3.9, paste0("ppp_", ppp_year, "_", rel, "_", adapt, "_urban")),
+    stats::setNames(3.5, paste0("ppp_", ppp_year, "_", rel, "_", adapt, "_national"))
+  )
+}
+
+make_cpi_vec_subnational <- function(year = "2017") {
+  c(
+    stats::setNames(0.85, paste0(year, "_rural")),
+    stats::setNames(0.88, paste0(year, "_urban")),
+    stats::setNames(0.87, paste0(year, "_national"))
+  )
+}
+
+make_pop_vec_subnational <- function(year = "2015") {
+  c(
+    stats::setNames(6e8, paste0(year, "_rural")),
+    stats::setNames(7e8, paste0(year, "_urban")),
+    stats::setNames(1.3e9, paste0(year, "_national"))
+  )
 }
 
 # ---------------------------------------------------------------------------
@@ -211,7 +241,7 @@ test_that("safe_deflation returns function result on success", {
 })
 
 # ---------------------------------------------------------------------------
-# add_ppp() — named-vector path
+# add_ppp() — named-vector path (national + subnational)
 # ---------------------------------------------------------------------------
 
 test_that("add_ppp (named vector) adds ppp column and ppp_versions attribute", {
@@ -225,8 +255,34 @@ test_that("add_ppp (named vector) adds ppp column and ppp_versions attribute", {
   expect_equal(attr(result, "ppp_versions"), "ppp_2017_01_01")
 })
 
+test_that("add_ppp (named vector) resolves subnational via area column", {
+  # Two rows: rural and urban. ppp_data_level = "area" triggers per-row lookup.
+  dt <- make_pipmd(
+    welfare = c(5, 10),
+    weight = c(100, 200),
+    ppp_data_level = "area",
+    cpi_data_level = "area",
+    reporting_level = 2L,
+    area = c("rural", "urban")
+  )
+  ppp <- make_ppp_vec_subnational() # rural=3.0, urban=3.9
+
+  result <- pipdata:::add_ppp(dt, ppp)
+
+  expect_true("ppp_2017_01_01" %in% names(result))
+  expect_false(anyNA(result$ppp_2017_01_01))
+  expect_equal(result$ppp_2017_01_01, c(3.0, 3.9))
+})
+
+test_that("add_ppp aborts when ppp_data_level is 'area' but area column is absent", {
+  dt <- make_pipmd(ppp_data_level = "area") # no area column
+  ppp <- make_ppp_vec_subnational()
+
+  expect_error(pipdata:::add_ppp(dt, ppp), class = "add_ppp")
+})
+
 # ---------------------------------------------------------------------------
-# add_cpi() — named-vector path
+# add_cpi() — named-vector path (national + subnational)
 # ---------------------------------------------------------------------------
 
 test_that("add_cpi (named vector) adds cpiYYYY column and cpi_years attribute", {
@@ -250,6 +306,31 @@ test_that("add_cpi (named vector) handles multiple base years", {
   expect_setequal(attr(result, "cpi_years"), c("2017", "2011"))
 })
 
+test_that("add_cpi (named vector) resolves subnational via area column", {
+  dt <- make_pipmd(
+    welfare = c(5, 10),
+    weight = c(100, 200),
+    ppp_data_level = "area",
+    cpi_data_level = "area",
+    reporting_level = 2L,
+    area = c("rural", "urban")
+  )
+  cpi <- make_cpi_vec_subnational() # rural=0.85, urban=0.88
+
+  result <- pipdata:::add_cpi(dt, cpi)
+
+  expect_true("cpi2017" %in% names(result))
+  expect_false(anyNA(result$cpi2017))
+  expect_equal(result$cpi2017, c(0.85, 0.88))
+})
+
+test_that("add_cpi aborts when cpi_data_level is 'area' but area column is absent", {
+  dt <- make_pipmd(cpi_data_level = "area") # no area column
+  cpi <- make_cpi_vec_subnational()
+
+  expect_error(pipdata:::add_cpi(dt, cpi), class = "add_cpi")
+})
+
 # ---------------------------------------------------------------------------
 # adjust_population() — named-vector path
 # ---------------------------------------------------------------------------
@@ -258,7 +339,7 @@ test_that("adjust_population (named vector) scales weights correctly", {
   df <- data.table::data.table(
     country_code = "ABC",
     survey_year = 2015L,
-    reporting_level = "national",
+    area = "national",
     weight = c(200, 400) # total = 600
   )
   pop <- make_pop_vec(year = "2015", level = "national", value = 1200) # factor = 2
@@ -272,7 +353,7 @@ test_that("adjust_population (named vector) picks closest year", {
   df <- data.table::data.table(
     country_code = "ABC",
     survey_year = 2015L,
-    reporting_level = "national",
+    area = "national",
     weight = c(300)
   )
   # 2014 is closer (diff=1) than 2010 (diff=5)
@@ -288,10 +369,44 @@ test_that("adjust_population (named vector) errors when no matching level found"
   df <- data.table::data.table(
     country_code = "ABC",
     survey_year = 2015L,
-    reporting_level = "urban",
+    area = "urban",
     weight = c(100)
   )
   pop <- make_pop_vec(level = "national") # no "urban" entry
+
+  expect_error(
+    suppressMessages(pipdata:::adjust_population(df, pop)),
+    class = "adjust_population"
+  )
+})
+
+test_that("adjust_population (named vector) uses area to group subnational rows", {
+  # Two areas: rural (600 total weight) and urban (200 total weight).
+  df <- data.table::data.table(
+    country_code = "ABC",
+    survey_year = 2015L,
+    area = c("rural", "rural", "urban"),
+    weight = c(200, 400, 200) # rural total=600, urban total=200
+  )
+  pop <- make_pop_vec_subnational() # rural=6e8, urban=7e8
+  # rural pop_fact = 6e8/600 = 1e6; urban pop_fact = 7e8/200 = 3.5e6
+
+  result <- suppressMessages(pipdata:::adjust_population(df, pop))
+
+  rural_weights <- result[result$area == "rural", weight]
+  urban_weights <- result[result$area == "urban", weight]
+  expect_equal(rural_weights, c(200e6, 400e6))
+  expect_equal(urban_weights, c(700e6))
+})
+
+test_that("adjust_population aborts when area column is missing", {
+  df <- data.table::data.table(
+    country_code = "ABC",
+    survey_year = 2015L,
+    weight = c(100)
+    # no area column
+  )
+  pop <- make_pop_vec_subnational()
 
   expect_error(
     suppressMessages(pipdata:::adjust_population(df, pop)),

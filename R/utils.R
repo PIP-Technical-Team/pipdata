@@ -149,27 +149,6 @@ pipdata_int <- function(file = NULL) {
 }
 
 
-#' get ordered level of data_level variables
-#'
-#' @param dt cleaned dataframe
-#' @param x data_level variable name
-#'
-#' @return integer
-#' @noRd
-get_ordered_level <- function(dt, x) {
-  x_level <- unique(dt[[x]])
-  d1 <- c("national")
-  d2 <- c("rural", "urban")
-
-  if (identical(x_level, d1)) {
-    1
-  } else if (identical(x_level, d2)) {
-    2
-  } else {
-    piperr(message = "Reporting level is not 1 or 2")
-  }
-}
-
 #' Make vars as attributes
 #'
 #' @param df A data.frame

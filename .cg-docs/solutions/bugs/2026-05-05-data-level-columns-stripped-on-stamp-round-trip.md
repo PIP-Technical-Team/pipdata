@@ -147,4 +147,4 @@ if (length(dl_var) == 0L) {
 - `.cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md` — `make_pipmd_stamp()` fixture for testing stamp-path code
 - `.cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md` — same root cause: stamp round-trip strips object-level metadata (class and columns-as-attributes alike)
 - `.cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md`
-- `R/pd_deflation.R`: `restore_data_level_cols()`, `add_rep_lvl()`, `.deflation_pipmd_core()`, `.deflation_pipgd_core()`, `safe_deflation()`
+- `R/pd_deflation.R`: `restore_data_level_cols()` (removed), `add_rep_lvl()` (removed — see subnational fix plan), `.deflation_pipmd_core()`, `.deflation_pipgd_core()`, `safe_deflation()`

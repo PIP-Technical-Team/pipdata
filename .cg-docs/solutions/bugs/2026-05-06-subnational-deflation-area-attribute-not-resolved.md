@@ -4,11 +4,11 @@ title: "Subnational deflation produces NA: ppp_data_level='area' not resolved to
 category: "bugs"
 type: "bug"
 language: "R"
-tags: [deflation, subnational, area, ppp_data_level, cpi_data_level, add-rep-lvl, add-ppp, add-cpi, pipgd, pipmd, urban, rural, national]
-root-cause: "add_dom_vars() stores 'area' as a column-pointer in ppp/cpi_data_level attributes, but add_rep_lvl/add_ppp/add_cpi treat the attribute as a literal level name — so named-vector lookup fails with NA for all urban/rural surveys."
+tags: [deflation, subnational, area, ppp_data_level, cpi_data_level, pop_data_level, add-ppp, add-cpi, adjust-population, pipgd, pipmd, urban, rural, national, mixed-domain]
+root-cause: "add_dom_vars() stores 'area' as a column-pointer in *_data_level attributes, but add_rep_lvl/add_ppp/add_cpi treated the attribute as a literal level name — so named-vector lookup fails with NA for all urban/rural surveys. Compounded by add_rep_lvl() being an unnecessary intermediary that translates per-function semantics into a shared column."
 severity: "P1"
 test-written: "no"
-fix-confirmed: "brainstorm-decided"
+fix-confirmed: "plan-written"
 ---
 
 # Subnational deflation produces NA: `ppp_data_level = "area"` not resolved to per-row column values
@@ -66,87 +66,116 @@ upstream, but as a level-name token downstream. The old pipeline
 
 ## Solution
 
-**Phase 1 (fast fix) — modify `add_rep_lvl()`, `add_ppp()`, `add_cpi()` in
-`pd_deflation.R`**: when the attribute is `"area"`, resolve it to the per-row
-values of `dt$area` instead of using the scalar literally.
+**Revised approach (2026-05-07)**: Remove `add_rep_lvl()` entirely and have
+each deflation function branch directly on its **own** `*_data_level` attribute.
+This correctly handles the **mixed-domain case** where `reporting_level == 2`
+but one domain (e.g., `ppp_data_level`) is `"national"` because `ppp_domain` 
+== 1 in the PFW — using a shared integer discriminator would incorrectly
+trigger per-row lookup in `add_ppp()` even for a national PPP vector.
 
-### `add_rep_lvl()` fix
-
-```r
-add_rep_lvl <- function(dt) {
-  ppp_lvl <- attr(dt, "ppp_data_level")
-  rep_lvl <- if (!is.null(ppp_lvl)) ppp_lvl else attr(dt, "cpi_data_level")
-
-  if (is.null(rep_lvl)) {
-    cli::cli_abort(
-      "Cannot determine reporting level: no {.field ppp_data_level} or {.field cpi_data_level} attribute.",
-      class = c("add_rep_lvl", "piperr")
-    )
-  }
-
-  if (rep_lvl == "area") {
-    if (!"area" %in% names(dt)) {
-      cli::cli_abort(
-        "{.field ppp_data_level} is 'area' but no {.field area} column found in {.arg dt}.",
-        class = c("add_rep_lvl", "piperr")
-      )
-    }
-    dt[, reporting_level := area]
-  } else {
-    dt[, reporting_level := rep_lvl]
-  }
-
-  setorder(dt, reporting_level)
-  dt
-}
-```
-
-### `add_ppp()` fix (named-vector path)
+**Key design rule**: each function checks its own attr:
 
 ```r
-# replace scalar lookup:
-#   dt[, (v) := lev_map[ppp_lvl]]
-# with per-row lookup when ppp_lvl == "area":
+# add_ppp() — branches on ppp_data_level, not reporting_level integer
 ppp_lvl <- attr(dt, "ppp_data_level")
-if (ppp_lvl == "area") {
-  dt[, (v) := lev_map[area]]     # per-row lookup via the area column
-} else {
-  dt[, (v) := lev_map[ppp_lvl]]  # scalar broadcast (national case)
+for (v in unique_versions) {
+  idx <- ppp_versions == v
+  lev_map <- stats::setNames(ppp[idx], report_levels[idx])
+  if (identical(ppp_lvl, "area")) {
+    dt[, (v) := lev_map[as.character(area)]]  # per-row lookup
+  } else {
+    dt[, (v) := lev_map[ppp_lvl]]            # scalar broadcast ("national")
+  }
 }
 ```
 
-### `add_cpi()` fix (named-vector path)
+```r
+# add_cpi() — same, branches on cpi_data_level
+cpi_lvl <- attr(dt, "cpi_data_level")
+for (yr in unique_years) {
+  col <- paste0("cpi", yr)
+  idx <- cpi_years == yr
+  lev_map <- stats::setNames(cpi[idx], report_levels[idx])
+  if (identical(cpi_lvl, "area")) {
+    dt[, (col) := lev_map[as.character(area)]]  # per-row lookup
+  } else {
+    dt[, (col) := lev_map[cpi_lvl]]             # scalar broadcast
+  }
+}
+```
 
-Same pattern replacing `cpi_lvl`/scalar broadcast with `dt$area` per-row
-lookup when `cpi_data_level == "area"`.
+```r
+# adjust_population() guard — branches on pop_data_level, not reporting_level integer
+if (identical(attr(dt_c, "pop_data_level"), "area")) {
+  dt_c <- adjust_population(dt_c, pop)
+}
+```
 
-**Phase 2 (future refactor)** — tracked as roadmap item
-`explicit-data-level-semantics`: make the pointer convention explicit instead
-of implicit, e.g., store `list(column = "area", values = c("rural", "urban"))`
-or always store resolved level values.
+`adjust_population()` itself uses the `area` column for grouping/joining 
+instead of the old `reporting_level` column:
+
+```r
+# Before:
+spop <- df[, .(weight = sum(weight)), by = "reporting_level"]
+# After:
+spop <- df[, .(weight = sum(weight)), by = "area"]
+```
+
+**Why integer `reporting_level` attr is not sufficient**: `add_dom_vars()` in
+`pd_cpfw_merge.R` handles a mixed-domain case (`any(same_rep_lvl == FALSE)`)
+where each `*_data_level` is set independently. A survey can have
+`reporting_level == 2` but `ppp_data_level == "national"` (ppp_domain == 1).
+Branching on the integer would incorrectly apply per-row lookup to a national
+PPP vector, producing NA. Branching on each function's own attr is exact.
+
+**Plan reference**: `.cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md`
+
+---
+
+**~~Previously documented approach (superseded)~~**
+
+~~Phase 1 fast fix: modify `add_rep_lvl()` to resolve `"area"` to `dt$area`
+before broadcasting to the `reporting_level` column. Superseded because
+`add_rep_lvl()` is now removed entirely — the function was both the source of
+the intermediate column and the place where per-function semantics were
+incorrectly merged into a single discriminator.~~
 
 ## Prevention
 
-- When any `*_data_level` attribute equals a **column name** rather than a
-  level value (`"national"`, `"urban"`, `"rural"`), all downstream helpers
-  that use that attribute as a lookup key must resolve it to per-row column
-  values first.
-- The canonical recognized `*_data_level` values are: `"national"`, `"area"`
-  (pointer → area column). Any new value should be documented explicitly.
-- Tests for subnational deflation should use a fixture with an `area` column
-  containing `c("rural", "urban")` rows and named-vector CPI/PPP with
-  `"{year}_rural"` and `"{year}_urban"` keys.
+- **Each deflation function must branch on its own `*_data_level` attr**, not
+  a shared integer discriminator. `ppp_data_level`, `cpi_data_level`, and
+  `pop_data_level` are set independently in the mixed-domain path of
+  `add_dom_vars()` and can differ for the same survey.
+- When any `*_data_level` attribute equals `"area"`, resolve it to the per-row
+  values of the `area` column in `dt` — never use `"area"` as a literal lookup
+  key in named PPP/CPI/pop vectors.
+- Do **not** introduce an intermediate `reporting_level` column to translate
+  per-function attribute semantics into a shared token. Each function has the
+  precise answer in its own attribute.
+- Assert `"area" %in% names(dt)` before per-row lookup instead of silently
+  producing `NA`.
+- The canonical recognized `*_data_level` values are: `"national"` (literal),
+  `"area"` (pointer to `area` column).
+- `adjust_population()` guard must check `pop_data_level == "area"`, not 
+  `reporting_level integer == 2`: a subnational survey can have population data
+  at the national level (`pop_domain == 1` in PFW).
+- Tests for subnational deflation must include an `area` column with
+  `c("rural", "urban")` rows and named-vector CPI/PPP/pop with level-suffixed
+  keys (`"YEAR_rural"`, `"YEAR_urban"`).
 
 ## Related
 
 - `.cg-docs/solutions/bugs/2026-05-05-data-level-columns-stripped-on-stamp-round-trip.md`
-  — earlier related fix that introduced the current attribute-only approach in
-  `add_rep_lvl()`. The fix there introduced the attribute path but did not
-  handle the `"area"` pointer case.
+  — earlier related fix that introduced the attribute-only approach. The fix
+  there introduced `add_rep_lvl()` attribute fallback but did not handle the
+  `"area"` pointer case or the mixed-domain problem.
 - `.cg-docs/brainstorms/2026-05-06-subnational-deflation-area-resolution.md`
-  — brainstorm that diagnosed this issue and decided the approach.
-- `roadmap.json` → `explicit-data-level-semantics` — future Phase 2 cleanup.
-- `R/pd_deflation.R`: `add_rep_lvl()`, `add_ppp()`, `add_cpi()`
-- `R/pd_cpfw_merge.R`: `add_dom_vars()` (source of the `"area"` pointer)
-- `pip_ingestion_pipeline/R/pipdm/R/process_svy_data_to_cache.R`: old
-  pipeline reference — used per-row column values directly, no pointer.
+  — brainstorm that diagnosed the issue and chose the hybrid approach.
+- `.cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md` — full
+  implementation plan with per-step code patterns.
+- `roadmap.json` → `explicit-data-level-semantics` — future cleanup: make the
+  pointer convention explicit rather than implicit.
+- `R/pd_deflation.R`: `add_ppp()`, `add_cpi()`, `adjust_population()`,
+  `.deflation_pipmd_core()`, `.deflation_pipgd_core()`
+- `R/pd_cpfw_merge.R`: `add_dom_vars()` (source of the `"area"` pointer),
+  `add_main_att()` (source of integer `reporting_level` attribute)
