@@ -1,3 +1,17 @@
+# Domain columns used by report_lvl() to compute per-row reporting_level.
+# reporting_level = max across all domain columns:
+#   "1" = national (all domains == 1)
+#   "2" = subnational (at least one domain == 2, e.g. cpi_domain == 2
+#         when urban/rural CPI values are available)
+# Tracked for migration to sysdata.rda (see roadmap: sysdata-domain-cols).
+.DOMAIN_COLS <- c(
+  "cpi_domain",
+  "ppp_domain",
+  "gdp_domain",
+  "pce_domain",
+  "pop_domain"
+)
+
 #' Get Country Price framework  data based on PFW and DLW data info
 #'
 #' @param dt data frame with micro data, loaded with `pipload::pip_load_dlw()`
@@ -17,30 +31,14 @@
 #' gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 #' cpfw <- get_country_pfw(gd, pfw)
 #' }
-
-# Domain columns used by report_lvl() to compute per-row reporting_level.
-# reporting_level = max across all domain columns:
-#   "1" = national (all domains == 1)
-#   "2" = subnational (at least one domain == 2, e.g. cpi_domain == 2
-#         when urban/rural CPI values are available)
-# Tracked for migration to sysdata.rda (see roadmap: sysdata-domain-cols).
-.DOMAIN_COLS <- c(
-  "cpi_domain",
-  "ppp_domain",
-  "gdp_domain",
-  "pce_domain",
-  "pop_domain"
-)
 get_country_pfw <- function(dt, pfw) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Filter country PFW --------
-
   att <- attributes(dt)
 
-  cpfw <- pfw[ country_code     == att$country_code
-               & surveyid_year  == att$surveyid_year
-               & survey_acronym == att$survey_acronym]
+  cpfw <- pfw[
+    country_code == att$country_code &
+      surveyid_year == att$surveyid_year &
+      survey_acronym == att$survey_acronym
+  ]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Add reporting level  --------
@@ -50,12 +48,10 @@ get_country_pfw <- function(dt, pfw) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Create cache ID   ---------
 
-  cpfw <- cache_id(cpfw =  cpfw,
-                   att = att)
+  cpfw <- cache_id(cpfw = cpfw, att = att)
 
   # Return -------------
   return(cpfw)
-
 }
 
 #' Add reporting level variable to country PFW
@@ -229,12 +225,11 @@ cache_id <- function(att,
     )
   ]
 
-  if(any(cpfw$wt=="")){
-
-    rlang::abort(message = "Welfare type is undefined",
-                 class = c("piperr", "no_wlf_tp"),
-                 use_cli_format = TRUE)
-
+  if (any(cpfw$wt == "")) {
+    cli::cli_abort(
+      "Welfare type is undefined.",
+      class = c("piperr", "no_wlf_tp")
+    )
   }
 
   cpfw[,
