@@ -296,7 +296,7 @@
                     "id": "subnational-deflation-fast-fix",
                     "title": "Fix subnational deflation: resolve area attribute to column values",
                     "description": "Fix broken subnational deflation: when ppp_data_level or cpi_data_level are set to 'area' (per-row lookup), the deflation functions must resolve them to dt$area column values. Currently treated as literal level names, causing NA for all subnational surveys (CHN grouped data, etc.). Fast fix: modify add_rep_lvl(), add_ppp(), add_cpi() to handle 'area' sentinel. Prerequisite for integrate-deflation (affects S3 method refactoring in Step 3).",
-                    "status": "planned",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md",
                     "tags": [
                         "deflation",
@@ -310,7 +310,7 @@
                     "id": "integrate-deflation",
                     "title": "Integrate pd_deflation.R into the active pipeline",
                     "description": "Update pd_deflation() so it can be called with a single cleaned survey data.table (or pip_id/version) and internally loads the corresponding metadata (CPI, PPP, pop) to return the deflated survey. No external aux args required. Batch iteration over many surveys belongs to pd_deflate_pipeline(). Extract safe_deflation() helper to deduplicate S3 methods. Prerequisite: subnational-deflation-fast-fix must be completed first (Step 0) so that refactoring in Step 3 and integration tests in Step 4 work for all survey types.",
-                    "status": "active",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
                     "tags": [
                         "deflation",
