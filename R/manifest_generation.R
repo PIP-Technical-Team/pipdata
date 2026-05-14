@@ -156,10 +156,15 @@ discover_parquet_dimensions <- function(file_path) {
 #'   available in this survey's Parquet file (e.g. `c("gender", "area")`).
 #'   Use `character(0)` when none are present. Known universe:
 #'   `gender`, `area`, `educat4`, `educat5`, `educat7`, `age`.
+#' @param reporting_level Reporting level for the survey (e.g. `"national"`,
+#'   `"urban"`, `"rural"`). Currently a placeholder (`"national"`) — will be
+#'   sourced from `release_inventory$reporting_level` once that column is
+#'   added to the inventory.
 #'
-#' @return A named list with 9 fields suitable for JSON serialisation via
+#' @return A named list with 10 fields suitable for JSON serialisation via
 #'   [jsonlite::toJSON()]: `pip_id`, `survey_id`, `country_code`, `year`,
-#'   `welfare_type`, `version`, `survey_acronym`, `module`, `dimensions`.
+#'   `welfare_type`, `version`, `survey_acronym`, `module`, `dimensions`,
+#'   `reporting_level`.
 #'
 #' @family manifest-generation
 #' @export
@@ -183,17 +188,20 @@ build_manifest_entry <- function(country_code,
                                  version,
                                  module,
                                  pip_id,
-                                 dimensions) {
+                                 dimensions,
+                                 # TODO: remove default once inventory column is available
+                                 reporting_level = "national") {
   list(
-    pip_id         = as.character(pip_id),
-    survey_id      = as.character(survey_id),
-    country_code   = as.character(country_code),
-    year           = as.integer(surveyid_year),
-    welfare_type   = as.character(welfare_type),
-    version        = as.character(version),
-    survey_acronym = as.character(survey_acronym),
-    module         = as.character(module),
-    dimensions     = as.character(dimensions)
+    pip_id          = as.character(pip_id),
+    survey_id       = as.character(survey_id),
+    country_code    = as.character(country_code),
+    year            = as.integer(surveyid_year),
+    welfare_type    = as.character(welfare_type),
+    version         = as.character(version),
+    survey_acronym  = as.character(survey_acronym),
+    module          = as.character(module),
+    reporting_level = as.character(reporting_level),
+    dimensions      = as.character(dimensions)
   )
 }
 
@@ -300,6 +308,7 @@ generate_release_manifest <- function(release,
   required_inv_cols <- c(
     "survey_id", "pip_id", "country_code", "surveyid_year",
     "welfare_type", "survey_acronym", "vermast", "veralt", "module"
+    # TODO: add "reporting_level" once inventory column is available
   )
   missing_inv_cols <- setdiff(required_inv_cols, names(release_inventory))
   if (length(missing_inv_cols) > 0L) {
@@ -399,15 +408,17 @@ generate_release_manifest <- function(release,
 
     # --- Build survey entry ---------------------------------------------------
     survey_entries[[i]] <- build_manifest_entry(
-      country_code   = row_i$country_code,
-      surveyid_year  = row_i$surveyid_year,
-      welfare_type   = row_i$welfare_type,
-      survey_id      = row_i$survey_id,
-      survey_acronym = row_i$survey_acronym,
-      version        = version_i,
-      module         = row_i$module,
-      pip_id         = pip_id_i,
-      dimensions     = dims_i
+      country_code    = row_i$country_code,
+      surveyid_year   = row_i$surveyid_year,
+      welfare_type    = row_i$welfare_type,
+      survey_id       = row_i$survey_id,
+      survey_acronym  = row_i$survey_acronym,
+      version         = version_i,
+      module          = row_i$module,
+      pip_id          = pip_id_i,
+      dimensions      = dims_i,
+      # TODO: replace placeholder with row_i$reporting_level once inventory column is available
+      reporting_level = "national"
     )
   }
 
