@@ -36,6 +36,12 @@ using \code{dlw::dlw_get_gmd} and save them to the local directory.
 the newly downloaded datasets.
 }
 }
+\note{
+This function expects a working release to be configured via
+\code{\link[pipfun:setup_working_release]{pipfun::setup_working_release()}}. When called from
+\code{\link[=pipdata_dlw_process]{pipdata_dlw_process()}}, the release is already set. When called
+standalone, ensure \code{setup_working_release()} has been invoked first.
+}
 \examples{
 \dontrun{
 pipdata_get_gmd(

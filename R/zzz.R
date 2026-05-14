@@ -6,28 +6,22 @@ pipdata_default_options <- list(
 )
 
 .onLoad <- function(libname, pkgname) {
-
-  # make sure .logenv is exported properly-----
-
-  if (!exists(".logenv", envir = asNamespace(pkgname))) {
-    assign(".logenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
-  }
+  # Reset unified package environment to a clean state on load.
+  # .pipdataenv is defined in aaa.R and is the single source of mutable
+  # package state. No re-creation needed — just wipe any stale keys.
+  pd_env_reset()
 
   # initiate logging
   pipfun::log_init("pipdata_log", overwrite = TRUE)
 
-  # make sure .pipdataenv is exported properly-----
-
-  if (!exists(".pipdataenv", envir = asNamespace(pkgname))) {
-    assign(".pipdataenv", new.env(parent = emptyenv()), envir = asNamespace(pkgname))
-  }
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## Options --------
 
-  op    <- options()
+  op <- options()
   toset <- !(names(pipdata_default_options) %in% names(op))
-  if (any(toset)) options(pipdata_default_options[toset])
+  if (any(toset)) {
+    options(pipdata_default_options[toset])
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ## defined values --------

@@ -17,7 +17,7 @@ Clean output from compare_aux_releases and compare_aux_vintages
 }
 \examples{
 \dontrun{
-changes_vintage <- pipaux::compare_aux_vintages(measure = measure, verbose = FALSE)
+changes_vintage <- pipaux::compare_aux_vintages(measure = "pfw", verbose = FALSE)
 cln_chngs <- cln_changes(changes_vintage)
 }
 }

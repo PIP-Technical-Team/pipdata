@@ -9,15 +9,13 @@
 #' }
 get_validation_report <- function(){
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    cli::cli_abort("Validation data is not available the environment varaible")
-
+  if (is.null(pd_env_get("validation_report"))) {
+    cli::cli_abort("Validation data is not available in the package environment")
   } else {
-
-    validation_report <- .pipdata$validation_report[, -c("assertion.id", "call", "error_df")]
-    # validation_report <- .pipdata$validation_report[, -c("call")]
-
+    validation_report <- pd_env_get("validation_report")[,
+      -c("assertion.id", "call", "error_df")
+    ]
+    # validation_report <- pd_env_get("validation_report")[, -c("call")]
   }
 
   # extract module type
@@ -67,20 +65,21 @@ get_validation_report <- function(){
 #' }
 get_data_status <- function(){
 
-  if (!rlang::env_has(.pipdata, "validation_report")){
-
-    cli::cli_abort("Validation data is not available the environment varaible")
-
+  if (is.null(pd_env_get("validation_report"))) {
+    cli::cli_abort("Validation data is not available in the package environment")
   } else {
-
-    valid_data <- .pipdata$validation_report[, .(table_name, type)]
+    valid_data <- pd_env_get("validation_report")[, .(table_name, type)]
     valid_data <- valid_data[, status := fifelse(type == "error", 1, 0)]
     valid_data <- valid_data[, .(status_count = sum(status)), by = table_name]
     valid_data <- valid_data[, count_valid := fifelse(status_count > 0, 1, 0)]
-    valid_data <- valid_data[, data_status := factor(count_valid,
-                                                     levels = c(0, 1),
-                                                     labels = c("Valid", "In valid"))]
-    valid_data |> dplyr::count(data_status)
+    valid_data <- valid_data[,
+      data_status := factor(
+        count_valid,
+        levels = c(0, 1),
+        labels = c("Valid", "In valid")
+      )
+    ]
+    valid_data[, .(n = .N), by = data_status]
   }
 }
 
@@ -112,7 +111,7 @@ get_validation_list <- function(
   e_type <- match.arg(e_type)
 
   # load validation report data
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
   dlw_meta <- pip_folders$dlw_metadata
 
@@ -183,7 +182,7 @@ get_validation_ctry <- function(
   e_type <- match.arg(e_type)
 
   # load validation report data
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release()
   pip_folders <- pipfun::get_pip_folders()
   dlw_meta <- pip_folders$dlw_metadata
 

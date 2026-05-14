@@ -46,7 +46,9 @@ pipdata_dlw_process(inv_gmd_list = "dlw_gmd_inv",
             validate_dlw_data = TRUE,
             log             = TRUE,
             save_log        = TRUE,
-            check_missing   = TRUE
+            check_missing   = TRUE,
+            release         = "20260206",
+            identity        = "TEST"
             )
 }
 }

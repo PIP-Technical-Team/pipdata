@@ -8,24 +8,13 @@ metapip::update_pip_packages()
 library(devtools)
 load_all()
 
-release <- "20260202"
+# Options
+options(pipload.verbose = FALSE)
+# stamp::st_opts("warn_missing_pk_on_load", .get = TRUE)
+stamp::st_opts(warn_missing_pk_on_load = FALSE)
+
+release <- "20260401"
 identity <- "TEST"
-
-# Create a New PIP Release (NPR)
-# pipfun::new_pip_release(release = release,
-#                        identity = identity,
-#                        root_dir = Sys.getenv("PIP_ROOT_DIR"))
-
-wrkrl <- pipfun::get_latest_pip_release()
-pipfun::setup_working_release(
-  wrkrl$release,
-  wrkrl$identity,
-  main_dir = fs::path(
-    Sys.getenv("PIP_ROOT_DIR"),
-    "PIP_ingestion_pipeline_v2/testing_folder"
-  ),
-  verbose = FALSE
-)
 
 pipfun::setup_working_release(
   release,
@@ -33,50 +22,98 @@ pipfun::setup_working_release(
   verbose = FALSE
 )
 
-# ----- Load inventory to clean -----
-stamp::st_load("indicators.qs2", alias = "aux")
-valid_inv <- stamp::st_load("gmd_valid_inv.qs2", alias = "dlw_meta")
+# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process, 
+# then continue with the rest of the script.
 
+# ----- Load inventory to clean -----
 inv <- pipload::load_gmd_valid_inv()
 
-# ------- Filter valid inventory until specific date ---------
-
-# # Can only be run when Rossi fix the compare functions
-# inv_to_clean <- valid_dlw_load(inv = inv, filter = "all") # It can be all, compare, random. Compare means compare to previous inventory
-
-# inv <- as.data.table(inv)
-inv_to_clean <- inv[status == "valid"]
-
-# COL_inv <- inv_to_clean[country_code == "COL", ]
-
 #--------- Clean surveys and create metadata -----
+old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
+# new_pip_inv <- pipload::load_pip_master_inventory()
+new_pip_inv <- pd_process_data(inv = inv, force = TRUE, verbose = FALSE)
 
-process_data <- pd_process_data(inv_to_clean = inv_to_clean)
-
-#--------- Create or Update inventory---------
-
-# old_pip_inv <- pipload::load_pip_master_inventory()
-
-new_pip_inv <- update_pip_inventory(
-  inv_to_clean = COL_inv,
-  process_data = process_data
-)
-
+# Compare inventories
 waldo::compare(old_pip_inv, new_pip_inv)
 
-# board_master <- pipfun::get_pins_boards(board = "pip_master_inventory")
-# tst <- pins::pin_read(board = board_master, name = "pip_master_inventory")
-# vs <- pins::pin_versions(board = board_master, name = "pip_master_inventory")
-# tst2 <- pins::pin_read(board = board_master, name = "pip_master_inventory", version = "20250819T173702Z-6d58c")
+# Check report
+log <- pipfun::log_filter(name = "pipdata_log")
+report <- log_report(
+  log,
+  path = file.path("log_reports", "log_report.md"),
+  overwrite = TRUE
+)
 
-# Check log
-# pipfun::log_filter(name = "pipdata_log")
-# pipfun::log_save(name = "pipdata_log", path = "log.qs")
-# log <- qs::qread("log.qs")
+# Save log
+stamp::st_init(
+  root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_logs"),
+  alias = "piplog"
+)
 
+stamp::st_save(log, "cleaning_log", alias = "piplog", verbose = FALSE)
+
+# Do not run from now on, as the rest of the script is for testing purposes only.
+# The next steps are to load the cleaned data and check that it is correct.
 #------ Load data tests -----
-#
-# NIC <- pipload::find_pip_data(board = pipfun::get_pins_boards(board = "pip_data"),
-#                              country_code = "NIC", where = "master", surveyid_year = 2001)
-#
-# NIC_2 <- pipload::load_pip_data(country_code = "NIC", surveyid_year = 2001)
+# # Load cleaned data for a survey
+# BOL <- pipload::load_pip_data(
+#   country_code = "BOL",
+#   surveyid_year = 2022,
+#   module = "ALL",
+#   verbose = FALSE
+# )
+
+# BOL2 <- pipload::load_pip_data(id_name = "BOL_2022_EH_INC_ALL")
+
+# NGA <- dlw::dlw_get_gmd(country_code = "NGA", year = 2022, module = "ALL")
+
+# # load validation inventory
+# validation_inv_list <- pipload::load_gmd_valid_inv()
+
+# # view invalid datasets in the validation inventory
+# validation_inv_list[status == "invalid", ] |> View()
+
+# # load validation report
+# validation_report <- pipload::load_gmd_valid_report()
+
+# # view error with description that failed validation
+# validation_report[type == "error", .(table_name, description)] |> View()
+
+# # Load error
+# tst <- pipload::load_dlw_data(
+#   id_name = validation_report[type == "error", table_name][1]
+# )
+
+# tst <- pip_inv |>
+#     unique() |>
+#     joyn::inner_join(
+#       vrs,
+#       by = c("survey_id", "pip_id")
+#     )
+
+# "BOL_1990_EPF_v01_M_v01_A_GMD_GROUP"
+
+# ----- Test pd_deflation -----
+
+dt_meta <- pipload::pip_read(
+  id = "CHN_2011_CRHS-CUHS_CON_GROUP",
+  alias = "pip_meta"
+)
+
+
+dt <- pipload::pip_read(id = "CHN_2011_CRHS-CUHS_CON_GROUP", alias = "pip")
+
+# Mode B: load survey and metadata from stamp by pip_id
+bol_deflated <- pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")
+
+# Inspect result
+class(bol_deflated)
+names(bol_deflated)
+
+# Check welfare_lcu and welfare_ppp columns were created
+grep("^welfare", names(bol_deflated), value = TRUE)
+
+# Quick sanity check: no all-NA welfare_ppp column
+welfare_ppp_cols <- grep("^welfare_ppp", names(bol_deflated), value = TRUE)
+sapply(bol_deflated[, welfare_ppp_cols, with = FALSE], \(x) mean(is.na(x)))
+

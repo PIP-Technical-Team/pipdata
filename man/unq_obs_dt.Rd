@@ -18,10 +18,10 @@ data.table or data.frame
 Find unique values in PFW according to some key variables
 }
 \examples{
-release <- "20250203"
+release <- "20260401"
 pipfun::setup_working_release(release)
 
-pfw <- pipload::pip_load_aux("pfw")
+pfw <- pipload::load_aux_data("pfw")
 keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
 unq_obs_dt(pfw, keyVar)
 }

@@ -4,12 +4,13 @@
 \alias{process_data}
 \title{Process datalibweb data: merge PFW data and clean variables}
 \usage{
-process_data(inv, pfw, ...)
+process_data(inv, aux_list, ...)
 }
 \arguments{
 \item{inv}{inventory with survey_id and pins folder}
 
-\item{pfw}{PFW}
+\item{aux_list}{Named list of auxiliary data frames; expected keys:
+\code{"pfw"}, \code{"cpi"}, \code{"ppp"}, \code{"pop"}, \code{"gdp"}, \code{"pce"}.}
 
 \item{...}{other parameters}
 }
@@ -20,16 +21,18 @@ data.table
 Process datalibweb data: merge PFW data and clean variables
 }
 \examples{
+\dontrun{
 release <- "20250203"
 pipfun::setup_working_release(release)
 
 pfw <- pipload::load_aux_data("pfw")
 
 gd  <- pipload::load_aux_data("CHN", 2015)
-gd  <- pipdata:::m_svy_id_to_att(gd)
+gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 process_data(gd, pfw)
 
 md   <- pipload::load_aux_data(country = "PRY", 2012)
-md  <- pipdata:::m_svy_id_to_att(md)
+md  <- survey_id_to_attr(md, unique(md$survey_id))
 process_data(md, pfw)
+}
 }

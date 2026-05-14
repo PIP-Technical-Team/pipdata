@@ -1,4 +1,3 @@
-
 #' Retrieve the inventory of aux files that changed from previous release or vintage
 #'
 #' @param measure measure of auxiliary files to compare
@@ -11,27 +10,31 @@
 #' \dontrun{
 #' valid_aux_load()
 #' }
-valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
-                           compare = "all") {
-
+valid_aux_load <- function(
+  measure = c("cpi", "ppp", "pfw", "pop"),
+  compare = "all"
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if(!(compare %in% c("all","release","vintage"))){
-
-    cli::cli_abort("The options for {.var compare} should be either: all, release or vintage")
-
+  if (!(compare %in% c("all", "release", "vintage"))) {
+    cli::cli_abort(
+      "The options for {.var compare} should be either: all, release or vintage"
+    )
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  if(compare %in% c("all", "release")){
-
+  if (compare %in% c("all", "release")) {
     # Load changes
 
-    changes_release <- pipaux::compare_aux_releases(measure = measure, verbose = FALSE)
+    changes_release <- pipaux::compare_aux_releases(
+      measure = measure,
+      owner = "RossanaTat",
+      verbose = FALSE
+    )
 
     # Clean changes
 
@@ -39,25 +42,32 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Eliminate Null values
 
-    changes_release <- purrr::keep(changes_release, ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0)
+    changes_release <- purrr::keep(
+      changes_release,
+      ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0
+    )
 
     # Identify unique
 
     unique_release <- lapply(changes_release, check_unique)
 
-    if(compare %in% c("release")){
+    if (compare %in% c("release")) {
+      if (length(unique_release) == 0) {
+        return(NULL)
+      }
 
       return(unique_release)
-
     }
-
   }
 
-  if(compare %in% c("all", "vintage")){
-
+  if (compare %in% c("all", "vintage")) {
     # Load changes
 
-    changes_vintage <- pipaux::compare_aux_vintages(measure = measure, verbose = FALSE)
+    changes_vintage <- pipaux::compare_aux_vintages(
+      measure = measure,
+      # owner = "RossanaTat",
+      verbose = FALSE
+    )
 
     # Clean changes
 
@@ -65,37 +75,42 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 
     # Eliminate Null values
 
-    changes_vintage <- purrr::keep(changes_vintage, ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0)
+    changes_vintage <- purrr::keep(
+      changes_vintage,
+      ~ !is.null(.x) && length(.x) > 0 && nrow(.x) > 0
+    )
 
     # Identify unique
 
     unique_vintage <- lapply(changes_vintage, check_unique)
 
-    if(compare %in% c("release")){
-
+    if (compare %in% c("vintage")) {
+      if (length(unique_vintage) == 0) {
+        return(NULL)
+      }
       return(unique_vintage)
-
     }
-
   }
 
-  if(compare %in% c("all")){
-
+  if (compare %in% c("all")) {
     # Combine if all changes are considered
 
-    unique_all <- list(unique_release, unique_vintage)
+    unique_all <- list(
+      release = if (length(unique_release) == 0) NULL else unique_release,
+      vintage = if (length(unique_vintage) == 0) NULL else unique_vintage
+    )
 
-    names(unique_all) <- c("release", "vintage")
+    if (all(sapply(unique_all, is.null))) {
+      return(NULL)
+    }
 
     return(unique_all)
-
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(invisible(TRUE))
-
 }
 
 #' Clean output from compare_aux_releases and compare_aux_vintages
@@ -107,18 +122,17 @@ valid_aux_load <- function(measure = c("cpi", "ppp","pfw","pop"),
 #'
 #' @examples
 #' \dontrun{
-#' changes_vintage <- pipaux::compare_aux_vintages(measure = measure, verbose = FALSE)
+#' changes_vintage <- pipaux::compare_aux_vintages(measure = "pfw", verbose = FALSE)
 #' cln_chngs <- cln_changes(changes_vintage)
 #' }
 cln_changes <- function(changes) {
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Remove list for difference in columns
 
-  cln_chngs <- changes[!names(changes) %in% "diff_cols"]
+  cln_chngs <- changes[!(names(changes) %in% c("diff_cols"))]
 
   # Row bind lists
 
@@ -133,7 +147,6 @@ cln_changes <- function(changes) {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(cln_chngs)
-
 }
 
 
@@ -146,11 +159,8 @@ cln_changes <- function(changes) {
 #'
 #' @return data.frame
 #' @keywords internal
-check_unique <- function(x, key = attributes(x)$key_cols){
-
-
-  if(all(key %in% colnames(x))){
-
+check_unique <- function(x, key = attributes(x)$key_cols) {
+  if (all(key %in% colnames(x))) {
     unique_values <- unique(x[, ..key])
 
     return(unique_values)

@@ -4,6 +4,11 @@
 #' @param log Logical. Keep logging file, TRUE/FALSE default value is `TRUE`
 #' @param save_log Logical. Save logging file, TRUE/FALSE default value is `TRUE`
 #'
+#' @note This function expects a working release to be configured via
+#'   [pipfun::setup_working_release()]. When called from
+#'   [pipdata_dlw_process()], the release is already set. When called
+#'   standalone, ensure `setup_working_release()` has been invoked first.
+#'
 #' @return data.table, inventory report
 #' @export
 #'
@@ -15,23 +20,22 @@
 #' )
 #' }
 pipdata_validate_gmd <- function(
-    log  = TRUE,
-    save_log = TRUE
+  log = TRUE,
+  save_log = TRUE
 ) {
-
   #### logging -----------------------------------------------------------------
   if (log) {
-
-    pipfun::log_add("info", "Start validation workflow",
-                    name = "pipdata_log",
-                    args = list(log = log,
-                                save_log  = save_log))
+    pipfun::log_add(
+      "info",
+      "Start validation workflow",
+      name = "pipdata_log",
+      args = list(log = log, save_log = save_log)
+    )
   }
 
   ### --------------------------------------------------------------------------
 
   # 0) set-up release and dlw data, inventory, and  metadata working folders
-  pipfun::get_wrk_release(verbose = FALSE)
   pip_folders <- pipfun::get_pip_folders()
 
   # check directory existence for working folders
@@ -41,10 +45,9 @@ pipdata_validate_gmd <- function(
 
   ### -------------------------------------------------------------------------
   # 1) get list of local gmd datasets that are not yet validated
-  gmd_new <- gmd_inv_new()
+  gmd_new <- dlw_gmd_unvalidated()
 
-  if (is.null(gmd_new) || nrow(gmd_new) == 0){
-
+  if (is.null(gmd_new) || nrow(gmd_new) == 0) {
     cli::cli_abort(
       "There is no new GMD local datasets to validate"
     )
@@ -57,16 +60,13 @@ pipdata_validate_gmd <- function(
     "gmd_valid_inv.qs2"
   )
   if (!fs::is_file(valid_inv_file)) {
-
     old_inv <- NULL
 
     cli::cli_alert(
       "GMD validation inventory file does not exist in the {.dir {pip_folders$dlw_data}} folder."
     )
-
   } else {
     old_inv <- tryCatch(
-
       # stamp::st_load(fs::path(dlw_meta, "gmd_valid_inv.qs2"), alias = "dlw_meta"),
       pipload::load_gmd_valid_inv(),
 
@@ -74,10 +74,12 @@ pipdata_validate_gmd <- function(
         msg <- glue::glue('Failed to read inventory file.')
 
         if (log) {
-
-          pipfun::log_add("error", msg,
-                          name = "pipdata_log",
-                          logmeta = list(error = e))
+          pipfun::log_add(
+            "error",
+            msg,
+            name = "pipdata_log",
+            logmeta = list(error = e)
+          )
         }
 
         NULL
@@ -88,10 +90,9 @@ pipdata_validate_gmd <- function(
 
   # 3) get the list of datasets that are new and already validated -------------
   if (!is.null(old_inv)) {
-    validate_this  <- gmd_to_validate(gmd_new, old_inv)
-
+    validate_this <- gmd_to_validate(gmd_new, old_inv)
   } else {
-    validate_this  <- NULL
+    validate_this <- NULL
   }
 
   if (!is.null(old_inv)) {
@@ -106,50 +107,49 @@ pipdata_validate_gmd <- function(
   gmd_new <- gmd_new[data_available == "Yes", ]
 
   all_names <- unique(gmd_new$FileName)
-  new_inv   <- vector("list", length(all_names))
+  new_inv <- vector("list", length(all_names))
 
   cli::cli_progress_bar("Downloading .qs", total = nrow(gmd_new))
 
   ##############################################################################
   # validation functions
   validation_functions <- list(
-    GPWG   = dlw_validation_gpwg,
-    GROUP  = dlw_validation_group,
-    BIN    = dlw_validation_bin,
-    HIST   = dlw_validation_hist,
-    ALL    = dlw_validation_all,
+    GPWG = dlw_validation_gpwg,
+    GROUP = dlw_validation_group,
+    BIN = dlw_validation_bin,
+    HIST = dlw_validation_hist,
+    ALL = dlw_validation_all,
     ASPIRE = dlw_validation_aspire,
-    L      = dlw_validation_l,
+    L = dlw_validation_l,
     DEFAULT = dlw_validation_skip
   )
 
   # get the GMD data
   new_inv <- lapply(seq_len(nrow(gmd_new)), function(i) {
-
-    file_name  <- gmd_new[["FileName"]][i]
-    inv_pin_name  <- file_name |>
+    file_name <- gmd_new[["FileName"]][i]
+    inv_pin_name <- file_name |>
       fs::path_ext_remove() |>
       fs::path(ext = "qs2")
 
-    nm         <- fs::path_ext_remove(file_name)
-    md_type    <- gmd_new[["Module"]][i]
+    nm <- fs::path_ext_remove(file_name)
+    md_type <- gmd_new[["Module"]][i]
     data_avail <- gmd_new[["data_available"]][i]
-    Checksum   <- gmd_new[["Checksum"]][i]
+    Checksum <- gmd_new[["Checksum"]][i]
 
-    pipeline_version  = 1
+    pipeline_version = 1L
 
-    file_id  <- file_name |>
+    file_id <- file_name |>
       fs::path_ext_remove() |>
       tolower()
 
     # load GMD data from local repository
-    out <- tryCatch({
-
-      pipload::load_dlw_data(
-        id_name = file_id)
-
-      }, error = function(e) {
-
+    out <- tryCatch(
+      {
+        pipload::load_dlw_data(
+          id_name = file_id
+        )
+      },
+      error = function(e) {
         msg <- glue::glue('Could not load data from GMD data folder.')
 
         if (log) {
@@ -163,7 +163,8 @@ pipdata_validate_gmd <- function(
         }
         cli::cli_inform(msg)
         NULL
-      })
+      }
+    )
 
     if (!is.null(out)) {
       file_id <- file_id |>
@@ -192,7 +193,7 @@ pipdata_validate_gmd <- function(
       # Update the new_inv entry based on previous processes
       if (!is.null(validate_this) && (nm %in% validate_this$survey_id)) {
         row_svyid <- validate_this[survey_id == nm, "pipeline_version"]
-        workflow_vrs <- row_svyid$pipeline_version + 1
+        workflow_vrs <- row_svyid$pipeline_version + 1L
         new_inv[[i]] <- data.table(
           survey_id = nm,
           pipeline_version = workflow_vrs,
@@ -242,49 +243,55 @@ pipdata_validate_gmd <- function(
   # ##############################################################################
 
   # 4. merge new_inv rows into final_inv ---------------------------------------
-  final_inv <- dplyr::bind_rows(new_inv) |>
-    pipload::survey_id_to_vars() |>
-    tidyr::as_tibble() |>
-    # tidyr::unnest(pin_version, keep_empty = TRUE) |>
-    data.table::as.data.table()
-  final_inv <- final_inv[, pipeline_version := fifelse(is.na(pipeline_version), 1, pipeline_version)]
+  # Note: Filter(Negate(is.null), ...) is not needed here because all lapply
+  # branches explicitly return a data.table (even on load failure). Kept as
+  # documentation for future developers if that assumption ever changes.
+  final_inv <- data.table::rbindlist(new_inv, fill = TRUE) |>
+    pipload::survey_id_to_vars()
+  # tidyr::unnest(pin_version, keep_empty = TRUE)
+  final_inv <- final_inv[,
+    pipeline_version := fifelse(is.na(pipeline_version), 1L, pipeline_version)
+  ]
 
   # update inventory file with the newly validated data
-  if (!is.null(validated_data) && nrow(validated_data) !=0){
-
+  if (!is.null(validated_data) && nrow(validated_data) != 0) {
     base_file_name <- names(final_inv)
-    final_inv <- rbind(validated_data, final_inv, ignore.attr=TRUE, fill = TRUE)
+    final_inv <- rbind(
+      validated_data,
+      final_inv,
+      ignore.attr = TRUE,
+      fill = TRUE
+    )
 
     data.table::setcolorder(final_inv, base_file_name)
-
   }
 
   # 5. save inventory file DLW inventory folder---------------------------------
   ## check if the inventory file is generated and save it to DLW inventory file
   if (is.null(final_inv)) {
-
     cli::cli_alert_danger("Inventory file is not generated")
 
     if (log) {
-
-      pipfun::log_add("error", "Inventory file is not generated",
-                      name = "pipdata_log",
-                      logmeta = list(dataset = "inventory"))
+      pipfun::log_add(
+        "error",
+        "Inventory file is not generated",
+        name = "pipdata_log",
+        logmeta = list(dataset = "inventory")
+      )
     }
-
-
   } else {
-
-    pipload::pip_write(x = final_inv,
+    pipload::pip_write(
+      x = final_inv,
       id = "gmd_valid_inv",
-      alias = "dlw_meta")
+      pk = "survey_id",
+      alias = "dlw_meta"
+    )
 
     cli::cli_alert_success(
       "Inventory file is saved at: {.dir {pip_folders$dlw_metadata}}"
     )
 
     if (log) {
-
       pipfun::log_add(
         "info",
         "Inventory file is saved",
@@ -292,27 +299,23 @@ pipdata_validate_gmd <- function(
         logmeta = list(saved_at = pip_folders$dlw_metadata)
       )
     }
-
   }
-
 
   # 6. save validation report file in DLW inventory folder ---------------------
   # generate validation report
   valid_report <- get_validation_report()
 
   if (is.null(valid_report)) {
-
     cli::cli_alert_danger("Validation report data is not compiled")
 
     if (log) {
-
-      pipfun::log_add("error", "Validation report is not available to save",
-                      name = "pipdata_log")
+      pipfun::log_add(
+        "error",
+        "Validation report is not available to save",
+        name = "pipdata_log"
+      )
     }
-
-
   } else {
-
     # survey names in validation data
     valid_all_names <- unique(valid_report$table_name)
     old_valid_report <- tryCatch(
@@ -320,10 +323,13 @@ pipdata_validate_gmd <- function(
       error = function(e) {
         msg <- "Failed to read validation report file."
 
-        if (log){
-          pipfun::log_add("error", msg,
-                          name = "pipdata_log",
-                          logmeta = list(error = e))
+        if (log) {
+          pipfun::log_add(
+            "error",
+            msg,
+            name = "pipdata_log",
+            logmeta = list(error = e)
+          )
         }
 
         cli::cli_inform(msg)
@@ -331,37 +337,63 @@ pipdata_validate_gmd <- function(
       }
     )
 
-    if (!is.null(old_valid_report)){
-
+    if (!is.null(old_valid_report)) {
       old_valid_report <- old_valid_report[!(table_name %in% valid_all_names), ]
-      valid_report <- old_valid_report |> dplyr::bind_rows(valid_report)
-
+      # Check for schema drift: warn if column sets diverge
+      cols_old <- setdiff(names(old_valid_report), names(valid_report))
+      if (length(cols_old) > 0) {
+        cli::cli_warn(c(
+          "Schema drift detected in validation_report:",
+          "i" = "Columns in old but missing from new: {.val {cols_old}}"
+        ))
+      }
+      cols_new <- setdiff(names(valid_report), names(old_valid_report))
+      if (length(cols_new) > 0) {
+        cli::cli_warn(c(
+          "Schema drift detected in validation_report:",
+          "i" = "New columns not in old report: {.val {cols_new}}"
+        ))
+      }
+      valid_report <- data.table::rbindlist(
+        list(old_valid_report, valid_report),
+        fill = TRUE
+      )
     }
 
-    pipload::pip_write(x = valid_report,
+    pipload::pip_write(
+      x = valid_report,
       id = "validation_report",
-      alias = "dlw_meta")
+      alias = "dlw_meta"
+    )
 
     cli::cli_alert_success("Validation report is saved")
 
     if (log) {
-
-      pipfun::log_add("info", "Validation report is saved",
-                      name = "pipdata_log",
-                      logmeta = list(saved_as = "validation_report"))
+      pipfun::log_add(
+        "info",
+        "Validation report is saved",
+        name = "pipdata_log",
+        logmeta = list(saved_as = "validation_report")
+      )
     }
   }
 
   # 7. save logging file in DLW metadaa folder---------------------------------
   if (save_log && log) {
-    pipfun::log_save(name = "pipdata_log", id = "dlw_validation_log", alias = "dlw_meta")
+    pipfun::log_save(
+      name = "pipdata_log",
+      id = "dlw_validation_log",
+      alias = "dlw_meta"
+    )
 
-    pipfun::log_add("info", "logging file is saved",
-                    name = "pipdata_log",
-                    logmeta = list(log_info_name = "dlw_validation_log"))
+    pipfun::log_add(
+      "info",
+      "logging file is saved",
+      name = "pipdata_log",
+      logmeta = list(log_info_name = "dlw_validation_log")
+    )
 
     cli::cli_alert_success("GMD logging file is saved")
-
   }
 
   invisible(NULL)

@@ -4,16 +4,27 @@
 \alias{dlw_gmd_new}
 \title{Compare the local GMD dataset list with the server version to identify new entries.}
 \usage{
-dlw_gmd_new(check_missing = TRUE)
+dlw_gmd_new(check_missing = TRUE, update_inventory = FALSE)
 }
 \arguments{
 \item{check_missing}{Logical. If TRUE, includes missing datasets from either side.}
+
+\item{update_inventory}{Logical. If TRUE, updates the local inventory with new entries. Default is FALSE.}
 }
 \value{
 A data.table with new or unmatched GMD datasets.
 }
 \description{
 Compare the local GMD dataset list with the server version to identify new entries.
+<<<<<<< HEAD
+=======
+}
+\note{
+This function expects a working release to be configured via
+\code{\link[pipfun:setup_working_release]{pipfun::setup_working_release()}}. When called from
+\code{\link[=pipdata_get_gmd]{pipdata_get_gmd()}}, the release is already set. When called
+standalone, ensure \code{setup_working_release()} has been invoked first.
+>>>>>>> DEV_v2
 }
 \examples{
 \dontrun{
