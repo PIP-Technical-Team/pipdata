@@ -178,8 +178,12 @@
 #'   inventory.
 #'
 #' @return The input survey `data.table` augmented with `welfare_lcu` and
-#'   `welfare_ppp_*` columns. Returns `NA` when deflation fails (error is
-#'   logged via `log_failure()`).
+#'   `welfare_ppp_*` columns, and three attributes:
+#'   - `welfare_vars`: character vector of all `welfare_*` column names
+#'   - `adj_pop`: logical; `TRUE` if population weights were adjusted
+#'   - `ppp_sort`: integer base year used for row sorting (e.g. `2017L`), or
+#'     `NULL` when deflation produced no `welfare_ppp_*` columns
+#'   Returns `NA` when deflation fails (error logged via `log_failure()`).
 #' @export
 #'
 #' @note `pd_deflation()` is a single-survey deflation helper. When
@@ -372,6 +376,8 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
 #'   columns plus factor-formatted character columns. Includes attributes:
 #'   - `welfare_vars`: character vector of welfare column names
 #'   - `adj_pop`: logical; TRUE if population adjustment was applied
+#'   - `ppp_sort`: integer base year used for row sorting (e.g. `2017L`), or
+#'     `NULL` when no `welfare_ppp_*` columns are present
 #' @noRd
 .deflation_pipmd_core <- function(dt, cpi, ppp, pop) {
   dt_c <- data.table::copy(dt)
@@ -412,6 +418,8 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
 #'   columns plus factor-formatted character columns. Includes attributes:
 #'   - `welfare_vars`: character vector of welfare column names
 #'   - `adj_pop`: logical; always FALSE for grouped-data (no subnational support)
+#'   - `ppp_sort`: integer base year used for row sorting (e.g. `2017L`), or
+#'     `NULL` when no `welfare_ppp_*` columns are present
 #' @noRd
 .deflation_pipgd_core <- function(dt, cpi, ppp, pop) {
   dt_c <- data.table::copy(dt)
@@ -446,6 +454,9 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
 #'
 #' @param dt Deflated `data.table` (after `char_to_fct()`).
 #' @return `dt` with columns and rows reordered (mutates by reference).
+#'   Sets attribute `ppp_sort` (integer) to the base year of the
+#'   `welfare_ppp_*` column used for sorting (e.g. `2017L`), or `NULL`
+#'   when no `welfare_ppp_*` columns are present.
 #' @keywords internal
 finalize_deflation_output <- function(dt) {
   nms <- names(dt)
@@ -471,6 +482,14 @@ finalize_deflation_output <- function(dt) {
 
   if (length(wlf_ppp) > 0L) {
     data.table::setorderv(dt, c(wlf_ppp[[1L]], "weight"))
+    # Record which PPP year was used for sorting so callers do not need to
+    # parse column names (e.g. "welfare_ppp_2017_01_01" → ppp_sort = 2017L).
+    ppp_sort_year <- as.integer(
+      regmatches(wlf_ppp[[1L]], regexpr("[0-9]{4}", wlf_ppp[[1L]]))
+    )
+    data.table::setattr(dt, "ppp_sort", ppp_sort_year)
+  } else {
+    data.table::setattr(dt, "ppp_sort", NULL)
   }
 
   dt
