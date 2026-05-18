@@ -451,11 +451,23 @@ generate_release_manifest <- function(release,
 
     # --- Welfare column discovery ---------------------------------------------
     welfare_vars_i <- discover_parquet_welfare_cols(abs_path_i)
-    ppp_years_i    <- suppressWarnings(as.integer(sub(
-      "^welfare_ppp_([0-9]+).*", "\\1",
-      grep("^welfare_ppp_", welfare_vars_i, value = TRUE)
-    )))
-    ppp_sort_i <- if (length(ppp_years_i) > 0L) min(ppp_years_i) else NA_integer_
+
+    # Read ppp_sort from Parquet schema metadata — written there by
+    # write_survey_parquet() from attr(dt, "ppp_sort") of the deflated
+    # dataset (set by pipload). Falls back to NA_integer_ for legacy files
+    # written before this metadata field was stored.
+    # NOTE: use read_parquet() not open_dataset() — open_dataset may not
+    # preserve file-level schema metadata.
+    parquet_schema_i <- tryCatch(
+      arrow::read_parquet(abs_path_i, as_data_frame = FALSE)$schema,
+      error = function(e) NULL
+    )
+    ppp_sort_i <- if (!is.null(parquet_schema_i)) {
+      suppressWarnings(as.integer(parquet_schema_i$metadata[["ppp_sort"]]))
+    } else {
+      NA_integer_
+    }
+    if (length(ppp_sort_i) == 0L || is.na(ppp_sort_i)) ppp_sort_i <- NA_integer_
 
     # --- Build survey entry ---------------------------------------------------
     survey_entries[[i]] <- build_manifest_entry(

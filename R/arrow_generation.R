@@ -505,6 +505,17 @@ write_survey_parquet <- function(dt,
   # --- Build explicit Arrow schema for this survey's columns -----------------
   arrow_schema <- .build_arrow_schema(names(dt))
 
+  # Embed ppp_sort in schema metadata so generate_release_manifest() recovers
+  # the authoritative value (from attr(dt, "ppp_sort"), set by pipload) rather
+  # than inferring it from column names. NA / NULL ppp_sort (legacy surveys)
+  # is simply omitted — the manifest reader will fall back to NA_integer_.
+  ppp_sort_val <- attr(dt, "ppp_sort")
+  if (!is.null(ppp_sort_val) && !is.na(ppp_sort_val)) {
+    arrow_schema <- arrow_schema$WithMetadata(
+      list(ppp_sort = as.character(as.integer(ppp_sort_val)))
+    )
+  }
+
   # --- Write Parquet file ----------------------------------------------------
   # Convert to Arrow Table first so the schema is applied before writing.
   # arrow::write_parquet() does not accept a schema= argument directly;

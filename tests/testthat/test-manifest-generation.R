@@ -80,7 +80,8 @@ write_fixture_parquet <- function(arrow_root, dt,
                                   country_code  = "COL",
                                   surveyid_year = 2010L,
                                   welfare_type  = "INC",
-                                  version       = "v01_v02") {
+                                  version       = "v01_v02",
+                                  ppp_sort      = NULL) {
   partition_dir <- file.path(
     arrow_root,
     paste0("country_code=",  country_code),
@@ -90,7 +91,21 @@ write_fixture_parquet <- function(arrow_root, dt,
   )
   dir.create(partition_dir, recursive = TRUE, showWarnings = FALSE)
   out_file <- file.path(partition_dir, paste0(pip_id, "-0.parquet"))
-  arrow::write_parquet(dt, out_file, compression = "snappy")
+
+  # Embed ppp_sort in schema metadata when provided — mirrors what
+  # write_survey_parquet() does so manifest generation tests are realistic.
+  if (!is.null(ppp_sort) && !is.na(ppp_sort)) {
+    arrow_tbl   <- arrow::as_arrow_table(dt)
+    meta_schema <- arrow_tbl$schema$WithMetadata(
+      list(ppp_sort = as.character(as.integer(ppp_sort)))
+    )
+    arrow::write_parquet(
+      arrow_tbl$cast(target_schema = meta_schema),
+      out_file, compression = "snappy"
+    )
+  } else {
+    arrow::write_parquet(dt, out_file, compression = "snappy")
+  }
   out_file
 }
 
@@ -335,9 +350,9 @@ test_that("generate_release_manifest writes valid JSON with new format and retur
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
 
-  # Write fixture Parquet with multi-welfare columns + 2 dims
+  # Write fixture Parquet with multi-welfare columns + 2 dims + ppp_sort metadata
   dt  <- make_fixture_dt_multi(dims = c("gender", "area"), ppp_suffix = "2017_01_02")
-  write_fixture_parquet(tmp_arrow, dt, version = "v01_v02")
+  write_fixture_parquet(tmp_arrow, dt, version = "v01_v02", ppp_sort = 2017L)
 
   inv <- make_fixture_inventory()
   out_path <- file.path(tmp_manifest, "manifest_20260206.json")
