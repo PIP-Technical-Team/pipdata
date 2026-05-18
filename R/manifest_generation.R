@@ -127,6 +127,37 @@ discover_parquet_dimensions <- function(file_path) {
 }
 
 # ---------------------------------------------------------------------------
+# discover_parquet_welfare_cols()
+# ---------------------------------------------------------------------------
+
+#' Discover welfare column names in a Parquet file
+#'
+#' Reads only the file schema (no row data) and returns the names of welfare
+#' columns present: `welfare_lcu` and any `welfare_ppp_*` columns.
+#'
+#' @param file_path Absolute path to a `.parquet` file.
+#'
+#' @return Character vector of welfare column names, or `character(0)` when
+#'   none are found. Returns `character(0)` silently if the file cannot be read
+#'   (caller has already validated existence via `discover_parquet_dimensions`).
+#'
+#' @family manifest-generation
+#' @export
+discover_parquet_welfare_cols <- function(file_path) {
+  stopifnot(is.character(file_path), length(file_path) == 1L)
+
+  schema <- tryCatch(
+    arrow::open_dataset(file_path)$schema,
+    error = function(e) NULL
+  )
+
+  if (is.null(schema)) return(character(0))
+
+  actual_cols <- names(schema)
+  grep("^welfare_lcu$|^welfare_ppp_", actual_cols, value = TRUE)
+}
+
+# ---------------------------------------------------------------------------
 # build_manifest_entry()
 # ---------------------------------------------------------------------------
 
@@ -153,18 +184,25 @@ discover_parquet_dimensions <- function(file_path) {
 #' @param module         Processing module (e.g. `"ALL"`).
 #' @param pip_id         Canonical pip_id (e.g. `"COL_2010_ECH_V01_M_V02_A_INC"`).
 #' @param dimensions     Character vector of breakdown dimension column names
-#'   available in this survey's Parquet file (e.g. `c("gender", "area")`).
+#'   available in this survey's Parquet file (e.g. `c("gender", "area")`).  
 #'   Use `character(0)` when none are present. Known universe:
 #'   `gender`, `area`, `educat4`, `educat5`, `educat7`, `age`.
 #' @param reporting_level Reporting level for the survey (e.g. `"national"`,
 #'   `"urban"`, `"rural"`). Currently a placeholder (`"national"`) — will be
 #'   sourced from `release_inventory$reporting_level` once that column is
 #'   added to the inventory.
+#' @param welfare_vars Character vector of welfare column names present in the
+#'   Parquet file (e.g. `c("welfare_lcu", "welfare_ppp_2017_01_02")`). Use
+#'   `character(0)` for legacy surveys that have a single `welfare` column.
+#'   Discovered via [discover_parquet_welfare_cols()].
+#' @param ppp_sort     Integer PPP base year used as the default selection when
+#'   `ppp = NULL` in `{piptm}` loading functions (e.g. `2017L`). `NA_integer_`
+#'   for legacy surveys. Inferred from the first year found in `welfare_vars`.
 #'
-#' @return A named list with 10 fields suitable for JSON serialisation via
+#' @return A named list with 12 fields suitable for JSON serialisation via
 #'   [jsonlite::toJSON()]: `pip_id`, `survey_id`, `country_code`, `year`,
 #'   `welfare_type`, `version`, `survey_acronym`, `module`, `dimensions`,
-#'   `reporting_level`.
+#'   `reporting_level`, `welfare_vars`, `ppp_sort`.
 #'
 #' @family manifest-generation
 #' @export
@@ -190,7 +228,9 @@ build_manifest_entry <- function(country_code,
                                  pip_id,
                                  dimensions,
                                  # TODO: remove default once inventory column is available
-                                 reporting_level = "national") {
+                                 reporting_level = "national",
+                                 welfare_vars    = character(0),
+                                 ppp_sort        = NA_integer_) {
   list(
     pip_id          = as.character(pip_id),
     survey_id       = as.character(survey_id),
@@ -201,7 +241,10 @@ build_manifest_entry <- function(country_code,
     survey_acronym  = as.character(survey_acronym),
     module          = as.character(module),
     reporting_level = as.character(reporting_level),
-    dimensions      = as.character(dimensions)
+    dimensions      = as.character(dimensions),
+    welfare_vars    = as.character(welfare_vars),
+    ppp_sort        = if (is.null(ppp_sort) || (length(ppp_sort) == 1L && is.na(ppp_sort)))
+                        NA_integer_ else as.integer(ppp_sort)
   )
 }
 
@@ -406,6 +449,14 @@ generate_release_manifest <- function(release,
     statuses[i]   <- "included"
     messages[i]   <- NA_character_
 
+    # --- Welfare column discovery ---------------------------------------------
+    welfare_vars_i <- discover_parquet_welfare_cols(abs_path_i)
+    ppp_years_i    <- suppressWarnings(as.integer(sub(
+      "^welfare_ppp_([0-9]+).*", "\\1",
+      grep("^welfare_ppp_", welfare_vars_i, value = TRUE)
+    )))
+    ppp_sort_i <- if (length(ppp_years_i) > 0L) min(ppp_years_i) else NA_integer_
+
     # --- Build survey entry ---------------------------------------------------
     survey_entries[[i]] <- build_manifest_entry(
       country_code    = row_i$country_code,
@@ -418,7 +469,9 @@ generate_release_manifest <- function(release,
       pip_id          = pip_id_i,
       dimensions      = dims_i,
       # TODO: replace placeholder with row_i$reporting_level once inventory column is available
-      reporting_level = "national"
+      reporting_level = "national",
+      welfare_vars    = welfare_vars_i,
+      ppp_sort        = ppp_sort_i
     )
   }
 

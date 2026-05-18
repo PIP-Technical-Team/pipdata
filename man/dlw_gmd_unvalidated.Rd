@@ -17,11 +17,7 @@ Get un-validated datasets list
 }
 \examples{
 \dontrun{
-<<<<<<< HEAD:man/gmd_inv_new.Rd
-df <- gmd_inv_new()
-=======
 df <- dlw_gmd_unvalidated()
->>>>>>> DEV_v2:man/dlw_gmd_unvalidated.Rd
 head(df)
 }
 }

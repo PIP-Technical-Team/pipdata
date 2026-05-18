@@ -1,9 +1,14 @@
 # Pre-Arrow Cleaning & Standardisation
 # Spec:  docs/pre-arrow-cleaning-spec.md
 # Schema: inst/schema/arrow-schema.json  (in {piptm})
+# Plan:   .cg-docs/plans/2026-05-18-deflated-data-arrow-partitions.md  (Phase 1)
 #
-# Transforms a {pipdata} clean survey data.table + metadata list into a
-# schema-conformant data.table ready for arrow::write_parquet().
+# Transforms a deflated survey data.table (from pipload::load_pip_deflated_data())
+# into a schema-conformant data.table ready for arrow::write_parquet().
+# Metadata (country_code, surveyid_year, welfare_type, version) is read from
+# dataset attributes — no separate metadata list is required.
+# Multiple welfare columns (welfare_lcu, welfare_ppp_*) are preserved as
+# discovered from the welfare_vars attribute.
 #
 # Exported functions
 # ------------------
@@ -11,8 +16,8 @@
 #
 # Internal helpers (not exported)
 # --------------------------------
-#   inject_metadata_cols()   — §1.1: metadata → data.table columns
-#   cast_data_cols()         — §2:   type casting welfare, weight
+#   inject_metadata_cols()   — §1.1: dataset attributes → data.table columns
+#   cast_data_cols()         — §2:   type casting all welfare_* cols + weight
 #   standardize_gender()     — §3.1: gender factor
 #   standardize_area()       — §3.2: area factor
 #   standardize_education()  — §3.3: education ordered factor
@@ -25,37 +30,37 @@
 
 #' Inject survey metadata as constant columns into a microdata data.table
 #'
-#' Adds `country_code`, `surveyid_year`, `survey_acronym`, `welfare_type`,
-#' and `survey_id` columns by reference. `welfare_type` is recoded from the
-#' full string (`"income"` / `"consumption"`) to the two-letter code
-#' (`"INC"` / `"CON"`). Unknown values are passed through after `toupper()`.
+#' Adds `country_code`, `surveyid_year`, `welfare_type`, `pip_id`,
+#' and `version` columns by reference. Metadata is read from the dataset
+#' attributes set by `pipload::load_pip_deflated_data()` — no separate
+#' metadata list is required.
 #'
-#' The `survey_id` column in the output holds the **`pip_id`** value (e.g.
-#' `"ARG_2003_EPHC-S2_INC_ALL"`), not the raw `survey_id` string. This is
-#' because `pip_id` uniquely identifies a single physical file (one welfare
-#' type), whereas `survey_id` can map to multiple files (INC + CON). The
-#' Parquet filename and partition path are derived from this column.
+#' `welfare_type` is recoded from the full string (`"income"` /
+#' `"consumption"`) to the two-letter code (`"INC"` / `"CON"`). Unknown
+#' values are passed through after `toupper()`.
 #'
-#' @param dt       A `data.table` of survey microdata. Modified **by reference**.
-#' @param metadata Named list returned by
-#'   `pipload::load_pip_data(..., metadata = TRUE)`.  Must contain
-#'   `country_code`, `surveyid_year`, `survey_acronym`, and `welfare_type`.
-#' @param pip_id   The canonical `pip_id` string for this specific survey file
+#' @param dt     A `data.table` of deflated survey microdata as returned by
+#'   `pipload::load_pip_deflated_data()`. Must carry `country_code`,
+#'   `surveyid_year`, `welfare_type`, `vermast`, and `veralt` as attributes.
+#'   Modified **by reference**.
+#' @param pip_id The canonical `pip_id` string for this specific survey file
 #'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`), taken from the release inventory.
-#'   This is stored in the `survey_id` column of the output data.table and
-#'   used as the Parquet filename stem.
+#'   Used as the Parquet filename stem.
 #'
 #' @return `dt` invisibly (modified by reference).
 #' @keywords internal
-inject_metadata_cols <- function(dt, metadata, pip_id) {
-  required_fields <- c(
-    "country_code", "surveyid_year", "survey_acronym", "welfare_type",
-    "vermast", "veralt"
-  )
-  missing_fields <- setdiff(required_fields, names(metadata))
-  if (length(missing_fields) > 0L) {
+inject_metadata_cols <- function(dt, pip_id) {
+  required_attrs <- c("country_code", "surveyid_year", "welfare_type",
+                      "vermast", "veralt")
+  missing_attrs <- required_attrs[
+    vapply(required_attrs, function(a) is.null(attr(dt, a)), logical(1L))
+  ]
+  if (length(missing_attrs) > 0L) {
     cli::cli_abort(
-      "metadata is missing required field(s): {.field {missing_fields}}"
+      c(
+        "Dataset is missing required attribute(s): {.field {missing_attrs}}",
+        "i" = "Pass data loaded via {.fn pipload::load_pip_deflated_data}."
+      )
     )
   }
   if (!is.character(pip_id) || length(pip_id) != 1L || is.na(pip_id)) {
@@ -64,21 +69,20 @@ inject_metadata_cols <- function(dt, metadata, pip_id) {
     )
   }
 
-  wt_raw <- toupper(metadata$welfare_type)
+  wt_raw <- toupper(as.character(attr(dt, "welfare_type")))
 
   dt[, `:=`(
-    country_code   = toupper(as.character(metadata$country_code)),
-    surveyid_year  = as.integer(metadata$surveyid_year),
-    survey_acronym = toupper(as.character(metadata$survey_acronym)),
-    welfare_type   = data.table::fcase(
+    country_code  = toupper(as.character(attr(dt, "country_code"))),
+    surveyid_year = as.integer(attr(dt, "surveyid_year")),
+    welfare_type  = data.table::fcase(
       wt_raw == "INCOME",      "INC",
       wt_raw == "CONSUMPTION", "CON",
       default = wt_raw
     ),
-    pip_id         = as.character(pip_id),
-    version        = paste0(
-      tolower(as.character(metadata$vermast)), "_",
-      tolower(as.character(metadata$veralt))
+    pip_id        = as.character(pip_id),
+    version       = paste0(
+      tolower(as.character(attr(dt, "vermast"))), "_",
+      tolower(as.character(attr(dt, "veralt")))
     )
   )]
 
@@ -90,27 +94,39 @@ inject_metadata_cols <- function(dt, metadata, pip_id) {
 # §2 — Type casting for data-sourced columns
 # ---------------------------------------------------------------------------
 
-#' Cast welfare and weight columns to double
+#' Cast all welfare columns and weight to double
 #'
-#' Casts `welfare` and `weight` to `double` in-place. Both columns must
-#' exist in `dt`.
+#' Discovers welfare columns from the `welfare_vars` attribute of `dt` and
+#' casts all of them to `double` in-place. Also casts `weight` to `double`.
 #'
-#' @param dt A `data.table` of survey microdata. Modified **by reference**.
+#' @param dt A `data.table` of deflated survey microdata with a `welfare_vars`
+#'   attribute (set by `pipload::load_pip_deflated_data()`). Modified
+#'   **by reference**.
 #'
 #' @return `dt` invisibly (modified by reference).
 #' @keywords internal
 cast_data_cols <- function(dt) {
-  if (!"welfare" %in% names(dt)) {
-    cli::cli_abort("Column {.field welfare} not found in data.")
+  wv <- attr(dt, "welfare_vars")
+  if (is.null(wv) || length(wv) == 0L) {
+    cli::cli_abort(
+      c(
+        "Dataset is missing a non-empty {.field welfare_vars} attribute.",
+        "i" = "Pass data loaded via {.fn pipload::load_pip_deflated_data}."
+      )
+    )
+  }
+  missing_wv <- setdiff(wv, names(dt))
+  if (length(missing_wv) > 0L) {
+    cli::cli_abort(
+      "welfare_vars attribute lists column(s) not found in data: {.field {missing_wv}}"
+    )
   }
   if (!"weight" %in% names(dt)) {
     cli::cli_abort("Column {.field weight} not found in data.")
   }
 
-  dt[, `:=`(
-    welfare = as.double(welfare),
-    weight  = as.double(weight)
-  )]
+  dt[, (wv)   := lapply(.SD, as.double), .SDcols = wv]
+  dt[, weight := as.double(weight)]
 
   invisible(dt)
 }
@@ -250,18 +266,34 @@ standardize_age <- function(dt) {
 #' a descriptive error on any hard failure. Emits a warning for zero-welfare
 #' observations (permitted, but notable).
 #'
+#' Welfare columns are discovered from the `welfare_vars` attribute of `dt`
+#' (set by `prepare_for_arrow()`). Each welfare column is validated
+#' independently.
+#'
 #' @param dt A prepared `data.table` (output of [prepare_for_arrow()]).
+#'   Must carry `welfare_vars` and optionally `ppp_sort` as attributes.
 #'
 #' @return `TRUE` invisibly when all checks pass.
 #' @keywords internal
 validate_pre_write <- function(dt) {
 
+  # Discover welfare columns from attribute ----------------------------------
+  welfare_vars <- attr(dt, "welfare_vars")
+  if (is.null(welfare_vars) || length(welfare_vars) == 0L) {
+    cli::cli_abort(
+      c(
+        "Dataset is missing a non-empty {.field welfare_vars} attribute.",
+        "i" = "This attribute is set by {.fn prepare_for_arrow}."
+      )
+    )
+  }
+
   # §4.1 — Required columns present ------------------------------------------
-  required_cols <- c(
+  fixed_required <- c(
     "country_code", "surveyid_year", "welfare_type", "pip_id",
-    "survey_acronym", "welfare", "weight", "version"
+    "weight", "version"
   )
-  missing_cols <- setdiff(required_cols, names(dt))
+  missing_cols <- setdiff(c(fixed_required, welfare_vars), names(dt))
   if (length(missing_cols) > 0L) {
     cli::cli_abort(
       "Required columns missing from prepared data: {.field {missing_cols}}"
@@ -290,23 +322,24 @@ validate_pre_write <- function(dt) {
     )
   }
 
-  # §4.4 — Welfare validity ---------------------------------------------------
-  n_zero <- dt[, sum(welfare == 0, na.rm = TRUE)]
-  if (n_zero > 0L) {
-    rlang::warn(
-      paste0(
-        n_zero, " row(s) have welfare == 0 in survey: ",
-        dt[1L, pip_id]
+  # §4.4 — Welfare validity for each welfare column --------------------------
+  for (wc in welfare_vars) {
+    n_zero <- dt[, sum(get(wc) == 0, na.rm = TRUE)]
+    if (n_zero > 0L) {
+      rlang::warn(
+        paste0(n_zero, " row(s) have ", wc, " == 0 in survey: ", dt[1L, pip_id])
       )
-    )
-  }
-  if (!dt[, all(is.finite(welfare))]) {
-    cli::cli_abort(
-      "welfare contains non-finite values (Inf / NaN / NA). All welfare values must be finite."
-    )
-  }
-  if (!dt[, all(welfare >= 0)]) {
-    cli::cli_abort("welfare contains negative values. Negative welfare is not permitted.")
+    }
+    if (!dt[, all(is.finite(get(wc)))]) {
+      cli::cli_abort(
+        "{.field {wc}} contains non-finite values (Inf / NaN / NA). All welfare values must be finite."
+      )
+    }
+    if (!dt[, all(get(wc) >= 0)]) {
+      cli::cli_abort(
+        "{.field {wc}} contains negative values. Negative welfare is not permitted."
+      )
+    }
   }
 
   # §4.5 — Weight validity ----------------------------------------------------
@@ -357,12 +390,11 @@ validate_pre_write <- function(dt) {
   }
 
   # §4.8 — No extra columns ---------------------------------------------------
-  allowed_cols <- c(
-    "country_code", "surveyid_year", "welfare_type", "pip_id",
-    "survey_acronym", "welfare", "weight", "version",
-    "gender", "area", "educat4", "educat5", "educat7", "age"
-  )
-  extra <- setdiff(names(dt), allowed_cols)
+  optional_dim_cols <- c("gender", "area", "educat4", "educat5", "educat7", "age")
+  fixed_cols        <- c("country_code", "surveyid_year", "welfare_type", "pip_id",
+                         "weight", "version")
+  allowed_cols      <- c(fixed_cols, welfare_vars, optional_dim_cols)
+  extra             <- setdiff(names(dt), allowed_cols)
   if (length(extra) > 0L) {
     cli::cli_abort(
       "Unexpected columns in output: {.val {extra}}. Drop before writing."
@@ -377,16 +409,24 @@ validate_pre_write <- function(dt) {
 # Orchestrator
 # ---------------------------------------------------------------------------
 
-#' Prepare a survey data.table for Arrow / Parquet writing
+#' Prepare a deflated survey data.table for Arrow / Parquet writing
 #'
-#' Transforms a {pipdata} clean survey `data.table` and its associated
-#' metadata list into a schema-conformant `data.table` ready to be passed
-#' directly to [write_survey_parquet()] (or `arrow::write_parquet()`).
+#' Transforms a deflated survey `data.table` (from
+#' `pipload::load_pip_deflated_data()`) into a schema-conformant `data.table`
+#' ready to be passed directly to [write_survey_parquet()].
+#'
+#' The input must carry the following attributes (set by
+#' `load_pip_deflated_data()`):
+#' - `welfare_vars` — character vector of all welfare column names (e.g.
+#'   `c("welfare_lcu", "welfare_ppp_2017_01_02", "welfare_ppp_2021_01_02")`).
+#' - `ppp_sort` — integer; base year used for row sorting (e.g. `2017L`).
+#' - `country_code`, `surveyid_year`, `welfare_type`, `vermast`, `veralt` —
+#'   survey identity scalars.
 #'
 #' The function applies, in order:
 #' 1. Metadata injection (§1.1) — adds `country_code`, `surveyid_year`,
-#'    `survey_acronym`, `welfare_type`, `survey_id` as constant columns.
-#' 2. Type casting (§2) — `welfare` and `weight` to `double`.
+#'    `welfare_type`, `pip_id`, `version` as constant columns from attributes.
+#' 2. Type casting (§2) — all `welfare_*` columns and `weight` to `double`.
 #' 3. Breakdown dimension standardisation (§3) — `gender`, `area`,
 #'    `education`, `age` are derived/normalised where source columns exist.
 #' 4. Column selection — only schema-allowed columns are retained; all
@@ -395,50 +435,60 @@ validate_pre_write <- function(dt) {
 #' 5. Pre-write validation (§4) — aborts with a descriptive error on any
 #'    schema or data-quality violation.
 #'
+#' The `welfare_vars` and `ppp_sort` attributes are preserved on the output
+#' data.table for downstream use by manifest generation.
+#'
 #' The input `data.table` is **copied** before transformation; the original
 #' object passed by the caller is not modified.
 #'
-#' @param data     A `data.table` of row-level survey microdata as returned by
-#'   `pipload::load_pip_data(..., metadata = FALSE)`. Must contain at least
-#'   `welfare` and `weight` columns.
-#' @param metadata Named list of survey identifiers as returned by
-#'   `pipload::load_pip_data(..., metadata = TRUE)`. Must contain
-#'   `country_code`, `surveyid_year`, `survey_acronym`, and `welfare_type`.
-#' @param pip_id   The canonical `pip_id` string for this specific survey file
+#' @param data   A `data.table` as returned by
+#'   `pipload::load_pip_deflated_data()`. Must carry `welfare_vars`,
+#'   `ppp_sort`, `country_code`, `surveyid_year`, `welfare_type`, `vermast`,
+#'   and `veralt` as attributes, plus `weight` and all welfare columns listed
+#'   in `welfare_vars` as data columns.
+#' @param pip_id The canonical `pip_id` string for this specific survey file
 #'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`), taken from the `pip_id` column of
-#'   the release inventory. Stored in the `survey_id` column of the output
-#'   data.table and used as the Parquet filename stem.
+#'   the release inventory. Used as the Parquet filename stem.
 #'
-#' @return A new `data.table` containing only schema-allowed columns, ready
-#'   for [write_survey_parquet()].
+#' @return A new `data.table` containing only schema-allowed columns
+#'   (`welfare_*`, `weight`, partition keys, and available breakdown
+#'   dimensions), with `welfare_vars` and `ppp_sort` preserved as attributes.
+#'   Ready for [write_survey_parquet()].
 #' @seealso [write_survey_parquet()], [generate_arrow_dataset()]
 #' @family arrow-prep
 #' @export
 #' @examples
 #' \dontrun{
-#' inv  <- pipload::load_pip_master_inventory()
-#' pip  <- inv[survey_id == "ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL", pip_id]
-#' raw  <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = FALSE)
-#' meta <- pipload::load_pip_data("ARG", 2003, "EPHC-S2", metadata = TRUE)
-#' dt   <- prepare_for_arrow(raw, meta, pip_id = pip)
+#' inv    <- pipload::load_pip_master_inventory()
+#' pip    <- inv[pip_id == "ARG_2003_EPHC-S2_INC_ALL", pip_id]
+#' defl   <- pipload::load_pip_deflated_data(id_name = pip)
+#' dt     <- prepare_for_arrow(defl, pip_id = pip)
 #' }
-prepare_for_arrow <- function(data, metadata, pip_id) {
+prepare_for_arrow <- function(data, pip_id) {
   if (!data.table::is.data.table(data)) {
     cli::cli_abort(
       "{.arg data} must be a {.cls data.table}, not {.cls {class(data)[[1L]]}}."
     )
   }
-  if (!is.list(metadata)) {
+
+  # Capture welfare_vars and ppp_sort before copying (attributes survive copy)
+  wv       <- attr(data, "welfare_vars")
+  ppp_sort <- attr(data, "ppp_sort")
+
+  if (is.null(wv) || length(wv) == 0L) {
     cli::cli_abort(
-      "{.arg metadata} must be a named list, not {.cls {class(metadata)[[1L]]}}."
+      c(
+        "{.arg data} is missing a non-empty {.field welfare_vars} attribute.",
+        "i" = "Pass data loaded via {.fn pipload::load_pip_deflated_data}."
+      )
     )
   }
 
   # Work on a copy so the caller's object is not modified by reference
   dt <- data.table::copy(data)
 
-  # ---- Step 1 & 2: inject metadata and cast core columns -------------------
-  inject_metadata_cols(dt, metadata, pip_id)
+  # ---- Step 1 & 2: inject metadata and cast welfare/weight columns ---------
+  inject_metadata_cols(dt, pip_id)
   cast_data_cols(dt)
 
   # ---- Step 3: breakdown dimension standardisation -------------------------
@@ -447,15 +497,13 @@ prepare_for_arrow <- function(data, metadata, pip_id) {
   standardize_education(dt)
   standardize_age(dt)
 
-  # ---- Step 1 (cont.): column selection ------------------------------------
-  allowed_cols      <- c(
-    "country_code", "surveyid_year", "welfare_type", "pip_id",
-    "survey_acronym", "welfare", "weight", "version",
-    "gender", "area", "educat4", "educat5", "educat7", "age"
-  )
+  # ---- Step 4: column selection --------------------------------------------
   optional_dim_cols <- c("gender", "area", "educat4", "educat5", "educat7", "age")
+  fixed_cols        <- c("country_code", "surveyid_year", "welfare_type",
+                         "pip_id", "weight", "version")
+  allowed_cols      <- c(fixed_cols, wv, optional_dim_cols)
 
-  # Drop columns not in the schema
+  # Drop columns not in the allowed set
   extra_cols <- setdiff(names(dt), allowed_cols)
   if (length(extra_cols) > 0L) {
     dt[, (extra_cols) := NULL]
@@ -475,7 +523,11 @@ prepare_for_arrow <- function(data, metadata, pip_id) {
     }
   }
 
-  # ---- Step 4: pre-write validation ----------------------------------------
+  # ---- Restore attributes on output (needed by write and manifest steps) ---
+  data.table::setattr(dt, "welfare_vars", wv)
+  data.table::setattr(dt, "ppp_sort",     ppp_sort)
+
+  # ---- Step 5: pre-write validation ----------------------------------------
   validate_pre_write(dt)
 
   dt[]

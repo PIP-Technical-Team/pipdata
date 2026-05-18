@@ -7,12 +7,19 @@
 report_lvl(cpfw)
 }
 \arguments{
-\item{cpfw}{data.table with country Price Framework}
+\item{cpfw}{data.table with country Price Framework containing the five
+\verb{*_domain} columns (see \code{.DOMAIN_COLS}) and an \code{inpovcal} indicator.}
 }
 \value{
-data.table
+\code{cpfw} with a new \code{reporting_level} character column (\code{"1"} or
+\code{"2"}) added by reference. Rows with \code{inpovcal != 1} are dropped.
 }
 \description{
-Add reporting level variable to country PFW
+Computes \code{reporting_level} as the per-row maximum across the five domain
+columns (CPI, PPP, GDP, PCE, pop). Values are stored as character:
+\code{"1"} = national (all domains are national); \code{"2"} = subnational (at least
+one domain, e.g. \code{cpi_domain}, is 2 meaning urban/rural-specific data are
+available). This value is later read by \code{add_main_att()} as the integer
+\code{reporting_level} attribute on the survey \code{data.table}.
 }
 \keyword{internal}

@@ -10,7 +10,9 @@ pipdata_dlw_process(
   validate_dlw_data = TRUE,
   log = TRUE,
   save_log = TRUE,
-  check_missing = TRUE
+  check_missing = TRUE,
+  release = NULL,
+  identity = NULL
 )
 }
 \arguments{
@@ -25,6 +27,10 @@ pipdata_dlw_process(
 \item{save_log}{Logical. Whether to save logging information to a file. Default is \code{TRUE}.}
 
 \item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
+
+\item{release}{Character. The data release identifier or date, used to configure the working environment.}
+
+\item{identity}{Character. One of \code{"PROD"}, \code{"INT"}, or \code{"TEST"}.}
 }
 \value{
 Invisibly returns \code{NULL}. Output files are written to disk.

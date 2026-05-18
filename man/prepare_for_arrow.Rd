@@ -13,7 +13,7 @@ prepare_for_arrow(data, metadata, pip_id)
 
 \item{metadata}{Named list of survey identifiers as returned by
 \code{pipload::load_pip_data(..., metadata = TRUE)}. Must contain
-\code{country_code}, \code{surveyid_year}, \code{survey_acronym}, and \code{welfare_type}.}
+\code{country_code}, \code{surveyid_year}, \code{welfare_type}, \code{vermast}, and \code{veralt}.}
 
 \item{pip_id}{The canonical \code{pip_id} string for this specific survey file
 (e.g. \code{"ARG_2003_EPHC-S2_INC_ALL"}), taken from the \code{pip_id} column of
@@ -33,7 +33,7 @@ directly to \code{\link[=write_survey_parquet]{write_survey_parquet()}} (or \cod
 The function applies, in order:
 \enumerate{
 \item Metadata injection (§1.1) — adds \code{country_code}, \code{surveyid_year},
-\code{survey_acronym}, \code{welfare_type}, \code{survey_id} as constant columns.
+\code{welfare_type}, \code{pip_id}, \code{version} as constant columns.
 \item Type casting (§2) — \code{welfare} and \code{weight} to \code{double}.
 \item Breakdown dimension standardisation (§3) — \code{gender}, \code{area},
 \code{education}, \code{age} are derived/normalised where source columns exist.

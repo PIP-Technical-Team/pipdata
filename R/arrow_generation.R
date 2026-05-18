@@ -1,5 +1,5 @@
 # Arrow Parquet Generation
-# Plan:  .cg-docs/plans/2026-03-17-arrow-data-preparation.md  (Step 3 & 4)
+# Plan:  .cg-docs/plans/2026-05-18-deflated-data-arrow-partitions.md  (Phase 1)
 # Schema: inst/schema/arrow-schema.json  (in {piptm})
 #
 # Responsibility: write schema-conformant, partitioned Parquet files to the
@@ -14,11 +14,8 @@
 #
 # Typical single-survey workflow
 # ------------------------------
-#   raw  <- pipload::load_pip_data("BOL", 2012, "EH",
-#              welfare_type = "CON", module = "ALL", metadata = FALSE)
-#   meta <- pipload::load_pip_data("BOL", 2012, "EH",
-#              welfare_type = "CON", module = "ALL", metadata = TRUE)
-#   dt     <- prepare_for_arrow(raw, meta)          # arrow_prep.R
+#   defl   <- pipload::load_pip_deflated_data(id_name = "BOL_2012_EH_CON_ALL")
+#   dt     <- prepare_for_arrow(defl, pip_id = "BOL_2012_EH_CON_ALL")
 #   result <- write_survey_parquet(dt)
 #
 # Typical batch workflow
@@ -38,11 +35,11 @@
 #
 # Data loading note
 # -----------------
-# `generate_arrow_dataset()` always resolves the physical file to load via
-# the `pip_id` column of the release inventory — NOT by parsing the
-# `survey_id` string. This ensures the correct versioned `.qs2` file is
-# read. When `survey_ids` is a character vector the inventory is loaded
-# automatically to perform this resolution.
+# `generate_arrow_dataset()` loads deflated data via
+# `pipload::load_pip_deflated_data(id_name = pip_id)`. The pip_id is always
+# resolved from the release inventory — NOT by parsing the `survey_id` string.
+# Multiple welfare columns (welfare_lcu, welfare_ppp_*) are written to Parquet
+# as discovered from the `welfare_vars` attribute of the deflated dataset.
 #
 # See also: prepare_for_arrow() in arrow_prep.R — mandatory preprocessing
 #           step before write_survey_parquet().
@@ -170,19 +167,35 @@
 
 #' Validate a prepared data.table before writing to Parquet
 #'
-#' Performs all schema and data-quality checks specific to the generation
-#' step. This is a lightweight guard — full pre-write validation should
-#' already have been run by `prepare_for_arrow()`. Stops on hard failures;
-#' warns on zero-welfare observations.
+#' Lightweight guard — full pre-write validation should already have been run
+#' by `prepare_for_arrow()`. Validates partition key consistency, welfare
+#' column integrity, weight, country code format, and factor levels.
 #'
-#' @param dt A prepared `data.table`.
+#' Welfare columns are discovered from the `welfare_vars` attribute of `dt`
+#' (preserved by `prepare_for_arrow()`). Each welfare column is checked
+#' independently.
+#'
+#' @param dt A prepared `data.table` with `welfare_vars` attribute.
 #'
 #' @return `TRUE` invisibly when all checks pass.
 #' @keywords internal
 .validate_for_write <- function(dt) {
 
-  # --- Required columns -------------------------------------------------------
-  missing_cols <- setdiff(.get_required_cols(), names(dt))
+  # --- Welfare vars attribute ------------------------------------------------
+  welfare_vars <- attr(dt, "welfare_vars")
+  if (is.null(welfare_vars) || length(welfare_vars) == 0L) {
+    cli::cli_abort(
+      c(
+        "Dataset is missing a non-empty {.field welfare_vars} attribute.",
+        "i" = "Run {.fn prepare_for_arrow} before calling {.fn write_survey_parquet}."
+      )
+    )
+  }
+
+  # --- Required columns (fixed base + welfare cols) -------------------------
+  base_required <- c("country_code", "surveyid_year", "welfare_type",
+                     "version", "pip_id", "weight")
+  missing_cols  <- setdiff(c(base_required, welfare_vars), names(dt))
   if (length(missing_cols) > 0L) {
     cli::cli_abort(
       "Required columns missing from input data: {.val {missing_cols}}"
@@ -190,7 +203,9 @@
   }
 
   # --- No extra columns -------------------------------------------------------
-  extra_cols <- setdiff(names(dt), .get_allowed_cols())
+  optional_dims <- c("gender", "area", "educat4", "educat5", "educat7", "age")
+  allowed_cols  <- c(base_required, welfare_vars, optional_dims)
+  extra_cols    <- setdiff(names(dt), allowed_cols)
   if (length(extra_cols) > 0L) {
     cli::cli_abort(
       paste0(
@@ -235,26 +250,24 @@
     )
   }
 
-  # --- Welfare: warn on zeros; abort on negative / non-finite -----------------
-  n_zero <- dt[, sum(welfare == 0, na.rm = TRUE)]
-  if (n_zero > 0L) {
-    rlang::warn(
-      paste0(
-        n_zero, " row(s) have welfare == 0 in survey: ",
-        dt[1L, pip_id]
+  # --- Welfare validity for each welfare column --------------------------------
+  for (wc in welfare_vars) {
+    n_zero <- dt[, sum(get(wc) == 0, na.rm = TRUE)]
+    if (n_zero > 0L) {
+      rlang::warn(
+        paste0(n_zero, " row(s) have ", wc, " == 0 in survey: ", dt[1L, pip_id])
       )
-    )
-  }
-  if (!dt[, all(is.finite(welfare))]) {
-    cli::cli_abort(
-      "welfare contains non-finite values (Inf / NaN / NA). ",
-      "All welfare values must be finite."
-    )
-  }
-  if (!dt[, all(welfare >= 0)]) {
-    cli::cli_abort(
-      "welfare contains negative values. Negative welfare is not permitted."
-    )
+    }
+    if (!dt[, all(is.finite(get(wc)))]) {
+      cli::cli_abort(
+        "{.field {wc}} contains non-finite values (Inf / NaN / NA). All welfare values must be finite."
+      )
+    }
+    if (!dt[, all(get(wc) >= 0)]) {
+      cli::cli_abort(
+        "{.field {wc}} contains negative values. Negative welfare is not permitted."
+      )
+    }
   }
 
   # --- Weight: must be strictly positive and finite ---------------------------
@@ -316,25 +329,34 @@
 #' Build the Arrow schema object for a specific set of columns
 #'
 #' Returns an `arrow::schema()` that covers exactly the columns present in
-#' `col_names`. Optional breakdown columns are included only when present.
+#' `col_names`. Welfare columns (`^welfare_`) are always `float64`. All other
+#' columns are looked up in the base schema from `piptm::pip_arrow_schema()`.
+#' Optional breakdown columns are included only when present.
+#'
 #' This ensures `write_parquet()` uses explicit, stable types rather than
-#' inferring from the R object.
+#' inferring from the R object. The schema is built in `col_names` order so
+#' that `arrow::as_arrow_table()` positional matching succeeds.
 #'
 #' @param col_names Character vector of column names in the data.table.
 #'
 #' @return An `arrow::Schema` object.
 #' @keywords internal
 .build_arrow_schema <- function(col_names) {
-  # Intersect keeping the order of col_names (i.e. the column order of the
-  # data.table), NOT the order of the schema definition.  arrow::as_arrow_table()
-  # matches schema fields positionally, so the schema order must match the
-  # data column order exactly to avoid "field at index N has name X != Y" errors.
-  schema  <- .get_schema()
-  matched <- intersect(col_names, names(schema$fields))
-  fields  <- lapply(
-    matched,
-    function(nm) arrow::field(nm, schema$fields[[nm]]$type)
-  )
+  schema <- .get_schema()
+
+  fields <- lapply(col_names, function(nm) {
+    if (nm %in% names(schema$fields)) {
+      # Base schema takes precedence — covers welfare_type, country_code, etc.
+      arrow::field(nm, schema$fields[[nm]]$type)
+    } else if (grepl("^welfare_", nm)) {
+      # Dynamic welfare columns (welfare_lcu, welfare_ppp_*) — always float64
+      arrow::field(nm, arrow::float64())
+    } else {
+      NULL
+    }
+  })
+
+  fields <- Filter(Negate(is.null), fields)
   do.call(arrow::schema, fields)
 }
 
@@ -652,8 +674,7 @@ survey_ids_from_inventory <- function(inventory,
 #' Parse a survey ID string into its component parts
 #'
 #' Splits a canonical PIP survey ID (e.g.
-#' `"BOL_2012_EH_V02_M_V08_A_GMD_ALL"`) into named components for use with
-#' [pipload::load_pip_data()].
+#' `"BOL_2012_EH_V02_M_V08_A_GMD_ALL"`) into named components.
 #'
 #' @param survey_id A single survey ID string.
 #'
@@ -691,7 +712,8 @@ survey_ids_from_inventory <- function(inventory,
 #'
 #' Accepts either a character vector of survey IDs or a master inventory
 #' `data.table` (from [pipload::load_pip_master_inventory()]). For each
-#' survey, data is loaded via [pipload::load_pip_data()], prepared via
+#' survey, deflated data is loaded via
+#' `pipload::load_pip_deflated_data(id_name = pip_id)`, prepared via
 #' [prepare_for_arrow()], and written via [write_survey_parquet()]. Memory
 #' from each survey is freed before the next is loaded.
 #'
@@ -705,13 +727,6 @@ survey_ids_from_inventory <- function(inventory,
 #'   (default), surveys whose Parquet file already exists are skipped — making
 #'   it safe to re-run the function without duplicating work. Set to `TRUE`
 #'   only when you need to overwrite existing files.
-#' @param where Passed to both the raw and metadata [pipload::load_pip_data()]
-#'   calls. One of `"master"` (default) or `"release"`. Use `"master"` when
-#'   processing surveys that have not yet been published to the release
-#'   inventory. Both raw data and metadata are always loaded from the same
-#'   repository so that inventory lookups are consistent.
-#' @param version Release version string passed to
-#'   [pipload::load_pip_data()]. `NULL` uses the latest available.
 #' @param surveys Optional named integer vector of exact country-year pairs to
 #'   include (e.g. `c(ARG = 2003, BOL = 2020)`). Names are ISO3 country codes,
 #'   values are survey years. Pairs are matched jointly — no cross-product.
@@ -753,15 +768,11 @@ survey_ids_from_inventory <- function(inventory,
 generate_arrow_dataset <- function(survey_ids,
                                    arrow_repo_path = getOption("pipdata.arrow_repo"),
                                    overwrite    = FALSE,
-                                   where        = "master",
-                                   version      = NULL,
                                    surveys      = NULL,
                                    module       = NULL,
                                    welfare_type = NULL) {
 
   # --- Normalise survey_ids input -------------------------------------------
-  # Keep the full inventory — we need its columns to call load_pip_data()
-  # correctly without string parsing.
   inventory <- NULL
 
   if (data.table::is.data.table(survey_ids)) {
@@ -784,7 +795,6 @@ generate_arrow_dataset <- function(survey_ids,
   if (!is.logical(overwrite) || length(overwrite) != 1L) {
     cli::cli_abort("{.arg overwrite} must be a single logical value.")
   }
-  where <- match.arg(where, c("release", "master"))
 
   # If survey_ids was a character vector (not an inventory), load the
   # inventory now so we can look up the correct load arguments per pip_id.
@@ -837,43 +847,18 @@ generate_arrow_dataset <- function(survey_ids,
 
     results[[i]] <- tryCatch({
 
-      # Use inventory columns directly — no string parsing.
-      # Both raw and meta use the same `where` so surveys that only exist in
-      # "master" (not yet in the release inventory) are still resolvable.
-      # Metadata is always loaded with the same `where` as raw data; callers
-      # who want release metadata should pass where = "release" explicitly.
-      raw <- pipload::load_pip_data(
-        country_code   = row_i$country_code,
-        surveyid_year  = row_i$surveyid_year,
-        survey_acronym = row_i$survey_acronym,
-        vermast        = row_i$vermast,
-        veralt         = row_i$veralt,
-        #collection     = row_i$collection,
-        module         = row_i$module,
-        welfare_type   = row_i$welfare_type,
-        where          = where,
-        version        = version,
-        metadata       = FALSE,
-        verbose        = FALSE
+      # Load the fully deflated dataset for this pip_id.
+      # load_pip_deflated_data() returns a data.table with:
+      #   - welfare_lcu + welfare_ppp_* columns (all welfare variants)
+      #   - weight and breakdown dimension columns
+      #   - survey identity scalars as attributes (country_code, surveyid_year,
+      #     welfare_type, vermast, veralt, welfare_vars, ppp_sort, etc.)
+      raw <- pipload::load_pip_deflated_data(
+        id_name = pip_id_i
       )
 
-      meta <- pipload::load_pip_data(
-        country_code   = row_i$country_code,
-        surveyid_year  = row_i$surveyid_year,
-        survey_acronym = row_i$survey_acronym,
-        vermast        = row_i$vermast,
-        veralt         = row_i$veralt,
-        #collection     = row_i$collection,
-        module         = row_i$module,
-        welfare_type   = row_i$welfare_type,
-        where          = where,
-        version        = version,
-        metadata       = TRUE,
-        verbose = FALSE
-      )
-
-      dt <- prepare_for_arrow(raw, meta, pip_id = pip_id_i)
-      rm(raw, meta)
+      dt <- prepare_for_arrow(raw, pip_id = pip_id_i)
+      rm(raw)
 
       result_row <- write_survey_parquet(
         dt              = dt,

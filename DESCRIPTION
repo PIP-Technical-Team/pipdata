@@ -9,7 +9,7 @@ Description: prepare data to be ingested in PIP pipeline.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports: 
     arrow,
     cli,
@@ -39,7 +39,7 @@ Suggests:
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
-Remotes:  
+Remotes: 
     github::pip-technical-team/wbpip@DEV_v2,
     github::PIP-Technical-Team/pipload@DEV_v2,
     github::PIP-Technical-team/pipfun@DEV_v2

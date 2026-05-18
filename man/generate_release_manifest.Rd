@@ -5,20 +5,21 @@
 \title{Generate a PIP release manifest JSON}
 \usage{
 generate_release_manifest(
-  release_id,
-  arrow_root,
+  release,
+  arrow_root = getOption("pipdata.arrow_repo"),
   release_inventory,
-  output_path,
+  output_path = getOption("pipdata.manifest_root"),
   set_as_current = FALSE
 )
 }
 \arguments{
-\item{release_id}{Character scalar. The PIP release identifier, e.g.
-\code{"20260206"}. Used as the \code{release_id} field and as part of the default
-output filename.}
+\item{release}{Character scalar. The PIP release identifier, e.g.
+\code{"20260206"}. Used as the \code{release} field in the JSON.}
 
 \item{arrow_root}{Absolute path to the root of the Master Arrow
-Repository. All survey Parquet files are expected under this directory.}
+Repository. All survey Parquet files are expected under this directory.
+Not stored in the manifest output — the consumer configures this
+independently via the \code{PIPTM_ARROW_ROOT} environment variable.}
 
 \item{release_inventory}{A \code{data.table} from
 \code{\link[pipload:load_pip_data]{pipload::load_pip_release_inventory()}} (or equivalent). Must contain
@@ -39,9 +40,9 @@ A \code{data.table} with one row per inventory row (excluding \code{NA}
 \code{pip_id} rows) and columns:
 \describe{
 \item{\code{pip_id}}{Canonical pip_id string.}
-\item{\code{file_path}}{Absolute path of the Parquet file.}
+\item{\code{file_path}}{Absolute path of the Parquet file checked (not in JSON).}
 \item{\code{status}}{"included", "missing", or "unreadable".}
-\item{\code{available_dimensions}}{Comma-separated dimension names (empty
+\item{\code{dimensions}}{Comma-separated dimension names (empty
 string when none; \code{NA} when file is missing/unreadable).}
 \item{\code{message}}{Informational note or \code{NA}.}
 }
@@ -57,23 +58,19 @@ are available, and writing a JSON manifest file. Optionally updates the
 The manifest follows the schema documented in \code{project-context.md}:
 
 \if{html}{\out{<div class="sourceCode json">}}\preformatted{\{
-  "release_id": "20260206",
-  "arrow_root": "/path/to/arrow",
-  "created_at": "2026-02-06T12:00:00Z",
-  "surveys": [
+  "release": "20260206",
+  "generated_at": "2026-02-06T12:00:00Z",
+  "entries": [
     \{
+      "pip_id": "COL_2010_ECH_V01_M_V02_A_INC",
+      "survey_id": "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
       "country_code": "COL",
       "year": 2010,
       "welfare_type": "INC",
-      "survey_id": "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-      "survey_acronym": "ECH",
-      "vermast": "V01",
-      "veralt": "V02",
       "version": "v01_v02",
+      "survey_acronym": "ECH",
       "module": "ALL",
-      "pip_id": "COL_2010_ECH_V01_M_V02_A_INC",
-      "file_path": "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
-      "available_dimensions": ["gender", "area", "educat4"]
+      "dimensions": ["gender", "area", "educat4"]
     \}
   ]
 \}
@@ -88,11 +85,11 @@ returned invisibly.
 \dontrun{
 inv <- pipload::load_pip_release_inventory()
 generate_release_manifest(
-  release_id       = "20260206",
-  arrow_root       = "//server/pip/arrow",
+  release           = "20260206",
+  arrow_root        = "//server/pip/arrow",
   release_inventory = inv,
-  output_path      = "//server/manifests/manifest_20260206.json",
-  set_as_current   = TRUE
+  output_path       = "//server/manifests/manifest_20260206.json",
+  set_as_current    = TRUE
 )
 }
 }

@@ -50,9 +50,9 @@ inside the Master Arrow Repository.
 Partition structure:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{<arrow_repo_path>/
-  country=<country_code>/
-    year=<surveyid_year>/
-      welfare=<welfare_type>/
+  country_code=<country_code>/
+    surveyid_year=<surveyid_year>/id_year>/
+      welfare_type=<welfare_type>/
         version=<version>/
           <pip_id>-0.parquet
 }\if{html}{\out{</div>}}

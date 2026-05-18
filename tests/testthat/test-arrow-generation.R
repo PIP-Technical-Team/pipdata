@@ -1,11 +1,12 @@
 # Tests for arrow_generation.R
-# Plan: .cg-docs/plans/2026-04-02-version-partition-and-manifest-resolution.md (Step 4)
+# Plan: .cg-docs/plans/2026-05-18-deflated-data-arrow-partitions.md (Phase 1)
 #
 # Test coverage:
 #   - .build_partition_dir(): returns 4-level path including version=
 #   - write_survey_parquet(): writes to correct 4-level directory
-#   - .validate_for_write(): rejects inconsistent version values
-#   - round-trip: write then read back, verify version column
+#   - .validate_for_write(): rejects inconsistent version values; handles
+#     multi-welfare columns from welfare_vars attribute
+#   - round-trip: write then read back, verify multi-welfare columns
 
 library(data.table)
 
@@ -14,22 +15,31 @@ library(data.table)
 # ---------------------------------------------------------------------------
 
 #' Minimal schema-conformant data.table for arrow generation tests
+#'
+#' Produces a data.table with two welfare columns (welfare_lcu +
+#' welfare_ppp_2017_01_02) and the required welfare_vars / ppp_sort
+#' attributes, matching the output contract of
+#' prepare_for_arrow() / load_pip_deflated_data().
 make_arrow_dt <- function(country_code  = "COL",
                           surveyid_year = 2010L,
                           welfare_type  = "INC",
                           pip_id        = "COL_2010_ECH_INC_ALL",
                           version       = "v01_v02",
                           n_rows        = 5L) {
-  data.table::data.table(
-    country_code   = country_code,
-    surveyid_year  = as.integer(surveyid_year),
-    welfare_type   = welfare_type,
-    version        = version,
-    pip_id         = pip_id,
-    survey_acronym = "ECH",
-    welfare        = seq(1.0, by = 0.5, length.out = n_rows),
-    weight         = rep(1.0, n_rows)
+  wv <- c("welfare_lcu", "welfare_ppp_2017_01_02")
+  dt <- data.table::data.table(
+    country_code          = country_code,
+    surveyid_year         = as.integer(surveyid_year),
+    welfare_type          = welfare_type,
+    version               = version,
+    pip_id                = pip_id,
+    welfare_lcu           = seq(100.0, by = 50.0, length.out = n_rows),
+    welfare_ppp_2017_01_02 = seq(1.0,  by =  0.5, length.out = n_rows),
+    weight                = rep(1.0, n_rows)
   )
+  data.table::setattr(dt, "welfare_vars", wv)
+  data.table::setattr(dt, "ppp_sort",     2017L)
+  dt
 }
 
 # ===========================================================================
@@ -159,13 +169,16 @@ test_that("write_survey_parquet round-trip: version column preserved correctly",
 
   expect_identical(result$status, "written")
 
-  # Read back and verify version column
+  # Read back and verify version column and welfare columns
   dt_read <- data.table::as.data.table(
     arrow::read_parquet(result$file_path)
   )
 
   expect_true("version" %in% names(dt_read))
   expect_identical(unique(dt_read$version), "v01_v04")
+  expect_true("welfare_lcu"            %in% names(dt_read))
+  expect_true("welfare_ppp_2017_01_02" %in% names(dt_read))
+  expect_false("welfare" %in% names(dt_read))
 })
 
 test_that("write_survey_parquet round-trip: educat4 preserved as factor", {
@@ -199,6 +212,13 @@ test_that("make_arrow_dt helper uses pip_id column, not survey_id", {
   dt <- make_arrow_dt()
   expect_true("pip_id"    %in% names(dt), info = "pip_id column required by schema")
   expect_false("survey_id" %in% names(dt), info = "survey_id is not a schema column")
+  # Verify multi-welfare structure
+  expect_true("welfare_lcu"            %in% names(dt))
+  expect_true("welfare_ppp_2017_01_02" %in% names(dt))
+  expect_false("welfare" %in% names(dt), info = "single welfare column replaced by welfare_*")
+  # Verify attributes
+  expect_equal(attr(dt, "welfare_vars"), c("welfare_lcu", "welfare_ppp_2017_01_02"))
+  expect_equal(attr(dt, "ppp_sort"),     2017L)
 })
 
 test_that("write_survey_parquet returns a result with pip_id column, not survey_id", {
@@ -213,7 +233,6 @@ test_that("write_survey_parquet returns a result with pip_id column, not survey_
 
 test_that(".validate_for_write rejects data with survey_id column instead of pip_id", {
   # survey_id is not in the allowed schema columns; pip_id is required.
-  # A data.table with survey_id but no pip_id should fail validation on both counts.
   dt <- make_arrow_dt()
   data.table::setnames(dt, "pip_id", "survey_id")
 
@@ -285,18 +304,14 @@ test_that("generate_arrow_dataset pip_rows welfare_type is never NA when invento
 
 test_that(".validate_for_write succeeds for valid data when .ALLOWED_COLS_GEN is NULL", {
   # Regression: when .onLoad() cannot reach piptm (e.g. load_all() dev session),
-  # .ALLOWED_COLS_GEN is NULL. setdiff(names(dt), NULL) returns all column names,
-  # causing every schema-valid column to be flagged as "extra".
-  # The fix uses .get_allowed_cols() which falls back to piptm::pip_allowed_cols()
-  # when the global is NULL.
+  # the lazy accessors fall back to piptm:: directly. validate_for_write now
+  # uses welfare_vars attribute rather than .get_allowed_cols() for welfare
+  # columns, so it is robust regardless of piptm initialisation state.
   dt <- make_arrow_dt()
 
-  # Verify the lazy accessor returns a non-NULL value even when global is NULL
-  allowed <- piptm::pip_allowed_cols()
-  expect_false(is.null(allowed))
-  expect_true("pip_id"   %in% allowed)
-  expect_true("welfare"  %in% allowed)
-  expect_true("version"  %in% allowed)
+  # Verify welfare_vars attribute is present and non-empty
+  expect_false(is.null(attr(dt, "welfare_vars")))
+  expect_true(length(attr(dt, "welfare_vars")) > 0L)
 
   # Full validation must pass on schema-valid data
   expect_true(pipdata:::.validate_for_write(dt))
@@ -306,17 +321,14 @@ test_that(".validate_for_write succeeds for valid data when .ALLOWED_COLS_GEN is
 # Existing bug-fix test kept below
 # ---------------------------------------------------------------------------
 
-test_that("generate_arrow_dataset passes 'where' to both raw and meta load_pip_data calls", {
-  # Capture the `where` argument seen by every load_pip_data call, keyed by
-  # whether it is the metadata call or the raw data call.
+test_that("generate_arrow_dataset calls load_pip_deflated_data with pip_id", {
+  # Verify that the batch loop calls load_pip_deflated_data(id_name = pip_id)
+  # rather than the old load_pip_data() pair.
   calls_captured <- list()
 
   local_mocked_bindings(
-    load_pip_data = function(..., where = c("release", "master"), metadata = FALSE) {
-      calls_captured[[length(calls_captured) + 1L]] <<- list(
-        metadata = metadata,
-        where    = match.arg(where)
-      )
+    load_pip_deflated_data = function(id_name, ...) {
+      calls_captured[[length(calls_captured) + 1L]] <<- list(id_name = id_name)
       stop("stub - not testing further")
     },
     .package = "pipload"
@@ -336,14 +348,12 @@ test_that("generate_arrow_dataset passes 'where' to both raw and meta load_pip_d
 
   suppressWarnings(
     tryCatch(
-      generate_arrow_dataset(inv, arrow_repo_path = tempdir(), where = "master"),
+      generate_arrow_dataset(inv, arrow_repo_path = tempdir()),
       error = function(e) NULL
     )
   )
 
-  # The raw call (metadata = FALSE) must have received where = "master"
-  raw_call <- Filter(function(x) !x$metadata, calls_captured)
-  expect_length(raw_call, 1L)
-  expect_equal(raw_call[[1L]]$where, "master",
-               info = "raw data load must use the 'where' argument, not the default 'release'")
+  # load_pip_deflated_data must have been called with the pip_id
+  expect_length(calls_captured, 1L)
+  expect_equal(calls_captured[[1L]]$id_name, "ARG_2003_EPHC-S2_INC_ALL")
 })

@@ -10,68 +10,71 @@ build_manifest_entry(
   welfare_type,
   survey_id,
   survey_acronym,
-  vermast,
-  veralt,
   version,
   module,
   pip_id,
-  file_path,
-  available_dimensions
+  dimensions,
+  reporting_level = "national"
 )
 }
 \arguments{
-\item{country_code}{ISO3 country code.}
+\item{country_code}{ISO3 country code. Partition filter key.}
 
-\item{surveyid_year}{Survey year (integer).}
+\item{surveyid_year}{Survey year (integer). Partition filter key.}
 
-\item{welfare_type}{"INC" or "CON".}
+\item{welfare_type}{\code{"INC"} or \code{"CON"}. Partition filter key.}
 
 \item{survey_id}{Full DLW survey identifier (e.g.
 \code{"COL_2010_ECH_V01_M_V02_A_GMD_ALL"}).}
 
 \item{survey_acronym}{Short survey name (e.g. \code{"ECH"}).}
 
-\item{vermast}{Master version string (e.g. \code{"V01"}).}
-
-\item{veralt}{Alternative version string (e.g. \code{"V02"}).}
-
-\item{version}{Combined version string, e.g. \code{"v01_v02"}. Derived
-from \code{paste0(tolower(vermast), "_", tolower(veralt))}.}
+\item{version}{Combined version string, e.g. \code{"v01_v02"}. Partition
+filter key. Derived from
+\code{paste0(tolower(vermast), "_", tolower(veralt))}.}
 
 \item{module}{Processing module (e.g. \code{"ALL"}).}
 
-\item{pip_id}{Canonical pip_id (e.g.
-\code{"COL_2010_ECH_V01_M_V02_A_INC"}). Used as the filename stem.}
+\item{pip_id}{Canonical pip_id (e.g. \code{"COL_2010_ECH_V01_M_V02_A_INC"}).}
 
-\item{file_path}{Relative path from \code{arrow_root} to the Parquet
-file (forward slashes). Includes the \verb{version=<version>} partition segment.}
-
-\item{available_dimensions}{Character vector of breakdown dimension names
+\item{dimensions}{Character vector of breakdown dimension column names
 available in this survey's Parquet file (e.g. \code{c("gender", "area")}).
-Use \code{character(0)} when none are present.}
+Use \code{character(0)} when none are present. Known universe:
+\code{gender}, \code{area}, \code{educat4}, \code{educat5}, \code{educat7}, \code{age}.}
+
+\item{reporting_level}{Reporting level for the survey (e.g. \code{"national"},
+\code{"urban"}, \code{"rural"}). Currently a placeholder (\code{"national"}) — will be
+sourced from \code{release_inventory$reporting_level} once that column is
+added to the inventory.}
 }
 \value{
-A named list suitable for JSON serialisation via \code{\link[jsonlite:fromJSON]{jsonlite::toJSON()}}.
+A named list with 10 fields suitable for JSON serialisation via
+\code{\link[jsonlite:fromJSON]{jsonlite::toJSON()}}: \code{pip_id}, \code{survey_id}, \code{country_code}, \code{year},
+\code{welfare_type}, \code{version}, \code{survey_acronym}, \code{module}, \code{dimensions},
+\code{reporting_level}.
 }
 \description{
 Constructs the list structure for one survey entry in the manifest JSON.
 Does not perform file I/O — all information comes from the inventory row
-and the pre-computed \code{file_path} and \code{available_dimensions} vectors.
+and the pre-computed \code{dimensions} vector.
+}
+\details{
+The entry stores four \strong{partition filter keys} (\code{country_code}, \code{year},
+\code{welfare_type}, \code{version}) that \code{{piptm}} uses with Arrow's native
+partition pushdown via \code{open_dataset() |> dplyr::filter()}. No physical
+file path is stored — the manifest is therefore portable across environments.
 }
 \examples{
 entry <- build_manifest_entry(
-  country_code         = "COL",
-  surveyid_year        = 2010L,
-  welfare_type         = "INC",
-  survey_id            = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-  survey_acronym       = "ECH",
-  vermast              = "V01",
-  veralt               = "V02",
-  version              = "v01_v02",
-  module               = "ALL",
-  pip_id               = "COL_2010_ECH_V01_M_V02_A_INC",
-  file_path            = "country=COL/year=2010/welfare=INC/version=v01_v02/COL_2010_ECH_V01_M_V02_A_INC-0.parquet",
-  available_dimensions = c("gender", "area")
+  country_code   = "COL",
+  surveyid_year  = 2010L,
+  welfare_type   = "INC",
+  survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+  survey_acronym = "ECH",
+  version        = "v01_v02",
+  module         = "ALL",
+  pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
+  dimensions     = c("gender", "area")
 )
 }
 \seealso{

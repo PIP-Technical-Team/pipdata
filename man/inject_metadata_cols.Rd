@@ -11,7 +11,7 @@ inject_metadata_cols(dt, metadata, pip_id)
 
 \item{metadata}{Named list returned by
 \code{pipload::load_pip_data(..., metadata = TRUE)}.  Must contain
-\code{country_code}, \code{surveyid_year}, \code{survey_acronym}, and \code{welfare_type}.}
+\code{country_code}, \code{surveyid_year}, \code{welfare_type}, \code{vermast}, and \code{veralt}.}
 
 \item{pip_id}{The canonical \code{pip_id} string for this specific survey file
 (e.g. \code{"ARG_2003_EPHC-S2_INC_ALL"}), taken from the release inventory.
@@ -22,8 +22,8 @@ used as the Parquet filename stem.}
 \code{dt} invisibly (modified by reference).
 }
 \description{
-Adds \code{country_code}, \code{surveyid_year}, \code{survey_acronym}, \code{welfare_type},
-and \code{survey_id} columns by reference. \code{welfare_type} is recoded from the
+Adds \code{country_code}, \code{surveyid_year}, \code{welfare_type}, \code{pip_id},
+and \code{version} columns by reference. \code{welfare_type} is recoded from the
 full string (\code{"income"} / \code{"consumption"}) to the two-letter code
 (\code{"INC"} / \code{"CON"}). Unknown values are passed through after \code{toupper()}.
 }

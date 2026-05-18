@@ -94,7 +94,47 @@ write_fixture_parquet <- function(arrow_root, dt,
   out_file
 }
 
-#' Build a minimal inventory data.table for tests
+#' Build a tiny multi-welfare schema data.table for tests (new Arrow schema)
+#'
+#' Mirrors the output of prepare_for_arrow() for new-schema surveys:
+#' no `welfare` column; instead `welfare_lcu` + `welfare_ppp_<year>_<vm>_<va>`.
+#'
+#' @param ppp_suffix PPP column suffix, e.g. "2017_01_02".
+make_fixture_dt_multi <- function(country_code  = "COL",
+                                  surveyid_year = 2010L,
+                                  welfare_type  = "INC",
+                                  pip_id        = "COL_2010_ECH_V01_M_V02_A_INC",
+                                  dims          = c("gender", "area"),
+                                  ppp_suffix    = "2017_01_02",
+                                  n_rows        = 10L) {
+  wppp_col <- paste0("welfare_ppp_", ppp_suffix)
+  ppp_vals <- seq(0.5, by = 0.1, length.out = n_rows)
+  dt <- data.table::data.table(
+    country_code   = country_code,
+    surveyid_year  = as.integer(surveyid_year),
+    welfare_type   = welfare_type,
+    pip_id         = pip_id,
+    survey_acronym = "ECH",
+    welfare_lcu    = seq(1.0, by = 0.1, length.out = n_rows),
+    weight         = rep(1.0, n_rows)
+  )
+  data.table::set(dt, j = wppp_col, value = ppp_vals)
+
+  if ("gender" %in% dims) {
+    dt[, gender := factor(
+      rep(c("male", "female"), length.out = n_rows),
+      levels = c("male", "female")
+    )]
+  }
+  if ("area" %in% dims) {
+    dt[, area := factor(
+      rep(c("urban", "rural"), length.out = n_rows),
+      levels = c("urban", "rural")
+    )]
+  }
+  dt
+}
+
 make_fixture_inventory <- function(surveys = list(
   list(
     survey_id     = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
@@ -200,7 +240,7 @@ test_that("discover_parquet_dimensions input validation requires single string",
 # build_manifest_entry()
 # ===========================================================================
 
-test_that("build_manifest_entry returns a correctly structured list with 9 fields", {
+test_that("build_manifest_entry returns a correctly structured list with 12 fields", {
   entry <- build_manifest_entry(
     country_code   = "COL",
     surveyid_year  = 2010L,
@@ -210,14 +250,17 @@ test_that("build_manifest_entry returns a correctly structured list with 9 field
     version        = "v01_v02",
     module         = "ALL",
     pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
-    dimensions     = c("gender", "area")
+    dimensions     = c("gender", "area"),
+    welfare_vars   = c("welfare_lcu", "welfare_ppp_2017_01_02"),
+    ppp_sort       = 2017L
   )
 
   expect_type(entry, "list")
-  # Exactly 9 fields in order matching brainstorm schema
+  # Exactly 12 fields
   expect_named(entry, c(
     "pip_id", "survey_id", "country_code", "year", "welfare_type",
-    "version", "survey_acronym", "module", "dimensions"
+    "version", "survey_acronym", "module", "reporting_level", "dimensions",
+    "welfare_vars", "ppp_sort"
   ))
   expect_identical(entry$pip_id,          "COL_2010_ECH_V01_M_V02_A_INC")
   expect_identical(entry$survey_id,       "COL_2010_ECH_V01_M_V02_A_GMD_ALL")
@@ -227,7 +270,26 @@ test_that("build_manifest_entry returns a correctly structured list with 9 field
   expect_identical(entry$version,         "v01_v02")
   expect_identical(entry$survey_acronym,  "ECH")
   expect_identical(entry$module,          "ALL")
+  expect_identical(entry$reporting_level, "national")
   expect_identical(entry$dimensions,      c("gender", "area"))
+  expect_identical(entry$welfare_vars,    c("welfare_lcu", "welfare_ppp_2017_01_02"))
+  expect_identical(entry$ppp_sort,        2017L)
+})
+
+test_that("build_manifest_entry defaults welfare_vars to character(0) and ppp_sort to NA (legacy)", {
+  entry <- build_manifest_entry(
+    country_code   = "COL",
+    surveyid_year  = 2010L,
+    welfare_type   = "INC",
+    survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+    survey_acronym = "ECH",
+    version        = "v01_v02",
+    module         = "ALL",
+    pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
+    dimensions     = character(0)
+  )
+  expect_identical(entry$welfare_vars, character(0))
+  expect_identical(entry$ppp_sort,     NA_integer_)
 })
 
 test_that("build_manifest_entry has no file_path, vermast, or veralt fields", {
@@ -273,8 +335,8 @@ test_that("generate_release_manifest writes valid JSON with new format and retur
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
 
-  # Write fixture Parquet with 2 dims — 4-level partition path
-  dt  <- make_fixture_dt(dims = c("gender", "area"))
+  # Write fixture Parquet with multi-welfare columns + 2 dims
+  dt  <- make_fixture_dt_multi(dims = c("gender", "area"), ppp_suffix = "2017_01_02")
   write_fixture_parquet(tmp_arrow, dt, version = "v01_v02")
 
   inv <- make_fixture_inventory()
@@ -301,11 +363,12 @@ test_that("generate_release_manifest writes valid JSON with new format and retur
   expect_null(manifest$surveys)
   expect_null(manifest$arrow_root)
 
-  # Verify entry schema (9 fields)
+  # Verify entry schema (12 fields)
   entry <- manifest$entries[[1L]]
   expect_named(entry, c(
     "pip_id", "survey_id", "country_code", "year", "welfare_type",
-    "version", "survey_acronym", "module", "dimensions"
+    "version", "survey_acronym", "module", "reporting_level", "dimensions",
+    "welfare_vars", "ppp_sort"
   ), ignore.order = TRUE)
   expect_identical(entry$pip_id,        "COL_2010_ECH_V01_M_V02_A_INC")
   expect_identical(entry$country_code,  "COL")
@@ -317,6 +380,9 @@ test_that("generate_release_manifest writes valid JSON with new format and retur
   expect_null(entry$veralt)
   expect_null(entry$available_dimensions)
   expect_true(all(c("gender", "area") %in% unlist(entry$dimensions)))
+  # New fields
+  expect_true(all(c("welfare_lcu", "welfare_ppp_2017_01_02") %in% unlist(entry$welfare_vars)))
+  expect_identical(entry$ppp_sort, 2017L)
 
   # Summary data.table has 'dimensions' column (not 'available_dimensions')
   expect_s3_class(result, "data.table")

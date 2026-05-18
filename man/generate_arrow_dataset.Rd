@@ -8,7 +8,7 @@ generate_arrow_dataset(
   survey_ids,
   arrow_repo_path = getOption("pipdata.arrow_repo"),
   overwrite = FALSE,
-  where = "release",
+  where = "master",
   version = NULL,
   surveys = NULL,
   module = NULL,
@@ -29,8 +29,11 @@ Repository.}
 it safe to re-run the function without duplicating work. Set to \code{TRUE}
 only when you need to overwrite existing files.}
 
-\item{where}{Passed to \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}. One of \code{"release"}
-(default) or \code{"master"}.}
+\item{where}{Passed to both the raw and metadata \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}
+calls. One of \code{"master"} (default) or \code{"release"}. Use \code{"master"} when
+processing surveys that have not yet been published to the release
+inventory. Both raw data and metadata are always loaded from the same
+repository so that inventory lookups are consistent.}
 
 \item{version}{Release version string passed to
 \code{\link[pipload:load_pip_data]{pipload::load_pip_data()}}. \code{NULL} uses the latest available.}

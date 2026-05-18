@@ -343,6 +343,22 @@
                     ]
                 },
                 {
+                    "id": "deflated-data-arrow-partitions",
+                    "title": "Switch Arrow partitions to deflated data input with multi-PPP welfare columns",
+                    "description": "Refactor prepare_for_arrow() and generate_arrow_dataset() to use load_pip_deflated_data() as input. Store all welfare_* columns in Parquet. Add welfare_vars and ppp_sort to manifest entries. Update piptm schema, loading functions, and table_maker() to accept a ppp argument for PPP-aware welfare column selection.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-05-18-deflated-data-arrow-partitions.md",
+                    "tags": [
+                        "arrow",
+                        "deflation",
+                        "parquet",
+                        "manifest",
+                        "ppp",
+                        "piptm",
+                        "architecture"
+                    ]
+                },
+                {
                     "id": "explicit-data-level-semantics",
                     "title": "Make *_data_level attribute semantics explicit",
                     "description": "Currently ppp_data_level/cpi_data_level attributes use 'area' as an implicit pointer to a column name, while 'national' is a literal level value. This dual semantics is confusing. Refactor to make the convention explicit — either use a structured encoding (e.g., list(column='area', values=c('rural','urban'))), or always store resolved level values directly. Requires changes across add_dom_vars(), pd_aux_attr(), add_ppp(), add_cpi(), add_rep_lvl(), and corresponding tests.",
