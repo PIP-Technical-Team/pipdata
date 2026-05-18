@@ -631,3 +631,45 @@ test_that("pipgd deflation output includes adj_pop = FALSE always", {
   expect_true("adj_pop" %in% names(attributes(result)))
   expect_false(attr(result, "adj_pop"))
 })
+
+# ---------------------------------------------------------------------------
+# Deflation output attribute: ppp_sort
+# ---------------------------------------------------------------------------
+
+test_that("deflation output includes ppp_sort = integer year of sort column", {
+  dt <- make_pipmd()
+  cpi <- make_cpi_vec() # 2017_national
+  ppp <- make_ppp_vec(ppp_year = "2017") # ppp_2017_01_01_national
+  pop <- make_pop_vec()
+
+  result <- pipdata:::deflation.pipmd(dt, cpi, ppp, pop)
+
+  expect_true("ppp_sort" %in% names(attributes(result)))
+  expect_identical(attr(result, "ppp_sort"), 2017L)
+})
+
+test_that("ppp_sort is NULL when no welfare_ppp_* columns are present", {
+  # finalize_deflation_output sets ppp_sort = NULL when the deflated dt has
+  # no welfare_ppp_* columns (the else branch)
+  dt <- data.table::data.table(welfare_lcu = c(1, 2), weight = c(100, 200))
+  result <- pipdata:::finalize_deflation_output(dt)
+  expect_null(attr(result, "ppp_sort"))
+})
+
+test_that("ppp_sort reflects the newest base year when multiple ppp years present", {
+  dt <- make_pipmd()
+  # Two PPP base years: 2017 and 2011. sort_by_year_desc puts 2017 first.
+  ppp <- c(
+    stats::setNames(3.5, "ppp_2017_01_01_national"),
+    stats::setNames(3.1, "ppp_2011_01_01_national")
+  )
+  cpi <- c(
+    stats::setNames(100, "2017_national"),
+    stats::setNames(80, "2011_national")
+  )
+  pop <- make_pop_vec()
+
+  result <- pipdata:::deflation.pipmd(dt, cpi, ppp, pop)
+
+  expect_identical(attr(result, "ppp_sort"), 2017L)
+})
