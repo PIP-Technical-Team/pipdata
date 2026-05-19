@@ -271,3 +271,63 @@ test_that("reporting_level derivation produces '1' for national and '2' for subn
   expect_type(result$reporting_level, "character")
 })
 
+# ---------------------------------------------------------------------------
+# reporting_level re-run collision (regression: duplicate column on second run)
+# When new_pip_inv already has a reporting_level column (carried over from
+# old_pip_inv loaded off disk), joining pfw_rl_unq — which also produces
+# reporting_level — causes collapse::ftransform_core() to error with
+# "All columns of .data have to be uniquely named".
+# ---------------------------------------------------------------------------
+
+test_that("reporting_level join succeeds when new_pip_inv already has reporting_level", {
+  # Simulate new_pip_inv as it exists after a second run:
+  # the old inventory row already carries reporting_level = "1".
+  new_pip_inv <- data.table::data.table(
+    survey_id      = "ABX_2020_HBS",
+    pip_id         = "ABX_2020_HBS_INC_ALL",
+    country_code   = "ABX",
+    surveyid_year  = 2020L,
+    survey_acronym = "HBS",
+    reporting_level = "1"          # ← already present from previous run
+  )
+
+  mock_pfw <- data.table::data.table(
+    country_code   = "ABX",
+    surveyid_year  = 2020L,
+    survey_acronym = "HBS",
+    inpovcal       = 1L,
+    cpi_domain     = 1L,
+    ppp_domain     = 1L,
+    gdp_domain     = 1L,
+    pce_domain     = 1L,
+    pop_domain     = 1L
+  )
+
+  pfw_rl <- mock_pfw[inpovcal == 1L]
+  pfw_rl[,
+    reporting_level := as.character(do.call(pmax, .SD)),
+    .SDcols = pipdata:::.DOMAIN_COLS
+  ]
+  pfw_rl_unq <- pfw_rl[,
+    .(reporting_level = reporting_level[[1L]]),
+    by = .(country_code, surveyid_year, survey_acronym)
+  ]
+
+  # This must not error — drop existing reporting_level before joining
+  # (the fix applied in update_pip_inventory.R).
+  if ("reporting_level" %in% names(new_pip_inv)) {
+    new_pip_inv[, reporting_level := NULL]
+  }
+  expect_no_error({
+    result <- joyn::left_join(
+      new_pip_inv,
+      pfw_rl_unq,
+      by = c("country_code", "surveyid_year", "survey_acronym"),
+      relationship = "many-to-one",
+      reportvar = FALSE,
+      verbose = FALSE
+    )
+  })
+  expect_equal(result$reporting_level, "1")
+})
+

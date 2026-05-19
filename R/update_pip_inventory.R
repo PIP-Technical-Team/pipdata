@@ -237,6 +237,12 @@ update_pip_inventory <- function(
       .(reporting_level = reporting_level[[1L]]),
       by = .(country_code, surveyid_year, survey_acronym)
     ]
+    # Drop any existing reporting_level before joining pfw_rl_unq — on a re-run
+    # old_pip_inv already carries this column, which would create a duplicate
+    # and cause collapse::ftransform_core() to error.
+    if ("reporting_level" %in% names(new_pip_inv)) {
+      new_pip_inv[, reporting_level := NULL]
+    }
     new_pip_inv <- joyn::left_join(
       new_pip_inv,
       pfw_rl_unq,
