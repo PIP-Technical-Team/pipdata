@@ -434,6 +434,12 @@ format_vrs <- function(
             vlist <- ventry$metadata
           }
           vlist$pip_id <- pip_name
+          # Capture stamp's version_id at the top level of the pip_write()
+          # return. This allows direct version lookup in .load_deflation_aux()
+          # without the fragile content_hash -> version_id resolution.
+          if (!is.null(ventry$version_id)) {
+            vlist$version_id <- ventry$version_id
+          }
           if (!is.null(ventry$skipped) && ventry$skipped == TRUE) {
             vlist$skipped <- TRUE
             vlist$reason <- ventry$reason

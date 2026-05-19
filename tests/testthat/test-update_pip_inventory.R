@@ -10,10 +10,12 @@
 
 make_ventry <- function(
   content_hash = "abc123",
+  version_id = NULL,
   skipped = FALSE,
   reason = NULL
 ) {
   out <- list(
+    version_id = version_id %||% paste0("ver_", content_hash),
     metadata = list(content_hash = content_hash)
   )
   if (isTRUE(skipped)) {
@@ -62,6 +64,7 @@ test_that("format_vrs returns one row for a single pip_id survey", {
   expect_equal(nrow(result_dt), 1L)
   expect_equal(result_dt$pip_id, "BOL_2022_EH_INC_ALL")
   expect_equal(result_dt$survey_id, "BOL_2022_EH")
+  expect_equal(result_dt$version_id, "ver_d1")
 })
 
 # ---------------------------------------------------------------------------

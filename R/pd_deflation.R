@@ -61,7 +61,12 @@
 .load_deflation_aux <- function(pip_id, version = NULL) {
   inv <- pipload::load_pip_master_inventory()
 
-  row <- inv[inv$pip_id == pip_id, ]
+  # Use a local binding with a different name to avoid data.table scoping:
+  # inside DT[i], bare names resolve to columns first, so `pip_id` would
+
+  # match the column rather than the function argument.
+  target_id <- pip_id
+  row <- inv[inv$pip_id == target_id, ]
   if (nrow(row) == 0L) {
     cli::cli_abort(
       paste0(
@@ -73,7 +78,8 @@
   }
 
   if (!is.null(version)) {
-    row <- row[row$content_hash_data == version, ]
+    target_ver <- version
+    row <- row[row$content_hash_data == target_ver, ]
     if (nrow(row) == 0L) {
       cli::cli_abort(
         "No inventory entry for {.val {pip_id}} at data version {.val {version}}.",
@@ -87,61 +93,42 @@
     row <- utils::head(row, 1L)
   }
 
-  if (!"content_hash_metadata" %in% names(row)) {
-    cli::cli_abort(
-      paste0(
-        "Master inventory is missing 'content_hash_metadata' column. ",
-        "Re-run update_pip_inventory() to rebuild the inventory."
-      ),
-      class = c("load_deflation_aux", "piperr")
-    )
+  # Use version_id_metadata stored directly by format_vrs().
+  # If the version is stale (artifact replaced by a newer run), fall back
+  # to loading the latest available version.
+  meta_version <- if (
+    "version_id_metadata" %in%
+      names(row) &&
+      !is.na(row$version_id_metadata[[1L]])
+  ) {
+    row$version_id_metadata[[1L]]
+  } else {
+    NULL
   }
 
-  # content_hash_metadata in the inventory is stamp's *content hash*, not its
-  # internal version_id. Resolve the correct version_id by listing available
-  # pip_meta versions via pip_read() — this uses the same stamp path resolution
-  # that the subsequent load call will use, avoiding registry mismatches from
-  # calling stamp::st_versions() directly on the raw UNC path.
-  meta_content_hash <- row$content_hash_metadata[[1L]]
-
-  avail_meta <- pipload::pip_read(
-    id = pip_id,
-    alias = "pip_meta",
-    version = "available"
+  meta <- tryCatch(
+    pipload::pip_read(
+      id = pip_id,
+      alias = "pip_meta",
+      version = meta_version
+    ),
+    error = function(e) NULL
   )
-  idx <- which(avail_meta$content_hash == meta_content_hash)
-  if (length(idx) == 0L) {
-    # The exact hash from the master inventory is no longer present in stamp
-    # (artifact was replaced by a subsequent pd_process_data() run).
-    # Abort if nothing is available at all; otherwise warn and use row 1
-    # (pip_read(..., "available") returns rows newest-first, so row 1 is latest).
-    if (nrow(avail_meta) == 0L) {
-      cli::cli_abort(
-        paste0(
-          "No fallback version available for {.val {pip_id}} in the ",
-          "{.val pip_meta} alias. Re-run pd_process_data() to rebuild metadata."
-        ),
-        class = c("load_deflation_aux", "piperr")
-      )
-    }
+
+  if (is.null(meta)) {
     cli::cli_warn(
       paste0(
-        "Could not find a stamp version matching content hash ",
-        "{.val {meta_content_hash}} for {.val {pip_id}}. ",
-        "The artifact may have been replaced by a newer run. ",
-        "Falling back to the most recent available version."
+        "Stored version for {.val {pip_id}} metadata is stale or missing. ",
+        "Loading latest available version."
       ),
-      class = c("load_deflation_aux_stale_hash", "pipwrn")
+      class = c("load_deflation_aux_stale_version", "pipwrn")
     )
-    idx <- 1L
+    meta <- pipload::pip_read(
+      id = pip_id,
+      alias = "pip_meta",
+      version = NULL
+    )
   }
-  meta_version <- avail_meta$version_id[[idx[[1L]]]]
-
-  meta <- pipload::pip_read(
-    id = pip_id,
-    alias = "pip_meta",
-    version = meta_version
-  )
 
   list(cpi = meta$cpi, ppp = meta$ppp, pop = meta$pop)
 }
