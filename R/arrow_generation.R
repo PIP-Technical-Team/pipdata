@@ -146,9 +146,10 @@
 #'
 #' The pip_id schema is `COUNTRY_YEAR_ACRONYM_(INC|CON)_(ALL|GPWG)`. The
 #' welfare token is always the second-to-last underscore-delimited segment.
-#' The inventory does not carry a `welfare_type` column, so this helper is
-#' the canonical way to derive it for use with
-#' [pipload::load_pip_data()].
+#'
+#' Utility helper — `welfare_type` is read directly from the inventory in
+#' [generate_arrow_dataset()]. This function is retained for ad-hoc use
+#' when only a pip_id string is available.
 #'
 #' @param pip_id A single pip_id string
 #'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`).
@@ -818,18 +819,23 @@ generate_arrow_dataset <- function(survey_ids,
   # Each survey_id may map to multiple pip_id (e.g. INC + CON versions).
   # Each pip_id corresponds to one physical .qs2 file and one Parquet file.
   #
-  # NOTE: the inventory does not carry a welfare_type column. It is derived
-  # from pip_id (second-to-last "_" segment, e.g. "..._INC_ALL" -> "INC")
-  # using .extract_welfare_from_pip_id(). Never select welfare_type from the
-  # inventory — data.table would silently return NA for a missing column,
-  # which would cause load_pip_data() to find 0 matching files.
+  # welfare_type is read directly from the inventory column — both the master
+  # and release inventories carry it. Fail loudly if the column is absent
+  # rather than silently deriving from the pip_id string.
+  if (!"welfare_type" %in% names(inventory)) {
+    cli::cli_abort(
+      c(
+        "{.arg inventory} is missing required column {.field welfare_type}.",
+        "i" = "Both {.fn pipload::load_pip_master_inventory} and
+               {.fn pipload::load_pip_release_inventory} provide this column."
+      )
+    )
+  }
   pip_rows <- inventory[
     !is.na(pip_id) & survey_id %in% survey_ids,
     .(survey_id, pip_id, country_code, surveyid_year,
-      survey_acronym, vermast, veralt, collection, module)
+      welfare_type, survey_acronym, vermast, veralt, collection, module)
   ]
-  pip_rows[, welfare_type := vapply(pip_id, .extract_welfare_from_pip_id,
-                                    character(1L))]
 
   if (nrow(pip_rows) == 0L) {
     cli::cli_abort(

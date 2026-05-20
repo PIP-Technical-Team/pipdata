@@ -188,9 +188,7 @@ discover_parquet_welfare_cols <- function(file_path) {
 #'   Use `character(0)` when none are present. Known universe:
 #'   `gender`, `area`, `educat4`, `educat5`, `educat7`, `age`.
 #' @param reporting_level Reporting level for the survey (e.g. `"national"`,
-#'   `"urban"`, `"rural"`). Currently a placeholder (`"national"`) — will be
-#'   sourced from `release_inventory$reporting_level` once that column is
-#'   added to the inventory.
+#'   `"urban"`, `"rural"`). Sourced from `release_inventory$reporting_level`.
 #' @param welfare_vars Character vector of welfare column names present in the
 #'   Parquet file (e.g. `c("welfare_lcu", "welfare_ppp_2017_01_02")`). Use
 #'   `character(0)` for legacy surveys that have a single `welfare` column.
@@ -227,7 +225,6 @@ build_manifest_entry <- function(country_code,
                                  module,
                                  pip_id,
                                  dimensions,
-                                 # TODO: remove default once inventory column is available
                                  reporting_level = "national",
                                  welfare_vars    = character(0),
                                  ppp_sort        = NA_integer_) {
@@ -350,8 +347,8 @@ generate_release_manifest <- function(release,
 
   required_inv_cols <- c(
     "survey_id", "pip_id", "country_code", "surveyid_year",
-    "welfare_type", "survey_acronym", "vermast", "veralt", "module"
-    # TODO: add "reporting_level" once inventory column is available
+    "welfare_type", "survey_acronym", "vermast", "veralt", "module",
+    "reporting_level"
   )
   missing_inv_cols <- setdiff(required_inv_cols, names(release_inventory))
   if (length(missing_inv_cols) > 0L) {
@@ -480,8 +477,7 @@ generate_release_manifest <- function(release,
       module          = row_i$module,
       pip_id          = pip_id_i,
       dimensions      = dims_i,
-      # TODO: replace placeholder with row_i$reporting_level once inventory column is available
-      reporting_level = "national",
+      reporting_level  = row_i$reporting_level,
       welfare_vars    = welfare_vars_i,
       ppp_sort        = ppp_sort_i
     )

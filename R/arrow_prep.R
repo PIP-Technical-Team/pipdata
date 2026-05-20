@@ -509,6 +509,34 @@ prepare_for_arrow <- function(data, pip_id) {
     dt[, (extra_cols) := NULL]
   }
 
+  # Drop welfare columns that are entirely non-finite (all NA / Inf / NaN).
+  # This can occur when a PPP reference year has no valid deflation for a
+  # survey (e.g. welfare_ppp_2005_01_01 for surveys that pre-date that ICP
+  # round). The column is dropped and the welfare_vars attribute updated.
+  # Abort only if no welfare column survives.
+  wv_bad <- wv[vapply(wv, function(col) {
+    col %in% names(dt) && dt[, !any(is.finite(get(col)))]
+  }, logical(1L))]
+  if (length(wv_bad) > 0L) {
+    rlang::warn(
+      paste0(
+        "Dropping welfare column(s) with no finite values: ",
+        paste(wv_bad, collapse = ", "),
+        ". Survey: ", pip_id
+      )
+    )
+    dt[, (wv_bad) := NULL]
+    wv <- setdiff(wv, wv_bad)
+  }
+  if (length(wv) == 0L) {
+    cli::cli_abort(
+      c(
+        "All welfare columns were dropped for survey {.val {pip_id}}.",
+        "i" = "No finite welfare values found in any of the deflated welfare columns."
+      )
+    )
+  }
+
   # Drop optional breakdown columns that are entirely NA (must be absent, not all-NA)
   dim_cols_present <- intersect(optional_dim_cols, names(dt))
   for (col in dim_cols_present) {

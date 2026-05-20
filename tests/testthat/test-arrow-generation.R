@@ -243,13 +243,12 @@ test_that(".validate_for_write rejects data with survey_id column instead of pip
 })
 
 # ===========================================================================
-# welfare_type derivation from pip_id
+# welfare_type resolution in generate_arrow_dataset()
 # ===========================================================================
 
-# Regression test: the inventory does not carry a welfare_type column.
-# generate_arrow_dataset() must derive welfare_type from pip_id, not select
-# it from the inventory (where it would be NA, causing load_pip_data() to
-# find 0 files and error).
+# welfare_type is always read from the inventory column.
+# Both master and release inventories carry this column.
+# Absence of the column is a hard error.
 
 test_that(".extract_welfare_from_pip_id correctly parses INC and CON pip_ids", {
   expect_identical(pipdata:::.extract_welfare_from_pip_id("ARG_2003_EPHC-S2_INC_ALL"), "INC")
@@ -258,35 +257,48 @@ test_that(".extract_welfare_from_pip_id correctly parses INC and CON pip_ids", {
   expect_identical(pipdata:::.extract_welfare_from_pip_id("COL_2010_ECH_INC_ALL"),       "INC")
 })
 
-test_that("generate_arrow_dataset pip_rows welfare_type is never NA when inventory lacks the column", {
-  # Simulate an inventory without a welfare_type column (the real-world case).
-  # After pip_rows is resolved, welfare_type must be derived from pip_id — not NA.
-  inv_no_wt <- data.table::data.table(
+test_that("generate_arrow_dataset reads welfare_type directly from inventory column", {
+  inv <- data.table::data.table(
     survey_id      = c("ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL", "BOL_2020_EH_V01_M_V04_A_GMD_ALL"),
-    pip_id         = c("ARG_2003_EPHC-S2_INC_ALL", "BOL_2020_EH_INC_ALL"),
+    pip_id         = c("ARG_2003_EPHC-S2_INC_ALL", "BOL_2020_EH_CON_ALL"),
     country_code   = c("ARG", "BOL"),
     surveyid_year  = c(2003L, 2020L),
+    welfare_type   = c("INC", "CON"),
     survey_acronym = c("EPHC-S2", "EH"),
     vermast        = c("v01", "v01"),
     veralt         = c("v09", "v04"),
     collection     = c("GMD", "GMD"),
     module         = c("ALL", "ALL")
-    # NOTE: no welfare_type column — matches real inventory structure
   )
 
-  # pip_rows is built inside generate_arrow_dataset; replicate the join here
-  pip_rows <- inv_no_wt[
+  pip_rows <- inv[
     !is.na(pip_id),
     .(survey_id, pip_id, country_code, surveyid_year,
-      survey_acronym, vermast, veralt, collection, module)
+      welfare_type, survey_acronym, vermast, veralt, collection, module)
   ]
-  # Derive welfare_type from pip_id — what the fixed code must do
-  pip_rows[, welfare_type := pipdata:::.extract_welfare_from_pip_id(pip_id),
-             by = seq_len(nrow(pip_rows))]
 
-  expect_false(any(is.na(pip_rows$welfare_type)),
-               info = "welfare_type must not be NA after derivation from pip_id")
-  expect_identical(pip_rows$welfare_type, c("INC", "INC"))
+  expect_identical(pip_rows$welfare_type, c("INC", "CON"))
+  expect_false(any(is.na(pip_rows$welfare_type)))
+})
+
+test_that("generate_arrow_dataset aborts when inventory lacks welfare_type column", {
+  inv_no_wt <- data.table::data.table(
+    survey_id      = "ARG_2003_EPHC-S2_V01_M_V09_A_GMD_ALL",
+    pip_id         = "ARG_2003_EPHC-S2_INC_ALL",
+    country_code   = "ARG",
+    surveyid_year  = 2003L,
+    survey_acronym = "EPHC-S2",
+    vermast        = "v01",
+    veralt         = "v09",
+    collection     = "GMD",
+    module         = "ALL"
+    # welfare_type column intentionally absent
+  )
+
+  expect_error(
+    generate_arrow_dataset(inv_no_wt, arrow_repo_path = tempdir()),
+    regexp = "welfare_type"
+  )
 })
 
 # ---------------------------------------------------------------------------
@@ -339,6 +351,7 @@ test_that("generate_arrow_dataset calls load_pip_deflated_data with pip_id", {
     pip_id         = "ARG_2003_EPHC-S2_INC_ALL",
     country_code   = "ARG",
     surveyid_year  = 2003L,
+    welfare_type   = "INC",
     survey_acronym = "EPHC-S2",
     vermast        = "v01",
     veralt         = "v09",
