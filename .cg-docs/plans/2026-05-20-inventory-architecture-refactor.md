@@ -42,7 +42,7 @@ enrichment into pipload.
 
 | ID  | Requirement                                                                  | Source           |
 |-----|------------------------------------------------------------------------------|------------------|
-| R1  | Version info persisted per-survey as side effect of saving (crash-safe)      | brainstorm       |
+| R1  | Version info persisted per-survey as side effect of saving (crash-safe for current run) | brainstorm       |
 | R2  | Master inventory = latest version for every pip_id ever cleaned              | brainstorm       |
 | R3  | Release inventory = master subset filtered by PFW `inpovcal == 1`           | brainstorm       |
 | R4  | Skipped surveys remain in master with their prior version                    | brainstorm       |
@@ -64,16 +64,15 @@ enrichment into pipload.
 - **Details**:
   Add a public function that returns the latest version metadata for all
   artifacts in a given alias. Returns a `data.table` with one row per
-  artifact: `path`, `version_id`, `content_hash`, `code_hash`,
-  `size_bytes`, `created_at`.
+  artifact: `path`, `version_id`, `content_hash`, `size_bytes`,
+  `created_at`.
 
   ```r
   #' Query latest versions for all artifacts in an alias
   #'
-
   #' @param alias Character. Stamp alias to query.
   #' @return data.table with one row per artifact (latest version only):
-  #'   path, version_id, content_hash, code_hash, size_bytes, created_at.
+  #'   path, version_id, content_hash, size_bytes, created_at.
   #' @export
   st_catalog_query <- function(alias = NULL) {
     cat <- .st_catalog_read(alias = alias)
@@ -82,37 +81,45 @@ enrichment into pipload.
         path = character(),
         version_id = character(),
         content_hash = character(),
-        code_hash = character(),
         size_bytes = numeric(),
         created_at = character()
       ))
     }
-    # Join artifacts with their latest version row
-    cat$artifacts[
-      cat$versions,
-      on = .(latest_version_id = version_id),
+    # For each artifact, look up its latest version row.
+    # X[Y, on=...] iterates over Y — so versions[artifacts] finds
+    # the one version row matching each artifact's latest_version_id.
+    cat$versions[
+      cat$artifacts,
+      on = .(version_id = latest_version_id),
       nomatch = 0,
-      .(path,
-        version_id = latest_version_id,
-        content_hash = i.content_hash,
-        code_hash = i.code_hash,
-        size_bytes = i.size_bytes,
-        created_at = i.created_at)
+      .(path = i.path,
+        version_id,
+        content_hash,
+        size_bytes,
+        created_at)
     ]
   }
   ```
 
+  **Design note** (from plan review P2.1): `code_hash` is intentionally
+  excluded from the return. It is not consumed by `build_pip_inventory()`.
+  A future `code-hash-reclean-trigger` roadmap item may add it back when
+  `inv_to_process` filtering needs it.
+
 - **Test Scenarios**:
   - ✅ Happy path: alias with 3 artifacts → 3 rows returned
   - ✅ Multiple versions per artifact → only latest returned
-  - 🛑 Edge case: empty alias (no artifacts) → empty data.table
+  - ✅ Verify join direction: result has exactly `nrow(cat$artifacts)` rows (not `nrow(cat$versions)`)
+  - 🛑 Edge case: empty alias (no artifacts) → empty data.table with correct schema
   - 🛑 Edge case: NULL alias → uses default alias
   - ❌ Error path: alias not initialized → appropriate error from `.st_catalog_read()`
 - **Tests**: `stamp/tests/testthat/test-catalog-query.R` — init temp alias,
-  save 3 artifacts (one with 2 versions), verify row count and that only
-  latest version_id appears.
+  save 3 artifacts (one with 2 versions → 4 total version rows), verify
+  result has exactly 3 rows and only latest version_id appears per artifact.
 - **Acceptance criteria**: `st_catalog_query("pip")` returns a data.table
   with one row per artifact, only latest version, in < 1 second for 2500 artifacts.
+  Return schema: `path`, `version_id`, `content_hash`, `size_bytes`, `created_at`
+  (no `code_hash`).
 
 ### 2. Add roxygen2 documentation and bump stamp version
 
@@ -137,13 +144,48 @@ enrichment into pipload.
 
   ```r
   build_pip_inventory <- function(inv_to_clean, pip_id_map) {
+    # --- Defensive assertions (P2.5) ---
+    stopifnot(anyDuplicated(inv_to_clean$survey_id) == 0L)
+
     # Step 1: Query stamp catalogs
     cat_data <- stamp::st_catalog_query(alias = "pip")
     cat_meta <- stamp::st_catalog_query(alias = "pip_meta")
 
+    # Step 1b: Guard empty catalogs with differentiated messages (P2.6)
+    if (nrow(cat_data) == 0L && nrow(cat_meta) == 0L) {
+      if (nrow(pip_id_map) == 0L) {
+        cli::cli_abort(c(
+          "Both stamp catalogs are empty and no surveys were processed.",
+          "i" = "If this is the first run, ensure {.fn save_pip_data} succeeds for at least one survey.",
+          "i" = "If surveys were expected, review the processing log for errors."
+        ))
+      } else {
+        cli::cli_abort(c(
+          "Stamp catalogs are empty despite {nrow(pip_id_map)} pip_id(s) in the map.",
+          "i" = "This suggests {.fn pip_write} / {.fn st_save} failed silently.",
+          "i" = "Check stamp alias configuration."
+        ))
+      }
+    }
+
     # Step 2: Derive pip_id from artifact path
     cat_data[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
     cat_meta[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
+
+    # Step 2b: Validate pip_id format (P1.2)
+    pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9-]+_(INC|CON)_(ALL|GPWG|D[0-9]+)$"
+    bad_data <- cat_data[!grepl(pip_id_pattern, pip_id)]
+    bad_meta <- cat_meta[!grepl(pip_id_pattern, pip_id)]
+    if (nrow(bad_data) > 0L || nrow(bad_meta) > 0L) {
+      bad_ids <- unique(c(bad_data$pip_id, bad_meta$pip_id))
+      cli::cli_warn(c(
+        "{length(bad_ids)} artifact(s) have non-standard pip_id format.",
+        "i" = "IDs: {.val {utils::head(bad_ids, 5L)}}",
+        "i" = "Expected pattern: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE"
+      ))
+      cat_data <- cat_data[grepl(pip_id_pattern, pip_id)]
+      cat_meta <- cat_meta[grepl(pip_id_pattern, pip_id)]
+    }
 
     # Step 3: Suffix and join data + metadata
     data.table::setnames(cat_data,
@@ -163,17 +205,24 @@ enrichment into pipload.
     # Step 5: Scope to this run (inv_to_clean) + retain old surveys
     run_inv <- inv[survey_id %in% inv_to_clean$survey_id]
 
-    # Step 6: Join DLW inventory columns
-    run_inv <- joyn::left_join(run_inv, inv_to_clean,
-      by = "survey_id", relationship = "many-to-one",
-      reportvar = FALSE, verbose = FALSE)
-    # Rename DLW columns
-    collapse::frename(run_inv,
+    # Step 6: Rename DLW columns in inv_to_clean BEFORE join (P2.2)
+    # This prevents column-name collisions (content_hash, latest_version_id
+    # exist in both run_inv and inv_to_clean).
+    dlw_renames <- c(
       pipeline_version = "pipeline_version_dlw",
       latest_version_id = "latest_version_id_dlw",
       content_hash = "content_hash_dlw",
       Checksum = "Checksum_dlw",
-      file_path = "path_dlw")
+      file_path = "path_dlw"
+    )
+    inv_dlw <- data.table::copy(inv_to_clean)
+    # Only rename columns that actually exist in inv_to_clean
+    present <- intersect(names(dlw_renames), names(inv_dlw))
+    data.table::setnames(inv_dlw, old = present, new = dlw_renames[present])
+    # Join DLW columns (now collision-free)
+    run_inv <- joyn::left_join(run_inv, inv_dlw,
+      by = "survey_id", relationship = "many-to-one",
+      reportvar = FALSE, verbose = FALSE)
 
     # Step 7: Derive welfare_type from pip_id
     run_inv[, welfare_type := data.table::tstrsplit(pip_id, "_", fixed = TRUE)[[4L]]]
@@ -181,11 +230,16 @@ enrichment into pipload.
     # Step 8: Merge with old master
     old_inv <- tryCatch(pipload::load_pip_master_inventory(), error = \(e) NULL)
     if (!is.null(old_inv)) {
-      run_inv <- collapse::rowbind(
-        run_inv,
-        old_inv[!old_inv$survey_id %in% run_inv$survey_id],
-        fill = TRUE
-      ) |> collapse::funique() |> as.data.table()
+      old_retained <- old_inv[!old_inv$survey_id %in% run_inv$survey_id]
+      run_inv <- collapse::rowbind(run_inv, old_retained, fill = TRUE)
+    }
+    # Assert no duplicate pip_ids after merge (P2.7)
+    dup_pids <- run_inv$pip_id[duplicated(run_inv$pip_id)]
+    if (length(dup_pids) > 0L) {
+      cli::cli_abort(c(
+        "Duplicate pip_id(s) in assembled inventory.",
+        "x" = "Duplicates: {.val {unique(dup_pids)}}"
+      ))
     }
 
     # Step 9: Build + save release inventory
@@ -208,18 +262,30 @@ enrichment into pipload.
   - Release version columns (`first_release_version_id`,
     `latest_release_version_id`): same logic as current, just applied
     after the master is assembled.
+  - **Crash-safety limitation** (accepted from plan review P1.3): crash-safety
+    via stamp catalogs applies only to the current run's surveys. Old surveys
+    that weren't reprocessed are recovered from the old master file (Step 8).
+    If the master file is corrupted, those surveys must be reprocessed.
+    This is acceptable because the master inventory is itself a stamp artifact
+    with version history — a prior version can be restored.
 
 - **Test Scenarios**:
   - ✅ Happy path: 3 surveys (one with 2 pip_ids) → correct inventory structure
   - ✅ Second run: old master surveys retained, new surveys added
+  - ✅ No column collisions: DLW columns renamed before join (content_hash_dlw, latest_version_id_dlw)
   - 🛑 Edge case: pip_id in data catalog missing from metadata catalog → excluded
   - 🛑 Edge case: empty inv_to_clean → returns old master unchanged
-  - ❌ Error path: both catalogs empty → informative error
+  - 🛑 Edge case: non-standard pip_id format in catalog → warning + excluded
+  - 🛑 Edge case: duplicate survey_id in inv_to_clean → stopifnot fires
+  - ❌ Error path: both catalogs empty, pip_id_map empty → abort "first run" message
+  - ❌ Error path: both catalogs empty, pip_id_map non-empty → abort "st_save failed" message
+  - ❌ Error path: duplicate pip_id after merge → abort with offending IDs
 
 - **Tests**: `pipdata/tests/testthat/test-build_pip_inventory.R` with mocked
   `stamp::st_catalog_query` and `pipload::load_pip_master_inventory`.
 - **Acceptance criteria**: Function produces identical schema as current
   master inventory (same column names, types). Tests pass for all scenarios.
+  No `funique()` — uniqueness enforced by pip_id assertion.
 
 ### 4. Create `pip_id_map` builder in `pd_process_data()`
 
@@ -231,7 +297,7 @@ enrichment into pipload.
   successful `process_data()` calls:
 
   ```r
-  # After purrr::map loop:
+  # After lapply loop:
   pip_id_map <- data.table::rbindlist(
     lapply(Filter(Negate(is.null), results), \(x) {
       data.table(pip_id = toupper(unlist(x$pip_names)))
@@ -318,6 +384,35 @@ enrichment into pipload.
 
 ## Phase 3: pipload — enrichment + cleanup
 
+### 7b. Export `pip_domain_cols()` from pipfun (prerequisite for Step 8)
+
+- **Requirements**: R6
+- **Files**: `pipfun/R/constants.R` (new or existing constants file), `pipfun/NAMESPACE`
+- **Details**:
+  Define the canonical domain column names in pipfun (shared dependency
+  across pipdata and pipload) so there is a single source of truth (P2.3):
+
+  ```r
+  #' Canonical PFW domain column names
+  #'
+  #' Returns the standard column names used to determine reporting level
+  #' from the PFW auxiliary data.
+  #'
+  #' @return Character vector of domain column names.
+  #' @export
+  pip_domain_cols <- function() {
+    c("cpi_domain", "ppp_domain", "gdp_domain", "pce_domain", "pop_domain")
+  }
+  ```
+
+  Run `devtools::document()` in pipfun; bump patch version.
+- **Test Scenarios**:
+  - ✅ Returns length-5 character vector
+  - ✅ Exported in NAMESPACE
+- **Tests**: `pipfun/tests/testthat/test-constants.R`
+- **Acceptance criteria**: `pipfun::pip_domain_cols()` returns the 5 domain
+  column names. `R CMD check` passes.
+
 ### 8. Add `pip_inv_enrich()` to pipload
 
 - **Requirements**: R6
@@ -334,11 +429,11 @@ enrichment into pipload.
     if ("reporting_level" %in% fields) {
       pfw <- load_aux_data("pfw", verbose = FALSE)
       pfw_rl <- pfw[inpovcal == 1L]
-      domain_cols <- c("cpi_domain", "ppp_domain", "gdp_domain",
-                       "pce_domain", "pop_domain")
+      # Canonical domain columns defined in pipfun (P2.3)
+      domain_cols <- pipfun::pip_domain_cols()
       avail <- intersect(domain_cols, names(pfw_rl))
       if (length(avail) > 0L) {
-        pfw_rl[, reporting_level := as.character(do.call(pmax, .SD)),
+        pfw_rl[, reporting_level := as.character(do.call(pmax, c(.SD, list(na.rm = TRUE)))),
                .SDcols = avail]
         pfw_rl_unq <- pfw_rl[,
           .(reporting_level = reporting_level[[1L]]),
@@ -370,13 +465,14 @@ enrichment into pipload.
 - **Requirements**: R6
 - **Files**: `pipload/R/load_pip_data.R`
 - **Details**:
-  Add optional `fields` argument:
+  Add optional `fields` argument with **default `"reporting_level"`** to
+  preserve backward compatibility (P2.4 — opt-out, not opt-in):
   ```r
   load_pip_master_inventory <- \(
     format = "qs2",
     version = NULL,
     verbose = getOption("pipload.verbose"),
-    fields = character(0)
+    fields = "reporting_level"
   ) {
     # ... existing logic ...
     inv <- pip_read(...)
@@ -386,11 +482,19 @@ enrichment into pipload.
     inv
   }
   ```
+
+  **Rationale**: Existing consumers call `load_pip_master_inventory()`
+  without args and expect `reporting_level` to be present. Defaulting
+  to `"reporting_level"` means they keep working without code changes.
+  Consumers who explicitly don't want enrichment can pass `fields = character(0)`.
+
 - **Test Scenarios**:
-  - ✅ `fields = character(0)` → no enrichment (backward compatible)
-  - ✅ `fields = "reporting_level"` → column added
+  - ✅ Default call (no `fields` arg) → `reporting_level` column present (backward compat)
+  - ✅ `fields = character(0)` → no enrichment (opt-out)
+  - ✅ `fields = "reporting_level"` → column added (explicit)
 - **Tests**: Unit test with mocked `pip_read` + `load_aux_data`.
-- **Acceptance criteria**: Backward compatible; enrichment opt-in.
+- **Acceptance criteria**: Backward compatible by default; enrichment opt-out
+  via `fields = character(0)`.
 
 ### 10. Remove `reporting_level` computation from `build_pip_inventory()`
 
@@ -398,17 +502,19 @@ enrichment into pipload.
 - **Files**: `pipdata/R/build_pip_inventory.R`
 - **Details**:
   The assembler does NOT compute `reporting_level`. It only tracks versions
-  and DLW metadata. Consumers who need `reporting_level` call
-  `load_pip_master_inventory(fields = "reporting_level")` or
-  `pip_inv_enrich()` directly.
+  and DLW metadata. Consumers who need `reporting_level` use the default
+  behavior of `load_pip_master_inventory()` (which enriches by default via
+  `fields = "reporting_level"`). Consumers who explicitly don't want
+  enrichment pass `fields = character(0)`.
 
   This means the master inventory on disk does NOT have `reporting_level`
   as a persisted column. It is computed on-the-fly at load time.
 - **Test Scenarios**:
   - ✅ Master inventory schema does not include `reporting_level`
-- **Tests**: Verify column absence.
+  - ✅ `load_pip_master_inventory()` (default) still returns it (enrichment)
+- **Tests**: Verify column absence on disk, presence after load.
 - **Acceptance criteria**: `reporting_level` not saved to disk; available
-  only via enrichment.
+  by default via enrichment at load time.
 
 ### 11. Archive old code and update pipdata
 
@@ -456,11 +562,14 @@ enrichment into pipload.
 | Risk | Impact | Mitigation |
 |------|--------|-----------|
 | stamp catalog schema changes in future | Assembler breaks | Pin stamp version in pipdata DESCRIPTION; `st_catalog_query()` is our API contract |
-| pip_id derivation from path fails (non-standard artifact names) | Missing surveys in inventory | Assert all `inv_to_clean` pip_ids found in catalog; abort if mismatch |
-| Removing `reporting_level` from persisted inventory breaks downstream consumers | Consumer errors | Consumer must be updated to use `fields = "reporting_level"` — communicate change |
+| pip_id derivation from path fails (non-standard artifact names) | Missing surveys in inventory | Regex assertion (`pip_id_pattern`) warns and excludes; log identifies affected IDs (P1.2) |
+| Removing `reporting_level` from persisted inventory breaks downstream consumers | Consumer errors | Default `fields = "reporting_level"` in `load_pip_master_inventory()` preserves backward compat (P2.4) |
 | `pd_deflation()` expects `version_id_data` column | Deflation fails | Ensure `build_pip_inventory()` produces columns with same names (from catalog query) |
-| Empty catalog (first-ever run, no prior saves) | Assembler returns empty | Guard: if both catalogs empty, abort with informative message |
+| Empty catalog (first-ever run, no prior saves) | Assembler returns empty | Differentiated abort messages: "first run" vs "st_save failed" based on pip_id_map state (P2.6) |
 | Performance: reading catalog for 2500 artifacts | Slow assembler | Benchmarked: catalog.qs2 is ~1MB, reads in <0.5s |
+| Column name collisions between catalog output and DLW inventory | `frename()` crash or silent wrong column | DLW columns renamed in `inv_to_clean` BEFORE join (P2.2) |
+| Old master corruption loses prior-run surveys | Surveys not recoverable from catalog alone | Master inventory is itself a stamp artifact — prior versions restorable. Crash-safety for current run only (P1.3 accepted) |
+| Duplicate pip_ids after merge with old master | Downstream errors | Explicit `pip_id` uniqueness assertion after merge; abort with offending IDs (P2.7) |
 
 ## Out of Scope
 
@@ -470,3 +579,22 @@ enrichment into pipload.
   reads master inventory — just needs column names to match)
 - Rewriting `save_pip_data()` internals (only return value changes)
 - DLW wrapper rewrite (separate roadmap item)
+
+## Review Findings Addressed (2026-05-20)
+
+Plan revised after `/cg-plan-review`. Changes:
+
+| Finding | Resolution |
+|---------|-----------|
+| P1.1 — Join direction inverted | Fixed: `cat$versions[cat$artifacts, on=...]` (was backwards) |
+| P1.2 — pip_id derivation unvalidated | Added regex assertion + warning in Step 3 |
+| P1.3 — Crash-safety partial | Accepted as limitation; documented in R1, design notes, and Risks |
+| P2.1 — code_hash unused | Removed from `st_catalog_query()` return |
+| P2.2 — Column name collisions | DLW columns renamed BEFORE join (not after) |
+| P2.3 — Domain cols hardcoded | New Step 7b: `pipfun::pip_domain_cols()` as single source |
+| P2.4 — reporting_level removal breaks consumers | Default `fields = "reporting_level"` (opt-out, not opt-in) |
+| P2.5 — No survey_id uniqueness assertion | Added `stopifnot(anyDuplicated(...) == 0L)` |
+| P2.6 — Empty-catalog message undifferentiated | Two distinct abort messages based on pip_id_map state |
+| P2.7 — funique misleading | Replaced with explicit pip_id uniqueness assertion |
+| P3.1 — purrr::map reference | Changed to `lapply` |
+| P3.2 — pmax NA propagation | Added `na.rm = TRUE` |
