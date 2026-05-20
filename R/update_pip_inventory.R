@@ -12,8 +12,14 @@
 #'   Each element is a list with `pip_names`, `versions_data`, and
 #'   `versions_metadata`, or `NULL` for failed surveys.
 #'
-#' @return A `data.table`: the updated PIP master inventory, including two
-#'   new columns tracking release membership:
+#' @return A `data.table`: the updated PIP master inventory, including the
+#'   following additional columns:
+#'   - `reporting_level`: Character `"1"` or `"2"`. Derived from PFW domain
+#'     columns (`cpi_domain`, `ppp_domain`, `gdp_domain`, `pce_domain`,
+#'     `pop_domain`). `"1"` = national (all domains equal 1); `"2"` =
+#'     subnational (at least one domain equals 2, meaning urban/rural-specific
+#'     auxiliary data are available for that survey). `NA` when the survey has
+#'     no matching PFW row with `inpovcal == 1`.
 #'   - `first_release_version_id`: stamp version ID of the release inventory
 #'     when this survey first appeared.
 #'   - `latest_release_version_id`: stamp version ID of the most recent release
@@ -32,6 +38,8 @@
 #'   entry if any surveys are missing, info-level if all are confirmed.
 #' - `skipped_svys_data`: Surveys skipped during data processing with reasons.
 #' - `skipped_svys_metadata`: Surveys skipped during metadata creation with reasons.
+#' - `missing_metadata_err`: pip_ids excluded from inventory due to absent metadata entry (error-level;
+#'   includes `pip_ids` and `surveys` arrays).
 #'
 #' @family pd_process_data pipeline
 #' @export
@@ -78,15 +86,45 @@ update_pip_inventory <- function(
     version = "versions_metadata"
   )
 
+  # Use one-to-one so any cross-product is an immediate error rather than
+  # silently producing duplicated rows in multi-pip_id surveys (e.g. BOL 2022
+  # with BOL_2022_EH_INC_ALL + BOL_2022_EH_INC_GPWG).
   vrs <- vrs_dt |>
     joyn::left_join(
       vrs_mdt,
       by = c("survey_id", "pip_id"),
       suffix = c("_data", "_metadata"),
-      relationship = "many-to-many",
+      relationship = "one-to-one",
       reportvar = FALSE,
       verbose = FALSE
     )
+
+  # Exclude pip_ids for which metadata was not successfully saved.
+  # These have NA for every metadata column; allowing them into the inventory
+  # would cause pd_deflation() to fail when resolving content_hash_metadata.
+  # Use content_hash as the canonical presence sentinel — it is always written
+  # by format_vrs() and appears as content_hash_metadata after the suffixed join.
+  sentinel_col <- if ("content_hash" %in% names(vrs_mdt)) {
+    "content_hash_metadata"
+  } else {
+    NULL
+  }
+  if (!is.null(sentinel_col) && sentinel_col %in% names(vrs)) {
+    missing_meta <- vrs[is.na(get(sentinel_col)), .(survey_id, pip_id)]
+    if (nrow(missing_meta) > 0L) {
+      pipfun::log_add(
+        event = "error",
+        message = "Some pip_ids have no metadata. They will be excluded from the inventory.",
+        name = "pipdata_log",
+        logmeta = list(
+          error = "missing_metadata_err",
+          pip_ids = missing_meta$pip_id,
+          surveys = missing_meta$survey_id
+        )
+      )
+      vrs <- vrs[!is.na(get(sentinel_col))]
+    }
+  }
 
   # Remove skipped surveys from inventory
   if ("skipped_data" %in% names(vrs)) {
@@ -181,6 +219,44 @@ update_pip_inventory <- function(
   # Save release inventory first so its version_id can be recorded in the master
 
   pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
+
+  # Compute reporting_level from PFW and join into the master inventory.
+  # Uses the same domain-max logic as report_lvl() in get_country_pfw.R but
+  # operates on the full PFW before splitting by welfare_type, so that one
+  # reporting_level row is produced per (country_code, surveyid_year,
+  # survey_acronym). Domain columns are the same across welfare_type rows for
+  # the same survey, so the per-welfare_type distinction is irrelevant here.
+  pfw_rl <- pfw[inpovcal == 1L]
+  missing_dcols_inv <- setdiff(.DOMAIN_COLS, names(pfw_rl))
+  if (length(missing_dcols_inv) == 0L) {
+    pfw_rl[,
+      reporting_level := as.character(do.call(pmax, .SD)),
+      .SDcols = .DOMAIN_COLS
+    ]
+    pfw_rl_unq <- pfw_rl[,
+      .(reporting_level = reporting_level[[1L]]),
+      by = .(country_code, surveyid_year, survey_acronym)
+    ]
+    # Drop ALL reporting_level* columns before joining pfw_rl_unq.
+    # On a re-run, old_pip_inv may carry the exact column, or suffixed variants
+    # (reporting_level.x, reporting_level.y) from a historic joyn collision that
+    # was persisted to the master inventory.
+    drop_rl_cols(new_pip_inv)
+    new_pip_inv <- joyn::left_join(
+      new_pip_inv,
+      pfw_rl_unq,
+      by = c("country_code", "surveyid_year", "survey_acronym"),
+      relationship = "many-to-one",
+      reportvar = FALSE,
+      verbose = FALSE
+    )
+  } else {
+    cli::cli_warn(
+      "PFW is missing domain columns {.field {missing_dcols_inv}}; {.col reporting_level} will be NA.",
+      class = c("update_pip_inventory", "piperr")
+    )
+    new_pip_inv[, reporting_level := NA_character_]
+  }
 
   pfw_release <- pfw |>
     collapse::fsubset(inpovcal == 1) |>
@@ -363,6 +439,12 @@ format_vrs <- function(
             vlist <- ventry$metadata
           }
           vlist$pip_id <- pip_name
+          # Capture stamp's version_id at the top level of the pip_write()
+          # return. This allows direct version lookup in .load_deflation_aux()
+          # without the fragile content_hash -> version_id resolution.
+          if (!is.null(ventry$version_id)) {
+            vlist$version_id <- ventry$version_id
+          }
           if (!is.null(ventry$skipped) && ventry$skipped == TRUE) {
             vlist$skipped <- TRUE
             vlist$reason <- ventry$reason
@@ -388,4 +470,24 @@ format_vrs <- function(
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
+}
+
+#' Drop all reporting_level* columns from a data.table in-place
+#'
+#' Removes `reporting_level`, `reporting_level.x`, `reporting_level.y`, and
+#' any other columns whose name starts with `reporting_level` from `dt` by
+#' reference. Called by [update_pip_inventory()] before joining the fresh
+#' PFW-derived `reporting_level` to ensure exactly one clean column results.
+#'
+#' @param dt A `data.table`. Modified by reference.
+#' @return `dt` invisibly (modification is in-place).
+#'
+#' @keywords internal
+#' @noRd
+drop_rl_cols <- function(dt) {
+  rl_cols <- grep("^reporting_level", names(dt), value = TRUE)
+  if (length(rl_cols) > 0L) {
+    dt[, (rl_cols) := NULL]
+  }
+  invisible(dt)
 }
