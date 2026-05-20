@@ -84,6 +84,34 @@
 }
 
 # ---------------------------------------------------------------------------
+# .decode_reporting_level()   — internal code-to-label translator
+# ---------------------------------------------------------------------------
+
+#' Decode inventory reporting_level codes to human-readable labels
+#'
+#' The release inventory stores reporting level as a numeric-ish character code:
+#' `"1"` = national, `"2"` = subnational. The manifest JSON stores the
+#' human-readable label so that downstream consumers (`{piptm}`) do not need
+#' to carry the lookup table.
+#'
+#' @param code Character scalar from `release_inventory$reporting_level`.
+#'
+#' @return Character scalar label. Unknown codes are passed through unchanged
+#'   with a warning so the manifest is never silently wrong.
+#' @keywords internal
+.decode_reporting_level <- function(code) {
+  switch(
+    as.character(code),
+    "1" = "national",
+    "2" = "subnational",
+    {
+      rlang::warn(paste0("Unknown reporting_level code: '", code, "'. Stored as-is."))
+      as.character(code)
+    }
+  )
+}
+
+# ---------------------------------------------------------------------------
 # discover_parquet_dimensions()
 # ---------------------------------------------------------------------------
 
@@ -451,20 +479,16 @@ generate_release_manifest <- function(release,
 
     # Read ppp_sort from Parquet schema metadata — written there by
     # write_survey_parquet() from attr(dt, "ppp_sort") of the deflated
-    # dataset (set by pipload). Falls back to NA_integer_ for legacy files
-    # written before this metadata field was stored.
+    # dataset (set by pipload). Arrow serialises R attributes into the
+    # schema "r" metadata key as JSON; .extract_ppp_sort_from_schema()
+    # navigates that nested path.
     # NOTE: use read_parquet() not open_dataset() — open_dataset may not
     # preserve file-level schema metadata.
     parquet_schema_i <- tryCatch(
       arrow::read_parquet(abs_path_i, as_data_frame = FALSE)$schema,
       error = function(e) NULL
     )
-    ppp_sort_i <- if (!is.null(parquet_schema_i)) {
-      suppressWarnings(as.integer(parquet_schema_i$metadata[["ppp_sort"]]))
-    } else {
-      NA_integer_
-    }
-    if (length(ppp_sort_i) == 0L || is.na(ppp_sort_i)) ppp_sort_i <- NA_integer_
+    ppp_sort_i <- parquet_schema_i$metadata$r$attributes$ppp_sort
 
     # --- Build survey entry ---------------------------------------------------
     survey_entries[[i]] <- build_manifest_entry(
@@ -477,7 +501,7 @@ generate_release_manifest <- function(release,
       module          = row_i$module,
       pip_id          = pip_id_i,
       dimensions      = dims_i,
-      reporting_level  = row_i$reporting_level,
+      reporting_level  = .decode_reporting_level(row_i$reporting_level),
       welfare_vars    = welfare_vars_i,
       ppp_sort        = ppp_sort_i
     )

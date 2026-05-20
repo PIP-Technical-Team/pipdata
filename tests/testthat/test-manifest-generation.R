@@ -152,15 +152,16 @@ make_fixture_dt_multi <- function(country_code  = "COL",
 
 make_fixture_inventory <- function(surveys = list(
   list(
-    survey_id     = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-    pip_id        = "COL_2010_ECH_V01_M_V02_A_INC",
-    country_code  = "COL",
-    surveyid_year = 2010L,
-    welfare_type  = "INC",
-    survey_acronym = "ECH",
-    vermast       = "V01",
-    veralt        = "V02",
-    module        = "ALL"
+    survey_id       = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+    pip_id          = "COL_2010_ECH_V01_M_V02_A_INC",
+    country_code    = "COL",
+    surveyid_year   = 2010L,
+    welfare_type    = "INC",
+    survey_acronym  = "ECH",
+    vermast         = "V01",
+    veralt          = "V02",
+    module          = "ALL",
+    reporting_level = "1"
   )
 )) {
   data.table::rbindlist(surveys)
@@ -435,27 +436,29 @@ test_that("generate_release_manifest skips rows with NA pip_id", {
 
   inv_with_na <- make_fixture_inventory(list(
     list(
-      survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-      pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
-      country_code   = "COL",
-      surveyid_year  = 2010L,
-      welfare_type   = "INC",
-      survey_acronym = "ECH",
-      vermast        = "V01",
-      veralt         = "V02",
-      module         = "ALL"
+      survey_id       = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+      pip_id          = "COL_2010_ECH_V01_M_V02_A_INC",
+      country_code    = "COL",
+      surveyid_year   = 2010L,
+      welfare_type    = "INC",
+      survey_acronym  = "ECH",
+      vermast         = "V01",
+      veralt          = "V02",
+      module          = "ALL",
+      reporting_level = "1"
     ),
     # Row with NA pip_id — should be silently excluded
     list(
-      survey_id      = "PHL_2021_FIES_V01_M_V01_A_GMD_GPWG",
-      pip_id         = NA_character_,
-      country_code   = "PHL",
-      surveyid_year  = 2021L,
-      welfare_type   = "CON",
-      survey_acronym = "FIES",
-      vermast        = "V01",
-      veralt         = "V01",
-      module         = "GPWG"
+      survey_id       = "PHL_2021_FIES_V01_M_V01_A_GMD_GPWG",
+      pip_id          = NA_character_,
+      country_code    = "PHL",
+      surveyid_year   = 2021L,
+      welfare_type    = "CON",
+      survey_acronym  = "FIES",
+      vermast         = "V01",
+      veralt          = "V01",
+      module          = "GPWG",
+      reporting_level = "1"
     )
   ))
 
@@ -547,32 +550,97 @@ test_that("generate_release_manifest errors when inventory missing required colu
   )
 })
 
+# ===========================================================================
+# ppp_sort extraction from R-attribute metadata (production code path)
+# ===========================================================================
+
+#' Write a fixture parquet using R attribute metadata (mirrors production files)
+#'
+#' Production files are written via `arrow::write_parquet(dt, ...)` where `dt`
+#' carries `attr(dt, "ppp_sort") <- <year>`. Arrow serialises all R attributes
+#' into the schema's `"r"` metadata key as a JSON string, NOT as a top-level
+#' metadata key. This helper reproduces that production code path.
+write_fixture_parquet_r_attrs <- function(arrow_root, dt,
+                                          pip_id        = "COL_2010_ECH_V01_M_V02_A_INC",
+                                          country_code  = "COL",
+                                          surveyid_year = 2010L,
+                                          welfare_type  = "INC",
+                                          version       = "v01_v02",
+                                          ppp_sort      = NULL) {
+  partition_dir <- file.path(
+    arrow_root,
+    paste0("country_code=",  country_code),
+    paste0("surveyid_year=", surveyid_year),
+    paste0("welfare_type=",  welfare_type),
+    paste0("version=",       version)
+  )
+  dir.create(partition_dir, recursive = TRUE, showWarnings = FALSE)
+  out_file <- file.path(partition_dir, paste0(pip_id, "-0.parquet"))
+
+  if (!is.null(ppp_sort) && !is.na(ppp_sort)) {
+    attr(dt, "ppp_sort") <- as.integer(ppp_sort)
+  }
+  arrow::write_parquet(dt, out_file, compression = "snappy")
+  out_file
+}
+
+test_that("generate_release_manifest reads ppp_sort from R-attribute metadata (production path)", {
+  # Regression test for bug: ppp_sort stored under metadata[["r"]]$attributes$ppp_sort
+  # (as arrow serialises R attributes), NOT as a top-level metadata[["ppp_sort"]] key.
+  # Without the fix, ppp_sort in the manifest entry is NA_integer_.
+  tmp_arrow    <- withr::local_tempdir()
+  tmp_manifest <- withr::local_tempdir()
+
+  dt <- make_fixture_dt_multi(dims = c("gender", "area"), ppp_suffix = "2021_01_02")
+  write_fixture_parquet_r_attrs(
+    tmp_arrow, dt, version = "v01_v02", ppp_sort = 2021L
+  )
+
+  inv      <- make_fixture_inventory()
+  out_path <- file.path(tmp_manifest, "manifest_test.json")
+
+  result <- generate_release_manifest(
+    release           = "test",
+    arrow_root        = tmp_arrow,
+    release_inventory = inv,
+    output_path       = out_path
+  )
+
+  manifest <- jsonlite::fromJSON(out_path, simplifyVector = FALSE)
+  entry    <- manifest$entries[[1L]]
+
+  # Must be 2021L, not NA
+  expect_identical(entry$ppp_sort, 2021L)
+})
+
 test_that("generate_release_manifest handles multiple surveys correctly", {
   tmp_arrow    <- withr::local_tempdir()
   tmp_manifest <- withr::local_tempdir()
 
   surveys <- list(
     list(
-      survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-      pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
-      country_code   = "COL",
-      surveyid_year  = 2010L,
-      welfare_type   = "INC",
-      survey_acronym = "ECH",
-      vermast        = "V01",
-      veralt         = "V02",
-      module         = "ALL"
+      survey_id       = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
+      pip_id          = "COL_2010_ECH_V01_M_V02_A_INC",
+      country_code    = "COL",
+      surveyid_year   = 2010L,
+      welfare_type    = "INC",
+      survey_acronym  = "ECH",
+      vermast         = "V01",
+      veralt          = "V02",
+      module          = "ALL",
+      reporting_level = "1"
     ),
     list(
-      survey_id      = "BOL_2012_EH_V01_M_V02_A_GMD_ALL",
-      pip_id         = "BOL_2012_EH_V01_M_V02_A_CON",
-      country_code   = "BOL",
-      surveyid_year  = 2012L,
-      welfare_type   = "CON",
-      survey_acronym = "EH",
-      vermast        = "V01",
-      veralt         = "V02",
-      module         = "ALL"
+      survey_id       = "BOL_2012_EH_V01_M_V02_A_GMD_ALL",
+      pip_id          = "BOL_2012_EH_V01_M_V02_A_CON",
+      country_code    = "BOL",
+      surveyid_year   = 2012L,
+      welfare_type    = "CON",
+      survey_acronym  = "EH",
+      vermast         = "V01",
+      veralt          = "V02",
+      module          = "ALL",
+      reporting_level = "1"
     )
   )
   inv <- make_fixture_inventory(surveys)
