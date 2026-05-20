@@ -144,7 +144,7 @@ test_that(".validate_deflation_input aborts on missing required attribute", {
 # .load_deflation_aux() — mocked
 # ---------------------------------------------------------------------------
 
-test_that(".load_deflation_aux returns cpi/ppp/pop from metadata", {
+test_that(".load_deflation_aux uses version_id_metadata directly", {
   cpi_vec <- make_cpi_vec()
   ppp_vec <- make_ppp_vec()
   pop_vec <- make_pop_vec()
@@ -154,20 +154,15 @@ test_that(".load_deflation_aux returns cpi/ppp/pop from metadata", {
     pip_id = "ABC_2015_TST_INC_D1",
     content_hash_data = "abc123",
     content_hash_metadata = "meta_abc123",
+    version_id_metadata = "ver_abc123",
     created_at_metadata = "2026-01-01T00:00:00Z"
   )
 
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) fake_inv,
     pip_read = function(id, alias, version = NULL, ...) {
-      if (identical(version, "available")) {
-        data.table::data.table(
-          version_id = "ver_abc123",
-          content_hash = "meta_abc123"
-        )
-      } else {
-        meta_obj
-      }
+      expect_identical(version, "ver_abc123")
+      meta_obj
     },
     .package = "pipload"
   )
@@ -179,11 +174,81 @@ test_that(".load_deflation_aux returns cpi/ppp/pop from metadata", {
   expect_equal(result$pop, pop_vec)
 })
 
+test_that(".load_deflation_aux loads latest when version_id_metadata is NA", {
+  cpi_vec <- make_cpi_vec()
+  ppp_vec <- make_ppp_vec()
+  pop_vec <- make_pop_vec()
+  meta_obj <- list(cpi = cpi_vec, ppp = ppp_vec, pop = pop_vec)
+
+  fake_inv <- data.table::data.table(
+    pip_id = "ABC_2015_TST_INC_D1",
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    version_id_metadata = NA_character_,
+    created_at_metadata = "2026-01-01T00:00:00Z"
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) fake_inv,
+    pip_read = function(id, alias, version = NULL, ...) {
+      # version=NULL means load latest
+      expect_null(version)
+      meta_obj
+    },
+    .package = "pipload"
+  )
+
+  result <- pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1")
+
+  expect_equal(result$cpi, cpi_vec)
+  expect_equal(result$ppp, ppp_vec)
+  expect_equal(result$pop, pop_vec)
+})
+
+test_that(".load_deflation_aux falls back to latest when version_id is stale", {
+  cpi_vec <- make_cpi_vec()
+  ppp_vec <- make_ppp_vec()
+  pop_vec <- make_pop_vec()
+  meta_obj <- list(cpi = cpi_vec, ppp = ppp_vec, pop = pop_vec)
+
+  fake_inv <- data.table::data.table(
+    pip_id = "ABC_2015_TST_INC_D1",
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    version_id_metadata = "stale_version_gone",
+    created_at_metadata = "2026-01-01T00:00:00Z"
+  )
+
+  call_count <- 0L
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) fake_inv,
+    pip_read = function(id, alias, version = NULL, ...) {
+      call_count <<- call_count + 1L
+      if (call_count == 1L) {
+        # First call with stale version_id — simulate stamp error
+        stop("Version not found")
+      }
+      # Second call with version=NULL (latest)
+      expect_null(version)
+      meta_obj
+    },
+    .package = "pipload"
+  )
+
+  result <- expect_warning(
+    pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1"),
+    class = "load_deflation_aux_stale_version"
+  )
+  expect_equal(result$cpi, cpi_vec)
+  expect_equal(result$ppp, ppp_vec)
+  expect_equal(result$pop, pop_vec)
+})
+
 test_that(".load_deflation_aux aborts for unknown pip_id", {
   fake_inv <- data.table::data.table(
     pip_id = character(0),
     content_hash_data = character(0),
-    content_hash_metadata = character(0),
+    version_id_metadata = character(0),
     created_at_metadata = character(0)
   )
 
@@ -194,25 +259,6 @@ test_that(".load_deflation_aux aborts for unknown pip_id", {
 
   expect_error(
     pipdata:::.load_deflation_aux("UNKNOWN_ID"),
-    class = "load_deflation_aux"
-  )
-})
-
-test_that(".load_deflation_aux aborts when content_hash_metadata missing from inventory", {
-  fake_inv <- data.table::data.table(
-    pip_id = "ABC_2015_TST_INC_D1",
-    content_hash_data = "abc123",
-    created_at_metadata = "2026-01-01T00:00:00Z"
-    # no content_hash_metadata
-  )
-
-  testthat::local_mocked_bindings(
-    load_pip_master_inventory = function(...) fake_inv,
-    .package = "pipload"
-  )
-
-  expect_error(
-    pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1"),
     class = "load_deflation_aux"
   )
 })
@@ -432,17 +478,15 @@ test_that("pd_deflation Mode A: single dt, mocked aux, returns data.table or NA"
     pip_id = "ABC_2015_TST_INC_D1", # matches constructed pip_id
     content_hash_data = "abc123",
     content_hash_metadata = "meta_abc123",
+    version_id_metadata = "ver_abc123",
     created_at_metadata = "2026-01-01T00:00:00Z"
   )
 
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) fake_inv,
     pip_read = function(id, alias, version = NULL, ...) {
-      if (identical(version, "available")) {
-        data.table::data.table(
-          version_id = "ver_abc123",
-          content_hash = "meta_abc123"
-        )
+      if (identical(alias, "pip_meta") && identical(version, "ver_abc123")) {
+        meta_obj
       } else {
         meta_obj
       }
@@ -463,57 +507,6 @@ test_that("pd_deflation aborts when neither dt nor pip_id provided", {
   expect_error(pd_deflation(), class = "pd_deflation")
 })
 
-# ---------------------------------------------------------------------------
-# Bug: stale content_hash_metadata in master inventory
-# https://github.com/GPID-WB/pipdata/issues — 2026-05-05
-#
-# Scenario: the master inventory has a row for a pip_id whose
-# content_hash_metadata references a pip_meta artifact that was replaced
-# by a subsequent pd_process_data() run.  The old artifact is no longer
-# available in stamp, so .load_deflation_aux() cannot match the hash and
-# aborts with "Could not find a stamp version matching content hash".
-#
-# The fix should allow .load_deflation_aux() to fall back to the latest
-# available pip_meta version when the exact hash is absent.
-# ---------------------------------------------------------------------------
-
-test_that(".load_deflation_aux falls back gracefully when master inventory hash is stale", {
-  stale_hash   <- "95aebaad1b534585"   # hash recorded in inventory — artifact gone
-  current_hash <- "b12a64d9c220df0d"   # hash of the currently available pip_meta
-
-  fake_inv <- data.table::data.table(
-    pip_id                = "BOL_2022_EH_INC_ALL",
-    content_hash_data     = "data_hash_xyz",
-    content_hash_metadata = stale_hash,          # stale — not present in stamp
-    created_at_metadata   = "2026-04-01T00:00:00Z"
-  )
-
-  cpi <- stats::setNames(87.2, "2017_national")
-  ppp <- stats::setNames(c(1.6, 1.6), c("2017_national_01", "2017_national_02"))
-  pop <- stats::setNames(11500000, "national")
-  meta_obj <- list(cpi = cpi, ppp = ppp, pop = pop)
-
-  testthat::local_mocked_bindings(
-    load_pip_master_inventory = function(...) fake_inv,
-    pip_read = function(id, alias, version = NULL, ...) {
-      # Only the latest version is available — stale_hash is absent
-      if (identical(version, "available")) {
-        data.table::data.table(
-          version_id   = "2a7390b149cf8e5b",
-          content_hash = current_hash
-        )
-      } else {
-        meta_obj
-      }
-    },
-    .package = "pipload"
-  )
-
-  # Should NOT abort — expected to fall back and return valid aux list
-  result <- pipdata:::.load_deflation_aux("BOL_2022_EH_INC_ALL")
-  expect_named(result, c("cpi", "ppp", "pop"))
-})
-
 test_that("pd_deflation Mode B: loads single survey via pip_id", {
   # Level info is always in attributes; add_rep_lvl/add_ppp/add_cpi read
   # from attrs directly — no column materialisation needed.
@@ -527,6 +520,7 @@ test_that("pd_deflation Mode B: loads single survey via pip_id", {
     pip_id = "ABC_2015_TST_INC_D1",
     content_hash_data = "abc123",
     content_hash_metadata = "meta_abc123",
+    version_id_metadata = "ver_abc123",
     created_at_metadata = "2026-01-01T00:00:00Z"
   )
 
@@ -535,11 +529,10 @@ test_that("pd_deflation Mode B: loads single survey via pip_id", {
     pip_read = function(id, alias, version = NULL, ...) {
       if (identical(alias, "pip")) {
         dt
-      } else if (identical(version, "available")) {
-        data.table::data.table(
-          version_id = "ver_abc123",
-          content_hash = "meta_abc123"
-        )
+      } else if (
+        identical(alias, "pip_meta") && identical(version, "ver_abc123")
+      ) {
+        meta_obj
       } else {
         meta_obj
       }
