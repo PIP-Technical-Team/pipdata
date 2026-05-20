@@ -237,12 +237,11 @@ update_pip_inventory <- function(
       .(reporting_level = reporting_level[[1L]]),
       by = .(country_code, surveyid_year, survey_acronym)
     ]
-    # Drop any existing reporting_level before joining pfw_rl_unq — on a re-run
-    # old_pip_inv already carries this column, which would create a duplicate
-    # and cause collapse::ftransform_core() to error.
-    if ("reporting_level" %in% names(new_pip_inv)) {
-      new_pip_inv[, reporting_level := NULL]
-    }
+    # Drop ALL reporting_level* columns before joining pfw_rl_unq.
+    # On a re-run, old_pip_inv may carry the exact column, or suffixed variants
+    # (reporting_level.x, reporting_level.y) from a historic joyn collision that
+    # was persisted to the master inventory.
+    drop_rl_cols(new_pip_inv)
     new_pip_inv <- joyn::left_join(
       new_pip_inv,
       pfw_rl_unq,
@@ -471,4 +470,24 @@ format_vrs <- function(
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
+}
+
+#' Drop all reporting_level* columns from a data.table in-place
+#'
+#' Removes `reporting_level`, `reporting_level.x`, `reporting_level.y`, and
+#' any other columns whose name starts with `reporting_level` from `dt` by
+#' reference. Called by [update_pip_inventory()] before joining the fresh
+#' PFW-derived `reporting_level` to ensure exactly one clean column results.
+#'
+#' @param dt A `data.table`. Modified by reference.
+#' @return `dt` invisibly (modification is in-place).
+#'
+#' @keywords internal
+#' @noRd
+drop_rl_cols <- function(dt) {
+  rl_cols <- grep("^reporting_level", names(dt), value = TRUE)
+  if (length(rl_cols) > 0L) {
+    dt[, (rl_cols) := NULL]
+  }
+  invisible(dt)
 }

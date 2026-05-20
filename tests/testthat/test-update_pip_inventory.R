@@ -15,7 +15,11 @@ make_ventry <- function(
   reason = NULL
 ) {
   out <- list(
-    version_id = version_id %||% paste0("ver_", content_hash),
+    version_id = if (is.null(version_id)) {
+      paste0("ver_", content_hash)
+    } else {
+      version_id
+    },
     metadata = list(content_hash = content_hash)
   )
   if (isTRUE(skipped)) {
@@ -283,24 +287,24 @@ test_that("reporting_level join succeeds when new_pip_inv already has reporting_
   # Simulate new_pip_inv as it exists after a second run:
   # the old inventory row already carries reporting_level = "1".
   new_pip_inv <- data.table::data.table(
-    survey_id      = "ABX_2020_HBS",
-    pip_id         = "ABX_2020_HBS_INC_ALL",
-    country_code   = "ABX",
-    surveyid_year  = 2020L,
+    survey_id = "ABX_2020_HBS",
+    pip_id = "ABX_2020_HBS_INC_ALL",
+    country_code = "ABX",
+    surveyid_year = 2020L,
     survey_acronym = "HBS",
-    reporting_level = "1"          # ← already present from previous run
+    reporting_level = "1" # ← already present from previous run
   )
 
   mock_pfw <- data.table::data.table(
-    country_code   = "ABX",
-    surveyid_year  = 2020L,
+    country_code = "ABX",
+    surveyid_year = 2020L,
     survey_acronym = "HBS",
-    inpovcal       = 1L,
-    cpi_domain     = 1L,
-    ppp_domain     = 1L,
-    gdp_domain     = 1L,
-    pce_domain     = 1L,
-    pop_domain     = 1L
+    inpovcal = 1L,
+    cpi_domain = 1L,
+    ppp_domain = 1L,
+    gdp_domain = 1L,
+    pce_domain = 1L,
+    pop_domain = 1L
   )
 
   pfw_rl <- mock_pfw[inpovcal == 1L]
@@ -313,11 +317,8 @@ test_that("reporting_level join succeeds when new_pip_inv already has reporting_
     by = .(country_code, surveyid_year, survey_acronym)
   ]
 
-  # This must not error — drop existing reporting_level before joining
-  # (the fix applied in update_pip_inventory.R).
-  if ("reporting_level" %in% names(new_pip_inv)) {
-    new_pip_inv[, reporting_level := NULL]
-  }
+  # Must not error — delegates to the same drop_rl_cols() called in production.
+  pipdata:::drop_rl_cols(new_pip_inv)
   expect_no_error({
     result <- joyn::left_join(
       new_pip_inv,
@@ -328,6 +329,69 @@ test_that("reporting_level join succeeds when new_pip_inv already has reporting_
       verbose = FALSE
     )
   })
+  expect_equal(result$reporting_level, "1")
+})
+
+# ---------------------------------------------------------------------------
+# reporting_level suffixed-column cleanup (regression: .x/.y artifacts)
+# When a previous run persisted reporting_level.x and reporting_level.y to disk
+# (from a joyn suffix collision), those columns survive into new_pip_inv via
+# rowbind with old_pip_inv. The pattern-based drop must remove all variants.
+# ---------------------------------------------------------------------------
+
+test_that("reporting_level join succeeds when new_pip_inv has .x/.y suffixed artifacts", {
+  new_pip_inv <- data.table::data.table(
+    survey_id = "ABX_2020_HBS",
+    pip_id = "ABX_2020_HBS_INC_ALL",
+    country_code = "ABX",
+    surveyid_year = 2020L,
+    survey_acronym = "HBS",
+    reporting_level.x = NA_character_, # \u2190 artifact from historic joyn collision
+    reporting_level.y = NA_character_, # \u2190 artifact from historic joyn collision
+    reporting_level = "1" # \u2190 stale exact column also present
+  )
+
+  mock_pfw <- data.table::data.table(
+    country_code = "ABX",
+    surveyid_year = 2020L,
+    survey_acronym = "HBS",
+    inpovcal = 1L,
+    cpi_domain = 1L,
+    ppp_domain = 1L,
+    gdp_domain = 1L,
+    pce_domain = 1L,
+    pop_domain = 1L
+  )
+
+  pfw_rl <- mock_pfw[inpovcal == 1L]
+  pfw_rl[,
+    reporting_level := as.character(do.call(pmax, .SD)),
+    .SDcols = pipdata:::.DOMAIN_COLS
+  ]
+  pfw_rl_unq <- pfw_rl[,
+    .(reporting_level = reporting_level[[1L]]),
+    by = .(country_code, surveyid_year, survey_acronym)
+  ]
+
+  # Delegates to the same drop_rl_cols() called in production.
+  pipdata:::drop_rl_cols(new_pip_inv)
+
+  expect_no_error({
+    result <- joyn::left_join(
+      new_pip_inv,
+      pfw_rl_unq,
+      by = c("country_code", "surveyid_year", "survey_acronym"),
+      relationship = "many-to-one",
+      reportvar = FALSE,
+      verbose = FALSE
+    )
+  })
+
+  # Exactly one reporting_level column, correct value, no suffixed artifacts
+  expect_equal(
+    grep("^reporting_level", names(result), value = TRUE),
+    "reporting_level"
+  )
   expect_equal(result$reporting_level, "1")
 })
 
