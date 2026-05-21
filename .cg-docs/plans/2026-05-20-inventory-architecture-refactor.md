@@ -55,24 +55,29 @@ enrichment into pipload.
 
 ## Implementation Steps
 
-## Phase 1: stamp — expose catalog query
+## Phase 1: stamp — expose catalog query ✅ (Step 1 done / Step 2 pending)
 
-### 1. Add `st_catalog_query()` export to stamp
+### 1. ✅ Add `st_catalog_query()` export to stamp
 
 - **Requirements**: R1, R2
 - **Files**: `stamp/R/version_store.R`, `stamp/NAMESPACE`
 - **Details**:
   Add a public function that returns the latest version metadata for all
   artifacts in a given alias. Returns a `data.table` with one row per
-  artifact: `path`, `version_id`, `content_hash`, `size_bytes`,
-  `created_at`.
+  artifact: `path`, `version_id`, `content_hash`, `code_hash`,
+  `size_bytes`, `created_at`.
+
+  This is a **general-purpose stamp API** — documentation and design must
+  serve all stamp users, not just pipdata. All standard version metadata
+  fields are included in the return.
 
   ```r
-  #' Query latest versions for all artifacts in an alias
+  #' Query latest version metadata for all artifacts in an alias
   #'
-  #' @param alias Character. Stamp alias to query.
+  #' @param alias Character. Stamp alias to query. NULL uses default.
   #' @return data.table with one row per artifact (latest version only):
-  #'   path, version_id, content_hash, size_bytes, created_at.
+  #'   path, version_id, content_hash, code_hash, size_bytes, created_at.
+  #' @family version-store
   #' @export
   st_catalog_query <- function(alias = NULL) {
     cat <- .st_catalog_read(alias = alias)
@@ -81,6 +86,7 @@ enrichment into pipload.
         path = character(),
         version_id = character(),
         content_hash = character(),
+        code_hash = character(),
         size_bytes = numeric(),
         created_at = character()
       ))
@@ -95,16 +101,17 @@ enrichment into pipload.
       .(path = i.path,
         version_id,
         content_hash,
+        code_hash,
         size_bytes,
         created_at)
     ]
   }
   ```
 
-  **Design note** (from plan review P2.1): `code_hash` is intentionally
-  excluded from the return. It is not consumed by `build_pip_inventory()`.
-  A future `code-hash-reclean-trigger` roadmap item may add it back when
-  `inv_to_process` filtering needs it.
+  **Note for pipdata consumers**: `build_pip_inventory()` does not use
+  `code_hash` — it is simply dropped during the `setnames()` step that
+  suffixes catalog columns. The column remains available for future
+  `content-hash-reclean-trigger` work (see roadmap).
 
 - **Test Scenarios**:
   - ✅ Happy path: alias with 3 artifacts → 3 rows returned
@@ -113,20 +120,24 @@ enrichment into pipload.
   - 🛑 Edge case: empty alias (no artifacts) → empty data.table with correct schema
   - 🛑 Edge case: NULL alias → uses default alias
   - ❌ Error path: alias not initialized → appropriate error from `.st_catalog_read()`
-- **Tests**: `stamp/tests/testthat/test-catalog-query.R` — init temp alias,
+- **Tests**: `stamp/tests/testthat/test-catalog-query.R` ✅ created — init temp alias,
   save 3 artifacts (one with 2 versions → 4 total version rows), verify
   result has exactly 3 rows and only latest version_id appears per artifact.
-- **Acceptance criteria**: `st_catalog_query("pip")` returns a data.table
+- **Acceptance criteria**: `st_catalog_query("my_alias")` returns a data.table
   with one row per artifact, only latest version, in < 1 second for 2500 artifacts.
-  Return schema: `path`, `version_id`, `content_hash`, `size_bytes`, `created_at`
-  (no `code_hash`).
+  Return schema: `path`, `version_id`, `content_hash`, `code_hash`,
+  `size_bytes`, `created_at`.
 
-### 2. Add roxygen2 documentation and bump stamp version
+### 2. ⏳ Add roxygen2 documentation and bump stamp version
 
 - **Requirements**: R1
 - **Files**: `stamp/DESCRIPTION`, `stamp/NAMESPACE`, `stamp/man/st_catalog_query.Rd`
-- **Details**: Run `devtools::document()`, bump patch version in DESCRIPTION.
+- **Details**: Run `devtools::document()`, bump patch version `0.0.10` → `0.0.11` in DESCRIPTION.
   Add `@family version-store` tag.
+- **Remaining actions**:
+  1. `devtools::document()` in stamp project
+  2. Bump `Version: 0.0.10` → `Version: 0.0.11` in `stamp/DESCRIPTION`
+  3. `devtools::check()` to confirm clean
 - **Test Scenarios**:
   - ✅ `R CMD check` passes
 - **Tests**: Existing test suite passes.
@@ -187,7 +198,9 @@ enrichment into pipload.
       cat_meta <- cat_meta[grepl(pip_id_pattern, pip_id)]
     }
 
-    # Step 3: Suffix and join data + metadata
+    # Step 3: Drop code_hash (not needed for inventory) and suffix columns
+    cat_data[, code_hash := NULL]
+    cat_meta[, code_hash := NULL]
     data.table::setnames(cat_data,
       old = c("path", "version_id", "content_hash", "size_bytes", "created_at"),
       new = c("path_data", "version_id_data", "content_hash_data",
@@ -589,7 +602,7 @@ Plan revised after `/cg-plan-review`. Changes:
 | P1.1 — Join direction inverted | Fixed: `cat$versions[cat$artifacts, on=...]` (was backwards) |
 | P1.2 — pip_id derivation unvalidated | Added regex assertion + warning in Step 3 |
 | P1.3 — Crash-safety partial | Accepted as limitation; documented in R1, design notes, and Risks |
-| P2.1 — code_hash unused | Removed from `st_catalog_query()` return |
+| P2.1 — code_hash unused by pipdata | Kept in `st_catalog_query()` return (general stamp API); pipdata drops it via `[, code_hash := NULL]` before renaming |
 | P2.2 — Column name collisions | DLW columns renamed BEFORE join (not after) |
 | P2.3 — Domain cols hardcoded | New Step 7b: `pipfun::pip_domain_cols()` as single source |
 | P2.4 — reporting_level removal breaks consumers | Default `fields = "reporting_level"` (opt-out, not opt-in) |
