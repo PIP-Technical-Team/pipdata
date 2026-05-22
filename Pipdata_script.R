@@ -117,6 +117,40 @@ grep("^welfare", names(bol_deflated), value = TRUE)
 welfare_ppp_cols <- grep("^welfare_ppp", names(bol_deflated), value = TRUE)
 sapply(bol_deflated[, welfare_ppp_cols, with = FALSE], \(x) mean(is.na(x)))
 
+# ----- Test st_catalog_query --------------------------------------------------
+
+# Query pip alias (survey data artifacts)
+cat_pip <- stamp::st_catalog_query(alias = "pip")
+cat_pip
+
+# Query pip_meta alias (metadata artifacts)
+cat_meta <- stamp::st_catalog_query(alias = "pip_meta")
+cat_meta
+
+# Quick checks
+nrow(cat_pip) # one row per cleaned survey
+nrow(cat_meta) # should match or be close
+
+# Artifacts in pip but not in pip_meta (missing metadata)
+cat_pip[!cat_pip$version_id %chin% cat_meta$version_id]
+
+# Derive pip_id from path (same logic as build_pip_inventory will use)
+cat_pip[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
+cat_meta[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
+
+# Surveys in data but missing from metadata
+cat_pip[!pip_id %chin% cat_meta$pip_id, .(pip_id, path, created_at)]
+
+# Inspect the schema
+str(cat_pip)
+
+# Check content_hash and code_hash coverage
+cat_pip[, .(
+  n = .N,
+  n_content_hash = sum(!is.na(content_hash)),
+  n_code_hash = sum(!is.na(code_hash))
+)]
+
 # Issue with ARG 2003
 
 arg_deflated <- pd_deflation(pip_id = "ARG_2003_EPHC-S2_INC_ALL")
