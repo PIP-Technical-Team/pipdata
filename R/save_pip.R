@@ -11,8 +11,10 @@
 #'   [pipload::pip_write()] (e.g., `"pip"` for survey data,
 #'   `"pip_meta"` for metadata).
 #'
-#' @return A named list of version metadata returned by
-#'   [pipload::pip_write()], with `NULL` entries for failed saves.
+#' @return A named list with one entry per artifact: `list(pip_id, success = TRUE)`
+#'   on success or `NULL` on failure. Version metadata is persisted to the
+#'   stamp catalog and read back by [build_pip_inventory()] — it is not
+#'   returned here.
 #'
 #' @family pd_process_data pipeline
 #' @export
@@ -21,37 +23,20 @@ save_pip_data <- function(data, alias) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  versions <- purrr::map2(.x = data, .y = names(data), .f = \(x, y) {
+  versions <- lapply(names(data), \(y) {
     # on.exit ------------
     on.exit({
       pd_env_rm("save_id_name")
     })
 
-    id_name <- y
-
-    pd_env_set("save_id_name", id_name)
+    pd_env_set("save_id_name", y)
 
     tryCatch(
       expr = {
-        # Sys.sleep(.9)
+        # Save data (version metadata is persisted to stamp catalog)
+        pipload::pip_write(x = data[[y]], id = y, alias = alias)
 
-        # Save data
-        res <- pipload::pip_write(x = x, id = y, alias = alias)
-
-        # if ("skipped" %in% names(res) && res$skipped == TRUE) {
-        #   pipfun::log_add(
-        #     event = "warning",
-        #     message = "The cleaned survey or metadata was not saved because it is identical to the previous version",
-        #     name = "pipdata_log",
-        #     logmeta = list(
-        #       warning = "identical_version",
-        #       id_name = id_name,
-        #       status = "This survey or metadata was cleaned even though it has no changes compared to the previous version. Check why it was not filtered out before cleaning."
-        #     )
-        #   )
-        #   return(NULL)
-        # }
-        return(res)
+        list(pip_id = y, success = TRUE)
       },
       error = function(cnd) {
         id_name <- c(pd_env_get("save_id_name"))
@@ -60,7 +45,6 @@ save_pip_data <- function(data, alias) {
           event = "error",
           message = cnd$message,
           name = "pipdata_log",
-          # .trace = cnd$call,
           logmeta = list(
             error = "save_error",
             id_name = id_name,
@@ -73,8 +57,11 @@ save_pip_data <- function(data, alias) {
     )
   })
 
+  names(versions) <- names(data)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(versions)
 }
+

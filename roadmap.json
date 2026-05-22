@@ -102,6 +102,18 @@
                     ]
                 },
                 {
+                    "id": "purrr-to-lapply-audit",
+                    "title": "Audit purrr usage and consider migration to lapply",
+                    "description": "Systematic audit of all purrr::map, purrr::map2, purrr::safely, purrr::possibly calls across pipdata to determine if replacement with base R lapply/sapply/tryCatch is justified. Phase 1 (2026-05-22 Phase 2 inventory work): Replaced purrr::map in pd_process_data.R and purrr::map2 in save_pip.R with lapply — aligns with project's minimalist data.table/collapse style and removes unnecessary tidyverse dependency for simple iteration patterns. Follow-up: audit remaining purrr calls in inv_dlw_load.R, pd_cpfw_merge.R, pd_deflation.R, pd_dlw_clean.R, pd_wbpip_clean.R, valid_aux_load.R (currently ~8 calls) and evaluate replacing them with lapply/sapply where the use case is basic iteration without type-specific purrr features.",
+                    "status": "in-progress",
+                    "tags": [
+                        "refactoring",
+                        "dependencies",
+                        "performance",
+                        "code-quality"
+                    ]
+                },
+                {
                     "id": "dlw-wrapper-rewrite",
                     "title": "Rewrite DLW wrapper to mirror pipeline architecture",
                     "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",

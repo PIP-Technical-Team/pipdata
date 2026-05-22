@@ -4,6 +4,8 @@ title: "Refactor inventory architecture: catalog-based assembler"
 status: active
 scope: "Deep"
 phases: 3
+completed-phases: [1]
+current-phase: 2
 brainstorm: ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md"
 language: "R"
 estimated-effort: "large"
@@ -128,7 +130,7 @@ enrichment into pipload.
   Return schema: `path`, `version_id`, `content_hash`, `code_hash`,
   `size_bytes`, `created_at`.
 
-### 2. ⏳ Add roxygen2 documentation and bump stamp version
+### 2. ✅ Add roxygen2 documentation and bump stamp version
 
 - **Requirements**: R1
 - **Files**: `stamp/DESCRIPTION`, `stamp/NAMESPACE`, `stamp/man/st_catalog_query.Rd`

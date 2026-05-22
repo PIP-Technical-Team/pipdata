@@ -19,10 +19,10 @@
 #'   versions for cleaned data and metadata.
 #'
 #' @details
-#' **Logging**: This function writes a `process_summary_inf` entry to the `"pipdata_log"`
-#' summarizing the total number of surveys processed, successfully cleaned, and failed.
-#' Additional informational entries are logged for auxiliary file changes and inventory
-#' verification (see [valid_dlw_load()] and [update_pip_inventory()] for details).
+#' **Logging**: This function writes `process_summary_inf` and `null_svys_inf` entries
+#' to the `"pipdata_log"`, summarizing totals and failed surveys. Additional entries for
+#' auxiliary file changes and inventory verification are emitted by [valid_dlw_load()]
+#' and [build_pip_inventory()] respectively.
 #'
 #' @export
 #' @examples
@@ -73,31 +73,52 @@ pd_process_data <- function(
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
   names(inv_ls) <- inv_to_clean$survey_id
-  results <- purrr::map(inv_ls, process_data, aux_list = aux_list)
+  results <- lapply(inv_ls, process_data, aux_list = aux_list)
   names(results) <- inv_to_clean$survey_id
 
   # Log processing summary
-  n_total <- length(results)
+  n_total   <- length(results)
   n_success <- sum(!vapply(results, is.null, logical(1)))
-  n_failed <- n_total - n_success
+  n_failed  <- n_total - n_success
   successful <- names(Filter(Negate(is.null), results))
 
   pipfun::log_info(
     "Processing complete.",
-    name = "pipdata_log",
+    name    = "pipdata_log",
     logmeta = list(
-      info = "process_summary_inf",
-      n_total = n_total,
-      n_success = n_success,
-      n_failed = n_failed,
+      info            = "process_summary_inf",
+      n_total         = n_total,
+      n_success       = n_success,
+      n_failed        = n_failed,
       surveys_success = successful
     )
   )
 
-  # Update inventory with new versions of clean data
-  new_pip_inv <- update_pip_inventory(
+  # Log null (failed) surveys before building the inventory map
+  null_ls <- names(Filter(is.null, results))
+  if (length(null_ls) > 0L) {
+    pipfun::log_add(
+      event   = "info",
+      message = "Some surveys were not cleaned. Review logmeta to identify which ones.",
+      name    = "pipdata_log",
+      logmeta = list(info = "null_svys_inf", surveys = null_ls)
+    )
+  }
+
+  # Build a minimal pip_id → survey_id map from successful results.
+  # This is the only per-run data the assembler needs; version metadata is
+  # read directly from stamp's persisted catalogs.
+  pip_id_map <- data.table::rbindlist(
+    lapply(Filter(Negate(is.null), results), \(x) {
+      data.table::data.table(pip_id = toupper(unlist(x$pip_names)))
+    }),
+    idcol = "survey_id"
+  )
+
+  # Update inventory via catalog-based assembler
+  new_pip_inv <- build_pip_inventory(
     inv_to_clean = inv_to_clean,
-    proc_dta = results
+    pip_id_map   = pip_id_map
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,17 +183,14 @@ process_data <- function(inv, aux_list, ...) {
 
       metadata <- pd_aux_attr(clean_data = ls_clean, aux_list = aux_list)
 
-      # Save clean data and metadata
-      versions_data <- save_pip_data(ls_clean, alias = "pip")
+      # Save clean data and metadata to stamp (side effect; version facts
+      # are read back from the stamp catalog by build_pip_inventory()).
+      save_pip_data(ls_clean, alias = "pip")
+      save_pip_data(metadata, alias = "pip_meta")
 
-      versions_metadata <- save_pip_data(metadata, alias = "pip_meta")
-
-      # Results
-      list(
-        pip_names = names(ls_clean),
-        versions_data = versions_data,
-        versions_metadata = versions_metadata
-      )
+      # Return only pip_names — version metadata is no longer tracked
+      # in-memory; the assembler reads it from stamp catalogs directly.
+      list(pip_names = names(ls_clean))
     },
     piperr = function(cnd) {
       survey_id <- c(pd_env_get("process_survey_id"))
@@ -194,8 +212,8 @@ process_data <- function(inv, aux_list, ...) {
     error = function(cnd) {
       survey_id <- c(pd_env_get("process_survey_id"))
 
-      # purrr::map() wraps the original condition; traverse the parent chain
-      # to recover the root cause (e.g. a piperr thrown inside map())
+      # lapply() may wrap the original condition; traverse the parent chain
+      # to recover the root cause (e.g. a piperr thrown inside lapply())
       original_cnd <- cnd
       while (!is.null(original_cnd$parent)) {
         original_cnd <- original_cnd$parent
