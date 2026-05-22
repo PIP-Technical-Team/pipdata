@@ -24,6 +24,13 @@
       class = c("validate_deflation_input", "piperr")
     )
   }
+  na_cols <- required_cols[vapply(required_cols, function(col) anyNA(dt[[col]]), logical(1L))]
+  if (length(na_cols) > 0L) {
+    cli::cli_abort(
+      "Input has NA values in required columns: {.field {na_cols}}.",
+      class = c("validate_deflation_input", "piperr")
+    )
+  }
   required_attrs <- c(
     "survey_id",
     "country_code",
@@ -875,7 +882,7 @@ get_welfare_ppp <- function(dt_wlcu, base_year) {
 #' Helper moved here from pd_add_pip_vars.R (archived 2026-04-30) since
 #' pd_deflation.R is the only active caller. Not exported.
 #'
-#' @param df  A `data.table` with columns `country_code`, `survey_year`,
+#' @param df  A `data.table` with columns `country_code`, `year`,
 #'   `area`, and `weight`. The `area` column holds per-row level values
 #'   (`"rural"`, `"urban"`) that must match the suffix keys in the named `pop`
 #'   vector. The caller passes a copy so reference-semantics mutation does not
@@ -901,7 +908,8 @@ adjust_population <- function(df, pop) {
       y = spop,
       by = c("country_code", "reporting_level"),
       relationship = "many-to-one",
-      reportvar = FALSE
+      reportvar = FALSE,
+      verbose = FALSE
     )
     dpop <-
       dpop[,
@@ -927,14 +935,21 @@ adjust_population <- function(df, pop) {
       y = fact,
       by = "reporting_level",
       relationship = "many-to-one",
-      reportvar = FALSE
+      reportvar = FALSE,
+      verbose = FALSE
     )
     df[, weight := weight * pop_fact]
     return(df)
   }
 
   # Named-vector path: names = "{year}_{reporting_level}"
-  survey_year <- df$survey_year[[1L]]
+  if (!"year" %in% names(df)) {
+    cli::cli_abort(
+      "{.fn adjust_population} requires a {.field year} column in {.arg df}.",
+      class = c("adjust_population", "piperr")
+    )
+  }
+  survey_year <- df$year[[1L]]
   nm <- names(pop)
   pop_years <- as.integer(sub("^([0-9]+)_.*$", "\\1", nm))
   pop_levels <- sub("^[0-9]+_(.+)$", "\\1", nm)
@@ -989,7 +1004,8 @@ adjust_population <- function(df, pop) {
     y = fact,
     by = "area",
     relationship = "many-to-one",
-    reportvar = FALSE
+    reportvar = FALSE,
+    verbose = FALSE
   )
   df[, weight := weight * pop_fact]
   return(df)

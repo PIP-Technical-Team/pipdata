@@ -334,6 +334,45 @@
                     ]
                 },
                 {
+                    "id": "inventory-architecture-refactor",
+                    "title": "Refactor inventory: catalog-based assembler",
+                    "description": "Replace update_pip_inventory() + format_vrs() with build_pip_inventory() that reads stamp catalogs via st_catalog_query(). Move enrichment (reporting_level, etc.) to pipload as pip_inv_enrich(). Simplify process_data() return. Cross-package: stamp (new export), pipdata (assembler), pipload (enrichment).",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+                    "tags": [
+                        "architecture",
+                        "inventory",
+                        "stamp",
+                        "pipload",
+                        "maintainability",
+                        "correctness"
+                    ]
+                },
+                {
+                    "id": "run-manifest-audit",
+                    "title": "Evaluate run manifest vs process_summary_inf logging",
+                    "description": "Assess whether a persisted pip_run_manifest artifact (survey_id, status, timestamp per run) adds value beyond the existing process_summary_inf logmeta entry. If so, implement as a stamp artifact saved at end of pd_process_data(). Prerequisite: inventory-architecture-refactor.",
+                    "status": "idea",
+                    "tags": [
+                        "logging",
+                        "auditing",
+                        "pipeline",
+                        "stamp"
+                    ]
+                },
+                {
+                    "id": "content-hash-reclean-trigger",
+                    "title": "Use content_hash_dlw to detect DLW source changes in inv_to_process",
+                    "description": "Enhance inv_to_process filtering to compare the previous master inventory's content_hash_dlw against the current DLW inventory's content_hash for each survey. If they differ, the DLW source data changed since last clean and the survey should be re-processed even if it was previously cleaned successfully. This avoids unnecessary re-cleaning of unchanged surveys while catching updated ones.",
+                    "status": "idea",
+                    "tags": [
+                        "inventory",
+                        "dlw",
+                        "incremental-processing",
+                        "performance"
+                    ]
+                },
+                {
                     "id": "deflate-pipeline-wrapper",
                     "title": "Create pd_deflate_pipeline() batch orchestrator",
                     "description": "Build a pipeline wrapper that iterates over an entire inventory of cleaned surveys, applies pd_deflation() to each, saves deflated outputs to a stamp alias (e.g. pip_deflated), and logs a summary entry. Prerequisite: integrate-deflation must be completed first.",
