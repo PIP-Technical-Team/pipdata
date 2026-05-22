@@ -38,8 +38,14 @@ inventory.}
 }
 \value{
 The input survey \code{data.table} augmented with \code{welfare_lcu} and
-\verb{welfare_ppp_*} columns. Returns \code{NA} when deflation fails (error is
-logged via \code{log_failure()}).
+\verb{welfare_ppp_*} columns, and three attributes:
+\itemize{
+\item \code{welfare_vars}: character vector of all \verb{welfare_*} column names
+\item \code{adj_pop}: logical; \code{TRUE} if population weights were adjusted
+\item \code{ppp_sort}: integer base year used for row sorting (e.g. \code{2017L}), or
+\code{NULL} when deflation produced no \verb{welfare_ppp_*} columns
+Returns \code{NA} when deflation fails (error logged via \code{log_failure()}).
+}
 }
 \description{
 Deflates a single cleaned survey \code{data.table}. Two input modes:
