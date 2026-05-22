@@ -22,7 +22,7 @@ pipfun::setup_working_release(
   verbose = FALSE
 )
 
-# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process, 
+# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process,
 # then continue with the rest of the script.
 
 # ----- Load inventory to clean -----

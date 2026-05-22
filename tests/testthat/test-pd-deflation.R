@@ -29,7 +29,8 @@ make_pipmd <- function(
 ) {
   dt <- data.table::data.table(
     welfare = as.numeric(welfare),
-    weight = as.numeric(weight)
+    weight = as.numeric(weight),
+    year = survey_year # adjust_population() reads 'year' column (standardized name)
     # ppp_data_level / cpi_data_level / pop_data_level are attrs only — never columns
   )
   if (!is.null(area)) {
@@ -134,6 +135,22 @@ test_that(".validate_deflation_input aborts on missing required column", {
 test_that(".validate_deflation_input aborts on missing required attribute", {
   dt <- make_pipmd()
   attr(dt, "country_code") <- NULL
+  expect_error(
+    pipdata:::.validate_deflation_input(dt),
+    class = "validate_deflation_input"
+  )
+})
+
+test_that(".validate_deflation_input aborts when welfare has NAs", {
+  dt <- make_pipmd(welfare = c(5, NA, 15))
+  expect_error(
+    pipdata:::.validate_deflation_input(dt),
+    class = "validate_deflation_input"
+  )
+})
+
+test_that(".validate_deflation_input aborts when weight has NAs", {
+  dt <- make_pipmd(weight = c(100, NA, 100))
   expect_error(
     pipdata:::.validate_deflation_input(dt),
     class = "validate_deflation_input"
@@ -386,7 +403,7 @@ test_that("add_cpi aborts when cpi_data_level is 'area' but area column is absen
 test_that("adjust_population (named vector) scales weights correctly", {
   df <- data.table::data.table(
     country_code = "ABC",
-    survey_year = 2015L,
+    year = 2015L,
     area = "national",
     weight = c(200, 400) # total = 600
   )
@@ -400,7 +417,7 @@ test_that("adjust_population (named vector) scales weights correctly", {
 test_that("adjust_population (named vector) picks closest year", {
   df <- data.table::data.table(
     country_code = "ABC",
-    survey_year = 2015L,
+    year = 2015L,
     area = "national",
     weight = c(300)
   )
@@ -416,7 +433,7 @@ test_that("adjust_population (named vector) picks closest year", {
 test_that("adjust_population (named vector) errors when no matching level found", {
   df <- data.table::data.table(
     country_code = "ABC",
-    survey_year = 2015L,
+    year = 2015L,
     area = "urban",
     weight = c(100)
   )
@@ -432,7 +449,7 @@ test_that("adjust_population (named vector) uses area to group subnational rows"
   # Two areas: rural (600 total weight) and urban (200 total weight).
   df <- data.table::data.table(
     country_code = "ABC",
-    survey_year = 2015L,
+    year = 2015L,
     area = c("rural", "rural", "urban"),
     weight = c(200, 400, 200) # rural total=600, urban total=200
   )
@@ -450,11 +467,29 @@ test_that("adjust_population (named vector) uses area to group subnational rows"
 test_that("adjust_population aborts when area column is missing", {
   df <- data.table::data.table(
     country_code = "ABC",
-    survey_year = 2015L,
+    year = 2015L,
     weight = c(100)
     # no area column
   )
   pop <- make_pop_vec_subnational()
+
+  expect_error(
+    suppressMessages(pipdata:::adjust_population(df, pop)),
+    class = "adjust_population"
+  )
+})
+
+test_that("adjust_population (named vector) aborts when 'year' column is missing", {
+  # Regression: previously the function silently read df$survey_year (NULL),
+
+  # producing NaN weights. Now it requires 'year' and aborts if absent.
+  df <- data.table::data.table(
+    country_code = "ABC",
+    area = c("urban", "urban"),
+    weight = c(300, 700)
+    # no 'year' column
+  )
+  pop <- c(`2003_urban` = 2000000)
 
   expect_error(
     suppressMessages(pipdata:::adjust_population(df, pop)),

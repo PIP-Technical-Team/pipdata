@@ -15,9 +15,15 @@ Each element is a list with \code{pip_names}, \code{versions_data}, and
 \code{versions_metadata}, or \code{NULL} for failed surveys.}
 }
 \value{
-A \code{data.table}: the updated PIP master inventory, including two
-new columns tracking release membership:
+A \code{data.table}: the updated PIP master inventory, including the
+following additional columns:
 \itemize{
+\item \code{reporting_level}: Character \code{"1"} or \code{"2"}. Derived from PFW domain
+columns (\code{cpi_domain}, \code{ppp_domain}, \code{gdp_domain}, \code{pce_domain},
+\code{pop_domain}). \code{"1"} = national (all domains equal 1); \code{"2"} =
+subnational (at least one domain equals 2, meaning urban/rural-specific
+auxiliary data are available for that survey). \code{NA} when the survey has
+no matching PFW row with \code{inpovcal == 1}.
 \item \code{first_release_version_id}: stamp version ID of the release inventory
 when this survey first appeared.
 \item \code{latest_release_version_id}: stamp version ID of the most recent release
@@ -45,6 +51,8 @@ expected, confirmed in master inventory, and missing. Written as an error-level
 entry if any surveys are missing, info-level if all are confirmed.
 \item \code{skipped_svys_data}: Surveys skipped during data processing with reasons.
 \item \code{skipped_svys_metadata}: Surveys skipped during metadata creation with reasons.
+\item \code{missing_metadata_err}: pip_ids excluded from inventory due to absent metadata entry (error-level;
+includes \code{pip_ids} and \code{surveys} arrays).
 }
 }
 \seealso{
