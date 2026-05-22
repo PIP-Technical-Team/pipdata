@@ -150,3 +150,7 @@ cat_pip[, .(
   n_content_hash = sum(!is.na(content_hash)),
   n_code_hash = sum(!is.na(code_hash))
 )]
+
+# Issue with ARG 2003
+
+arg_deflated <- pd_deflation(pip_id = "ARG_2003_EPHC-S2_INC_ALL")
