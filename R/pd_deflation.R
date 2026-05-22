@@ -908,7 +908,8 @@ adjust_population <- function(df, pop) {
       y = spop,
       by = c("country_code", "reporting_level"),
       relationship = "many-to-one",
-      reportvar = FALSE
+      reportvar = FALSE,
+      verbose = FALSE
     )
     dpop <-
       dpop[,
@@ -934,7 +935,8 @@ adjust_population <- function(df, pop) {
       y = fact,
       by = "reporting_level",
       relationship = "many-to-one",
-      reportvar = FALSE
+      reportvar = FALSE,
+      verbose = FALSE
     )
     df[, weight := weight * pop_fact]
     return(df)
@@ -1002,7 +1004,8 @@ adjust_population <- function(df, pop) {
     y = fact,
     by = "area",
     relationship = "many-to-one",
-    reportvar = FALSE
+    reportvar = FALSE,
+    verbose = FALSE
   )
   df[, weight := weight * pop_fact]
   return(df)
