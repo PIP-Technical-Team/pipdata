@@ -22,7 +22,7 @@ pipfun::setup_working_release(
   verbose = FALSE
 )
 
-# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process, 
+# First run pipaux::update_aux_data and pipdata::pipdata_dlw_process,
 # then continue with the rest of the script.
 
 # ----- Load inventory to clean -----
@@ -117,3 +117,6 @@ grep("^welfare", names(bol_deflated), value = TRUE)
 welfare_ppp_cols <- grep("^welfare_ppp", names(bol_deflated), value = TRUE)
 sapply(bol_deflated[, welfare_ppp_cols, with = FALSE], \(x) mean(is.na(x)))
 
+# Issue with ARG 2003
+
+arg_deflated <- pd_deflation(pip_id = "ARG_2003_EPHC-S2_INC_ALL")
