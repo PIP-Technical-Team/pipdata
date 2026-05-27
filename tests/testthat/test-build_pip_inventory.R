@@ -3,8 +3,8 @@
 # Covers all scenarios from the Phase 2 plan (Step 3, delta/update strategy):
 #   Happy path, second-run upsert, column collision avoidance, catalog missing-
 #   meta exclusion, empty pip_id_map early return, missing-from-catalog warning,
-#   duplicate survey_id assertion, empty-catalog aborts, and duplicate-pip_id
-#   abort.
+#   bad_pip_id_format warning, duplicate survey_id assertion, empty-catalog aborts,
+#   and duplicate-pip_id abort.
 #
 # External calls mocked via local_mocked_bindings():
 #   stamp::st_catalog_query, stamp::st_latest,
@@ -532,6 +532,170 @@ test_that("build_pip_inventory aborts when duplicate pip_id arises after upsert"
     class = "build_pip_inventory_dup_pip_id"
   )
 })
+# ---------------------------------------------------------------------------
+# Warning path: catalog artifact has a non-standard pip_id (fails 5-segment
+# pattern) — fires build_pip_inventory_bad_pip_id_format and excludes it
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory warns and drops artifact with non-standard pip_id format", {
+  good_pip_id <- "BOL_2022_EH_INC_ALL"
+  bad_pip_id  <- "BAD_FORMAT"  # only 2 segments — fails 5-segment pattern
+  survey_id   <- "BOL_2022_EH"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey_id,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  # Both pip_ids are in target_ids (i.e. pip_id_map includes the malformed
+  # one — representing a save_pip artifact persisted under a bad name).
+  # The format validation fires AFTER the target_ids filter, so only
+  # current-run artifacts are checked.
+  pip_id_map <- make_pip_id_map(
+    survey_id,
+    list(c(good_pip_id, bad_pip_id))
+  )
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(c(good_pip_id, bad_pip_id)),
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) NULL,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  # The format warning fires first; a secondary missing_from_catalog warning
+  # follows because bad_pip_id is in target_ids but absent from the filtered
+  # catalogs after being dropped. suppressWarnings() silences the secondary one.
+  suppressWarnings(
+    expect_warning(
+      result <- build_pip_inventory(inv_to_clean, pip_id_map),
+      class = "build_pip_inventory_bad_pip_id_format"
+    )
+  )
+  # Only the valid artifact survives into the inventory
+  expect_equal(nrow(result), 1L)
+  expect_equal(result$pip_id, good_pip_id)
+})
+
+# ---------------------------------------------------------------------------
+# Release step: pip_write returns skipped=TRUE → st_latest fallback
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory uses st_latest for release_vid when pip_write returns skipped", {
+  pip_id   <- "TZA_2019_HBS_INC_ALL"
+  survey   <- "TZA_2019_HBS"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey,
+    country_codes  = "TZA",
+    surveyid_years = 2019L,
+    survey_acronyms = "HBS"
+  )
+  pip_id_map <- make_pip_id_map(survey, list(pip_id))
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(pip_id),
+    # st_latest is the fallback when pip_write returns skipped = TRUE
+    st_latest = function(id, alias = NULL) "from_latest_vid",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) NULL,
+    load_aux_data = function(measure, ...) make_pfw("TZA", 2019L, "HBS"),
+    pip_write = function(x, id, alias, pk = NULL) {
+      if (identical(id, "pip_release_inventory")) {
+        # Simulate unchanged content → pip_write skips the write
+        list(version_id = NULL, skipped = TRUE)
+      } else {
+        # Master inventory write succeeds normally
+        list(version_id = paste0(id, "_vid"), skipped = FALSE)
+      }
+    },
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map)
+
+  # When pip_write returns skipped=TRUE, st_latest() supplies the version id
+  expect_equal(result[result$pip_id == pip_id, first_release_version_id], "from_latest_vid")
+  expect_equal(result[result$pip_id == pip_id, latest_release_version_id], "from_latest_vid")
+})
+
+# ---------------------------------------------------------------------------
+# Regression: reporting_level persisted in old master is stripped by Step 1
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory strips reporting_level legacy column from old master", {
+  new_pip_id <- "NGA_2019_GHS_INC_ALL"
+  new_survey  <- "NGA_2019_GHS"
+  old_pip_id  <- "NGA_2018_GHS_INC_ALL"
+
+  inv_to_clean <- make_inv_to_clean(
+    new_survey,
+    country_codes  = "NGA",
+    surveyid_years = 2019L,
+    survey_acronyms = "GHS"
+  )
+  pip_id_map <- make_pip_id_map(new_survey, list(new_pip_id))
+
+  # Old master written by update_pip_inventory() carried reporting_level
+  old_master <- data.table::data.table(
+    survey_id              = "NGA_2018_GHS",
+    pip_id                 = old_pip_id,
+    version_id_data        = "old_v",
+    version_id_metadata    = "old_m",
+    welfare_type           = "INC",
+    reporting_level        = "national",   # legacy column to be stripped
+    country_code           = "NGA",
+    surveyid_year          = 2018L,
+    survey_acronym         = "GHS",
+    first_release_version_id  = NA_character_,
+    latest_release_version_id = NA_character_
+  )
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(new_pip_id),
+    st_latest = function(...) "vid_nga",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) old_master,
+    load_aux_data = function(measure, ...) make_pfw("NGA", 2019L, "GHS"),
+    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map)
+
+  expect_false("reporting_level" %in% names(result))
+  expect_equal(nrow(result), 2L)
+  expect_true(old_pip_id %in% result$pip_id)
+})
+
 # ---------------------------------------------------------------------------
 # Regression: old master column type drift causes collapse::rowbind abort
 # (size_bytes_* stored as fs::fs_bytes in old master vs plain numeric in

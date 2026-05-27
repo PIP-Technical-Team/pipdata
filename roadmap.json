@@ -349,7 +349,7 @@
                     "id": "inventory-architecture-refactor",
                     "title": "Refactor inventory: catalog-based assembler",
                     "description": "Replace update_pip_inventory() + format_vrs() with build_pip_inventory() that reads stamp catalogs via st_catalog_query(). Move enrichment (reporting_level, etc.) to pipload as pip_inv_enrich(). Simplify process_data() return. Cross-package: stamp (new export), pipdata (assembler), pipload (enrichment).",
-                    "status": "planned",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
                     "tags": [
                         "architecture",

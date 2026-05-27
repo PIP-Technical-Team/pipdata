@@ -15,8 +15,10 @@ are used as the \code{id} argument to \code{\link[pipload:pip_write]{pipload::pi
 \code{"pip_meta"} for metadata).}
 }
 \value{
-A named list of version metadata returned by
-\code{\link[pipload:pip_write]{pipload::pip_write()}}, with \code{NULL} entries for failed saves.
+A named list with one entry per artifact: \code{list(pip_id, success = TRUE)}
+on success or \code{NULL} on failure. Version metadata is persisted to the
+stamp catalog and read back by \code{\link[=build_pip_inventory]{build_pip_inventory()}} — it is not
+returned here.
 }
 \description{
 Iterates over a named list of cleaned \code{data.table} objects and writes
@@ -27,19 +29,18 @@ Errors during individual saves are caught, logged, and returned as
 \seealso{
 Other pd_process_data pipeline: 
 \code{\link{add_attr}()},
+\code{\link{build_pip_inventory}()},
 \code{\link{create_attr}()},
 \code{\link{data_to_dt}()},
 \code{\link{filter_aux_data}()},
 \code{\link{filter_aux_inv}()},
 \code{\link{fix_year_var}()},
-\code{\link{format_vrs}()},
 \code{\link{inv_dlw_load}()},
 \code{\link{inv_to_process}()},
 \code{\link{log_report}()},
 \code{\link{pd_aux_attr}()},
 \code{\link{pd_deflation}()},
 \code{\link{survey_id_to_attr}()},
-\code{\link{update_pip_inventory}()},
 \code{\link{valid_dlw_load}()}
 }
 \concept{pd_process_data pipeline}

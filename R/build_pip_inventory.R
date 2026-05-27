@@ -1,17 +1,17 @@
 ﻿#' Build the PIP master and release inventories from stamp catalogs
 #'
-#' Delta/update assembler replacing [update_pip_inventory()]. Reads version
+#' Delta/update assembler replacing `update_pip_inventory()`. Reads version
 #' facts for **current-run surveys only** from stamp's persisted catalogs
 #' (`"pip"` and `"pip_meta"` aliases), upserts them into the prior master
 #' inventory, and saves the result. Old surveys not reprocessed this run are
 #' retained unchanged from the prior master.
 #'
-#' Compared to [update_pip_inventory()], this function:
+#' Compared to `update_pip_inventory()`, this function:
 #' - Queries catalogs then immediately filters to the current run's pip_ids,
 #'   avoiding all catalog-wide validation issues.
 #' - Does not require in-memory version metadata (crash-safe for current run).
-#' - Does not compute `reporting_level` â€” enrichment is handled by
-#'   [pipload::load_pip_master_inventory()] via the `fields` argument (Phase 3).
+#' - Does not compute `reporting_level` — enrichment is handled by
+#'   [pipload::pip_inv_enrich()] when needed by consumers.
 #' - Upserts by `pip_id`: reprocessed surveys replace their old row; all other
 #'   surveys are retained from the prior master. One row per `pip_id`, always.
 #'
@@ -22,8 +22,8 @@
 #'   from successful `process_data()` calls in [pd_process_data()].
 #'
 #' @return A `data.table`: the updated PIP master inventory. Does **not**
-#'   include `reporting_level` â€” enrich after load via
-#'   `pipload::load_pip_master_inventory(fields = "reporting_level")`.
+#'   include `reporting_level` — enrich after load via
+#'   `pipload::pip_inv_enrich(inv, fields = "reporting_level")`.
 #'
 #' @details
 #' **Logging**: writes the following entries to `"pipdata_log"`:
@@ -66,11 +66,11 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # storage type is compatible. Strip non-standard classes once here so that
   # old_retained inherits clean types before the upsert rowbind.
   #
-  # Also drop legacy hash/label columns that were never populated by
-  # update_pip_inventory() and are not produced by build_pip_inventory():
-  # code_hash_data, file_hash_data, code_label_data,
-  # code_hash_metadata, file_hash_metadata, code_label_metadata,
-  # format_data, format_metadata.
+  # Also drop legacy columns not produced by build_pip_inventory():
+  # reporting_level (previously derived on-the-fly; now opt-in via
+  # pipload::pip_inv_enrich()), code_hash_data, file_hash_data,
+  # code_label_data, code_hash_metadata, file_hash_metadata,
+  # code_label_metadata, format_data, format_metadata.
   # Dropping here migrates any on-disk master to the new schema on next run.
   if (!is.null(old_inv)) {
     fs_cols <- names(old_inv)[vapply(
@@ -87,6 +87,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     }
 
     legacy_cols <- c(
+      "reporting_level",
       "code_hash_data",
       "file_hash_data",
       "code_label_data",
@@ -139,11 +140,17 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   cat_data[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
   cat_meta[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
 
-  # P1.2: Validate pip_id format before filtering.
+  # Scope to current run first (filter-first principle: validate only the
+  # current-run set so unrelated historical artifacts in the alias never
+  # produce spurious warnings).
+  cat_data <- cat_data[pip_id %in% target_ids]
+  cat_meta <- cat_meta[pip_id %in% target_ids]
+
+  # P1.2: Validate pip_id format on the already-filtered set.
   # Expected: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE (5 _-delimited segments,
   # e.g. BOL_2022_EH_INC_ALL). Artifacts with non-standard names produce
-  # garbage pip_ids that silently miss the filter — warn explicitly so
-  # misconfigurations are visible in the log.
+  # garbage pip_ids — warn explicitly so misconfigurations are visible in
+  # the log.
   pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9]+_[A-Z]+_[A-Z0-9]+$"
   bad_data <- cat_data[!grepl(pip_id_pattern, pip_id), path]
   bad_meta <- cat_meta[!grepl(pip_id_pattern, pip_id), path]
@@ -166,10 +173,6 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     cat_data <- cat_data[grepl(pip_id_pattern, pip_id)]
     cat_meta <- cat_meta[grepl(pip_id_pattern, pip_id)]
   }
-
-  # Scope to current run only
-  cat_data <- cat_data[pip_id %in% target_ids]
-  cat_meta <- cat_meta[pip_id %in% target_ids]
 
   # Guard: both catalogs empty after filter â†’ st_save must have failed
   if (nrow(cat_data) == 0L && nrow(cat_meta) == 0L) {
@@ -295,6 +298,10 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     )[[4L]]
   ]
 
+  # Defensive guard: the pip_id_pattern regex enforced above guarantees 5
+  # underscore-delimited segments (COUNTRY_YEAR_ACRONYM_WELFARE_MODULE), so
+  # welfare_type (segment 4) is never NA under normal conditions. This block
+  # guards against future regex relaxation that could re-open that path.
   bad_wt <- new_versions[is.na(welfare_type), pip_id]
   if (length(bad_wt) > 0L) {
     cli::cli_warn(

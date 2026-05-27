@@ -1,11 +1,11 @@
 ---
 date: 2026-05-20
 title: "Refactor inventory architecture: catalog-based assembler"
-status: active
+status: completed
+completed-date: 2026-05-27
 scope: "Deep"
 phases: 3
-completed-phases: [1]
-current-phase: 2
+completed-phases: [1, 2, 3]
 brainstorm: ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md"
 language: "R"
 estimated-effort: "large"

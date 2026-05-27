@@ -65,7 +65,7 @@ pd_process_data <- function(
   if (is.null(inv_to_clean) || nrow(inv_to_clean) == 0) {
     cli::cli_alert_info("No surveys to process.")
 
-    # Load old pip inventory and return
+    # Load old pip inventory and return (with default enrichment for consumer)
     old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
     return(old_pip_inv)
   }
