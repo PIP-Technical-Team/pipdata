@@ -417,79 +417,34 @@ issues that plagued the rebuild approach.
 
 ## Phase 3: pipload — enrichment + cleanup
 
-### 7b. Export `pip_domain_cols()` from pipfun (prerequisite for Step 8)
+### 7b. ~~Export `pip_domain_cols()` from pipfun~~ — REVERTED
 
-- **Requirements**: R6
-- **Files**: `pipfun/R/constants.R` (new or existing constants file), `pipfun/NAMESPACE`
-- **Details**:
-  Define the canonical domain column names in pipfun (shared dependency
-  across pipdata and pipload) so there is a single source of truth (P2.3):
-
-  ```r
-  #' Canonical PFW domain column names
-  #'
-  #' Returns the standard column names used to determine reporting level
-  #' from the PFW auxiliary data.
-  #'
-  #' @return Character vector of domain column names.
-  #' @export
-  pip_domain_cols <- function() {
-    c("cpi_domain", "ppp_domain", "gdp_domain", "pce_domain", "pop_domain")
-  }
-  ```
-
-  Run `devtools::document()` in pipfun; bump patch version.
-- **Test Scenarios**:
-  - ✅ Returns length-5 character vector
-  - ✅ Exported in NAMESPACE
-- **Tests**: `pipfun/tests/testthat/test-constants.R`
-- **Acceptance criteria**: `pipfun::pip_domain_cols()` returns the 5 domain
-  column names. `R CMD check` passes.
+- **Status**: Reverted (2026-05-27). Not needed — `pip_inv_enrich()` loads
+  per-survey metadata artifacts from stamp directly and extracts named
+  fields. It never touches PFW domain columns. The pipfun export was dead
+  code from the original PFW-based approach that was abandoned during the
+  pivot to metadata-artifact extraction.
+- **Files removed**: `pipfun/R/constants.R`, `pipfun/tests/testthat/test-constants.R`
+- **Version reverted**: pipfun 1.0.1 → 1.0.0
 
 ### 8. Add `pip_inv_enrich()` to pipload
 
 - **Requirements**: R6
 - **Files**: `pipload/R/pip_inv_enrich.R` (new), `pipload/NAMESPACE`
 - **Details**:
-  ```r
-  #' Enrich PIP inventory with metadata fields
-  #'
-  #' @param inv data.table: base inventory
-  #' @param fields character: fields to add. Supported: "reporting_level"
-  #' @return inv with additional columns
-  #' @export
-  pip_inv_enrich <- function(inv, fields = character(0)) {
-    if ("reporting_level" %in% fields) {
-      pfw <- load_aux_data("pfw", verbose = FALSE)
-      pfw_rl <- pfw[inpovcal == 1L]
-      # Canonical domain columns defined in pipfun (P2.3)
-      domain_cols <- pipfun::pip_domain_cols()
-      avail <- intersect(domain_cols, names(pfw_rl))
-      if (length(avail) > 0L) {
-        pfw_rl[, reporting_level := as.character(do.call(pmax, c(.SD, list(na.rm = TRUE)))),
-               .SDcols = avail]
-        pfw_rl_unq <- pfw_rl[,
-          .(reporting_level = reporting_level[[1L]]),
-          by = .(country_code, surveyid_year, survey_acronym)]
-        # Drop any existing reporting_level columns
-        rl_cols <- grep("^reporting_level", names(inv), value = TRUE)
-        if (length(rl_cols)) inv[, (rl_cols) := NULL]
-        inv <- joyn::left_join(inv, pfw_rl_unq,
-          by = c("country_code", "surveyid_year", "survey_acronym"),
-          relationship = "many-to-one",
-          reportvar = FALSE, verbose = FALSE)
-      }
-    }
-    inv
-  }
-  ```
+  **Implementation pivoted** from the PFW-domain-column approach shown in the
+  original plan to a metadata-artifact approach. The final implementation
+  loads per-survey metadata from stamp via `pip_read(id = pip_id, alias = "pip_meta")`
+  and extracts named fields directly. No PFW domain columns are used.
 
-  Future fields (CPI, PPP, etc.) add as additional `if` blocks.
+  See `pipload/R/pip_inv_enrich.R` for the actual implementation.
+
+  This means Step 7b (`pip_domain_cols()` in pipfun) is not needed and has
+  been reverted.
 - **Test Scenarios**:
-  - ✅ National survey → `reporting_level = "1"`
-  - ✅ Subnational survey → `reporting_level = "2"`
-  - 🛑 Survey not in PFW → `reporting_level = NA`
-  - 🛑 Pre-existing `reporting_level.x/.y` columns → cleaned before join
+  - ✅ Field extracted from metadata artifact
+  - ✅ Missing metadata → NA + warning
+  - ✅ Pre-existing field columns cleaned before join
 - **Tests**: `pipload/tests/testthat/test-pip_inv_enrich.R`
 - **Acceptance criteria**: Enrichment is fully decoupled from inventory building.
 
