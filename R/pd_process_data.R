@@ -108,12 +108,21 @@ pd_process_data <- function(
   # Build a minimal pip_id → survey_id map from successful results.
   # This is the only per-run data the assembler needs; version metadata is
   # read directly from stamp's persisted catalogs.
-  pip_id_map <- data.table::rbindlist(
-    lapply(Filter(Negate(is.null), results), \(x) {
-      data.table::data.table(pip_id = toupper(unlist(x$pip_names)))
-    }),
-    idcol = "survey_id"
-  )
+  successful_results <- Filter(Negate(is.null), results)
+  pip_id_map <- if (length(successful_results) > 0L) {
+    data.table::rbindlist(
+      lapply(successful_results, \(x) {
+        ids <- toupper(unlist(x$pip_names))
+        if (length(ids) == 0L) {
+          return(data.table::data.table(pip_id = character(0)))
+        }
+        data.table::data.table(pip_id = ids)
+      }),
+      idcol = "survey_id"
+    )
+  } else {
+    data.table::data.table(survey_id = character(), pip_id = character())
+  }
 
   # Update inventory via catalog-based assembler
   new_pip_inv <- build_pip_inventory(

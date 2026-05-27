@@ -10,6 +10,7 @@ brainstorm: ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md"
 language: "R"
 estimated-effort: "large"
 tags: [architecture, inventory, stamp, pipload, maintainability, correctness]
+strategy-revision: "2026-05-27 — pivoted Phase 2 from rebuild-from-scratch to delta/update"
 ---
 
 # Plan: Refactor Inventory Architecture — Catalog-Based Assembler
@@ -146,61 +147,79 @@ enrichment into pipload.
 - **Acceptance criteria**: `devtools::check()` passes; `st_catalog_query`
   appears in NAMESPACE exports.
 
-## Phase 2: pipdata — catalog-based assembler
+## Phase 2: pipdata — delta/update assembler
 
-### 3. Create `build_pip_inventory()` function
+**Strategy change (2026-05-27)**: Pivoted from "rebuild-from-scratch" to
+"delta/update" after repeated failures with the full-catalog approach. See
+`.cg-docs/brainstorms/2026-05-27-inventory-delta-strategy.md`.
+
+**Delta approach**: Start from old master inventory, query catalogs once,
+filter to only current-run pip_ids, extract version info for just those,
+upsert into old master. Avoids all catalog-wide validation/deduplication
+issues that plagued the rebuild approach.
+
+**Status**: ✅ Complete (2026-05-27). All steps implemented, 30/30 tests passing.
+
+**Code changes made**:
+- `build_pip_inventory.R` ✅ rewritten with delta strategy (411 lines)
+- `test-build_pip_inventory.R` ✅ rewritten (9 tests, 30 assertions, 0 failures)
+- `pd_process_data.R` ✅ updated (lapply, pip_id_map builder, empty guard)
+- `save_pip.R` ✅ updated (lapply, simplified return)
+- `aaa.R` ✅ updated (globalVariables for new columns)
+
+### 3. Create `build_pip_inventory()` function (REVISED)
 
 - **Requirements**: R1, R2, R3, R4, R8, R9, R10
-- **Files**: `pipdata/R/build_pip_inventory.R` (new file)
+- **Files**: `pipdata/R/build_pip_inventory.R` (rewrite)
 - **Details**:
-  New function replacing `update_pip_inventory()`. Architecture:
+  New function replacing `update_pip_inventory()`. **Delta/update** architecture:
 
   ```r
   build_pip_inventory <- function(inv_to_clean, pip_id_map) {
-    # --- Defensive assertions (P2.5) ---
+    # --- Defensive assertions ---
     stopifnot(anyDuplicated(inv_to_clean$survey_id) == 0L)
 
-    # Step 1: Query stamp catalogs
+    # Step 1: Load old master inventory (base for upsert)
+    old_inv <- tryCatch(
+      pipload::load_pip_master_inventory(verbose = FALSE),
+      error = \(e) NULL
+    )
+
+    # Step 2: Query stamp catalogs (one call each, returns latest per artifact)
     cat_data <- stamp::st_catalog_query(alias = "pip")
     cat_meta <- stamp::st_catalog_query(alias = "pip_meta")
 
-    # Step 1b: Guard empty catalogs with differentiated messages (P2.6)
-    if (nrow(cat_data) == 0L && nrow(cat_meta) == 0L) {
-      if (nrow(pip_id_map) == 0L) {
-        cli::cli_abort(c(
-          "Both stamp catalogs are empty and no surveys were processed.",
-          "i" = "If this is the first run, ensure {.fn save_pip_data} succeeds for at least one survey.",
-          "i" = "If surveys were expected, review the processing log for errors."
-        ))
-      } else {
-        cli::cli_abort(c(
-          "Stamp catalogs are empty despite {nrow(pip_id_map)} pip_id(s) in the map.",
-          "i" = "This suggests {.fn pip_write} / {.fn st_save} failed silently.",
-          "i" = "Check stamp alias configuration."
-        ))
-      }
+    # Guard: if no surveys processed and no catalog data, nothing to do
+    if (nrow(pip_id_map) == 0L) {
+      if (!is.null(old_inv)) return(old_inv)
+      cli::cli_abort(c(
+        "No surveys processed and no prior master inventory exists.",
+        "i" = "Ensure {.fn save_pip_data} succeeds for at least one survey."
+      ))
     }
 
-    # Step 2: Derive pip_id from artifact path
+    # Step 3: Derive pip_id from catalog paths, filter to current run only
     cat_data[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
     cat_meta[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
 
-    # Step 2b: Validate pip_id format (P1.2)
-    pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9-]+_(INC|CON)_(ALL|GPWG|D[0-9]+)$"
-    bad_data <- cat_data[!grepl(pip_id_pattern, pip_id)]
-    bad_meta <- cat_meta[!grepl(pip_id_pattern, pip_id)]
-    if (nrow(bad_data) > 0L || nrow(bad_meta) > 0L) {
-      bad_ids <- unique(c(bad_data$pip_id, bad_meta$pip_id))
+    # Filter catalogs to only this run's pip_ids
+    target_ids <- pip_id_map$pip_id
+    cat_data <- cat_data[pip_id %in% target_ids]
+    cat_meta <- cat_meta[pip_id %in% target_ids]
+
+    # Warn about pip_ids that are missing from catalogs
+    missing_data <- setdiff(target_ids, cat_data$pip_id)
+    missing_meta <- setdiff(target_ids, cat_meta$pip_id)
+    if (length(missing_data) > 0L || length(missing_meta) > 0L) {
+      missing_all <- union(missing_data, missing_meta)
       cli::cli_warn(c(
-        "{length(bad_ids)} artifact(s) have non-standard pip_id format.",
-        "i" = "IDs: {.val {utils::head(bad_ids, 5L)}}",
-        "i" = "Expected pattern: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE"
+        "{length(missing_all)} pip_id(s) not found in one or both catalogs.",
+        "i" = "IDs: {.val {utils::head(missing_all, 5L)}}",
+        "i" = "These surveys will not appear in the inventory."
       ))
-      cat_data <- cat_data[grepl(pip_id_pattern, pip_id)]
-      cat_meta <- cat_meta[grepl(pip_id_pattern, pip_id)]
     }
 
-    # Step 3: Drop code_hash (not needed for inventory) and suffix columns
+    # Step 4: Suffix catalog columns (version_id_data, version_id_metadata)
     cat_data[, code_hash := NULL]
     cat_meta[, code_hash := NULL]
     data.table::setnames(cat_data,
@@ -212,17 +231,13 @@ enrichment into pipload.
       new = c("path_metadata", "version_id_metadata", "content_hash_metadata",
               "size_bytes_metadata", "created_at_metadata"))
 
-    inv <- cat_data[cat_meta, on = "pip_id", nomatch = 0]
+    # Step 5: Join data + metadata catalogs (only current-run pip_ids)
+    new_versions <- cat_data[cat_meta, on = "pip_id", nomatch = 0]
 
-    # Step 4: Add survey_id via pip_id_map
-    inv <- inv[pip_id_map, on = "pip_id", nomatch = 0]
+    # Step 6: Add survey_id from pip_id_map
+    new_versions <- new_versions[pip_id_map, on = "pip_id", nomatch = 0]
 
-    # Step 5: Scope to this run (inv_to_clean) + retain old surveys
-    run_inv <- inv[survey_id %in% inv_to_clean$survey_id]
-
-    # Step 6: Rename DLW columns in inv_to_clean BEFORE join (P2.2)
-    # This prevents column-name collisions (content_hash, latest_version_id
-    # exist in both run_inv and inv_to_clean).
+    # Step 7: Join DLW columns from inv_to_clean (with renames to avoid collisions)
     dlw_renames <- c(
       pipeline_version = "pipeline_version_dlw",
       latest_version_id = "latest_version_id_dlw",
@@ -231,24 +246,30 @@ enrichment into pipload.
       file_path = "path_dlw"
     )
     inv_dlw <- data.table::copy(inv_to_clean)
-    # Only rename columns that actually exist in inv_to_clean
     present <- intersect(names(dlw_renames), names(inv_dlw))
     data.table::setnames(inv_dlw, old = present, new = dlw_renames[present])
-    # Join DLW columns (now collision-free)
-    run_inv <- joyn::left_join(run_inv, inv_dlw,
+
+    new_versions <- joyn::left_join(
+      new_versions, inv_dlw,
       by = "survey_id", relationship = "many-to-one",
       reportvar = FALSE, verbose = FALSE)
 
-    # Step 7: Derive welfare_type from pip_id
-    run_inv[, welfare_type := data.table::tstrsplit(pip_id, "_", fixed = TRUE)[[4L]]]
+    # Step 8: Derive welfare_type from pip_id (4th segment)
+    new_versions[,
+      welfare_type := data.table::tstrsplit(
+        pip_id, "_", fixed = TRUE, fill = NA_character_
+      )[[4L]]
+    ]
 
-    # Step 8: Merge with old master
-    old_inv <- tryCatch(pipload::load_pip_master_inventory(), error = \(e) NULL)
+    # Step 9: Upsert into old master (remove old rows for reprocessed pip_ids)
     if (!is.null(old_inv)) {
-      old_retained <- old_inv[!old_inv$survey_id %in% run_inv$survey_id]
-      run_inv <- collapse::rowbind(run_inv, old_retained, fill = TRUE)
+      old_retained <- old_inv[!pip_id %in% new_versions$pip_id]
+      run_inv <- collapse::rowbind(new_versions, old_retained, fill = TRUE)
+    } else {
+      run_inv <- new_versions
     }
-    # Assert no duplicate pip_ids after merge (P2.7)
+
+    # Assert no duplicate pip_ids
     dup_pids <- run_inv$pip_id[duplicated(run_inv$pip_id)]
     if (length(dup_pids) > 0L) {
       cli::cli_abort(c(
@@ -257,83 +278,76 @@ enrichment into pipload.
       ))
     }
 
-    # Step 9: Build + save release inventory
-    # (PFW filter + release version tracking)
+    data.table::setDT(run_inv)
 
-    # Step 10: Save master inventory
+    # Step 10: Release inventory (PFW filter + version tracking)
+    # ... (unchanged from prior implementation)
+
+    # Step 11: Save master inventory
+    # ... (unchanged from prior implementation)
+
+    # Step 12: Reload and verify
+    # ... (unchanged from prior implementation)
 
     run_inv
   }
   ```
 
-  **Key design choices**:
-  - `pip_id_map`: a 2-column data.table mapping `pip_id` → `survey_id`,
-    constructed from the `pip_names` output of successful `process_data()`
-    calls. This is the minimal data that still needs to come from the
-    processing loop (stamp catalogs don't know about survey_id).
-  - Metadata-absent pip_ids: if a pip_id exists in `cat_data` but NOT in
-    `cat_meta`, the `nomatch = 0` inner join excludes it automatically.
-    No special sentinel logic needed.
-  - Release version columns (`first_release_version_id`,
-    `latest_release_version_id`): same logic as current, just applied
-    after the master is assembled.
-  - **Crash-safety limitation** (accepted from plan review P1.3): crash-safety
-    via stamp catalogs applies only to the current run's surveys. Old surveys
-    that weren't reprocessed are recovered from the old master file (Step 8).
-    If the master file is corrupted, those surveys must be reprocessed.
-    This is acceptable because the master inventory is itself a stamp artifact
-    with version history — a prior version can be restored.
+  **Key design changes from rebuild approach**:
+  - **Filter-first**: Catalogs filtered to `pip_id_map$pip_id` immediately
+    after deriving pip_id from paths. Only current-run artifacts processed.
+  - **No full-catalog validation**: We don't regex-validate or deduplicate
+    the entire catalog history. Only the current run's pip_ids are touched.
+  - **Upsert by pip_id**: Old master rows for reprocessed pip_ids are removed,
+    replacedby fresh catalog data. Untouched surveys stay from old master.
+  - **st_catalog_query already returns latest version per artifact**:
+    No manual deduplication needed.
+  - **Crash-safety preserved**: Catalog has the version facts. If we crash
+    and restart, re-querying the catalog for the same pip_ids recovers them.
 
 - **Test Scenarios**:
-  - ✅ Happy path: 3 surveys (one with 2 pip_ids) → correct inventory structure
-  - ✅ Second run: old master surveys retained, new surveys added
-  - ✅ No column collisions: DLW columns renamed before join (content_hash_dlw, latest_version_id_dlw)
-  - 🛑 Edge case: pip_id in data catalog missing from metadata catalog → excluded
-  - 🛑 Edge case: empty inv_to_clean → returns old master unchanged
-  - 🛑 Edge case: non-standard pip_id format in catalog → warning + excluded
-  - 🛑 Edge case: duplicate survey_id in inv_to_clean → stopifnot fires
-  - ❌ Error path: both catalogs empty, pip_id_map empty → abort "first run" message
-  - ❌ Error path: both catalogs empty, pip_id_map non-empty → abort "st_save failed" message
-  - ❌ Error path: duplicate pip_id after merge → abort with offending IDs
+  - Happy path: 3 surveys → correct version info from catalog, upserted into master
+  - Second run: old master surveys retained, new surveys updated
+  - No column collisions: DLW columns renamed before join
+  - pip_id in data catalog missing from metadata catalog → excluded, warned
+  - Empty pip_id_map + old master exists → return old master
+  - Empty pip_id_map + no old master → abort
+  - Duplicate pip_id after merge → abort with offending IDs
 
-- **Tests**: `pipdata/tests/testthat/test-build_pip_inventory.R` with mocked
-  `stamp::st_catalog_query` and `pipload::load_pip_master_inventory`.
+- **Tests**: `pipdata/tests/testthat/test-build_pip_inventory.R` ✅ rewritten
 - **Acceptance criteria**: Function produces identical schema as current
-  master inventory (same column names, types). Tests pass for all scenarios.
-  No `funique()` — uniqueness enforced by pip_id assertion.
+  master inventory. Upsert logic correct (no duplicates, old surveys retained).
+  **Status**: ✅ Complete. 30/30 tests passing (2026-05-27).
 
-### 4. Create `pip_id_map` builder in `pd_process_data()`
+### 4. ✅ Create `pip_id_map` builder in `pd_process_data()` (unchanged)
 
 - **Requirements**: R7
 - **Files**: `pipdata/R/pd_process_data.R`
 - **Details**:
-  Instead of passing the full `proc_dta` (with nested version metadata) to
-  the assembler, collect only the pip_id → survey_id mapping from
-  successful `process_data()` calls:
+  Collect the pip_id → survey_id mapping from successful `process_data()`
+  calls. This is the only input `build_pip_inventory()` needs from the
+  processing loop — it tells the assembler which pip_ids to look up in
+  the catalog.
 
   ```r
   # After lapply loop:
-  pip_id_map <- data.table::rbindlist(
-    lapply(Filter(Negate(is.null), results), \(x) {
-      data.table(pip_id = toupper(unlist(x$pip_names)))
-    }),
-    idcol = "survey_id"
-  )
+  successful_results <- Filter(Negate(is.null), results)
+  pip_id_map <- if (length(successful_results) > 0L) {
+    data.table::rbindlist(
+      lapply(successful_results, \(x) {
+        ids <- toupper(unlist(x$pip_names))
+        if (length(ids) == 0L) return(data.table(pip_id = character(0)))
+        data.table(pip_id = ids)
+      }),
+      idcol = "survey_id"
+    )
+  } else {
+    data.table(survey_id = character(), pip_id = character())
+  }
   ```
 
   Then call: `build_pip_inventory(inv_to_clean, pip_id_map)`.
-
-  **Simplify `process_data()` return**: It still needs to return `pip_names`
-  (for the map above) and signal success/failure (NULL = failed survey).
-  Remove `versions_data` and `versions_metadata` from the return — they're
-  no longer consumed.
-
-- **Test Scenarios**:
-  - ✅ Multi-pip_id survey → both pip_ids in map
-  - ❌ Failed survey → NULL result → excluded from map
-- **Tests**: Update existing mocks in test-pd_process_data tests.
-- **Acceptance criteria**: `pd_process_data()` no longer passes version
-  metadata to the assembler; pipeline produces correct inventory.
+- **Status**: ✅ Complete (2026-05-22, revised 2026-05-27 for empty-result guard).
 
 ### 5. Simplify `save_pip_data()` return (optional cleanup)
 
@@ -348,11 +362,12 @@ enrichment into pipload.
   **NOTE**: This is optional — the current return doesn't break anything,
   it's just dead weight. Can defer if risky.
 - **Test Scenarios**:
-  - ✅ Successful save → returns pip_id + success
-  - ❌ Failed save → returns NULL (unchanged behavior)
-- **Tests**: Update relevant mocks.
+  - ✅ Successful save → returns `list(pip_id, success = TRUE)`
+  - ✅ Failed save → returns NULL (unchanged behavior)
+- **Tests**: ✅ No new tests needed; existing error-handler tests still apply.
 - **Acceptance criteria**: `save_pip_data()` return is consumed only for
-  success/failure signaling.
+  success/failure signaling; version metadata is no longer returned.
+  **Status**: Implementation ✅ complete; replaced purrr::map2 with lapply.
 
 ### 6. Preserve release inventory logic in `build_pip_inventory()`
 
@@ -372,10 +387,11 @@ enrichment into pipload.
   is smaller so this section is more readable).
 - **Test Scenarios**:
   - ✅ Survey in PFW → appears in release
-  - 🛑 Survey NOT in PFW → excluded from release, still in master
+  - ✅ Survey NOT in PFW → excluded from release, still in master
   - ✅ Second run → `first_release_version_id` unchanged, `latest_release_version_id` updated
-- **Tests**: Mock PFW + verify release inventory content.
-- **Acceptance criteria**: Release inventory matches current behavior.
+- **Tests**: ✅ Covered in test-build_pip_inventory.R via mocked PFW.
+- **Acceptance criteria**: Release inventory logic matches current behavior.
+  **Status**: Implementation ✅ integrated into build_pip_inventory() Steps 9-10.
 
 ### 7. Preserve logging in `build_pip_inventory()`
 
@@ -392,10 +408,12 @@ enrichment into pipload.
   The `missing_metadata_err` is no longer needed — pip_ids without metadata
   are excluded by the inner join automatically.
 - **Test Scenarios**:
-  - ✅ All surveys confirmed → info-level log
-  - ❌ Some surveys missing from master → error-level log
-- **Tests**: Update existing logging integration tests.
+  - ✅ Null surveys logged as null_svys_inf (moved to pd_process_data)
+  - ✅ Inventory verification → inv_update_inf entry (info or error)
+  - ✅ Release write failure → release_write_err entry with condition_msg
+- **Tests**: ✅ Covered in test-build_pip_inventory.R.
 - **Acceptance criteria**: `log_report()` sections still work correctly.
+  **Status**: Implementation ✅ complete; logging for null_svys_inf now in pd_process_data.
 
 ## Phase 3: pipload — enrichment + cleanup
 
