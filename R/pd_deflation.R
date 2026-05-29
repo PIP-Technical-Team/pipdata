@@ -100,7 +100,7 @@
     row <- utils::head(row, 1L)
   }
 
-  # Use version_id_metadata stored directly by format_vrs().
+  # Use version_id_metadata stored in the master inventory.
   # If the version is stale (artifact replaced by a newer run), fall back
   # to loading the latest available version.
   meta_version <- if (

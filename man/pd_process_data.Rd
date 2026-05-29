@@ -37,10 +37,10 @@ data and metadata into the pip storage. The function returns an updated
 pip inventory with the new versions recorded.
 }
 \details{
-\strong{Logging}: This function writes a \code{process_summary_inf} entry to the \code{"pipdata_log"}
-summarizing the total number of surveys processed, successfully cleaned, and failed.
-Additional informational entries are logged for auxiliary file changes and inventory
-verification (see \code{\link[=valid_dlw_load]{valid_dlw_load()}} and \code{\link[=update_pip_inventory]{update_pip_inventory()}} for details).
+\strong{Logging}: This function writes \code{process_summary_inf} and \code{null_svys_inf} entries
+to the \code{"pipdata_log"}, summarizing totals and failed surveys. Additional entries for
+auxiliary file changes and inventory verification are emitted by \code{\link[=valid_dlw_load]{valid_dlw_load()}}
+and \code{\link[=build_pip_inventory]{build_pip_inventory()}} respectively.
 }
 \examples{
 \dontrun{
