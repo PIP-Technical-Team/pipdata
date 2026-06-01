@@ -124,7 +124,9 @@ pd_process_data <- function(
     data.table::data.table(survey_id = character(), pip_id = character())
   }
 
-  # Update inventory via catalog-based assembler
+  # Update inventory via catalog-based assembler.
+  # verbose not propagated — build_pip_inventory() is batch-internal and
+  # uses verbose = FALSE unconditionally (design decision 7).
   new_pip_inv <- build_pip_inventory(
     inv_to_clean = inv_to_clean,
     pip_id_map   = pip_id_map

@@ -62,10 +62,10 @@
 #' @param version Character scalar or `NULL`. If `NULL`, the most recent
 #'   inventory entry for `pip_id` (by `created_at_metadata`) is used. When
 #'   supplied, it must match the `content_hash_data` column in the inventory.
-#' @return A named list with elements `cpi`, `ppp`, and `pop`, each a named
-#'   numeric vector as stored in the `pip_meta` stamp alias.
 #' @param verbose Logical scalar passed from [pd_deflation()]. Controls
 #'   whether `pipload` I/O calls emit informational messages.
+#' @return A named list with elements `cpi`, `ppp`, and `pop`, each a named
+#'   numeric vector as stored in the `pip_meta` stamp alias.
 #' @noRd
 .load_deflation_aux <- function(pip_id, version = NULL, verbose) {
   inv <- pipload::load_pip_master_inventory(verbose = verbose)

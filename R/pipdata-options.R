@@ -36,6 +36,5 @@
 #' log entries are always emitted regardless of this option.
 #'
 #' @name pipdata-options
-#' @aliases pipdata.verbose
 #' @keywords internal
 NULL

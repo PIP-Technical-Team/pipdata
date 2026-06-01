@@ -9,8 +9,8 @@
 #'   [pipdata_dlw_process()], the release is already set. When called
 #'   standalone, ensure `setup_working_release()` has been invoked first.
 #'
-#' @param verbose Logical. Controls verbosity of downstream
-#'   [pipload::pip_write()] calls. Default:
+#' @param verbose Logical. Controls verbosity of downstream I/O calls
+#'   (including [pipload::pip_write()]). Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return data.table, inventory report
 #' @export
