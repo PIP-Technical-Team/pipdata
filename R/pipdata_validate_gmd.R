@@ -9,6 +9,9 @@
 #'   [pipdata_dlw_process()], the release is already set. When called
 #'   standalone, ensure `setup_working_release()` has been invoked first.
 #'
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::pip_write()] calls. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return data.table, inventory report
 #' @export
 #'
@@ -21,7 +24,8 @@
 #' }
 pipdata_validate_gmd <- function(
   log = TRUE,
-  save_log = TRUE
+  save_log = TRUE,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #### logging -----------------------------------------------------------------
   if (log) {
@@ -284,7 +288,8 @@ pipdata_validate_gmd <- function(
       x = final_inv,
       id = "gmd_valid_inv",
       pk = "survey_id",
-      alias = "dlw_meta"
+      alias = "dlw_meta",
+      verbose = verbose
     )
 
     cli::cli_alert_success(
@@ -363,7 +368,8 @@ pipdata_validate_gmd <- function(
     pipload::pip_write(
       x = valid_report,
       id = "validation_report",
-      alias = "dlw_meta"
+      alias = "dlw_meta",
+      verbose = verbose
     )
 
     cli::cli_alert_success("Validation report is saved")

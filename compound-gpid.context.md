@@ -53,6 +53,10 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 Currently tracked via `.cg-docs/plans/`:
 - **Active**: Code Quality & Refactoring milestone — standardizing logging patterns, migrating dplyr to collapse/data.table, decomposing large functions, and expanding test coverage. See `roadmap.json` for individual feature tracking.
 
+## Testing Patterns
+
+- **`expect_warning()` returns the condition, not the expression value** (testthat 3.2.1.1+): `result <- expect_warning(expr)` captures the warning condition object — not the return value of `expr`. Always use the block assignment pattern: `result <- NULL; expect_warning({ result <- expr }, ...)`. The same applies to `expect_error()`, `expect_message()`, and `expect_condition()`. See `.cg-docs/solutions/testing-patterns/2026-05-29-expect-warning-returns-condition-not-value.md`.
+
 ## Workspace Notes
 
 - **pipaux**: Auxiliary data package (CPI, PPP, population refresh)

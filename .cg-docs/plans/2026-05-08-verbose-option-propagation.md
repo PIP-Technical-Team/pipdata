@@ -7,6 +7,8 @@ brainstorm: null
 language: R
 estimated-effort: small
 tags: [verbose, options, pipload, stamp, ux, code-quality]
+completed-phases: [1, 2]
+current-phase: 3
 ---
 
 # Plan: Propagate `pipdata.verbose` Option to Downstream Package Calls

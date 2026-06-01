@@ -184,7 +184,7 @@ test_that(".load_deflation_aux uses version_id_metadata directly", {
     .package = "pipload"
   )
 
-  result <- pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1")
+  result <- pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1", verbose = FALSE)
 
   expect_equal(result$cpi, cpi_vec)
   expect_equal(result$ppp, ppp_vec)
@@ -215,7 +215,7 @@ test_that(".load_deflation_aux loads latest when version_id_metadata is NA", {
     .package = "pipload"
   )
 
-  result <- pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1")
+  result <- pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1", verbose = FALSE)
 
   expect_equal(result$cpi, cpi_vec)
   expect_equal(result$ppp, ppp_vec)
@@ -252,8 +252,11 @@ test_that(".load_deflation_aux falls back to latest when version_id is stale", {
     .package = "pipload"
   )
 
-  result <- expect_warning(
-    pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1"),
+  result <- NULL
+  expect_warning(
+    {
+      result <- pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1", verbose = FALSE)
+    },
     class = "load_deflation_aux_stale_version"
   )
   expect_equal(result$cpi, cpi_vec)
@@ -275,9 +278,44 @@ test_that(".load_deflation_aux aborts for unknown pip_id", {
   )
 
   expect_error(
-    pipdata:::.load_deflation_aux("UNKNOWN_ID"),
+    pipdata:::.load_deflation_aux("UNKNOWN_ID", verbose = FALSE),
     class = "load_deflation_aux"
   )
+})
+
+test_that(".load_deflation_aux passes verbose argument to pipload calls", {
+  cpi_vec <- make_cpi_vec()
+  ppp_vec <- make_ppp_vec()
+  pop_vec <- make_pop_vec()
+  meta_obj <- list(cpi = cpi_vec, ppp = ppp_vec, pop = pop_vec)
+
+  fake_inv <- data.table::data.table(
+    pip_id = "ABC_2015_TST_INC_D1",
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    version_id_metadata = "ver_abc123",
+    created_at_metadata = "2026-01-01T00:00:00Z"
+  )
+
+  received_verbose_inv  <- NULL
+  received_verbose_read <- NULL
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(verbose = NULL, ...) {
+      received_verbose_inv <<- verbose
+      fake_inv
+    },
+    pip_read = function(id, alias, version = NULL, verbose = NULL, ...) {
+      received_verbose_read <<- verbose
+      meta_obj
+    },
+    .package = "pipload"
+  )
+
+  pipdata:::.load_deflation_aux("ABC_2015_TST_INC_D1", verbose = FALSE)
+
+  expect_false(received_verbose_inv)
+  expect_false(received_verbose_read)
 })
 
 # ---------------------------------------------------------------------------
@@ -540,6 +578,46 @@ test_that("pd_deflation Mode A: single dt, mocked aux, returns data.table or NA"
 
 test_that("pd_deflation aborts when neither dt nor pip_id provided", {
   expect_error(pd_deflation(), class = "pd_deflation")
+})
+
+# ---------------------------------------------------------------------------
+# pd_deflation() verbose propagation
+# ---------------------------------------------------------------------------
+
+test_that("pd_deflation(verbose = FALSE) passes verbose=FALSE to pip_read and load_pip_master_inventory", {
+  dt <- make_pipmd()
+  cpi <- make_cpi_vec()
+  ppp <- make_ppp_vec()
+  pop <- make_pop_vec()
+
+  meta_obj <- list(cpi = cpi, ppp = ppp, pop = pop)
+  fake_inv <- data.table::data.table(
+    pip_id = "ABC_2015_TST_INC_D1",
+    content_hash_data = "abc123",
+    content_hash_metadata = "meta_abc123",
+    version_id_metadata = "ver_abc123",
+    created_at_metadata = "2026-01-01T00:00:00Z"
+  )
+
+  inv_verbose_values <- logical(0)
+  pip_read_verbose_values <- logical(0)
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(verbose = TRUE, ...) {
+      inv_verbose_values <<- c(inv_verbose_values, verbose)
+      fake_inv
+    },
+    pip_read = function(id, alias, version = NULL, verbose = TRUE, ...) {
+      pip_read_verbose_values <<- c(pip_read_verbose_values, verbose)
+      meta_obj
+    },
+    .package = "pipload"
+  )
+
+  pd_deflation(dt, verbose = FALSE)
+
+  expect_true(all(!inv_verbose_values), info = "load_pip_master_inventory should receive verbose=FALSE")
+  expect_true(all(!pip_read_verbose_values), info = "pip_read should receive verbose=FALSE")
 })
 
 test_that("pd_deflation Mode B: loads single survey via pip_id", {

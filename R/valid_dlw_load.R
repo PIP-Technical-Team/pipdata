@@ -20,7 +20,8 @@
 #'   Default: `c("ALL", "GROUP", "HIST", "GPWG", "BIN")`.
 #' @param force Logical. If `TRUE`, skip the comparison against the
 #'   master inventory and process all surveys.
-#' @param verbose Logical. Print progress messages.
+#' @param verbose Logical. Print progress messages. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @return A `data.table` of surveys to process, or `NULL` if none.
 #'
@@ -36,7 +37,7 @@ valid_dlw_load <- function(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -51,7 +52,7 @@ valid_dlw_load <- function(
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Load changes in aux files
-  all_changes_aux <- valid_aux_load(measure = aux_measures, compare = "all")
+  all_changes_aux <- valid_aux_load(measure = aux_measures, compare = "all", verbose = verbose)
   ls_inv_aux <- lapply(all_changes_aux, filter_aux_inv, inv = inv)
 
   # Join release and vintage changes and select unique surveys

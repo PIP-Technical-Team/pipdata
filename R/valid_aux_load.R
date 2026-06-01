@@ -3,6 +3,8 @@
 #' @param measure measure of auxiliary files to compare
 #' @param compare either `release`, `vintage` or `all`
 #'
+#' @param verbose Logical. Print progress messages. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return list
 #' @export
 #'
@@ -12,7 +14,8 @@
 #' }
 valid_aux_load <- function(
   measure = c("cpi", "ppp", "pfw", "pop"),
-  compare = "all"
+  compare = "all",
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -33,7 +36,7 @@ valid_aux_load <- function(
     changes_release <- pipaux::compare_aux_releases(
       measure = measure,
       owner = "RossanaTat",
-      verbose = FALSE
+      verbose = verbose
     )
 
     # Clean changes
@@ -66,7 +69,7 @@ valid_aux_load <- function(
     changes_vintage <- pipaux::compare_aux_vintages(
       measure = measure,
       # owner = "RossanaTat",
-      verbose = FALSE
+      verbose = verbose
     )
 
     # Clean changes

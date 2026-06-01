@@ -14,7 +14,7 @@
 #'   switching stamp versioning to `"timestamp"` and bypassing the master
 #'   inventory comparison. Default `FALSE`.
 #' @param verbose Logical. Print progress messages. Default:
-#'   `getOption("pipdata.verbose", default = FALSE)`.
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
 #'
@@ -36,7 +36,7 @@ pd_process_data <- function(
   inv = inv,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Temporarily switch stamp versioning to "timestamp" when force = TRUE
@@ -66,14 +66,14 @@ pd_process_data <- function(
     cli::cli_alert_info("No surveys to process.")
 
     # Load old pip inventory and return (with default enrichment for consumer)
-    old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
+    old_pip_inv <- pipload::load_pip_master_inventory(verbose = verbose)
     return(old_pip_inv)
   }
 
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
   names(inv_ls) <- inv_to_clean$survey_id
-  results <- lapply(inv_ls, process_data, aux_list = aux_list)
+  results <- lapply(inv_ls, process_data, aux_list = aux_list, verbose = verbose)
   names(results) <- inv_to_clean$survey_id
 
   # Log processing summary
@@ -161,7 +161,7 @@ pd_process_data <- function(
 #' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' process_data(md, pfw)
 #' }
-process_data <- function(inv, aux_list, ...) {
+process_data <- function(inv, aux_list, verbose = TRUE, ...) {
   # on.exit ------------
   on.exit({
     pd_env_rm("process_survey_id")
@@ -194,8 +194,8 @@ process_data <- function(inv, aux_list, ...) {
 
       # Save clean data and metadata to stamp (side effect; version facts
       # are read back from the stamp catalog by build_pip_inventory()).
-      save_pip_data(ls_clean, alias = "pip")
-      save_pip_data(metadata, alias = "pip_meta")
+      save_pip_data(ls_clean, alias = "pip", verbose = verbose)
+      save_pip_data(metadata, alias = "pip_meta", verbose = verbose)
 
       # Return only pip_names — version metadata is no longer tracked
       # in-memory; the assembler reads it from stamp catalogs directly.
