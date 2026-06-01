@@ -28,11 +28,11 @@ country and year.
 \seealso{
 Other pd_process_data pipeline: 
 \code{\link{add_attr}()},
+\code{\link{build_pip_inventory}()},
 \code{\link{create_attr}()},
 \code{\link{data_to_dt}()},
 \code{\link{filter_aux_inv}()},
 \code{\link{fix_year_var}()},
-\code{\link{format_vrs}()},
 \code{\link{inv_dlw_load}()},
 \code{\link{inv_to_process}()},
 \code{\link{log_report}()},
@@ -40,7 +40,6 @@ Other pd_process_data pipeline:
 \code{\link{pd_deflation}()},
 \code{\link{save_pip_data}()},
 \code{\link{survey_id_to_attr}()},
-\code{\link{update_pip_inventory}()},
 \code{\link{valid_dlw_load}()}
 }
 \concept{pd_process_data pipeline}
