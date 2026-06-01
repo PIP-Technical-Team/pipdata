@@ -9,6 +9,9 @@ library(devtools)
 load_all()
 
 # Options
+# Suppress downstream I/O messages from pipload/stamp for batch runs.
+# Set pipdata.verbose = TRUE (or remove this line) for interactive exploration.
+options(pipdata.verbose = FALSE)
 options(pipload.verbose = FALSE)
 # stamp::st_opts("warn_missing_pk_on_load", .get = TRUE)
 stamp::st_opts(warn_missing_pk_on_load = FALSE)

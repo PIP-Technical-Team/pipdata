@@ -1,14 +1,14 @@
 ---
 date: 2026-05-08
 title: "Propagate pipdata.verbose option to downstream package calls"
-status: active
+status: completed
+completed-date: 2026-06-01
 scope: "Lightweight"
 brainstorm: null
 language: R
 estimated-effort: small
 tags: [verbose, options, pipload, stamp, ux, code-quality]
-completed-phases: [1, 2]
-current-phase: 3
+completed-phases: [1, 2, 3]
 ---
 
 # Plan: Propagate `pipdata.verbose` Option to Downstream Package Calls
