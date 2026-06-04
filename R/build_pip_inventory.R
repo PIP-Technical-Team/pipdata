@@ -42,9 +42,17 @@
 #' - `first_release_version_id`, `latest_release_version_id` â€” stamp version
 #'   IDs of the release inventory (first appearance and most recent).
 #'
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::load_pip_master_inventory()] and [pipload::load_aux_data()]
+#'   calls. Default: `getOption("pipdata.verbose", default = TRUE)`.
+#'
 #' @family pd_process_data pipeline
 #' @export
-build_pip_inventory <- function(inv_to_clean, pip_id_map) {
+build_pip_inventory <- function(
+  inv_to_clean,
+  pip_id_map,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defensive assertions  ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,7 +64,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # forward from here unchanged.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   old_inv <- tryCatch(
-    expr = pipload::load_pip_master_inventory(verbose = FALSE),
+    expr = pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) NULL
   )
 
@@ -355,7 +363,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     run_inv[, latest_release_version_id := NA_character_]
   }
 
-  pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
+  pfw <- pipload::load_aux_data("pfw", verbose = verbose)
 
   pfw_release <- pfw |>
     collapse::fsubset(inpovcal == 1) |>

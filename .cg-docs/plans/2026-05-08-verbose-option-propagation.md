@@ -61,14 +61,12 @@ pipload during I/O operations.
 6. **Default value**: keep `TRUE` (current default in `zzz.R`) so interactive
    users see I/O messages. Pipeline orchestration scripts set
    `options(pipdata.verbose = FALSE)` at session start.
-7. **Batch-internal calls stay silent**: some downstream calls inside batch
-   pipeline functions are high-frequency or low-value for the user. These
-   remain `verbose = FALSE` unconditionally:
-   - `pd_process_data()` → `lapply(aux_measures, load_aux_data)` (6 calls,
-     once per pipeline run — not per survey; moderate volume).
-   - `joyn::anti_join(..., verbose = FALSE)` in `valid_dlw_load()` — join
-     diagnostics, not I/O messages; out of scope entirely.
-   All other downstream calls propagate the resolved `verbose` value.
+7. **No batch-internal exceptions — propagate everywhere**: all
+   `pipload`/`stamp`/`pipaux` I/O calls propagate the resolved `verbose`
+   value. The user controls noise via `options(pipdata.verbose = FALSE)`
+   at session start; hardcoding `FALSE` removes their ability to debug
+   selectively. The only exception is `joyn::` calls — join diagnostics
+   are not I/O messages and always stay `verbose = FALSE`.
 
 ## Phase 1: Add `verbose` to `pd_deflation()` and propagate
 
@@ -110,7 +108,7 @@ pipload during I/O operations.
 
 | Function | Change |
 |----------|--------|
-| `pd_process_data()` | Already has `verbose` → fix fallback from `default = FALSE` to `default = TRUE`; keep `load_aux_data(verbose = FALSE)` (batch-internal, stays silent per Design Decision 7); propagate `verbose` to `valid_dlw_load()` and `update_pip_inventory()` calls |
+| `pd_process_data()` | Already has `verbose` → fix fallback from `default = FALSE` to `default = TRUE`; propagate `verbose` to `load_aux_data()`, `valid_dlw_load()`, and `build_pip_inventory()` calls |
 | `valid_dlw_load()` | Already has `verbose` → fix fallback from `default = FALSE` to `default = TRUE`; propagate to `load_pip_master_inventory()` calls (keep `joyn::anti_join(verbose = FALSE)` — out of scope) |
 | `update_pip_inventory()` | Add `verbose` param; propagate to `pip_write()`, `load_pip_master_inventory()`, `load_aux_data()` |
 | `save_pip()` | Add `verbose` param; propagate to `pip_write()` |
@@ -124,7 +122,7 @@ pipload during I/O operations.
 
 - All exported functions use `default = TRUE` fallback consistently.
 - `pd_process_data(verbose = FALSE)` silences all propagated downstream
-  calls (except batch-internal `load_aux_data` which stays silent always).
+  calls (only `joyn::` calls remain hardcoded silent — not I/O scope).
 - No regressions in existing tests.
 
 ## Phase 3: Documentation and orchestration

@@ -3,13 +3,13 @@ plan: .cg-docs/plans/2026-05-08-verbose-option-propagation.md
 date: 2026-06-01
 depth: standard
 findings:
-  P2.1: open
-  P2.2: open
+  P2.1: fixed
+  P2.2: fixed
   P2.3: fixed
   P2.4: fixed
   P3.1: fixed
   P3.2: fixed
-  P3.3: open
+  P3.3: fixed
 ---
 
 ## Review Report

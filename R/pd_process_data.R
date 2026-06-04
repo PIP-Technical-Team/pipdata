@@ -51,7 +51,7 @@ pd_process_data <- function(
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load aux data for metadata attributes and processing
-  aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = FALSE)
+  aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = verbose)
   names(aux_list) <- aux_measures
 
   # Load valid inventory
@@ -73,23 +73,28 @@ pd_process_data <- function(
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
   names(inv_ls) <- inv_to_clean$survey_id
-  results <- lapply(inv_ls, process_data, aux_list = aux_list, verbose = verbose)
+  results <- lapply(
+    inv_ls,
+    process_data,
+    aux_list = aux_list,
+    verbose = verbose
+  )
   names(results) <- inv_to_clean$survey_id
 
   # Log processing summary
-  n_total   <- length(results)
+  n_total <- length(results)
   n_success <- sum(!vapply(results, is.null, logical(1)))
-  n_failed  <- n_total - n_success
+  n_failed <- n_total - n_success
   successful <- names(Filter(Negate(is.null), results))
 
   pipfun::log_info(
     "Processing complete.",
-    name    = "pipdata_log",
+    name = "pipdata_log",
     logmeta = list(
-      info            = "process_summary_inf",
-      n_total         = n_total,
-      n_success       = n_success,
-      n_failed        = n_failed,
+      info = "process_summary_inf",
+      n_total = n_total,
+      n_success = n_success,
+      n_failed = n_failed,
       surveys_success = successful
     )
   )
@@ -98,9 +103,9 @@ pd_process_data <- function(
   null_ls <- names(Filter(is.null, results))
   if (length(null_ls) > 0L) {
     pipfun::log_add(
-      event   = "info",
+      event = "info",
       message = "Some surveys were not cleaned. Review logmeta to identify which ones.",
-      name    = "pipdata_log",
+      name = "pipdata_log",
       logmeta = list(info = "null_svys_inf", surveys = null_ls)
     )
   }
@@ -124,12 +129,11 @@ pd_process_data <- function(
     data.table::data.table(survey_id = character(), pip_id = character())
   }
 
-  # Update inventory via catalog-based assembler.
-  # verbose not propagated — build_pip_inventory() is batch-internal and
-  # uses verbose = FALSE unconditionally (design decision 7).
+  # Update inventory via catalog-based assembler
   new_pip_inv <- build_pip_inventory(
     inv_to_clean = inv_to_clean,
-    pip_id_map   = pip_id_map
+    pip_id_map = pip_id_map,
+    verbose = verbose
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

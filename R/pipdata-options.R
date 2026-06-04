@@ -24,6 +24,11 @@
 #' per-call by passing `verbose = FALSE` (or `TRUE`) explicitly — the
 #' per-call argument always takes precedence over the global option.
 #'
+#' All `pipload`/`stamp`/`pipaux` I/O calls propagate the resolved value
+#' without exception. The only calls hardcoded to `verbose = FALSE` are
+#' `joyn::` join diagnostics, which are not I/O messages and outside the
+#' scope of this option.
+#'
 #' **Batch run pattern** — set at the top of your orchestration script:
 #'
 #' ```r
