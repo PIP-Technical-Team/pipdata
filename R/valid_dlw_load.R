@@ -272,7 +272,12 @@ inv_to_process <- function(inv) {
       # }
 
       inv_svy <- inv |>
-        joyn::anti_join(dt_master, by = key_inventory, verbose = FALSE)
+        joyn::anti_join(
+          dt_master,
+          by = key_inventory,
+          verbose = FALSE,
+          reportvar = FALSE
+        )
 
       inv_svy
     },
