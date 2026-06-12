@@ -92,20 +92,13 @@ write_fixture_parquet <- function(arrow_root, dt,
   dir.create(partition_dir, recursive = TRUE, showWarnings = FALSE)
   out_file <- file.path(partition_dir, paste0(pip_id, "-0.parquet"))
 
-  # Embed ppp_sort in schema metadata when provided — mirrors what
-  # write_survey_parquet() does so manifest generation tests are realistic.
+  # Embed ppp_sort as an R attribute when provided — mirrors the production
+  # path in write_survey_parquet() where attr(dt, "ppp_sort") is set by
+  # pipload and Arrow serialises it into metadata$r$attributes$ppp_sort.
   if (!is.null(ppp_sort) && !is.na(ppp_sort)) {
-    arrow_tbl   <- arrow::as_arrow_table(dt)
-    meta_schema <- arrow_tbl$schema$WithMetadata(
-      list(ppp_sort = as.character(as.integer(ppp_sort)))
-    )
-    arrow::write_parquet(
-      arrow_tbl$cast(target_schema = meta_schema),
-      out_file, compression = "snappy"
-    )
-  } else {
-    arrow::write_parquet(dt, out_file, compression = "snappy")
+    attr(dt, "ppp_sort") <- as.integer(ppp_sort)
   }
+  arrow::write_parquet(dt, out_file, compression = "snappy")
   out_file
 }
 
@@ -250,6 +243,49 @@ test_that("discover_parquet_dimensions warns and returns NA for unreadable file"
 test_that("discover_parquet_dimensions input validation requires single string", {
   expect_error(discover_parquet_dimensions(c("a.parquet", "b.parquet")))
   expect_error(discover_parquet_dimensions(42L))
+})
+
+test_that("discover_parquet_dimensions detects expanded optional columns (hsize, lstatus, empstat, industrycat)", {
+  tmp <- withr::local_tempdir()
+  dt  <- make_fixture_dt(dims = character(0))
+  # Add a representative sample of columns from each new family
+  dt[, hsize          := 4L]
+  dt[, imp_wat_rec    := 1L]
+  dt[, electricity    := 1L]
+  dt[, lstatus        := 1L]
+  dt[, empstat        := 2L]
+  dt[, industrycat10  := 3L]
+  dt[, industrycat4   := 1L]
+
+  f    <- write_fixture_parquet(tmp, dt)
+  dims <- discover_parquet_dimensions(f)
+
+  expect_true("hsize"         %in% dims)
+  expect_true("imp_wat_rec"   %in% dims)
+  expect_true("electricity"   %in% dims)
+  expect_true("lstatus"       %in% dims)
+  expect_true("empstat"       %in% dims)
+  expect_true("industrycat10" %in% dims)
+  expect_true("industrycat4"  %in% dims)
+  # Original 6 are absent because they were not added
+  expect_false("gender"  %in% dims)
+  expect_false("area"    %in% dims)
+})
+
+test_that(".manifest_dim_cols derives its list from piptm::pip_arrow_schema()", {
+  dims <- pipdata:::.manifest_dim_cols()
+  # Must include all new families
+  expect_true(all(c(
+    "gender", "area", "educat4", "educat5", "educat7", "age",
+    "hsize", "imp_wat_rec", "imp_san_rec", "electricity",
+    "lstatus", "lstatus_year",
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    "industrycat4",  "industrycat4_2",  "industrycat4_year",  "industrycat4_2_year"
+  ) %in% dims))
+  # Required columns must not appear
+  required <- piptm::pip_required_cols()
+  expect_false(any(required %in% dims))
 })
 
 # ===========================================================================

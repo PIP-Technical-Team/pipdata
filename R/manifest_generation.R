@@ -75,12 +75,19 @@
   )
 }
 
-#' Optional breakdown dimension column names (canonical order)
+#' Optional dimension column names, derived from the canonical Arrow schema
 #'
-#' @return Character vector of the optional breakdown dimension column names.
+#' Returns the names of all optional (non-required) fields from
+#' [piptm::pip_arrow_schema()]. This is the authoritative source for which
+#' columns are eligible to be recorded as dimensions in the manifest — it
+#' stays in sync automatically as the schema evolves.
+#'
+#' @return Character vector of optional field names in schema definition order.
 #' @keywords internal
 .manifest_dim_cols <- function() {
-  c("gender", "area", "educat4", "educat5", "educat7", "age")
+  schema   <- piptm::pip_arrow_schema()
+  optional <- Filter(function(f) !isTRUE(f$required), schema$fields)
+  names(optional)
 }
 
 # ---------------------------------------------------------------------------
@@ -321,6 +328,9 @@ build_manifest_entry <- function(country_code,
 #'   [pipload::load_pip_release_inventory()] (or equivalent). Must contain
 #'   columns: `survey_id`, `pip_id`, `country_code`, `surveyid_year`,
 #'   `welfare_type`, `survey_acronym`, `vermast`, `veralt`, `module`.
+#'   Optional: `reporting_level` — when present it is decoded to a
+#'   human-readable label via [.decode_reporting_level()]; when absent
+#'   `NA_character_` is written to the manifest entry.
 #'   Rows with `NA` `pip_id` are silently excluded (they have no Parquet file).
 #' @param output_path      Absolute path for the output manifest JSON file,
 #'   e.g. `"//server/manifests/manifest_20260206.json"`. The parent directory
@@ -375,8 +385,7 @@ generate_release_manifest <- function(release,
 
   required_inv_cols <- c(
     "survey_id", "pip_id", "country_code", "surveyid_year",
-    "welfare_type", "survey_acronym", "vermast", "veralt", "module",
-    "reporting_level"
+    "welfare_type", "survey_acronym", "vermast", "veralt", "module"
   )
   missing_inv_cols <- setdiff(required_inv_cols, names(release_inventory))
   if (length(missing_inv_cols) > 0L) {
@@ -406,7 +415,10 @@ generate_release_manifest <- function(release,
   }
 
   # --- Filter to rows with a valid pip_id ------------------------------------
-  inv <- release_inventory[!is.na(pip_id), .SD, .SDcols = required_inv_cols]
+  # reporting_level is optional: include it when present in the inventory
+  optional_inv_cols <- intersect("reporting_level", names(release_inventory))
+  inv_cols          <- c(required_inv_cols, optional_inv_cols)
+  inv <- release_inventory[!is.na(pip_id), .SD, .SDcols = inv_cols]
 
   n_total <- nrow(inv)
   if (n_total == 0L) {
@@ -491,6 +503,11 @@ generate_release_manifest <- function(release,
     ppp_sort_i <- parquet_schema_i$metadata$r$attributes$ppp_sort
 
     # --- Build survey entry ---------------------------------------------------
+    reporting_level_i <- if ("reporting_level" %in% names(inv))
+      .decode_reporting_level(row_i$reporting_level)
+    else
+      NA_character_
+
     survey_entries[[i]] <- build_manifest_entry(
       country_code    = row_i$country_code,
       surveyid_year   = row_i$surveyid_year,
@@ -501,7 +518,7 @@ generate_release_manifest <- function(release,
       module          = row_i$module,
       pip_id          = pip_id_i,
       dimensions      = dims_i,
-      reporting_level  = .decode_reporting_level(row_i$reporting_level),
+      reporting_level = reporting_level_i,
       welfare_vars    = welfare_vars_i,
       ppp_sort        = ppp_sort_i
     )

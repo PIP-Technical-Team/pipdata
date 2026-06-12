@@ -390,7 +390,21 @@ validate_pre_write <- function(dt) {
   }
 
   # §4.8 — No extra columns ---------------------------------------------------
-  optional_dim_cols <- c("gender", "area", "educat4", "educat5", "educat7", "age")
+  optional_dim_cols <- c(
+    "gender", "area", "educat4", "educat5", "educat7", "age",
+    # Household characteristics
+    "hsize",
+    # Infrastructure indicators
+    "imp_wat_rec", "imp_san_rec", "electricity",
+    # Labour — lstatus family
+    "lstatus", "lstatus_year",
+    # Labour — empstat family
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    # Labour — industrycat10 family
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    # Labour — industrycat4 family
+    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
+  )
   fixed_cols        <- c("country_code", "surveyid_year", "welfare_type", "pip_id",
                          "weight", "version")
   allowed_cols      <- c(fixed_cols, welfare_vars, optional_dim_cols)
@@ -497,8 +511,38 @@ prepare_for_arrow <- function(data, pip_id) {
   standardize_education(dt)
   standardize_age(dt)
 
+  # ---- Step 3b: cast pass-through int32 columns where present --------------
+  # These columns require no standardisation; they are cast to integer so the
+  # Arrow schema receives int32 regardless of the source storage type.
+  .new_int_cols <- c(
+    "hsize",
+    "imp_wat_rec", "imp_san_rec", "electricity",
+    "lstatus", "lstatus_year",
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
+  )
+  int_cols_present <- intersect(.new_int_cols, names(dt))
+  if (length(int_cols_present) > 0L) {
+    dt[, (int_cols_present) := lapply(.SD, as.integer), .SDcols = int_cols_present]
+  }
+
   # ---- Step 4: column selection --------------------------------------------
-  optional_dim_cols <- c("gender", "area", "educat4", "educat5", "educat7", "age")
+  optional_dim_cols <- c(
+    "gender", "area", "educat4", "educat5", "educat7", "age",
+    # Household characteristics
+    "hsize",
+    # Infrastructure indicators
+    "imp_wat_rec", "imp_san_rec", "electricity",
+    # Labour — lstatus family
+    "lstatus", "lstatus_year",
+    # Labour — empstat family
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    # Labour — industrycat10 family
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    # Labour — industrycat4 family
+    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
+  )
   fixed_cols        <- c("country_code", "surveyid_year", "welfare_type",
                          "pip_id", "weight", "version")
   allowed_cols      <- c(fixed_cols, wv, optional_dim_cols)

@@ -141,3 +141,56 @@ test_that("mixed column (some NA, some finite) is retained but fails validation"
     regexp = "non-finite values"
   )
 })
+
+# ===========================================================================
+# New pass-through int32 columns
+# ===========================================================================
+
+test_that("new int32 columns survive prepare_for_arrow() and are cast to integer", {
+  dt <- make_deflated_dt()
+  # Add a representative mix of new columns as raw numeric (as might come from
+  # survey microdata before standardisation)
+  dt[, hsize        := c(4L,   3L,   5L)]
+  dt[, lstatus      := c(1L,   2L,   1L)]
+  dt[, empstat      := c(1L,   3L,   1L)]
+  dt[, industrycat4 := c(2L,   1L,   3L)]
+  dt[, imp_wat_rec  := c(1L,   1L,   0L)]
+  dt[, electricity  := c(1L,   0L,   1L)]
+
+  result <- pipdata::prepare_for_arrow(dt, pip_id = "KAZ_2006_HBS_CON_ALL")
+
+  for (col in c("hsize", "lstatus", "empstat", "industrycat4",
+                "imp_wat_rec", "electricity")) {
+    expect_true(col %in% names(result),
+                label = paste(col, "present in output"))
+    expect_true(is.integer(result[[col]]),
+                label = paste(col, "is integer in output"))
+  }
+})
+
+test_that("prepare_for_arrow() drops new int32 columns that are entirely NA", {
+  dt <- make_deflated_dt()
+  dt[, lstatus := NA_integer_]
+
+  result <- pipdata::prepare_for_arrow(dt, pip_id = "KAZ_2006_HBS_CON_ALL")
+
+  expect_false("lstatus" %in% names(result))
+})
+
+test_that("all 18 new int32 column names are allowed by prepare_for_arrow()", {
+  dt <- make_deflated_dt()
+  new_cols <- c(
+    "hsize",
+    "imp_wat_rec", "imp_san_rec", "electricity",
+    "lstatus", "lstatus_year",
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    "industrycat4",  "industrycat4_2",  "industrycat4_year",  "industrycat4_2_year"
+  )
+  for (col in new_cols) {
+    dt[, (col) := 1L]
+  }
+  expect_no_error(
+    pipdata::prepare_for_arrow(dt, pip_id = "KAZ_2006_HBS_CON_ALL")
+  )
+})

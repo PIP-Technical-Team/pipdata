@@ -204,7 +204,21 @@
   }
 
   # --- No extra columns -------------------------------------------------------
-  optional_dims <- c("gender", "area", "educat4", "educat5", "educat7", "age")
+  optional_dims <- c(
+    "gender", "area", "educat4", "educat5", "educat7", "age",
+    # Household characteristics
+    "hsize",
+    # Infrastructure indicators
+    "imp_wat_rec", "imp_san_rec", "electricity",
+    # Labour — lstatus family
+    "lstatus", "lstatus_year",
+    # Labour — empstat family
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    # Labour — industrycat10 family
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    # Labour — industrycat4 family
+    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
+  )
   allowed_cols  <- c(base_required, welfare_vars, optional_dims)
   extra_cols    <- setdiff(names(dt), allowed_cols)
   if (length(extra_cols) > 0L) {
@@ -473,7 +487,15 @@ write_survey_parquet <- function(dt,
   )
 
   # --- Identify available breakdown dimensions present in this survey ---------
-  dim_cols         <- intersect(c("gender", "area", "educat4", "educat5", "educat7", "age"), names(dt))
+  dim_cols <- intersect(c(
+    "gender", "area", "educat4", "educat5", "educat7", "age",
+    "hsize",
+    "imp_wat_rec", "imp_san_rec", "electricity",
+    "lstatus", "lstatus_year",
+    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
+    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
+    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
+  ), names(dt))
   avail_dimensions <- paste(dim_cols, collapse = ", ")
 
   # --- Build summary row skeleton (filled in below) --------------------------
