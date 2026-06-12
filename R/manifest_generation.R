@@ -75,20 +75,15 @@
   )
 }
 
-#' Optional dimension column names, derived from the canonical Arrow schema
+#' Optional dimension column names — thin wrapper around [piptm::pip_optional_dims()]
 #'
-#' Returns the names of all optional (non-required) fields from
-#' [piptm::pip_arrow_schema()]. This is the authoritative source for which
-#' columns are eligible to be recorded as dimensions in the manifest — it
-#' stays in sync automatically as the schema evolves.
+#' Returns the canonical list of optional breakdown dimension column names from
+#' [piptm::pip_optional_dims()]. Both the manifest generator and the Arrow
+#' writer derive their dimension lists from this single source of truth.
 #'
 #' @return Character vector of optional field names in schema definition order.
 #' @keywords internal
-.manifest_dim_cols <- function() {
-  schema   <- piptm::pip_arrow_schema()
-  optional <- Filter(function(f) !isTRUE(f$required), schema$fields)
-  names(optional)
-}
+.manifest_dim_cols <- function() piptm::pip_optional_dims()
 
 # ---------------------------------------------------------------------------
 # .decode_reporting_level()   — internal code-to-label translator

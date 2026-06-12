@@ -77,6 +77,7 @@
 .SCHEMA_GEN        <- NULL
 .REQUIRED_COLS_GEN <- NULL
 .ALLOWED_COLS_GEN  <- NULL
+.OPTIONAL_DIMS_GEN <- NULL
 .GENDER_LEVELS_GEN <- NULL
 .AREA_LEVELS_GEN   <- NULL
 
@@ -92,6 +93,9 @@
 }
 .get_allowed_cols <- function() {
   if (is.null(.ALLOWED_COLS_GEN)) piptm::pip_allowed_cols() else .ALLOWED_COLS_GEN
+}
+.get_optional_dims <- function() {
+  if (is.null(.OPTIONAL_DIMS_GEN)) piptm::pip_optional_dims() else .OPTIONAL_DIMS_GEN
 }
 .get_gender_levels <- function() {
   if (is.null(.GENDER_LEVELS_GEN)) piptm::pip_arrow_schema()$levels$gender else .GENDER_LEVELS_GEN
@@ -204,22 +208,7 @@
   }
 
   # --- No extra columns -------------------------------------------------------
-  optional_dims <- c(
-    "gender", "area", "educat4", "educat5", "educat7", "age",
-    # Household characteristics
-    "hsize",
-    # Infrastructure indicators
-    "imp_wat_rec", "imp_san_rec", "electricity",
-    # Labour — lstatus family
-    "lstatus", "lstatus_year",
-    # Labour — empstat family
-    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
-    # Labour — industrycat10 family
-    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
-    # Labour — industrycat4 family
-    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
-  )
-  allowed_cols  <- c(base_required, welfare_vars, optional_dims)
+  allowed_cols <- c(base_required, welfare_vars, .get_optional_dims())
   extra_cols    <- setdiff(names(dt), allowed_cols)
   if (length(extra_cols) > 0L) {
     cli::cli_abort(
@@ -487,15 +476,7 @@ write_survey_parquet <- function(dt,
   )
 
   # --- Identify available breakdown dimensions present in this survey ---------
-  dim_cols <- intersect(c(
-    "gender", "area", "educat4", "educat5", "educat7", "age",
-    "hsize",
-    "imp_wat_rec", "imp_san_rec", "electricity",
-    "lstatus", "lstatus_year",
-    "empstat", "empstat_2", "empstat_year", "empstat_2_year",
-    "industrycat10", "industrycat10_2", "industrycat10_year", "industrycat10_2_year",
-    "industrycat4", "industrycat4_2", "industrycat4_year", "industrycat4_2_year"
-  ), names(dt))
+  dim_cols         <- intersect(.get_optional_dims(), names(dt))
   avail_dimensions <- paste(dim_cols, collapse = ", ")
 
   # --- Build summary row skeleton (filled in below) --------------------------

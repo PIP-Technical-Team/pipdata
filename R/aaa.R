@@ -13,6 +13,7 @@
     .SCHEMA_GEN        <<- piptm::pip_arrow_schema()
     .REQUIRED_COLS_GEN <<- piptm::pip_required_cols()
     .ALLOWED_COLS_GEN  <<- piptm::pip_allowed_cols()
+    .OPTIONAL_DIMS_GEN <<- piptm::pip_optional_dims()
     .GENDER_LEVELS_GEN <<- .SCHEMA_GEN$levels$gender
     .AREA_LEVELS_GEN   <<- .SCHEMA_GEN$levels$area
   }, error = function(e) {
