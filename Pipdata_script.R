@@ -29,13 +29,13 @@ pipfun::setup_working_release(
 # then continue with the rest of the script.
 
 # ----- Load inventory to clean -----
-inv <- pipload::load_gmd_valid_inv()
+inv <- pipload::load_gmd_valid_inv() # missing verbose argument (fix in pipload)
 # inv_ARG <- inv[country_code == "ARG", ]
 
 #--------- Clean surveys and create metadata -----
 old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
 
-new_pip_inv <- pd_process_data(inv = inv, force = TRUE, verbose = FALSE)
+new_pip_inv <- pd_process_data(inv = inv, verbose = FALSE)
 # new_pip_inv <- pd_process_data(inv = inv_ARG, verbose = FALSE)
 
 # Compare inventories

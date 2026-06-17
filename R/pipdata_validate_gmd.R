@@ -455,8 +455,13 @@ gmd_to_validate <- function(gmd_new, inv_validated) {
   if (is.null(inv_validated) || nrow(inv_validated) == 0) return(gmd_new)
 
   # keep records that are going to be validated
-  new_gmd <- joyn::right_join(inv_validated, gmd_new0, by = c("survey_id", "Checksum"))
-  new_gmd <- new_gmd[, !c(".joyn")]
+  new_gmd <- joyn::right_join(
+    inv_validated,
+    gmd_new0,
+    by = c("survey_id", "Checksum"),
+    reportvar = FALSE,
+    verbose = FALSE
+  )
 
   return(invisible(new_gmd))
 }
@@ -492,9 +497,14 @@ gmd_validated <- function(gmd_new, inv_validated) {
   if (is.null(inv_validated) || nrow(inv_validated) == 0) return(NULL)
 
   # keep only validated GMD entries
-  gmd_validated_records <- joyn::full_join(inv_validated,
-                                           gmd_new0,
-                                           by = c("survey_id", "Checksum"))
+  # reportvar left TRUE (default) intentionally: .joyn == "x" filters to
+  # rows present in inv_validated only (right_join semantics via full_join).
+  gmd_validated_records <- joyn::full_join(
+    inv_validated,
+    gmd_new0,
+    by = c("survey_id", "Checksum"),
+    verbose = FALSE
+  )
   gmd_validated_records <- gmd_validated_records[`.joyn` == "x", !c(".joyn")]
 
   return(invisible(gmd_validated_records))

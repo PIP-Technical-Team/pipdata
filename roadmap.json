@@ -217,6 +217,19 @@
                         "code-quality",
                         "review-findings"
                     ]
+                },
+                {
+                    "id": "verbose-option-propagation",
+                    "title": "Implement verbose option propagation (Phase 1 & 2)",
+                    "description": "Completed 2026-06-04: Implemented verbose option propagation across 9 exported functions (pd_deflation, pd_process_data, pipdata_copy_dlw_meta, pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd, save_pip, valid_aux_load, valid_dlw_load). Added comprehensive test coverage for verbose propagation chains. Tests verify: Mode A (direct dt) and Mode B (pip_id) verbose propagation in pd_deflation(); verbose propagation to pipaux::compare_aux_releases/vintages in valid_aux_load(); verbose chain from valid_dlw_load() to valid_aux_load(). See .cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md.",
+                    "status": "done",
+                    "review": ".cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md",
+                    "tags": [
+                        "testing",
+                        "api-design",
+                        "logging",
+                        "code-quality"
+                    ]
                 }
             ]
         },
