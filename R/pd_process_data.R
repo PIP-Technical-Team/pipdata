@@ -149,6 +149,7 @@ pd_process_data <- function(
 #' @param inv inventory with survey_id and pins folder
 #' @param aux_list Named list of auxiliary data frames; expected keys:
 #'   `"pfw"`, `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`.
+#' @param verbose Logical. Print progress messages. Default `TRUE`.
 #' @param ...  other parameters
 #'
 #' @return data.table

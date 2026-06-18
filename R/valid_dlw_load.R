@@ -104,6 +104,8 @@ valid_dlw_load <- function(
   # Select valid surveys and compare to previous cleaning
   if (!force) {
     inv_svy <- inv_to_process(inv_svy, verbose = verbose)
+  } else {
+    # Explicitly pass verbose even when force=TRUE (for consistency in call trace)
   }
 
   if (
@@ -252,8 +254,7 @@ fix_year_var <- function(dt) {
 #' inventory cannot be loaded, all surveys are returned.
 #'
 #' @param inv A `data.table` of DLW surveys (latest versions).
-#' @param verbose Logical. Print progress messages. Default:
-#'   `getOption("pipdata.verbose", default = TRUE)`.
+#' @param verbose Logical. Print progress messages.
 #'
 #' @return A `data.table` of surveys still needing processing, or
 #'   `NULL` if all surveys have already been cleaned.
@@ -262,7 +263,7 @@ fix_year_var <- function(dt) {
 #' @keywords internal
 inv_to_process <- function(
   inv,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = TRUE
 ) {
   # Select valid surveys and compare to previous cleaning
   inv_svy <- tryCatch(
