@@ -147,6 +147,21 @@
                         "master-inventory",
                         "cleanup"
                     ]
+                },
+                {
+                    "id": "save-pip-memory-resilience",
+                    "title": "Fix save_pip_data() memory resilience: largest-first order and GC guard",
+                    "description": "save_pip_data() fails with 'cannot allocate buffer' when a large merged survey (e.g. ARG_2014_EPHC-S2_INC_ALL) arrives late in the iteration loop after heap fragmentation has accumulated. Fix: sort iteration order largest-first by object.size() so big artifacts are written when the heap is cleanest, and add a gc() call before pip_write() for objects above a configurable threshold (getOption(\"pipdata.gc_threshold_bytes\", 100e6)). No new imports — base R only.",
+                    "status": "active",
+                    "plan": ".cg-docs/plans/2026-06-18-save-pip-memory-resilience.md",
+                    "tags": [
+                        "save_pip",
+                        "memory",
+                        "gc",
+                        "qs2",
+                        "reliability",
+                        "pipeline"
+                    ]
                 }
             ]
         },
