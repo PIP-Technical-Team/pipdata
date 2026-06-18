@@ -86,6 +86,16 @@ valid_dlw_load <- function(
     )
   }
 
+  # Alert when surveys need re-cleaning due to aux changes.
+  # Console message is gated by verbose; the log entry above always fires.
+  if (!is.null(inv_aux) && nrow(inv_aux) > 0L) {
+    if (verbose) {
+      cli::cli_alert_warning(
+        "{nrow(inv_aux)} survey{?s} will be re-cleaned because auxiliary data changed."
+      )
+    }
+  }
+
   # Filter inventory for specific modules and select last version of each survey (and random sample if needed)
   # inv <- m_inv_valid(inv, seed = seed) # Mock function to select 20 random surveys from valid inventory
   inv <- inv[module %in% modules]
@@ -93,7 +103,7 @@ valid_dlw_load <- function(
 
   # Select valid surveys and compare to previous cleaning
   if (!force) {
-    inv_svy <- inv_to_process(inv_svy)
+    inv_svy <- inv_to_process(inv_svy, verbose = verbose)
   }
 
   if (
@@ -242,18 +252,23 @@ fix_year_var <- function(dt) {
 #' inventory cannot be loaded, all surveys are returned.
 #'
 #' @param inv A `data.table` of DLW surveys (latest versions).
+#' @param verbose Logical. Print progress messages. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @return A `data.table` of surveys still needing processing, or
 #'   `NULL` if all surveys have already been cleaned.
 #'
 #' @family pd_process_data pipeline
 #' @keywords internal
-inv_to_process <- function(inv) {
+inv_to_process <- function(
+  inv,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
   # Select valid surveys and compare to previous cleaning
   inv_svy <- tryCatch(
     expr = {
       # Load master inventory to compare with previous cleaning
-      dt_master <- pipload::load_pip_master_inventory()
+      dt_master <- pipload::load_pip_master_inventory(verbose = verbose)
 
       # Remove _dlw suffix from master inventory to be able to compare with current inventory
       dlw_cols <- grep("_dlw$", names(dt_master), value = TRUE)
@@ -282,17 +297,21 @@ inv_to_process <- function(inv) {
       inv_svy
     },
     error = function(e) {
-      cli::cli_alert_warning(
-        "Could not load PIP master inventory. Returning all valid surveys without comparing to previous cleaning."
-      )
+      if (verbose) {
+        cli::cli_alert_warning(
+          "Could not load PIP master inventory. Returning all valid surveys without comparing to previous cleaning."
+        )
+      }
       return(inv)
     }
   )
 
   if (inv_svy[, .N] == 0) {
-    cli::cli_alert_warning(
-      "All surveys in the inventory have been cleaned in previous versions. No surveys to process."
-    )
+    if (verbose) {
+      cli::cli_alert_warning(
+        "All surveys in the inventory have been cleaned in previous versions. No surveys to process."
+      )
+    }
     return(NULL)
   }
 

@@ -156,10 +156,10 @@ build_pip_inventory <- function(
 
   # P1.2: Validate pip_id format on the already-filtered set.
   # Expected: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE (5 _-delimited segments,
-  # e.g. BOL_2022_EH_INC_ALL). Artifacts with non-standard names produce
-  # garbage pip_ids — warn explicitly so misconfigurations are visible in
-  # the log.
-  pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9]+_[A-Z]+_[A-Z0-9]+$"
+  # e.g. BOL_2022_EH_INC_ALL). Acronym may contain hyphens (e.g. EPHC-S2).
+  # Artifacts with non-standard names produce garbage pip_ids — warn
+  # explicitly so misconfigurations are visible in the log.
+  pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9-]+_[A-Z]+_[A-Z0-9]+$"
   bad_data <- cat_data[!grepl(pip_id_pattern, pip_id), path]
   bad_meta <- cat_meta[!grepl(pip_id_pattern, pip_id), path]
   bad_paths <- union(bad_data, bad_meta)
@@ -382,7 +382,8 @@ build_pip_inventory <- function(
       x = release_pip_inv,
       id = "pip_release_inventory",
       alias = "pip_inv",
-      pk = c("survey_id", "pip_id")
+      pk = c("survey_id", "pip_id"),
+      verbose = verbose
     ),
     error = function(e) {
       pipfun::log_error(
@@ -440,7 +441,8 @@ build_pip_inventory <- function(
     x = run_inv,
     id = "pip_master_inventory",
     alias = "pip_master",
-    pk = c("survey_id", "pip_id")
+    pk = c("survey_id", "pip_id"),
+    verbose = verbose
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -448,7 +450,7 @@ build_pip_inventory <- function(
   # Verify that surveys from this run appear in the saved master.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   pip_inv <- tryCatch(
-    pipload::load_pip_master_inventory(),
+    pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) NULL
   )
 

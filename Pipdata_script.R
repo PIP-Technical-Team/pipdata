@@ -11,10 +11,10 @@ load_all()
 # Options
 # Suppress downstream I/O messages from pipload/stamp for batch runs.
 # Set pipdata.verbose = TRUE (or remove this line) for interactive exploration.
-options(pipdata.verbose = FALSE)
-options(pipload.verbose = FALSE)
+# options(pipdata.verbose = FALSE)
+# options(pipload.verbose = FALSE)
 # stamp::st_opts("warn_missing_pk_on_load", .get = TRUE)
-stamp::st_opts(warn_missing_pk_on_load = FALSE)
+# stamp::st_opts(warn_missing_pk_on_load = FALSE)
 
 release <- "20260401"
 identity <- "TEST"
@@ -29,14 +29,14 @@ pipfun::setup_working_release(
 # then continue with the rest of the script.
 
 # ----- Load inventory to clean -----
-inv <- pipload::load_gmd_valid_inv() # missing verbose argument (fix in pipload)
-# inv_ARG <- inv[country_code == "ARG", ]
+inv <- pipload::load_gmd_valid_inv(verbose = FALSE)
+inv_ARG <- inv[country_code == "ARG", ]
 
 #--------- Clean surveys and create metadata -----
 old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
 
 new_pip_inv <- pd_process_data(inv = inv, verbose = FALSE)
-# new_pip_inv <- pd_process_data(inv = inv_ARG, verbose = FALSE)
+new_pip_inv <- pd_process_data(inv = inv_ARG, verbose = FALSE)
 
 # Compare inventories
 waldo::compare(old_pip_inv, new_pip_inv)
