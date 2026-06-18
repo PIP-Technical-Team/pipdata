@@ -59,6 +59,11 @@ drop_rl_cols <- function(dt) {
 Extracting to a named helper means both the production code and the tests call the
 same function — if the production code regresses, the tests break.
 
+## Related
+
+- `.cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md` — team-wide pattern document covering both joyn diagnostic column classes (`reportvar` and suffix) with a full audit/prevention checklist.
+- `.cg-docs/solutions/bugs/2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id.md` — Class 1: `.joyn` report column leaking via `anti_join`, causing duplicate `survey_id` in `inv_to_clean`.
+
 ## Prevention
 
 **General rule for any re-run cleanup guard**: when dropping a column before a re-join, use `grep("^<col>", names(dt), value = TRUE)` rather than an exact `%in%` check. joyn (and merge/dplyr joins) can leave suffixed copies if the column was accidentally included in both tables on a prior run.

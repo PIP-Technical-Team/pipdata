@@ -65,9 +65,7 @@ data_to_dt <- function(dt, survey_id) {
 
   # Temporary fix
 
-  dt[,
-    module := NULL
-  ]
+  data.table::set(dt, j = "module", value = NULL)
 
   return(dt)
 }
@@ -185,7 +183,7 @@ survey_id_to_attr <- function(dt, survey_id) {
 
   mod <- attributes(dt)$module
 
-  dt <- dt[, module := mod]
+  data.table::set(dt, j = "module", value = mod)
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

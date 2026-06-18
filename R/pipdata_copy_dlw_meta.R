@@ -15,6 +15,9 @@
 #' 2. Sets up a working environment for the destination release folder to copy
 #' the metadata.
 #'
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::pip_write()] and [pipfun::get_wrk_release()] calls. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return Invisibly returns `TRUE` if the operation completes successfully.
 #'
 #' @examples
@@ -28,10 +31,13 @@
 #' }
 #'
 #' @export
-copy_dlw_metadata <- function(from_release = NULL,
-                      from_identity = NULL,
-                      to_release = NULL,
-                      to_identity = NULL) {
+copy_dlw_metadata <- function(
+  from_release = NULL,
+  from_identity = NULL,
+  to_release = NULL,
+  to_identity = NULL,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
 
   # 1) Setup: source environment ------------------------------------------------
   if (is.null(from_release)) {
@@ -46,7 +52,7 @@ copy_dlw_metadata <- function(from_release = NULL,
   pipfun::setup_working_release(release = from_release,
                                 identity = from_identity)
 
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release(verbose = verbose)
   pip_folders <- pipfun::get_pip_folders()
 
   check_directory(pip_folders$dlw_metadata)
@@ -73,7 +79,7 @@ copy_dlw_metadata <- function(from_release = NULL,
   pipfun::setup_working_release(release = to_release,
                                 identity = to_identity)
 
-  pipfun::get_wrk_release(verbose = FALSE)
+  pipfun::get_wrk_release(verbose = verbose)
   pip_folders <- pipfun::get_pip_folders()
 
   check_directory(pip_folders$dlw_metadata)
@@ -83,16 +89,23 @@ copy_dlw_metadata <- function(from_release = NULL,
     x = gmd_inv_df,
     id = "gmd_valid_inv",
     pk = "survey_id",
-    alias = "dlw_meta"
+    alias = "dlw_meta",
+    verbose = verbose
   )
 
-  pipload::pip_write(x = valid_report_df,
+  pipload::pip_write(
+    x = valid_report_df,
     id = "validation_report",
-    alias = "dlw_meta")
+    alias = "dlw_meta",
+    verbose = verbose
+  )
 
-  pipload::pip_write(x = log_df,
+  pipload::pip_write(
+    x = log_df,
     id = "dlw_validation_log",
-    alias =  "dlw_meta")
+    alias = "dlw_meta",
+    verbose = verbose
+  )
 
   cli::cli_alert_success("DLW metadata successfully copied from {.val {from_release}} to {.val {to_release}}.")
 

@@ -10,6 +10,9 @@
 #' @param alias Character scalar. The storage alias passed to
 #'   [pipload::pip_write()] (e.g., `"pip"` for survey data,
 #'   `"pip_meta"` for metadata).
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::pip_write()] calls. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @return A named list with one entry per artifact: `list(pip_id, success = TRUE)`
 #'   on success or `NULL` on failure. Version metadata is persisted to the
@@ -18,7 +21,11 @@
 #'
 #' @family pd_process_data pipeline
 #' @export
-save_pip_data <- function(data, alias) {
+save_pip_data <- function(
+  data,
+  alias,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,7 +41,7 @@ save_pip_data <- function(data, alias) {
     tryCatch(
       expr = {
         # Save data (version metadata is persisted to stamp catalog)
-        pipload::pip_write(x = data[[y]], id = y, alias = alias)
+        pipload::pip_write(x = data[[y]], id = y, alias = alias, verbose = verbose)
 
         list(pip_id = y, success = TRUE)
       },

@@ -9,6 +9,9 @@
 #'   [pipdata_dlw_process()], the release is already set. When called
 #'   standalone, ensure `setup_working_release()` has been invoked first.
 #'
+#' @param verbose Logical. Controls verbosity of downstream I/O calls
+#'   (including [pipload::pip_write()]). Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return data.table, inventory report
 #' @export
 #'
@@ -21,7 +24,8 @@
 #' }
 pipdata_validate_gmd <- function(
   log = TRUE,
-  save_log = TRUE
+  save_log = TRUE,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #### logging -----------------------------------------------------------------
   if (log) {
@@ -284,7 +288,8 @@ pipdata_validate_gmd <- function(
       x = final_inv,
       id = "gmd_valid_inv",
       pk = "survey_id",
-      alias = "dlw_meta"
+      alias = "dlw_meta",
+      verbose = verbose
     )
 
     cli::cli_alert_success(
@@ -363,7 +368,8 @@ pipdata_validate_gmd <- function(
     pipload::pip_write(
       x = valid_report,
       id = "validation_report",
-      alias = "dlw_meta"
+      alias = "dlw_meta",
+      verbose = verbose
     )
 
     cli::cli_alert_success("Validation report is saved")
@@ -449,8 +455,13 @@ gmd_to_validate <- function(gmd_new, inv_validated) {
   if (is.null(inv_validated) || nrow(inv_validated) == 0) return(gmd_new)
 
   # keep records that are going to be validated
-  new_gmd <- joyn::right_join(inv_validated, gmd_new0, by = c("survey_id", "Checksum"))
-  new_gmd <- new_gmd[, !c(".joyn")]
+  new_gmd <- joyn::right_join(
+    inv_validated,
+    gmd_new0,
+    by = c("survey_id", "Checksum"),
+    reportvar = FALSE,
+    verbose = FALSE
+  )
 
   return(invisible(new_gmd))
 }
@@ -486,9 +497,14 @@ gmd_validated <- function(gmd_new, inv_validated) {
   if (is.null(inv_validated) || nrow(inv_validated) == 0) return(NULL)
 
   # keep only validated GMD entries
-  gmd_validated_records <- joyn::full_join(inv_validated,
-                                           gmd_new0,
-                                           by = c("survey_id", "Checksum"))
+  # reportvar left TRUE (default) intentionally: .joyn == "x" filters to
+  # rows present in inv_validated only (right_join semantics via full_join).
+  gmd_validated_records <- joyn::full_join(
+    inv_validated,
+    gmd_new0,
+    by = c("survey_id", "Checksum"),
+    verbose = FALSE
+  )
   gmd_validated_records <- gmd_validated_records[`.joyn` == "x", !c(".joyn")]
 
   return(invisible(gmd_validated_records))

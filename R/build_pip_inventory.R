@@ -42,9 +42,17 @@
 #' - `first_release_version_id`, `latest_release_version_id` â€” stamp version
 #'   IDs of the release inventory (first appearance and most recent).
 #'
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::load_pip_master_inventory()] and [pipload::load_aux_data()]
+#'   calls. Default: `getOption("pipdata.verbose", default = TRUE)`.
+#'
 #' @family pd_process_data pipeline
 #' @export
-build_pip_inventory <- function(inv_to_clean, pip_id_map) {
+build_pip_inventory <- function(
+  inv_to_clean,
+  pip_id_map,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defensive assertions  ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,7 +64,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # forward from here unchanged.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   old_inv <- tryCatch(
-    expr = pipload::load_pip_master_inventory(verbose = FALSE),
+    expr = pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) NULL
   )
 
@@ -148,10 +156,10 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
 
   # P1.2: Validate pip_id format on the already-filtered set.
   # Expected: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE (5 _-delimited segments,
-  # e.g. BOL_2022_EH_INC_ALL). Artifacts with non-standard names produce
-  # garbage pip_ids — warn explicitly so misconfigurations are visible in
-  # the log.
-  pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9]+_[A-Z]+_[A-Z0-9]+$"
+  # e.g. BOL_2022_EH_INC_ALL). Acronym may contain hyphens (e.g. EPHC-S2).
+  # Artifacts with non-standard names produce garbage pip_ids — warn
+  # explicitly so misconfigurations are visible in the log.
+  pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9-]+_[A-Z]+_[A-Z0-9]+$"
   bad_data <- cat_data[!grepl(pip_id_pattern, pip_id), path]
   bad_meta <- cat_meta[!grepl(pip_id_pattern, pip_id), path]
   bad_paths <- union(bad_data, bad_meta)
@@ -355,7 +363,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     run_inv[, latest_release_version_id := NA_character_]
   }
 
-  pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
+  pfw <- pipload::load_aux_data("pfw", verbose = verbose)
 
   pfw_release <- pfw |>
     collapse::fsubset(inpovcal == 1) |>
@@ -374,7 +382,8 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
       x = release_pip_inv,
       id = "pip_release_inventory",
       alias = "pip_inv",
-      pk = c("survey_id", "pip_id")
+      pk = c("survey_id", "pip_id"),
+      verbose = verbose
     ),
     error = function(e) {
       pipfun::log_error(
@@ -432,7 +441,8 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     x = run_inv,
     id = "pip_master_inventory",
     alias = "pip_master",
-    pk = c("survey_id", "pip_id")
+    pk = c("survey_id", "pip_id"),
+    verbose = verbose
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -440,7 +450,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # Verify that surveys from this run appear in the saved master.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   pip_inv <- tryCatch(
-    pipload::load_pip_master_inventory(),
+    pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) NULL
   )
 
