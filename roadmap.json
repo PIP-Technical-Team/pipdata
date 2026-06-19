@@ -114,6 +114,36 @@
                     ]
                 },
                 {
+                    "id": "yaml-recode-dictionary",
+                    "title": "Auto-sync YAML recode dictionary with stamp versioning",
+                    "description": "Replace hardcoded recode_edu(), recode_gndr(), recode_age() functions with a declarative YAML specification. Package YAML (inst/extdata/recode_spec.yml) is the source of truth — edit it directly, commit changes. Pipeline auto-syncs to stamp: sync_recode_spec() compares package YAML to latest stamp version, saves new version if changed. Implement: sync_recode_spec() auto-sync, apply_recode_spec() dispatcher with version_id attribute, typed handlers (recode_range, recode_binary, recode_haven), utility functions (export_recode_spec_yaml, import_recode_spec_yaml, list_recode_spec_versions, diff_recode_spec), and inventory tracking via version_id_recode_spec column. Benefits: zero manual sync, single source of truth, full GitHub tracking, fast qs2 loading at runtime.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-06-18-yaml-recode-dictionary.md",
+                    "tags": [
+                        "data-quality",
+                        "refactoring",
+                        "recode",
+                        "validation",
+                        "stamp",
+                        "yaml",
+                        "auto-sync"
+                    ]
+                },
+                {
+                    "id": "yaml-validation-unification",
+                    "title": "Explore recode spec consolidation with dlw_pip_var_type.csv",
+                    "description": "Investigate whether the YAML-based recode dictionary (from yaml-recode-dictionary) can be extended to replace or absorb inst/extdata/dlw_pip_var_type.csv used in the validation step. Current CSV contains DLW→PIP variable name mappings and type declarations. Extended YAML spec could unify three concerns: (1) name mapping (dlw_var_names → pip_var_names), (2) type validation (expected class), (3) recode rules (range clamps, categorical mappings). Enables single source of truth for variable transformations across validation and cleaning. Prerequisite: yaml-recode-dictionary must be completed first. Deliverable: feasibility assessment and proof-of-concept extended spec schema.",
+                    "status": "idea",
+                    "tags": [
+                        "validation",
+                        "consolidation",
+                        "architecture",
+                        "dlw",
+                        "stamp",
+                        "yaml"
+                    ]
+                },
+                {
                     "id": "dlw-wrapper-rewrite",
                     "title": "Rewrite DLW wrapper to mirror pipeline architecture",
                     "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",

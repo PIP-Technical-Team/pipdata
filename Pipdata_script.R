@@ -28,6 +28,12 @@ pipfun::setup_working_release(
 # First run pipaux::update_aux_data and pipdata::pipdata_dlw_process,
 # then continue with the rest of the script.
 
+#  report <- pipload::pip_read(
+#     id = "validation_report",
+#     alias = "dlw_meta",
+#     verbose = TRUE
+#   )
+
 # ----- Load inventory to clean -----
 inv <- pipload::load_gmd_valid_inv(verbose = FALSE)
 inv_ARG <- inv[country_code == "ARG", ]
