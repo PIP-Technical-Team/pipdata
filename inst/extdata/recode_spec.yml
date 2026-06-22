@@ -15,7 +15,7 @@ variables:
     valid_range: [0, 110]
     na_outside: true
 
-  hhsize:
+  hsize:
     type: numeric
     recode_type: range_clamp
     valid_range: [1, 100]
@@ -306,7 +306,7 @@ variables:
   hsize_group:
     type: factor
     recode_type: binned_from_continuous
-    source_column: hhsize
+    source_column: hsize
     label: "Household size group (4-category)"
     mapping:
       1: "1 person"
@@ -315,13 +315,13 @@ variables:
       4: "7+ persons"
     bin_rules:
       - bin: 1
-        condition: "hhsize == 1"
+        condition: "hsize == 1"
       - bin: 2
-        condition: "hhsize >= 2 & hhsize <= 3"
+        condition: "hsize >= 2 & hsize <= 3"
       - bin: 3
-        condition: "hhsize >= 4 & hhsize <= 6"
+        condition: "hsize >= 4 & hsize <= 6"
       - bin: 4
-        condition: "hhsize >= 7"
+        condition: "hsize >= 7"
 
   wquintile:
     type: factor

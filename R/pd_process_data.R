@@ -72,6 +72,9 @@ pd_process_data <- function(
     return(old_pip_inv)
   }
 
+  # Sync recode spec to stamp once before the per-survey loop
+  sync_recode_spec(alias = "pip_inv", verbose = verbose)
+
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
   names(inv_ls) <- inv_to_clean$survey_id

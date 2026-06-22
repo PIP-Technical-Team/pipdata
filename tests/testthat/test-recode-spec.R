@@ -234,7 +234,13 @@ test_that("apply_recode_spec() renames source for replace-type recode", {
     )
   )
   local_mocked_bindings(
-    sync_recode_spec = function(...) list(spec = spec, version_id = "v1")
+    load_stamp_recode_spec = function(...) spec
+  )
+  local_mocked_bindings(
+    st_catalog_query = function(...) data.table::data.table(
+      path = "recode_spec.qs2", version_id = "v1"
+    ),
+    .package = "stamp"
   )
   result <- apply_recode_spec(dt, verbose = FALSE)
   expect_true("gender"  %in% names(result))
@@ -257,7 +263,13 @@ test_that("apply_recode_spec() preserves source for derive-type recode", {
     )
   )
   local_mocked_bindings(
-    sync_recode_spec = function(...) list(spec = spec, version_id = "v1")
+    load_stamp_recode_spec = function(...) spec
+  )
+  local_mocked_bindings(
+    st_catalog_query = function(...) data.table::data.table(
+      path = "recode_spec.qs2", version_id = "v1"
+    ),
+    .package = "stamp"
   )
   result <- apply_recode_spec(dt, verbose = FALSE)
   expect_true("age"       %in% names(result))
@@ -273,7 +285,13 @@ test_that("apply_recode_spec() skips variables absent from dt", {
     )
   )
   local_mocked_bindings(
-    sync_recode_spec = function(...) list(spec = spec, version_id = "v1")
+    load_stamp_recode_spec = function(...) spec
+  )
+  local_mocked_bindings(
+    st_catalog_query = function(...) data.table::data.table(
+      path = "recode_spec.qs2", version_id = "v1"
+    ),
+    .package = "stamp"
   )
   result <- apply_recode_spec(dt, verbose = FALSE)
   expect_false("educy" %in% names(result))
@@ -288,7 +306,13 @@ test_that("apply_recode_spec() attaches recode_spec_version_id attribute", {
     )
   )
   local_mocked_bindings(
-    sync_recode_spec = function(...) list(spec = spec, version_id = "test_v1")
+    load_stamp_recode_spec = function(...) spec
+  )
+  local_mocked_bindings(
+    st_catalog_query = function(...) data.table::data.table(
+      path = "recode_spec.qs2", version_id = "test_v1"
+    ),
+    .package = "stamp"
   )
   result <- apply_recode_spec(dt, verbose = FALSE)
   expect_equal(attr(result, "recode_spec_version_id"), "test_v1")

@@ -36,13 +36,13 @@ pipfun::setup_working_release(
 
 # ----- Load inventory to clean -----
 inv <- pipload::load_gmd_valid_inv(verbose = FALSE)
-inv_ARG <- inv[country_code == "ARG", ]
+# inv_ARG <- inv[country_code == "ARG", ]
 
 #--------- Clean surveys and create metadata -----
 old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
 
-new_pip_inv <- pd_process_data(inv = inv, verbose = FALSE)
-new_pip_inv <- pd_process_data(inv = inv_ARG, verbose = FALSE)
+new_pip_inv <- pd_process_data(inv = inv, force = TRUE, verbose = FALSE)
+# new_pip_inv <- pd_process_data(inv = inv_ARG, verbose = FALSE)
 
 # Compare inventories
 waldo::compare(old_pip_inv, new_pip_inv)

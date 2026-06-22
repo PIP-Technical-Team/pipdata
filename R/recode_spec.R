@@ -352,8 +352,8 @@ shift_subnatid <- function(dt) {
 
 #' Apply recode specification to a data.table
 #'
-#' Syncs `inst/extdata/recode_spec.yml` to stamp (creates a new stamp version
-#' only when the content has changed), then applies all matching rules to `dt`.
+#' Reads the recode spec from stamp (synced once upstream by [sync_recode_spec()])
+#' and applies all matching rules to `dt`.
 #'
 #' **Replace-type recodes** (`range_clamp`, `binary_map`, `haven_labels`): if
 #' `source_column` differs from `var_name`, the source column is **renamed** to
@@ -373,9 +373,21 @@ shift_subnatid <- function(dt) {
 #' @return `dt` (modified by reference) with attribute `recode_spec_version_id`.
 #' @export
 apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE) {
-  sync_result <- sync_recode_spec(alias = alias, verbose = verbose)
-  spec        <- sync_result$spec$variables
-  version_id  <- sync_result$version_id
+  stamp_spec <- load_stamp_recode_spec(alias = alias, verbose = FALSE)
+  if (is.null(stamp_spec)) {
+    cli::cli_abort(
+      c(
+        "No recode_spec found in stamp.",
+        "i" = "Call {.fn sync_recode_spec} before processing surveys."
+      ),
+      class = c("recode_spec_missing", "piperr")
+    )
+  }
+  spec <- stamp_spec$variables
+
+  cat        <- stamp::st_catalog_query(alias = alias)
+  recode_row <- cat[grepl("recode_spec", cat$path, fixed = TRUE), ]
+  version_id <- if (nrow(recode_row) > 0L) recode_row$version_id[[1L]] else NA_character_
 
   .replace_types <- c("range_clamp", "binary_map", "haven_labels")
 
