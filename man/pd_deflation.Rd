@@ -10,7 +10,8 @@ pd_deflation(
   ppp = NULL,
   pop = NULL,
   pip_id = NULL,
-  version = NULL
+  version = NULL,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -35,6 +36,10 @@ stamp). Ignored when \code{dt} is provided.}
 \item{version}{Character scalar or \code{NULL}. Stamp version used when loading
 the survey (Mode B) or resolving the metadata version from the master
 inventory.}
+
+\item{verbose}{Logical. When \code{TRUE} (the default), informational messages
+from downstream \code{pipload}/\code{stamp} I/O calls are shown. Set to \code{FALSE} to
+suppress them. Defaults to \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 The input survey \code{data.table} augmented with \code{welfare_lcu} and

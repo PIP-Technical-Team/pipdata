@@ -12,7 +12,8 @@ pipdata_dlw_process(
   save_log = TRUE,
   check_missing = TRUE,
   release = NULL,
-  identity = NULL
+  identity = NULL,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -31,6 +32,10 @@ pipdata_dlw_process(
 \item{release}{Character. The data release identifier or date, used to configure the working environment.}
 
 \item{identity}{Character. One of \code{"PROD"}, \code{"INT"}, or \code{"TEST"}.}
+
+\item{verbose}{Logical. Controls verbosity of downstream
+\code{\link[pipload:pip_write]{pipload::pip_write()}} calls. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 Invisibly returns \code{NULL}. Output files are written to disk.

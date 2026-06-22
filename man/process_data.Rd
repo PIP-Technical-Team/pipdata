@@ -4,13 +4,15 @@
 \alias{process_data}
 \title{Process datalibweb data: merge PFW data and clean variables}
 \usage{
-process_data(inv, aux_list, ...)
+process_data(inv, aux_list, verbose = TRUE, ...)
 }
 \arguments{
 \item{inv}{inventory with survey_id and pins folder}
 
 \item{aux_list}{Named list of auxiliary data frames; expected keys:
 \code{"pfw"}, \code{"cpi"}, \code{"ppp"}, \code{"pop"}, \code{"gdp"}, \code{"pce"}.}
+
+\item{verbose}{Logical. Print progress messages. Default \code{TRUE}.}
 
 \item{...}{other parameters}
 }

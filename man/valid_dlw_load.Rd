@@ -9,7 +9,7 @@ valid_dlw_load(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -24,7 +24,8 @@ Default: \code{c("ALL", "GROUP", "HIST", "GPWG", "BIN")}.}
 \item{force}{Logical. If \code{TRUE}, skip the comparison against the
 master inventory and process all surveys.}
 
-\item{verbose}{Logical. Print progress messages.}
+\item{verbose}{Logical. Print progress messages. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A \code{data.table} of surveys to process, or \code{NULL} if none.

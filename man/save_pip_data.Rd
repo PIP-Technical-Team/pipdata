@@ -4,7 +4,11 @@
 \alias{save_pip_data}
 \title{Save cleaned PIP data or metadata to versioned storage}
 \usage{
-save_pip_data(data, alias)
+save_pip_data(
+  data,
+  alias,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+)
 }
 \arguments{
 \item{data}{A named list of \code{data.table} objects to save. Names
@@ -13,6 +17,10 @@ are used as the \code{id} argument to \code{\link[pipload:pip_write]{pipload::pi
 \item{alias}{Character scalar. The storage alias passed to
 \code{\link[pipload:pip_write]{pipload::pip_write()}} (e.g., \code{"pip"} for survey data,
 \code{"pip_meta"} for metadata).}
+
+\item{verbose}{Logical. Controls verbosity of downstream
+\code{\link[pipload:pip_write]{pipload::pip_write()}} calls. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A named list with one entry per artifact: \code{list(pip_id, success = TRUE)}
