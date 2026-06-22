@@ -43,6 +43,8 @@ Key design decisions:
 - **Replace source columns for in-place recodes**: For `range_clamp`, `binary_map`, and `haven_labels` types, if `source_column` differs from `var_name`, the source column is **renamed** to the target — `urban` is dropped, `area` is kept; `male` is dropped, `gender` is kept
 - **Preserve source columns for derived recodes**: For `binned_from_continuous` and `quantile_from_continuous`, the source column is preserved and a new target column is added
 - **Five typed handlers**: `recode_range()`, `recode_binary()`, `recode_haven()`, `recode_binned()`, `recode_quantile()`; all use `data.table::set()` (no tidy-eval operators)
+- **Weighted quantiles**: `recode_quantile()` accepts an optional `weight_col` field from the YAML; when present it uses a weighted CDF to compute break points (the `weight` column, already formatted by `format_wgt()`, is the expected source)
+- **Structural column modifications as separate functions**: `shift_subnatid()` normalises `subnatid` → `subnatid1` and shifts any existing numbered subnatid columns; called explicitly in `dlw_clean.pipmd()` before `apply_recode_spec()` — structural renames that are not variable-level recodes live here, not in the spec
 - **Strict validation**: `validate_recode_spec()` rejects unknown recode types and enforces type-specific constraints (e.g., `binary_map` must have exactly 2 mapping entries)
 - **Inventory tracking**: `build_pip_inventory()` adds `version_id_recode_spec` via catalog query (Option B)
 
@@ -56,7 +58,7 @@ The full specification lives in `inst/extdata/recode_spec.yml` (already created 
 | `binary_map` | `mapping` (exactly 2 entries) | Modified in-place; renamed if `source_column` differs |
 | `haven_labels` | `mapping` (N entries) | Explicit label lookup using YAML mapping; renamed if `source_column` differs |
 | `binned_from_continuous` | `source_column`, `bin_rules`, `mapping` | New column added; source column preserved |
-| `quantile_from_continuous` | `source_column`, `mapping` | New column added; source column preserved |
+| `quantile_from_continuous` | `source_column`, `mapping`; optional `weight_col` | New column added; source column preserved |
 
 For `binned_from_continuous`, `bin_rules` is a list of `{bin: int, condition: "expr"}` entries where `condition` is a character string evaluated in the data.table context (column names must match as they appear in `dt` at the time `apply_recode_spec()` runs).
 
@@ -366,21 +368,38 @@ recode_binned <- function(dt, var_name, source_col, bin_rules, mapping) {
 
 #' Create a new quantile-group variable from a continuous source
 #'
-#' n_groups is derived from length(mapping). Quantile breaks are computed
-#' with stats::quantile (unweighted). Source column is preserved; var_name
-#' is added. See Open Questions for weighted-quantile alternative.
+#' Uses wbpip::md_compute_quantiles() for group assignments. When weight_col
+#' is supplied (e.g. "weight" after format_wgt()), the quantile boundaries
+#' are survey-weight-adjusted. Source column is preserved; var_name is added.
+#'
+#' wbpip::md_compute_quantiles() returns a vector of n_groups values (welfare
+#' at the top of each group). The last value is dropped and Inf is used as
+#' the upper bound so cut() assigns all values to a valid group.
 #' @keywords internal
-recode_quantile <- function(dt, var_name, source_col, mapping) {
+recode_quantile <- function(dt, var_name, source_col, mapping, weight_col = NULL) {
   if (!source_col %in% names(dt)) return(invisible(dt))
 
   n_groups <- length(mapping)
   keys <- as.integer(names(mapping))
   vals <- as.character(unlist(mapping, use.names = FALSE))
 
-  x      <- dt[[source_col]]
-  breaks <- stats::quantile(x, probs = seq(0, 1, length.out = n_groups + 1L), na.rm = TRUE)
-  codes  <- as.integer(cut(x, breaks = breaks, labels = FALSE, include.lowest = TRUE))
+  x <- dt[[source_col]]
+  w <- if (!is.null(weight_col) && weight_col %in% names(dt)) {
+    dt[[weight_col]]
+  } else {
+    rep(1, length(x))
+  }
 
+  q_upper <- wbpip::md_compute_quantiles(
+    welfare    = x,
+    weight     = w,
+    n_quantile = n_groups
+  )
+
+  # q_upper[n_groups] is the max value; replace with Inf for cut()
+  breaks <- c(-Inf, q_upper[-n_groups], Inf)
+  codes  <- as.integer(cut(x, breaks = unique(breaks),
+                           labels = FALSE, include.lowest = TRUE))
   data.table::set(dt, j = var_name,
     value = vals[match(codes, keys)]
   )
@@ -388,7 +407,44 @@ recode_quantile <- function(dt, var_name, source_col, mapping) {
 }
 ```
 
-**5. Generic dispatcher**
+**5. Structural column modifier — `shift_subnatid()`**
+
+Handles the `subnatid` → `subnatid1` normalisation that was previously embedded in
+`add_area.pipmd()`. Called explicitly in `dlw_clean.pipmd()` before `apply_recode_spec()`.
+
+```r
+#' Normalise subnatid column hierarchy
+#'
+#' Shifts existing subnatidN columns up by one (subnatid1 -> subnatid2, etc.)
+#' then renames subnatid -> subnatid1. No-op if no plain subnatid column exists.
+#'
+#' @param dt data.table
+#' @return dt (modified by reference via setnames)
+#' @keywords internal
+shift_subnatid <- function(dt) {
+  if (!"subnatid" %in% colnames(dt)) return(invisible(dt))
+
+  subnatid_cols <- grep("^subnatid[0-9]+$", colnames(dt), value = TRUE)
+
+  if (length(subnatid_cols) > 0L) {
+    nums    <- as.integer(gsub("subnatid", "", subnatid_cols))
+    max_num <- max(nums)
+    # Rename from largest to smallest to avoid conflicts
+    for (i in seq(max_num, 1L, by = -1L)) {
+      old_nm <- paste0("subnatid", i)
+      new_nm <- paste0("subnatid", i + 1L)
+      if (old_nm %in% colnames(dt)) {
+        data.table::setnames(dt, old_nm, new_nm)
+      }
+    }
+  }
+
+  data.table::setnames(dt, "subnatid", "subnatid1")
+  invisible(dt)
+}
+```
+
+**6. Generic dispatcher**
 
 ```r
 #' Apply recode specification to data.table
@@ -435,7 +491,8 @@ apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE) {
       binned_from_continuous =
         recode_binned(dt, var_name, actual_col, rule$bin_rules, rule$mapping),
       quantile_from_continuous =
-        recode_quantile(dt, var_name, actual_col, rule$mapping)
+        recode_quantile(dt, var_name, actual_col, rule$mapping,
+                        weight_col = rule$weight_col)
       # Unknown types already rejected by validate_recode_spec at load time
     )
 
@@ -466,15 +523,18 @@ apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE) {
 }
 ```
 
-**6. Modify `dlw_clean.pipmd()`**
+**7. Modify `dlw_clean.pipmd()`**
 
-Replace `add_area()`, `recode_edu()`, `recode_gndr()`, and `recode_age()` with `apply_recode_spec()`:
+Replace `add_area()`, `recode_edu()`, `recode_gndr()`, and `recode_age()` with
+`shift_subnatid()` + `apply_recode_spec()`. `format_wgt()` must run before
+`apply_recode_spec()` so that the `weight` column is available for `recode_quantile()`.
 
 ```r
 dlw_clean.pipmd <- function(df, ...) {
   md <- copy(df)
 
-  md <- format_wgt(md)
+  md <- shift_subnatid(md)  # normalise subnatid columns (structural rename)
+  md <- format_wgt(md)      # weight column must exist before apply_recode_spec
   md <- format_wlf(md)
 
   # Replaces add_area(), recode_edu(), recode_gndr(), recode_age()
@@ -487,11 +547,6 @@ dlw_clean.pipmd <- function(df, ...) {
   return(md)
 }
 ```
-
-**Note on `subnatid` renaming**: `add_area.pipmd()` currently shifts `subnatid` columns
-(`subnatid` → `subnatid1`, `subnatid1` → `subnatid2`, etc.) before doing the urban → area
-conversion. This logic is **not** part of the recode spec and is not covered by
-`apply_recode_spec()`. See Open Questions below for how to handle it.
 
 **`add_area.pipgd()` is not affected**: `dlw_clean.pipgd()` continues to call `add_area()`.
 
@@ -801,6 +856,7 @@ Mark `recode_edu()`, `recode_gndr()`, `recode_age()`, and `add_area.pipmd()` wit
 
 - `yaml` (add to `Imports`) for loading package YAML
 - `digest` (add to `Imports`) for comparing spec versions
+- `wbpip` (already in `Imports`) for `md_compute_quantiles()` in `recode_quantile()`
 - `stamp` (already in `Imports`) for catalog queries
 - `pipload` (already in `Imports`) for `pip_read()`, `pip_write()`
 - No breaking changes to external API — `dlw_clean()` signature unchanged
@@ -833,20 +889,16 @@ Mark `recode_edu()`, `recode_gndr()`, `recode_age()`, and `add_area.pipmd()` wit
 - [ ] `git log inst/extdata/recode_spec.yml` shows meaningful change history
 - [ ] Utility functions (`export_recode_spec_yaml`, `diff_recode_spec`) work correctly
 
-## Open Questions
+## Resolved Design Decisions
 
-1. **`subnatid` renaming**: `add_area.pipmd()` shifts subnatid columns before doing the
-   urban → area conversion (`subnatid` → `subnatid1`, `subnatid1` → `subnatid2`, etc.).
-   This logic is separate from the recode spec and is lost when `add_area()` is removed.
-   Options:
-   - Keep it as an explicit step in `dlw_clean.pipmd()` before `apply_recode_spec()`
-   - Add a dedicated `rename_subnatid()` function and call it there
-   - Is subnatid shifting still needed at all?
+1. **`subnatid` renaming**: Extracted to `shift_subnatid()`, called explicitly in
+   `dlw_clean.pipmd()` before `apply_recode_spec()`. Structural column renames that are
+   not variable-level recodes live in dedicated functions, not in the spec.
 
-2. **`wquintile` weights**: The `quantile_from_continuous` handler for `wquintile` currently
-   uses unweighted `stats::quantile()`. PIP welfare distributions are typically analyzed with
-   survey weights. Should `recode_quantile()` accept an optional `weight_col` field in the
-   YAML spec, or remain unweighted for now?
+2. **`wquintile` weights**: `recode_quantile()` uses `wbpip::md_compute_quantiles()` with
+   the `weight` column (formatted by `format_wgt()`) when `weight_col: weight` is specified
+   in the YAML. `format_wgt()` is called before `apply_recode_spec()` to guarantee the
+   column exists.
 
 ## References
 

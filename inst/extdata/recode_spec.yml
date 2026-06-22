@@ -327,6 +327,7 @@ variables:
     type: factor
     recode_type: quantile_from_continuous
     source_column: welfare
+    weight_col: weight
     label: "Welfare quintile"
     mapping:
       1: "quintile1"
