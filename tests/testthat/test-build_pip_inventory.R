@@ -153,7 +153,7 @@ test_that("build_pip_inventory happy path returns correct structure", {
   local_mocked_bindings(
     load_pip_master_inventory = function(...) NULL,
     load_aux_data = function(measure, ...) mock_pfw,
-    pip_write = function(x, id, alias, pk = NULL) {
+    pip_write = function(x, id, alias, pk = NULL, ...) {
       list(version_id = paste0(id, "_vid"), skipped = FALSE)
     },
     .package = "pipload"
@@ -220,7 +220,7 @@ test_that("build_pip_inventory upserts: retains old surveys, updates reprocessed
   local_mocked_bindings(
     load_pip_master_inventory = function(...) old_master,
     load_aux_data = function(measure, ...) make_pfw("BRA", 2019L, "PNAD"),
-    pip_write = function(x, id, alias, pk = NULL) {
+    pip_write = function(x, id, alias, pk = NULL, ...) {
       list(version_id = paste0(id, "_vid"), skipped = FALSE)
     },
     .package = "pipload"
@@ -282,7 +282,7 @@ test_that("build_pip_inventory renames DLW columns before join to avoid collisio
   local_mocked_bindings(
     load_pip_master_inventory = function(...) NULL,
     load_aux_data = function(measure, ...) make_pfw("IND", 2021L, "NSS"),
-    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
     .package = "pipload"
   )
   local_mocked_bindings(
@@ -337,7 +337,7 @@ test_that("build_pip_inventory warns and excludes pip_id missing from meta catal
   local_mocked_bindings(
     load_pip_master_inventory = function(...) NULL,
     load_aux_data = function(measure, ...) make_pfw("ARG", 2020L, "EPH"),
-    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
     .package = "pipload"
   )
   local_mocked_bindings(
@@ -517,7 +517,7 @@ test_that("build_pip_inventory aborts when duplicate pip_id arises after upsert"
   local_mocked_bindings(
     load_pip_master_inventory = function(...) NULL,
     load_aux_data = function(measure, ...) make_pfw("SEN", 2011L, "ESPS"),
-    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
     .package = "pipload"
   )
   local_mocked_bindings(
@@ -565,7 +565,7 @@ test_that("build_pip_inventory warns and drops artifact with non-standard pip_id
   local_mocked_bindings(
     load_pip_master_inventory = function(...) NULL,
     load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
-    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
     .package = "pipload"
   )
   local_mocked_bindings(
@@ -614,7 +614,7 @@ test_that("build_pip_inventory uses st_latest for release_vid when pip_write ret
   local_mocked_bindings(
     load_pip_master_inventory = function(...) NULL,
     load_aux_data = function(measure, ...) make_pfw("TZA", 2019L, "HBS"),
-    pip_write = function(x, id, alias, pk = NULL) {
+    pip_write = function(x, id, alias, pk = NULL, ...) {
       if (identical(id, "pip_release_inventory")) {
         # Simulate unchanged content → pip_write skips the write
         list(version_id = NULL, skipped = TRUE)
@@ -679,7 +679,7 @@ test_that("build_pip_inventory strips reporting_level legacy column from old mas
   local_mocked_bindings(
     load_pip_master_inventory = function(...) old_master,
     load_aux_data = function(measure, ...) make_pfw("NGA", 2019L, "GHS"),
-    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
     .package = "pipload"
   )
   local_mocked_bindings(
@@ -743,7 +743,7 @@ test_that("build_pip_inventory rowbinds correctly when old master has fs_bytes s
   local_mocked_bindings(
     load_pip_master_inventory = function(...) old_master,
     load_aux_data = function(measure, ...) make_pfw("ECU", 2021L, "ENEMDU"),
-    pip_write = function(x, id, alias, pk = NULL) list(version_id = "v1"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
     .package = "pipload"
   )
   local_mocked_bindings(

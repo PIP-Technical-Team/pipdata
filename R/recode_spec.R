@@ -71,7 +71,7 @@ validate_recode_spec <- function(spec) {
       cli::cli_abort(
         c(
           "Variable {.field {var_name}} has unknown recode_type {.val {rule$recode_type}}",
-          "i" = "Known types: {.val {.known_recode_types}}"
+          "i" = "Known types: {.val {(.known_recode_types)}}"
         ),
         class = c("recode_spec_invalid", "piperr")
       )
