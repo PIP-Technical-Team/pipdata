@@ -420,6 +420,17 @@ apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE) {
       data.table::setnames(dt, old = rule$source_column, new = var_name)
     }
 
+    if (identical(rule$type, "factor") && var_name %in% names(dt)) {
+      lvls <- if (!is.null(rule$mapping)) {
+        as.character(unlist(rule$mapping, use.names = FALSE))
+      } else {
+        NULL
+      }
+      data.table::set(dt, j = var_name,
+        value = factor(dt[[var_name]], levels = lvls)
+      )
+    }
+
     recoded_vars <- c(recoded_vars, var_name)
   }
 

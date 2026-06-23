@@ -245,7 +245,9 @@ test_that("apply_recode_spec() renames source for replace-type recode", {
   result <- apply_recode_spec(dt, verbose = FALSE)
   expect_true("gender"  %in% names(result))
   expect_false("male"   %in% names(result))
-  expect_equal(result$gender, c("male", "female"))
+  expect_true(is.factor(result$gender))
+  expect_equal(as.character(result$gender), c("male", "female"))
+  expect_equal(levels(result$gender), c("male", "female"))
 })
 
 test_that("apply_recode_spec() preserves source for derive-type recode", {
@@ -274,6 +276,8 @@ test_that("apply_recode_spec() preserves source for derive-type recode", {
   result <- apply_recode_spec(dt, verbose = FALSE)
   expect_true("age"       %in% names(result))
   expect_true("age_group" %in% names(result))
+  expect_true(is.factor(result$age_group))
+  expect_equal(levels(result$age_group), c("child"))
 })
 
 test_that("apply_recode_spec() skips variables absent from dt", {
