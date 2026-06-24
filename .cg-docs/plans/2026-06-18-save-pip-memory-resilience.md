@@ -1,7 +1,7 @@
 ---
 date: 2026-06-18
 title: "save_pip_data: memory-resilient save order and GC guard"
-status: active
+status: done
 scope: "Lightweight"
 brainstorm: null
 language: "R"
@@ -115,8 +115,8 @@ known sizes can be added under `tests/testthat/test-save_pip.R` in a follow-up.
 
 ## Documentation Checklist
 
-- [ ] Roxygen `@details` added describing sort order and `pipdata.gc_threshold_bytes`
-- [ ] `NEWS.md` bullet under next release: "fix: `save_pip_data()` now processes
+- [x] Roxygen `@details` added describing sort order and `pipdata.gc_threshold_bytes`
+- [x] `NEWS.md` bullet under next release: "fix: `save_pip_data()` now processes
   largest surveys first and runs `gc()` above threshold to prevent
   `cannot allocate buffer` errors (#tbd)"
 
