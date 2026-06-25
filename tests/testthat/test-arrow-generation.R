@@ -181,19 +181,17 @@ test_that("write_survey_parquet round-trip: version column preserved correctly",
   expect_false("welfare" %in% names(dt_read))
 })
 
-test_that("write_survey_parquet round-trip: educat4 preserved as factor", {
+test_that("write_survey_parquet round-trip: educat4 preserved as integer codes", {
   tmp <- withr::local_tempdir()
   dt  <- make_arrow_dt()
-  data.table::set(dt, j = "educat4", value = factor(
-    rep(c("Primary (complete or incomplete)", "No education"), length.out = 5L)
-  ))
+  data.table::set(dt, j = "educat4", value = rep(c(2L, 5L), length.out = 5L))
 
   result  <- write_survey_parquet(dt, arrow_repo_path = tmp)
   dt_read <- data.table::as.data.table(arrow::read_parquet(result$file_path))
 
   expect_true("educat4" %in% names(dt_read))
-  # Arrow reads dictionary as factor
-  expect_true(is.factor(dt_read$educat4) || is.character(dt_read$educat4))
+  expect_true(is.integer(dt_read$educat4))
+  expect_setequal(unique(dt_read$educat4), c(2L, 5L))
   expect_false("education" %in% names(dt_read))
 })
 

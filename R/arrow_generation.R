@@ -95,7 +95,15 @@
   if (is.null(.ALLOWED_COLS_GEN)) piptm::pip_allowed_cols() else .ALLOWED_COLS_GEN
 }
 .get_optional_dims <- function() {
-  if (is.null(.OPTIONAL_DIMS_GEN)) piptm::pip_optional_dims() else .OPTIONAL_DIMS_GEN
+  if (!is.null(.OPTIONAL_DIMS_GEN)) {
+    return(.OPTIONAL_DIMS_GEN)
+  }
+
+  if (exists("pip_optional_dims", envir = asNamespace("piptm"), inherits = FALSE)) {
+    get("pip_optional_dims", envir = asNamespace("piptm"))()
+  } else {
+    piptm:::pip_optional_dims()
+  }
 }
 .get_gender_levels <- function() {
   if (is.null(.GENDER_LEVELS_GEN)) piptm::pip_arrow_schema()$levels$gender else .GENDER_LEVELS_GEN
@@ -287,37 +295,10 @@
     )
   }
 
-  # --- Factor level conformance for optional breakdown dimensions -------------
-  if ("gender" %in% names(dt)) {
-    gender_levels <- .get_gender_levels()
-    bad <- dt[!is.na(gender) & !gender %in% gender_levels,
-              unique(as.character(gender))]
-    if (length(bad) > 0L) {
-      cli::cli_abort(
-        paste0(
-          "gender has values outside allowed levels ",
-          "{.val {gender_levels}}: {.val {bad}}"
-        )
-      )
-    }
-  }
-  if ("area" %in% names(dt)) {
-    area_levels <- .get_area_levels()
-    bad <- dt[!is.na(area) & !area %in% area_levels,
-              unique(as.character(area))]
-    if (length(bad) > 0L) {
-      cli::cli_abort(
-        paste0(
-          "area has values outside allowed levels ",
-          "{.val {area_levels}}: {.val {bad}}"
-        )
-      )
-    }
-  }
-  # educat4/5/7: only check they are factors — levels are survey-specific.
-  for (edu_col in c("educat4", "educat5", "educat7")) {
-    if (edu_col %in% names(dt) && !is.factor(dt[[edu_col]])) {
-      cli::cli_abort("{.field {edu_col}} must be a factor column.")
+  # --- Categorical dimensions must be integer-coded --------------------------
+  for (cat_col in c("gender", "area", "educat4", "educat5", "educat7")) {
+    if (cat_col %in% names(dt) && !is.integer(dt[[cat_col]])) {
+      cli::cli_abort("{.field {cat_col}} must be integer-coded.")
     }
   }
   if ("age" %in% names(dt)) {
