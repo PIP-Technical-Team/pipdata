@@ -71,7 +71,7 @@ variables:
       1: "male"
 
   literacy:
-    type: binary
+    type: factor
     recode_type: binary_map
     label: "Literacy"
     mapping:
@@ -79,7 +79,7 @@ variables:
       1: "yes"
 
   school:
-    type: binary
+    type: factor
     recode_type: binary_map
     label: "School"
     mapping:
@@ -96,7 +96,7 @@ variables:
       1: "urban"
 
   imp_wat_rec:
-    type: binary
+    type: factor
     recode_type: binary_map
     label: "Access to improved water source"
     mapping:
@@ -104,7 +104,7 @@ variables:
       1: "yes"
 
   imp_san_rec:
-    type: binary
+    type: factor
     recode_type: binary_map
     label: "Access to improved sanitation"
     mapping:
@@ -112,7 +112,7 @@ variables:
       1: "yes"
 
   electricity:
-    type: binary
+    type: factor
     recode_type: binary_map
     label: "Access to electricity"
     mapping:
@@ -121,7 +121,7 @@ variables:
 
   # Binary from categorical (gender)
   female:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: gender
     label: "Female"
@@ -135,7 +135,7 @@ variables:
         condition: "gender == 'male'"
 
   male:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: gender
     label: "Male"
@@ -150,7 +150,7 @@ variables:
 
   # Binary from categorical (area)
   urban:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: area
     label: "Urban"
@@ -164,7 +164,7 @@ variables:
         condition: "area == 'rural'"
 
   rural:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: area
     label: "Rural"
@@ -198,7 +198,7 @@ variables:
 
   # Binary from categorical (lstatus)
   employed:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: lstatus
     label: "Employed"
@@ -212,7 +212,7 @@ variables:
         condition: "lstatus == 'Unemployed' | lstatus == 'Not-in-labor force'"
 
   unemployed:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: lstatus
     label: "Unemployed"
@@ -226,7 +226,7 @@ variables:
         condition: "lstatus == 'Employed' | lstatus == 'Not-in-labor force'"
 
   in_labor_force:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: lstatus
     label: "Labor force participation"
@@ -287,7 +287,7 @@ variables:
 
   # Binary from categorical (empstat)
   self_emp:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: empstat
     label: "Self-employment"
@@ -301,7 +301,7 @@ variables:
         condition: "empstat == 'Paid Employee' | empstat == 'Non-Paid Employee' | empstat == 'Employer' | empstat == 'Other workers not classifiable by status'"
 
   paid_emp:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: empstat
     label: "Wage employment"
@@ -315,7 +315,7 @@ variables:
         condition: "empstat == 'Non-Paid Employee' | empstat == 'Employer' | empstat == 'Self-employed' | empstat == 'Other workers not classifiable by status'"
 
   employer:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: empstat
     label: "Employer"
@@ -329,7 +329,7 @@ variables:
         condition: "empstat == 'Paid Employee' | empstat == 'Non-Paid Employee' | empstat == 'Self-employed' | empstat == 'Other workers not classifiable by status'"
 
   inf_emp:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: empstat
     label: "Informal employment"
@@ -386,7 +386,7 @@ variables:
 
   # Binary from categorical (industrycat4)
   emp_agri:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: industrycat4
     label: "Employment in agriculture sector"
@@ -400,7 +400,7 @@ variables:
         condition: "industrycat4 == 'Industry' | industrycat4 == 'Services' | industrycat4 == 'Other'"
 
   emp_indu:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: industrycat4
     label: "Employment in industry sectors"
@@ -414,7 +414,7 @@ variables:
         condition: "industrycat4 == 'Agriculture' | industrycat4 == 'Services' | industrycat4 == 'Other'"
 
   emp_serv:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: industrycat4
     label: "Employment in services sectors"
@@ -428,7 +428,7 @@ variables:
         condition: "industrycat4 == 'Agriculture' | industrycat4 == 'Industry' | industrycat4 == 'Other'"
 
   emp_others:
-    type: binary
+    type: factor
     recode_type: binary_from_categorical
     source_column: industrycat4
     label: "Employment in other sectors"
@@ -579,7 +579,7 @@ variables:
 
   # Binary from continuous (age)
   youth:
-    type: binary
+    type: factor
     recode_type: binary_from_continuous
     source_column: age
     label: "Youth (15–24)"
@@ -593,7 +593,7 @@ variables:
         condition: "age < 15 | age > 24"
 
   prime_work_age:
-    type: binary
+    type: factor
     recode_type: binary_from_continuous
     source_column: age
     label: "Prime working age (25–54)"
@@ -607,7 +607,7 @@ variables:
         condition: "age < 25 | age > 54"
 
   elderly:
-    type: binary
+    type: factor
     recode_type: binary_from_continuous
     source_column: age
     label: "Elderly (65+)"
