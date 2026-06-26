@@ -6,18 +6,21 @@ variables:
   educy:
     type: numeric
     recode_type: range_clamp
+    label: "Years of education"
     valid_range: [0, 50]
     na_outside: true
 
   age:
     type: numeric
     recode_type: range_clamp
+    label: "Age in years"
     valid_range: [0, 110]
     na_outside: true
 
   hsize:
     type: numeric
     recode_type: range_clamp
+    label: "Household size"
     valid_range: [1, 100]
     na_outside: true
 
@@ -59,55 +62,120 @@ variables:
 
   # Binary categorical mapping
   gender:
-    source_column: male
     type: factor
     recode_type: binary_map
+    source_column: male
+    label: "Gender"
     mapping:
-      1: "male"
       0: "female"
+      1: "male"
 
   literacy:
-    type: factor
+    type: binary
     recode_type: binary_map
+    label: "Literacy"
     mapping:
-      1: "yes"
       0: "no"
+      1: "yes"
 
   school:
-    type: factor
+    type: binary
     recode_type: binary_map
+    label: "School"
     mapping:
-      1: "yes"
       0: "no"
+      1: "yes"
 
   area:
-    source_column: urban
     type: factor
     recode_type: binary_map
+    source_column: urban
+    label: "Area"
     mapping:
-      1: "urban"
       0: "rural"
+      1: "urban"
 
   imp_wat_rec:
-    type: factor
+    type: binary
     recode_type: binary_map
+    label: "Access to improved water source"
     mapping:
-      1: "yes"
       0: "no"
+      1: "yes"
 
   imp_san_rec:
-    type: factor
+    type: binary
     recode_type: binary_map
+    label: "Access to improved sanitation"
     mapping:
-      1: "yes"
       0: "no"
+      1: "yes"
 
   electricity:
-    type: factor
+    type: binary
     recode_type: binary_map
+    label: "Access to electricity"
     mapping:
-      1: "yes"
       0: "no"
+      1: "yes"
+
+  # Binary from categorical (gender)
+  female:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: gender
+    label: "Female"
+    mapping:
+      0: "Male"
+      1: "Female"
+    derivation_rules:
+      - value: 1
+        condition: "gender == 'female'"
+      - value: 0
+        condition: "gender == 'male'"
+
+  male:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: gender
+    label: "Male"
+    mapping:
+      0: "Female"
+      1: "Male"
+    derivation_rules:
+      - value: 1
+        condition: "gender == 'male'"
+      - value: 0
+        condition: "gender == 'female'"
+
+  # Binary from categorical (area)
+  urban:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: area
+    label: "Urban"
+    mapping:
+      0: "Rural"
+      1: "Urban"
+    derivation_rules:
+      - value: 1
+        condition: "area == 'urban'"
+      - value: 0
+        condition: "area == 'rural'"
+
+  rural:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: area
+    label: "Rural"
+    mapping:
+      0: "Urban"
+      1: "Rural"
+    derivation_rules:
+      - value: 1
+        condition: "area == 'rural'"
+      - value: 0
+        condition: "area == 'urban'"
 
   # Labor Status Variables (Haven Labels)
   lstatus:
@@ -127,6 +195,49 @@ variables:
       1: "Employed"
       2: "Unemployed"
       3: "Not-in-labor force"
+
+  # Binary from categorical (lstatus)
+  employed:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: lstatus
+    label: "Employed"
+    mapping:
+      0: "Not employed"
+      1: "Employed"
+    derivation_rules:
+      - value: 1
+        condition: "lstatus == 'Employed'"
+      - value: 0
+        condition: "lstatus == 'Unemployed' | lstatus == 'Not-in-labor force'"
+
+  unemployed:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: lstatus
+    label: "Unemployed"
+    mapping:
+      0: "Not unemployed"
+      1: "Unemployed"
+    derivation_rules:
+      - value: 1
+        condition: "lstatus == 'Unemployed'"
+      - value: 0
+        condition: "lstatus == 'Employed' | lstatus == 'Not-in-labor force'"
+
+  in_labor_force:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: lstatus
+    label: "Labor force participation"
+    mapping:
+      0: "Not-in-labor force"
+      1: "In labor force"
+    derivation_rules:
+      - value: 1
+        condition: "lstatus == 'Employed' | lstatus == 'Unemployed'"
+      - value: 0
+        condition: "lstatus == 'Not-in-labor force'"
 
   # Employment Status - Primary Job (7-day)
   empstat:
@@ -174,6 +285,63 @@ variables:
       4: "Self-employed"
       5: "Other workers not classifiable by status"
 
+  # Binary from categorical (empstat)
+  self_emp:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: empstat
+    label: "Self-employment"
+    mapping:
+      0: "Not self-employed"
+      1: "Self-employed"
+    derivation_rules:
+      - value: 1
+        condition: "empstat == 'Self-employed'"
+      - value: 0
+        condition: "empstat == 'Paid Employee' | empstat == 'Non-Paid Employee' | empstat == 'Employer' | empstat == 'Other workers not classifiable by status'"
+
+  paid_emp:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: empstat
+    label: "Wage employment"
+    mapping:
+      0: "Not a paid employee"
+      1: "Paid Employee"
+    derivation_rules:
+      - value: 1
+        condition: "empstat == 'Paid Employee'"
+      - value: 0
+        condition: "empstat == 'Non-Paid Employee' | empstat == 'Employer' | empstat == 'Self-employed' | empstat == 'Other workers not classifiable by status'"
+
+  employer:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: empstat
+    label: "Employer"
+    mapping:
+      0: "Not an employer"
+      1: "Employer"
+    derivation_rules:
+      - value: 1
+        condition: "empstat == 'Employer'"
+      - value: 0
+        condition: "empstat == 'Paid Employee' | empstat == 'Non-Paid Employee' | empstat == 'Self-employed' | empstat == 'Other workers not classifiable by status'"
+
+  inf_emp:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: empstat
+    label: "Informal employment"
+    mapping:
+      0: "Not informal"
+      1: "Informal"
+    derivation_rules:
+      - value: 1
+        condition: "empstat == 'Non-Paid Employee' | empstat == 'Other workers not classifiable by status'"
+      - value: 0
+        condition: "empstat == 'Paid Employee' | empstat == 'Employer' | empstat == 'Self-employed'"
+
   # Industry Classification (4-category) - 7-day
   industrycat4:
     type: factor
@@ -215,6 +383,63 @@ variables:
       2: "Industry"
       3: "Services"
       4: "Other"
+
+  # Binary from categorical (industrycat4)
+  emp_agri:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: industrycat4
+    label: "Employment in agriculture sector"
+    mapping:
+      0: "Not in agriculture"
+      1: "Agriculture"
+    derivation_rules:
+      - value: 1
+        condition: "industrycat4 == 'Agriculture'"
+      - value: 0
+        condition: "industrycat4 == 'Industry' | industrycat4 == 'Services' | industrycat4 == 'Other'"
+
+  emp_indu:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: industrycat4
+    label: "Employment in industry sectors"
+    mapping:
+      0: "Not in industry"
+      1: "Industry"
+    derivation_rules:
+      - value: 1
+        condition: "industrycat4 == 'Industry'"
+      - value: 0
+        condition: "industrycat4 == 'Agriculture' | industrycat4 == 'Services' | industrycat4 == 'Other'"
+
+  emp_serv:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: industrycat4
+    label: "Employment in services sectors"
+    mapping:
+      0: "Not in services"
+      1: "Services"
+    derivation_rules:
+      - value: 1
+        condition: "industrycat4 == 'Services'"
+      - value: 0
+        condition: "industrycat4 == 'Agriculture' | industrycat4 == 'Industry' | industrycat4 == 'Other'"
+
+  emp_others:
+    type: binary
+    recode_type: binary_from_categorical
+    source_column: industrycat4
+    label: "Employment in other sectors"
+    mapping:
+      0: "Not in other sectors"
+      1: "Other"
+    derivation_rules:
+      - value: 1
+        condition: "industrycat4 == 'Other'"
+      - value: 0
+        condition: "industrycat4 == 'Agriculture' | industrycat4 == 'Industry' | industrycat4 == 'Services'"
 
   # Industry Classification (10-category) - 7-day
   industrycat10:
@@ -303,6 +528,35 @@ variables:
       - bin: 4
         condition: "age >= 65"
 
+  age_group2:
+    type: factor
+    recode_type: binned_from_continuous
+    source_column: age
+    label: "Age group (7-category)"
+    mapping:
+      1: "0–14"
+      2: "15–24"
+      3: "25–34"
+      4: "35–44"
+      5: "45–54"
+      6: "55–64"
+      7: "65+"
+    bin_rules:
+      - bin: 1
+        condition: "age >= 0 & age <= 14"
+      - bin: 2
+        condition: "age >= 15 & age <= 24"
+      - bin: 3
+        condition: "age >= 25 & age <= 34"
+      - bin: 4
+        condition: "age >= 35 & age <= 44"
+      - bin: 5
+        condition: "age >= 45 & age <= 54"
+      - bin: 6
+        condition: "age >= 55 & age <= 64"
+      - bin: 7
+        condition: "age >= 65"
+
   hsize_group:
     type: factor
     recode_type: binned_from_continuous
@@ -322,6 +576,49 @@ variables:
         condition: "hsize >= 4 & hsize <= 6"
       - bin: 4
         condition: "hsize >= 7"
+
+  # Binary from continuous (age)
+  youth:
+    type: binary
+    recode_type: binary_from_continuous
+    source_column: age
+    label: "Youth (15–24)"
+    mapping:
+      0: "Not youth"
+      1: "Youth (15–24)"
+    derivation_rules:
+      - value: 1
+        condition: "age >= 15 & age <= 24"
+      - value: 0
+        condition: "age < 15 | age > 24"
+
+  prime_work_age:
+    type: binary
+    recode_type: binary_from_continuous
+    source_column: age
+    label: "Prime working age (25–54)"
+    mapping:
+      0: "Not prime working age"
+      1: "Prime working age (25–54)"
+    derivation_rules:
+      - value: 1
+        condition: "age >= 25 & age <= 54"
+      - value: 0
+        condition: "age < 25 | age > 54"
+
+  elderly:
+    type: binary
+    recode_type: binary_from_continuous
+    source_column: age
+    label: "Elderly (65+)"
+    mapping:
+      0: "Not elderly"
+      1: "Elderly (65+)"
+    derivation_rules:
+      - value: 1
+        condition: "age >= 65"
+      - value: 0
+        condition: "age < 65"
 
   wquintile:
     type: factor
