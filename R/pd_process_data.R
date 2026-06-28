@@ -24,6 +24,16 @@
 #' auxiliary file changes and inventory verification are emitted by [valid_dlw_load()]
 #' and [build_pip_inventory()] respectively.
 #'
+#' **Recode spec**: the recode specification is synced to stamp once via
+#' [sync_recode_spec()] before the per-survey loop and the resolved spec is
+#' threaded into each [process_data()] call, so [apply_recode_spec()] performs
+#' no stamp I/O per survey.
+#'
+#' **Memory management**: surveys are processed one at a time. After each survey
+#' is saved, the large intermediates (`df`, `ls_cpfw`, `ls_clean`, `metadata`)
+#' are explicitly removed and `gc()` is called inside [process_data()] before
+#' the next survey is loaded, keeping peak heap bounded on full-inventory runs.
+#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -72,8 +82,9 @@ pd_process_data <- function(
     return(old_pip_inv)
   }
 
-  # Sync recode spec to stamp once before the per-survey loop
-  sync_recode_spec(alias = "pip_inv", verbose = verbose)
+  # Sync recode spec to stamp once before the per-survey loop and keep the
+  # resolved spec so each survey reuses it instead of re-reading from stamp.
+  recode_spec <- sync_recode_spec(alias = "pip_inv", verbose = verbose)
 
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
@@ -82,6 +93,7 @@ pd_process_data <- function(
     inv_ls,
     process_data,
     aux_list = aux_list,
+    recode_spec = recode_spec,
     verbose = verbose
   )
   names(results) <- inv_to_clean$survey_id
@@ -152,6 +164,9 @@ pd_process_data <- function(
 #' @param inv inventory with survey_id and pins folder
 #' @param aux_list Named list of auxiliary data frames; expected keys:
 #'   `"pfw"`, `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`.
+#' @param recode_spec Optional pre-resolved recode spec (as returned by
+#'   [sync_recode_spec()]) threaded to [pd_dlw_clean()]/[apply_recode_spec()] so
+#'   the spec is read once upstream rather than once per survey. Default `NULL`.
 #' @param verbose Logical. Print progress messages. Default `TRUE`.
 #' @param ...  other parameters
 #'
@@ -173,7 +188,7 @@ pd_process_data <- function(
 #' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' process_data(md, pfw)
 #' }
-process_data <- function(inv, aux_list, verbose = TRUE, ...) {
+process_data <- function(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...) {
   # on.exit ------------
   on.exit({
     pd_env_rm("process_survey_id")
@@ -193,7 +208,7 @@ process_data <- function(inv, aux_list, verbose = TRUE, ...) {
       ls_cpfw <- pd_cpfw_merge(df, aux_list[["pfw"]])
 
       # Clean main variables
-      ls_clean <- pd_dlw_clean(ls_cpfw)
+      ls_clean <- pd_dlw_clean(ls_cpfw, verbose = verbose, recode_spec = recode_spec)
 
       # Validate
 
@@ -211,7 +226,13 @@ process_data <- function(inv, aux_list, verbose = TRUE, ...) {
 
       # Return only pip_names — version metadata is no longer tracked
       # in-memory; the assembler reads it from stamp catalogs directly.
-      list(pip_names = names(ls_clean))
+      # Build the result first (reads names(ls_clean)), then free the
+      # survey-sized intermediates and collect so the heap returns to baseline
+      # before the next survey is loaded — prevents OOM on full-inventory runs.
+      result <- list(pip_names = names(ls_clean))
+      rm(df, ls_cpfw, ls_clean, metadata)
+      gc(verbose = FALSE)
+      result
     },
     piperr = function(cnd) {
       survey_id <- c(pd_env_get("process_survey_id"))

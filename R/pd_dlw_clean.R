@@ -1,6 +1,12 @@
 #' Clean data from datalibweb structure (High level)
 #'
 #' @param ls List of data frames or single dataframe.
+#' @param verbose Logical. Print progress messages.
+#'   Default: `getOption("pipdata.verbose", TRUE)`.
+#' @param recode_spec Optional pre-resolved recode spec (as returned by
+#'   [sync_recode_spec()]) threaded down to [apply_recode_spec()] so the spec is
+#'   read once upstream instead of once per survey. Default `NULL` (each survey
+#'   reads the spec from stamp).
 #'
 #' @return list with data.tables
 #' @export
@@ -24,11 +30,13 @@
 #' lf    <- pd_dlw_clean(ls)
 #' names(lf)
 #' }
-pd_dlw_clean <- function(ls, verbose = getOption("pipdata.verbose", TRUE)) {
+pd_dlw_clean <- function(ls, verbose = getOption("pipdata.verbose", TRUE),
+                         recode_spec = NULL) {
 
   # Computations -------
 
-  rl <- purrr::map(.x = ls, .f = dlw_clean, verbose = verbose)
+  rl <- purrr::map(.x = ls, .f = dlw_clean, verbose = verbose,
+                   recode_spec = recode_spec)
 
   # Return -------------
   return(rl)
@@ -39,11 +47,15 @@ pd_dlw_clean <- function(ls, verbose = getOption("pipdata.verbose", TRUE)) {
 #' Clean data from datalibweb structure (lower level, S3 methods)
 #'
 #' @param df data.table
+#' @param verbose Logical. Print progress messages.
+#'   Default: `getOption("pipdata.verbose", TRUE)`.
+#' @param recode_spec Optional pre-resolved recode spec (see [pd_dlw_clean()]).
 #' @param ...  other parameters
 #'
 #' @return data.table
 #' @export
-dlw_clean <- function(df, verbose = getOption("pipdata.verbose", TRUE), ...) {
+dlw_clean <- function(df, verbose = getOption("pipdata.verbose", TRUE),
+                      recode_spec = NULL, ...) {
   UseMethod("dlw_clean")
 }
 
@@ -55,7 +67,8 @@ dlw_clean <- function(df, verbose = getOption("pipdata.verbose", TRUE), ...) {
 #'
 #' @return data.table
 #' @export
-dlw_clean.pipmd <- function(df, verbose = getOption("pipdata.verbose", TRUE), ...) {
+dlw_clean.pipmd <- function(df, verbose = getOption("pipdata.verbose", TRUE),
+                            recode_spec = NULL, ...) {
   md <- copy(df)
 
   md <- shift_subnatid(md)   # normalise subnatid columns before area recode
@@ -64,7 +77,7 @@ dlw_clean.pipmd <- function(df, verbose = getOption("pipdata.verbose", TRUE), ..
 
   # Replaces add_area(), recode_edu(), recode_gndr(), recode_age()
   # Spec lives in inst/extdata/recode_spec.yml; auto-synced to stamp on change
-  md <- apply_recode_spec(md, verbose = verbose)
+  md <- apply_recode_spec(md, verbose = verbose, recode_spec = recode_spec)
 
   md <- wbpip_clean(md)
   md <- pip_vars(md)

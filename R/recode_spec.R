@@ -388,24 +388,39 @@ shift_subnatid <- function(dt) {
 #' @param dt data.table with DLW survey data.
 #' @param alias Stamp alias. Default: `"pip_inv"`.
 #' @param verbose Logical. Default: `TRUE`.
+#' @param recode_spec Optional pre-resolved spec as returned by
+#'   [sync_recode_spec()] — a named list with `spec` (the full recode spec) and
+#'   `version_id`. When supplied, the spec and version are taken from it and
+#'   **no** stamp I/O is performed. When `NULL` (the default), the spec is read
+#'   from stamp on each call. In the per-survey pipeline the spec is synced once
+#'   upstream and threaded in via this argument to avoid thousands of redundant
+#'   catalog reads.
 #' @return `dt` (modified by reference) with attribute `recode_spec_version_id`.
 #' @export
-apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE) {
-  stamp_spec <- load_stamp_recode_spec(alias = alias, verbose = FALSE)
-  if (is.null(stamp_spec)) {
-    cli::cli_abort(
-      c(
-        "No recode_spec found in stamp.",
-        "i" = "Call {.fn sync_recode_spec} before processing surveys."
-      ),
-      class = c("recode_spec_missing", "piperr")
-    )
-  }
-  spec <- stamp_spec$variables
+apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE,
+                              recode_spec = NULL) {
+  if (!is.null(recode_spec)) {
+    # Fast path: spec already resolved upstream (sync_recode_spec()); no I/O.
+    spec       <- recode_spec$spec$variables
+    version_id <- recode_spec$version_id
+  } else {
+    # Fallback: read the spec (and its version) from stamp on each call.
+    stamp_spec <- load_stamp_recode_spec(alias = alias, verbose = FALSE)
+    if (is.null(stamp_spec)) {
+      cli::cli_abort(
+        c(
+          "No recode_spec found in stamp.",
+          "i" = "Call {.fn sync_recode_spec} before processing surveys."
+        ),
+        class = c("recode_spec_missing", "piperr")
+      )
+    }
+    spec <- stamp_spec$variables
 
-  cat        <- stamp::st_catalog_query(alias = alias)
-  recode_row <- cat[grepl("recode_spec", cat$path, fixed = TRUE), ]
-  version_id <- if (nrow(recode_row) > 0L) recode_row$version_id[[1L]] else NA_character_
+    cat        <- stamp::st_catalog_query(alias = alias)
+    recode_row <- cat[grepl("recode_spec", cat$path, fixed = TRUE), ]
+    version_id <- if (nrow(recode_row) > 0L) recode_row$version_id[[1L]] else NA_character_
+  }
 
   .replace_types <- c("range_clamp", "binary_map", "haven_labels")
 
