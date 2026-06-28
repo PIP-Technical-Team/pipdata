@@ -469,17 +469,14 @@ apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE,
     recoded_vars <- c(recoded_vars, var_name)
   }
 
-  if (verbose && length(recoded_vars) > 0L) {
-    pipfun::log_info(
-      sprintf(
-        "Recoded %d variable(s): %s (spec version: %s)",
-        length(recoded_vars),
-        paste(recoded_vars, collapse = ", "),
-        version_id
-      ),
-      name = "pipdata_log"
-    )
-  }
+  # NOTE: do NOT emit a per-survey `log_info()` here. The pipfun log wrappers
+  # (log_info/log_warn/log_error) capture *all* of the calling function's
+  # formals by reference into the persistent session log (.piplogenv) via
+  # capture_log_args(). Inside this function that would stash a reference to
+  # `dt` (the cleaned survey, hundreds of MB) on every survey, defeating gc()
+  # and blowing up RAM across a full-inventory run. Spec provenance is already
+  # carried by the `recode_spec_version_id` attribute (below) and the
+  # `version_id_recode_spec` inventory column written by build_pip_inventory().
 
   data.table::setattr(dt, "recode_spec_version_id", version_id)
   dt
