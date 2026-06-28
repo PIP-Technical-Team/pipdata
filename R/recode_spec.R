@@ -5,7 +5,8 @@
   "binary_map",
   "haven_labels",
   "binned_from_continuous",
-  "quantile_from_continuous"
+  "quantile_from_continuous",
+  "indicator"
 )
 
 # ── Loaders ───────────────────────────────────────────────────────────────────
@@ -87,13 +88,7 @@ validate_recode_spec <- function(spec) {
         }
       },
       binary_map = {
-        if (is.null(rule$mapping)) {
-          cli::cli_abort(
-            "Variable {.field {var_name}} (binary_map) missing {.field mapping}",
-            class = c("recode_spec_invalid", "piperr")
-          )
-        }
-        if (length(rule$mapping) != 2L) {
+        if (!is.null(rule$mapping) && length(rule$mapping) != 2L) {
           cli::cli_abort(
             c(
               "Variable {.field {var_name}} (binary_map) must have exactly 2 mapping entries",
@@ -141,6 +136,20 @@ validate_recode_spec <- function(spec) {
         if (is.null(rule$mapping)) {
           cli::cli_abort(
             "Variable {.field {var_name}} (quantile_from_continuous) missing {.field mapping}",
+            class = c("recode_spec_invalid", "piperr")
+          )
+        }
+      },
+      indicator = {
+        if (is.null(rule$source_column)) {
+          cli::cli_abort(
+            "Variable {.field {var_name}} (indicator) missing {.field source_column}",
+            class = c("recode_spec_invalid", "piperr")
+          )
+        }
+        if (is.null(rule$match_values)) {
+          cli::cli_abort(
+            "Variable {.field {var_name}} (indicator) missing {.field match_values}",
             class = c("recode_spec_invalid", "piperr")
           )
         }
@@ -314,6 +323,15 @@ recode_quantile <- function(dt, var_name, source_col, mapping, weight_col = NULL
   invisible(dt)
 }
 
+#' @keywords internal
+recode_indicator <- function(dt, var_name, source_col, match_values) {
+  if (!source_col %in% names(dt)) return(invisible(dt))
+  data.table::set(dt, j = var_name,
+    value = as.integer(dt[[source_col]] %in% match_values)
+  )
+  invisible(dt)
+}
+
 # ── Structural modifier ───────────────────────────────────────────────────────
 
 #' Normalise subnatid column hierarchy
@@ -410,7 +428,9 @@ apply_recode_spec <- function(dt, alias = "pip_inv", verbose = TRUE) {
         recode_binned(dt, var_name, actual_col, rule$bin_rules, rule$mapping),
       quantile_from_continuous =
         recode_quantile(dt, var_name, actual_col, rule$mapping,
-                        weight_col = rule$weight_col)
+                        weight_col = rule$weight_col),
+      indicator =
+        recode_indicator(dt, var_name, actual_col, rule$match_values)
     )
 
     if (rule$recode_type %in% .replace_types &&

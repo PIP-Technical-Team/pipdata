@@ -303,6 +303,35 @@ variables:
       - bin: 4
         condition: "age >= 65"
 
+  age_group2:
+    type: factor
+    recode_type: binned_from_continuous
+    source_column: age
+    label: "Age group (7-category)"
+    mapping:
+      1: "0–14"
+      2: "15–24"
+      3: "25–34"
+      4: "35–44"
+      5: "45–54"
+      6: "55–64"
+      7: "65+"
+    bin_rules:
+      - bin: 1
+        condition: "age >= 0 & age <= 14"
+      - bin: 2
+        condition: "age >= 15 & age <= 24"
+      - bin: 3
+        condition: "age >= 25 & age <= 34"
+      - bin: 4
+        condition: "age >= 35 & age <= 44"
+      - bin: 5
+        condition: "age >= 45 & age <= 54"
+      - bin: 6
+        condition: "age >= 55 & age <= 64"
+      - bin: 7
+        condition: "age >= 65"
+
   hsize_group:
     type: factor
     recode_type: binned_from_continuous
@@ -335,3 +364,93 @@ variables:
       3: "quintile3"
       4: "quintile4"
       5: "quintile5"
+
+  # Binary Indicator Variables (1 if condition met, 0 otherwise)
+
+  # Age group indicators (source: age_group2 — 7-category bins)
+  youth:
+    type: numeric
+    recode_type: indicator
+    source_column: age_group2
+    match_values: [2]          # bin 2 = 15–24
+
+  prime_work_age:
+    type: numeric
+    recode_type: indicator
+    source_column: age_group2
+    match_values: [3, 4, 5]    # bins 3–5 = 25–34, 35–44, 45–54
+
+  elderly:
+    type: numeric
+    recode_type: indicator
+    source_column: age_group2
+    match_values: [7]          # bin 7 = 65+
+
+  # Labor status indicators (source: lstatus — 1=Employed, 2=Unemployed, 3=NILF)
+  employed:
+    type: numeric
+    recode_type: indicator
+    source_column: lstatus
+    match_values: [1]
+
+  unemployed:
+    type: numeric
+    recode_type: indicator
+    source_column: lstatus
+    match_values: [2]
+
+  in_labor_force:
+    type: numeric
+    recode_type: indicator
+    source_column: lstatus
+    match_values: [1, 2]       # employed + unemployed
+
+  # Employment status indicators (source: empstat — 1=Paid, 2=Non-Paid, 3=Employer, 4=Self-emp, 5=Other)
+  paid_emp:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [1]
+
+  self_emp:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [4]
+
+  employer:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [3]
+
+  inf_emp:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [2, 4, 5]    # non-paid employee, self-employed, other unclassifiable
+
+  # Industry sector indicators (source: industrycat4 — 1=Agriculture, 2=Industry, 3=Services, 4=Other)
+  emp_agri:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [1]
+
+  emp_indu:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [2]
+
+  emp_serv:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [3]
+
+  emp_others:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [4]
