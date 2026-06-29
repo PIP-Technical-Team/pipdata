@@ -9,16 +9,16 @@
 #
 # The manifest records:
 #   - which survey versions belong to a release
-#   - the exact Parquet file path for each survey
 #   - which breakdown dimensions are present in each Parquet file
 #   - country and region metadata for each survey
+#   - total number of observations per survey
+#   - number of non-missing observations per dimension column
 #
 # Manifest JSON structure (see project-context.md §Release Manifest):
 #   {
-#     "release_id": "20260206",
-#     "arrow_root": "<path>",
-#     "created_at": "<ISO 8601>",
-#     "surveys": [ ... one entry per pip_id ... ]
+#     "release": "20260206",
+#     "generated_at": "<ISO 8601>",
+#     "entries": [ ... one entry per pip_id ... ]
 #   }
 #   where file_path follows:
 #     country_code=<cc>/surveyid_year=<yr>/welfare_type=<wt>/version=<ver>/<pip_id>-0.parquet
@@ -30,17 +30,19 @@
 #   3. For each pip_id in the inventory:
 #      a. Derive the expected Parquet file path from partition conventions
 #      b. Read Parquet schema to discover available breakdown dimensions
-#      c. Look up country_name, region_name, region_code from country_list
-#      d. Build a manifest survey entry
+#      c. Read Parquet data to compute n_obs and per-dimension non-NA counts
+#      d. Look up country_name, region_name, region_code from country_list
+#      e. Build a manifest survey entry
 #   4. Assemble and write manifest JSON
 #   5. Optionally write current_release.json pointer
 #
 # Exported functions
 # ------------------
-#   discover_parquet_dimensions()  — read schema of one Parquet, return dim names
+#   discover_parquet_dimensions()   — read schema of one Parquet, return dim names
 #   discover_parquet_welfare_cols() — read schema of one Parquet, return welfare col names
-#   build_manifest_entry()         — build one survey JSON entry from inventory row
-#   generate_release_manifest()    — assemble + write the full manifest
+#   discover_parquet_obs_counts()   — read data of one Parquet, return n_obs + dim counts
+#   build_manifest_entry()          — build one survey JSON entry from inventory row
+#   generate_release_manifest()     — assemble + write the full manifest
 
 
 # ---------------------------------------------------------------------------
@@ -60,9 +62,8 @@
 #' @param country_code  ISO3 country code (character scalar).
 #' @param surveyid_year Survey year (integer scalar).
 #' @param welfare_type  "INC" or "CON" (character scalar).
-#' @param version       Combined version string, e.g. `"v01_v04"` (character
-#'   scalar). Derived from `paste0(tolower(vermast), "_", tolower(veralt))`.
-#' @param pip_id        Canonical pip_id string, e.g. "COL_2010_ECH_V01_M_V02_A_INC".
+#' @param version       Combined version string, e.g. `"v01_v04"`.
+#' @param pip_id        Canonical pip_id string.
 #'
 #' @return Relative path string (forward slashes).
 #' @keywords internal
@@ -83,10 +84,6 @@
 
 #' Optional dimension column names — thin wrapper around [piptm::pip_optional_dims()]
 #'
-#' Returns the canonical list of optional breakdown dimension column names from
-#' [piptm::pip_optional_dims()]. Both the manifest generator and the Arrow
-#' writer derive their dimension lists from this single source of truth.
-#'
 #' @return Character vector of optional field names in schema definition order.
 #' @keywords internal
 .manifest_dim_cols <- function() piptm::pip_optional_dims()
@@ -105,15 +102,10 @@
 #'
 #' @return Character vector of dimension column names present in the file, or
 #'   `character(0)` when none are found. Returns `NA_character_` (length 1) if
-#'   the file cannot be read, so callers can distinguish "no dims" from
-#'   "unreadable file".
+#'   the file cannot be read.
 #'
 #' @family manifest-generation
 #' @export
-#' @examples
-#' \dontrun{
-#' dims <- discover_parquet_dimensions("path/to/COL_2010_ECH_V01_M_V02_A_INC-0.parquet")
-#' }
 discover_parquet_dimensions <- function(file_path) {
   stopifnot(is.character(file_path), length(file_path) == 1L)
 
@@ -127,8 +119,7 @@ discover_parquet_dimensions <- function(file_path) {
     return(NA_character_)
   }
 
-  actual_cols <- names(schema)
-  intersect(.manifest_dim_cols(), actual_cols)
+  intersect(.manifest_dim_cols(), names(schema))
 }
 
 
@@ -144,7 +135,7 @@ discover_parquet_dimensions <- function(file_path) {
 #' @param file_path Absolute path to a `.parquet` file.
 #'
 #' @return Character vector of welfare column names, or `character(0)` when
-#'   none are found. Returns `character(0)` silently if the file cannot be read.
+#'   none are found.
 #'
 #' @family manifest-generation
 #' @export
@@ -158,8 +149,94 @@ discover_parquet_welfare_cols <- function(file_path) {
 
   if (is.null(schema)) return(character(0))
 
-  actual_cols <- names(schema)
-  grep("^welfare_lcu$|^welfare_ppp_", actual_cols, value = TRUE)
+  grep("^welfare_lcu$|^welfare_ppp_", names(schema), value = TRUE)
+}
+
+
+# ---------------------------------------------------------------------------
+# discover_parquet_obs_counts()
+# ---------------------------------------------------------------------------
+
+#' Discover observation counts in a Parquet file
+#'
+#' Reads the Parquet file and returns:
+#' - the total number of rows (`n_obs`)
+#' - for each dimension column present, the number of non-NA observations
+#'
+#' Only the dimension columns are read from disk — welfare and required
+#' columns are excluded — so this is efficient even for large files.
+#'
+#' @param file_path  Absolute path to a `.parquet` file.
+#' @param dim_cols   Character vector of dimension column names to count.
+#'   Typically the output of [discover_parquet_dimensions()]. When
+#'   `character(0)`, only `n_obs` is returned.
+#'
+#' @return A named list with two elements:
+#'   \describe{
+#'     \item{`n_obs`}{Integer. Total number of rows in the file.
+#'       `NA_integer_` if the file cannot be read.}
+#'     \item{`dimensions_n_obs`}{Named integer vector. Non-NA row count
+#'       for each dimension column. Empty named integer vector when no
+#'       dimension columns are present or the file cannot be read.}
+#'   }
+#'
+#' @family manifest-generation
+#' @export
+#' @examples
+#' \dontrun{
+#' counts <- discover_parquet_obs_counts(
+#'   "path/to/PHL_2012_FIES_INC_ALL-0.parquet",
+#'   dim_cols = c("gender", "area", "lstatus")
+#' )
+#' counts$n_obs
+#' counts$dimensions_n_obs
+#' }
+discover_parquet_obs_counts <- function(file_path, dim_cols = character(0)) {
+  stopifnot(is.character(file_path), length(file_path) == 1L)
+  stopifnot(is.character(dim_cols))
+
+  empty_result <- list(
+    n_obs            = NA_integer_,
+    dimensions_n_obs = setNames(integer(0), character(0))
+  )
+
+  # Read only the columns we need — one required col for row count +
+  # dimension cols for non-NA counts. Using "weight" as the anchor column
+  # for n_obs since it is always present and never NA.
+  cols_to_read <- unique(c("weight", dim_cols))
+
+  dt <- tryCatch(
+    arrow::read_parquet(file_path, col_select = dplyr::all_of(cols_to_read)),
+    error = function(e) {
+      rlang::warn(paste0(
+        "Could not read Parquet file for obs counts: ", file_path,
+        "\n  ", conditionMessage(e)
+      ))
+      NULL
+    }
+  )
+
+  if (is.null(dt)) return(empty_result)
+
+  n_obs <- nrow(dt)
+
+  if (length(dim_cols) == 0L) {
+    return(list(
+      n_obs            = as.integer(n_obs),
+      dimensions_n_obs = setNames(integer(0), character(0))
+    ))
+  }
+
+  # Count non-NA observations per dimension column
+  present_dim_cols <- intersect(dim_cols, names(dt))
+  dim_counts <- vapply(present_dim_cols, function(col) {
+    as.integer(sum(!is.na(dt[[col]])))
+  }, integer(1L))
+
+  list(
+    n_obs            = as.integer(n_obs),
+    dimensions_n_obs = dim_counts
+  )
 }
 
 
@@ -171,54 +248,32 @@ discover_parquet_welfare_cols <- function(file_path) {
 #'
 #' Constructs the list structure for one survey entry in the manifest JSON.
 #' Does not perform file I/O — all information comes from the inventory row,
-#' the pre-computed `dimensions` vector, and the country_list lookup.
-#'
-#' The entry stores four **partition filter keys** (`country_code`, `year`,
-#' `welfare_type`, `version`) that `{piptm}` uses with Arrow's native
-#' partition pushdown via `open_dataset() |> dplyr::filter()`. No physical
-#' file path is stored — the manifest is therefore portable across environments.
+#' the pre-computed `dimensions` vector, and lookup results.
 #'
 #' @param country_code   ISO3 country code. Partition filter key.
 #' @param surveyid_year  Survey year (integer). Partition filter key.
 #' @param welfare_type   `"INC"` or `"CON"`. Partition filter key.
 #' @param survey_id      Full DLW survey identifier.
 #' @param survey_acronym Short survey name (e.g. `"ECH"`).
-#' @param version        Combined version string, e.g. `"v01_v02"`. Partition filter key.
+#' @param version        Combined version string. Partition filter key.
 #' @param module         Processing module (e.g. `"ALL"`).
 #' @param pip_id         Canonical pip_id string.
 #' @param dimensions     Character vector of breakdown dimension column names
-#'   available in this survey's Parquet file. Use `character(0)` when none.
-#' @param welfare_vars   Character vector of welfare column names present in the
-#'   Parquet file. Use `character(0)` for legacy surveys.
-#' @param ppp_sort       Integer PPP base year used as the default selection.
-#'   `NA_integer_` for legacy surveys.
-#' @param country_name   Full country name (e.g. `"Philippines"`).
-#'   `NA_character_` when not available.
-#' @param region_name    World Bank region name (e.g. `"East Asia & Pacific"`).
-#'   `NA_character_` when not available.
-#' @param region_code    World Bank region code (e.g. `"EAP"`).
-#'   `NA_character_` when not available.
+#'   available in this survey's Parquet file.
+#' @param welfare_vars   Character vector of welfare column names present.
+#' @param ppp_sort       Integer PPP base year. `NA_integer_` for legacy surveys.
+#' @param country_name   Full country name. `NA_character_` when not available.
+#' @param region_name    World Bank region name. `NA_character_` when not available.
+#' @param region_code    World Bank region code. `NA_character_` when not available.
+#' @param n_obs          Integer. Total number of observations in the Parquet file.
+#'   `NA_integer_` when not available.
+#' @param dimensions_n_obs Named integer vector. Non-NA observation count per
+#'   dimension column. Empty named integer vector when not available.
 #'
-#' @return A named list with 14 fields suitable for JSON serialisation via
-#'   [jsonlite::toJSON()].
+#' @return A named list with 16 fields suitable for JSON serialisation.
 #'
 #' @family manifest-generation
 #' @export
-#' @examples
-#' entry <- build_manifest_entry(
-#'   country_code   = "COL",
-#'   surveyid_year  = 2010L,
-#'   welfare_type   = "INC",
-#'   survey_id      = "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-#'   survey_acronym = "ECH",
-#'   version        = "v01_v02",
-#'   module         = "ALL",
-#'   pip_id         = "COL_2010_ECH_V01_M_V02_A_INC",
-#'   dimensions     = c("gender", "area"),
-#'   country_name   = "Colombia",
-#'   region_name    = "Latin America & Caribbean",
-#'   region_code    = "LCN"
-#' )
 build_manifest_entry <- function(country_code,
                                  surveyid_year,
                                  welfare_type,
@@ -228,27 +283,32 @@ build_manifest_entry <- function(country_code,
                                  module,
                                  pip_id,
                                  dimensions,
-                                 welfare_vars  = character(0),
-                                 ppp_sort      = NA_integer_,
-                                 country_name  = NA_character_,
-                                 region_name   = NA_character_,
-                                 region_code   = NA_character_) {
+                                 welfare_vars       = character(0),
+                                 ppp_sort           = NA_integer_,
+                                 country_name       = NA_character_,
+                                 region_name        = NA_character_,
+                                 region_code        = NA_character_,
+                                 n_obs              = NA_integer_,
+                                 dimensions_n_obs   = setNames(integer(0), character(0))) {
   list(
-    pip_id         = as.character(pip_id),
-    survey_id      = as.character(survey_id),
-    country_code   = as.character(country_code),
-    country_name   = as.character(country_name),
-    region_name    = as.character(region_name),
-    region_code    = as.character(region_code),
-    year           = as.integer(surveyid_year),
-    welfare_type   = as.character(welfare_type),
-    version        = as.character(version),
-    survey_acronym = as.character(survey_acronym),
-    module         = as.character(module),
-    dimensions     = as.character(dimensions),
-    welfare_vars   = as.character(welfare_vars),
-    ppp_sort       = if (is.null(ppp_sort) || (length(ppp_sort) == 1L && is.na(ppp_sort)))
-                       NA_integer_ else as.integer(ppp_sort)
+    pip_id           = as.character(pip_id),
+    survey_id        = as.character(survey_id),
+    country_code     = as.character(country_code),
+    country_name     = as.character(country_name),
+    region_name      = as.character(region_name),
+    region_code      = as.character(region_code),
+    year             = as.integer(surveyid_year),
+    welfare_type     = as.character(welfare_type),
+    version          = as.character(version),
+    survey_acronym   = as.character(survey_acronym),
+    module           = as.character(module),
+    dimensions       = as.character(dimensions),
+    welfare_vars     = as.character(welfare_vars),
+    ppp_sort         = if (is.null(ppp_sort) || (length(ppp_sort) == 1L && is.na(ppp_sort)))
+                         NA_integer_ else as.integer(ppp_sort),
+    n_obs            = if (is.null(n_obs) || (length(n_obs) == 1L && is.na(n_obs)))
+                         NA_integer_ else as.integer(n_obs),
+    dimensions_n_obs = as.list(dimensions_n_obs)
   )
 }
 
@@ -261,70 +321,22 @@ build_manifest_entry <- function(country_code,
 #'
 #' Builds a release manifest by scanning the Arrow repository for each
 #' survey in the provided inventory, discovering which breakdown dimensions
-#' are available, looking up country and region metadata, and writing a JSON
-#' manifest file. Optionally updates the `current_release.json` pointer file.
+#' are available, computing observation counts, looking up country and region
+#' metadata, and writing a JSON manifest file.
 #'
-#' The manifest follows the schema documented in `project-context.md`:
-#'
-#' ```json
-#' {
-#'   "release": "20260206",
-#'   "generated_at": "2026-02-06T12:00:00Z",
-#'   "entries": [
-#'     {
-#'       "pip_id": "COL_2010_ECH_V01_M_V02_A_INC",
-#'       "survey_id": "COL_2010_ECH_V01_M_V02_A_GMD_ALL",
-#'       "country_code": "COL",
-#'       "country_name": "Colombia",
-#'       "region_name": "Latin America & Caribbean",
-#'       "region_code": "LCN",
-#'       "year": 2010,
-#'       "welfare_type": "INC",
-#'       "version": "v01_v02",
-#'       "survey_acronym": "ECH",
-#'       "module": "ALL",
-#'       "dimensions": ["gender", "area", "educat4"]
-#'     }
-#'   ]
-#' }
-#' ```
-#'
-#' Surveys whose Parquet file does not exist in `arrow_root` are recorded as
-#' warnings and **excluded** from the manifest. A summary of written, skipped,
-#' and failed entries is returned invisibly.
-#'
-#' @param release          Character scalar. The PIP release identifier, e.g.
-#'   `"20260206"`.
-#' @param arrow_root       Absolute path to the root of the Master Arrow
-#'   Repository.
-#' @param release_inventory A `data.table` from
-#'   [pipload::load_pip_release_inventory()]. Must contain columns:
-#'   `survey_id`, `pip_id`, `country_code`, `surveyid_year`, `welfare_type`,
-#'   `survey_acronym`, `vermast`, `veralt`, `module`.
-#'   Rows with `NA` `pip_id` are silently excluded.
+#' @param release          Character scalar. The PIP release identifier.
+#' @param arrow_root       Absolute path to the root of the Master Arrow Repository.
+#' @param release_inventory A `data.table` from [pipload::load_pip_release_inventory()].
+#'   Must contain: `survey_id`, `pip_id`, `country_code`, `surveyid_year`,
+#'   `welfare_type`, `survey_acronym`, `vermast`, `veralt`, `module`.
 #' @param output_path      Absolute path for the output manifest JSON file.
-#'   The parent directory must exist. If a directory is passed, the filename
-#'   is auto-derived as `manifest_<release>.json`.
-#' @param set_as_current   Logical. If `TRUE` (default `FALSE`), writes or
-#'   overwrites `current_release.json` in the same directory as `output_path`.
+#' @param set_as_current   Logical. If `TRUE`, writes `current_release.json`.
 #'
-#' @return A `data.table` with one row per inventory row (excluding `NA`
-#'   `pip_id` rows) and columns: `pip_id`, `file_path`, `status`,
-#'   `dimensions`, `message`. Returned invisibly.
+#' @return A `data.table` summary with columns: `pip_id`, `file_path`,
+#'   `status`, `dimensions`, `message`. Returned invisibly.
 #'
 #' @family manifest-generation
 #' @export
-#' @examples
-#' \dontrun{
-#' inv <- pipload::load_pip_release_inventory()
-#' generate_release_manifest(
-#'   release           = "20260206",
-#'   arrow_root        = "//server/pip/arrow",
-#'   release_inventory = inv,
-#'   output_path       = "//server/manifests/manifest_20260206.json",
-#'   set_as_current    = TRUE
-#' )
-#' }
 generate_release_manifest <- function(release,
                                       arrow_root        = getOption("pipdata.arrow_repo"),
                                       release_inventory,
@@ -358,7 +370,6 @@ generate_release_manifest <- function(release,
     cli::cli_abort("Arrow repository root does not exist: {.path {arrow_root}}")
   }
 
-  # Expand directory path to a file path before deriving output_dir
   if (dir.exists(output_path)) {
     output_path <- file.path(output_path, paste0("manifest_", release, ".json"))
   }
@@ -406,11 +417,8 @@ generate_release_manifest <- function(release,
     row_i    <- inv[i]
     pip_id_i <- row_i$pip_id
 
-    # Derive version from vermast / veralt (same construction as arrow_prep.R)
     version_i <- paste0(tolower(row_i$vermast), "_", tolower(row_i$veralt))
 
-    # Derive the relative path (used only for file existence check and dimension
-    # introspection — NOT stored in the manifest output)
     rel_path_i <- .derive_parquet_path(
       country_code  = row_i$country_code,
       surveyid_year = row_i$surveyid_year,
@@ -448,6 +456,11 @@ generate_release_manifest <- function(release,
     # --- Welfare column discovery ---------------------------------------------
     welfare_vars_i <- discover_parquet_welfare_cols(abs_path_i)
 
+    # --- Observation counts ---------------------------------------------------
+    obs_counts_i     <- discover_parquet_obs_counts(abs_path_i, dim_cols = dims_i)
+    n_obs_i          <- obs_counts_i$n_obs
+    dimensions_n_obs_i <- obs_counts_i$dimensions_n_obs
+
     # --- ppp_sort from Parquet schema metadata --------------------------------
     parquet_schema_i <- tryCatch(
       arrow::read_parquet(abs_path_i, as_data_frame = FALSE)$schema,
@@ -472,20 +485,22 @@ generate_release_manifest <- function(release,
 
     # --- Build survey entry ---------------------------------------------------
     survey_entries[[i]] <- build_manifest_entry(
-      country_code  = row_i$country_code,
-      surveyid_year = row_i$surveyid_year,
-      welfare_type  = row_i$welfare_type,
-      survey_id     = row_i$survey_id,
-      survey_acronym = row_i$survey_acronym,
-      version       = version_i,
-      module        = row_i$module,
-      pip_id        = pip_id_i,
-      dimensions    = dims_i,
-      welfare_vars  = welfare_vars_i,
-      ppp_sort      = ppp_sort_i,
-      country_name  = country_name_i,
-      region_name   = region_name_i,
-      region_code   = region_code_i
+      country_code     = row_i$country_code,
+      surveyid_year    = row_i$surveyid_year,
+      welfare_type     = row_i$welfare_type,
+      survey_id        = row_i$survey_id,
+      survey_acronym   = row_i$survey_acronym,
+      version          = version_i,
+      module           = row_i$module,
+      pip_id           = pip_id_i,
+      dimensions       = dims_i,
+      welfare_vars     = welfare_vars_i,
+      ppp_sort         = ppp_sort_i,
+      country_name     = country_name_i,
+      region_name      = region_name_i,
+      region_code      = region_code_i,
+      n_obs            = n_obs_i,
+      dimensions_n_obs = dimensions_n_obs_i
     )
   }
 
@@ -556,18 +571,6 @@ generate_release_manifest <- function(release,
 # ---------------------------------------------------------------------------
 
 #' Write or overwrite current_release.json
-#'
-#' Creates a small JSON pointer file in `output_dir` that records the
-#' currently active PROD release. {piptm} reads this at startup to determine
-#' the default release.
-#'
-#' File content:
-#' ```json
-#' {
-#'   "current_release": "20260206",
-#'   "updated_at": "2026-02-06T12:00:00Z"
-#' }
-#' ```
 #'
 #' @param release_id  Character scalar. Release identifier to set as current.
 #' @param output_dir  Directory in which `current_release.json` is written.
