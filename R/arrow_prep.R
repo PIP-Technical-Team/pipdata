@@ -1,16 +1,204 @@
+# Pre-Arrow Validation & Preparation
+# Spec:  docs/pre-arrow-cleaning-spec.md
+# Schema: piptm::pip_arrow_schema()  (single source of truth)
+# Plan:   .cg-docs/plans/2026-05-18-deflated-data-arrow-partitions.md  (Phase 1)
+#
+# Transforms a deflated survey data.table (from pipload::load_pip_deflated_data())
+# into a schema-conformant data.table ready for arrow::write_parquet().
+#
+# Design philosophy — "assert, don't fix", with one controlled exception:
+#   Factor columns declared as int32 in the piptm schema are converted to
+#   integer using the recode_spec mapping bundled in inst/extdata/recode_spec.yml.
+#   This is the only transformation beyond metadata injection. The mapping is
+#   used in reverse (label → code) to guarantee correctness regardless of R's
+#   internal factor level ordering. Any factor label not found in the mapping
+#   causes a hard abort.
+#
+#   All other columns must already conform to the schema. If they do not,
+#   the function aborts with a complete error report.
+#
+# Drop operations (with warnings):
+#   - Columns not in schema and not in welfare_vars are dropped.
+#   - Optional schema columns that are entirely NA are dropped.
+#   - Welfare columns with no finite values are dropped.
+#     Aborts if no welfare column survives.
+#
+# Exported functions
+# ------------------
+#   prepare_for_arrow()           — orchestrator
+#
+# Internal helpers
+# ----------------
+#   inject_metadata_cols()        — §1: dataset attributes → data.table columns
+#   .read_recode_spec()           — reads inst/extdata/recode_spec.yml
+#   .build_label_to_code_map()    — builds label→code reverse lookup for one variable
+#   .convert_factors_to_integer() — §4b: factor cols → integer using recode_spec
+#   .arrow_type_predicate()       — maps Arrow type → R type-checking predicate
+#   validate_schema_conformance() — §5: collect all violations, abort if any
+
+
+# ---------------------------------------------------------------------------
+# Internal helper: read recode spec from inst/extdata
+# ---------------------------------------------------------------------------
+
+#' Read the recode spec YAML bundled with the package
+#'
+#' Reads `inst/extdata/recode_spec.yml` and returns the parsed list.
+#' Called once per `prepare_for_arrow()` invocation — no caching needed
+#' since the file is local and small.
+#'
+#' @return Named list — the full parsed recode spec.
+#' @keywords internal
+.read_recode_spec <- function() {
+  path <- system.file("extdata", "recode_spec.yml", package = "pipdata")
+  if (!nzchar(path) || !file.exists(path)) {
+    cli::cli_abort(
+      c(
+        "Could not find {.file inst/extdata/recode_spec.yml}.",
+        "i" = "Ensure the file is present in the installed package."
+      )
+    )
+  }
+  yaml::read_yaml(path)
+}
+
+
+# ---------------------------------------------------------------------------
+# Internal helper: build label → code reverse map for one variable
+# ---------------------------------------------------------------------------
+
+#' Build a label-to-code reverse lookup for one recode_spec variable
+#'
+#' The recode_spec mapping is `code: label`. This function inverts it to
+#' `label: code` so that factor character values can be looked up by label
+#' to find the correct integer code.
+#'
+#' @param varname  Character scalar variable name (for error messages).
+#' @param spec_var List entry from `recode_spec$variables[[varname]]`.
+#'
+#' @return Named integer vector where names are labels and values are codes.
+#'   Returns `NULL` when no mapping is defined (e.g. numeric variables).
+#' @keywords internal
+.build_label_to_code_map <- function(varname, spec_var) {
+  mapping <- spec_var$mapping
+  if (is.null(mapping) || length(mapping) == 0L) {
+    return(NULL)
+  }
+
+  codes  <- as.integer(names(mapping))
+  labels <- as.character(unlist(mapping, use.names = FALSE))
+
+  if (anyDuplicated(labels)) {
+    cli::cli_abort(
+      c(
+        "Duplicate labels in recode_spec mapping for {.field {varname}}.",
+        "i" = "Each label must map to exactly one code."
+      )
+    )
+  }
+
+  setNames(codes, labels)
+}
+
+
+# ---------------------------------------------------------------------------
+# Internal helper: convert factor columns to integer using recode_spec
+# ---------------------------------------------------------------------------
+
+#' Convert factor columns to integer codes using the recode_spec mapping
+#'
+#' For each column in `dt` that is:
+#'   (a) a factor, AND
+#'   (b) declared as `int32` in the piptm schema, AND
+#'   (c) has a `type: factor` entry with a `mapping` in the recode_spec
+#'
+#' the factor labels are mapped to integer codes using the recode_spec
+#' `mapping` (inverted: label → code). Conversion is by reference.
+#'
+#' Aborts if any factor label in the data is not found in the mapping.
+#' NA values are preserved as `NA_integer_`.
+#'
+#' @param dt          A `data.table` of survey microdata. Modified by reference.
+#' @param schema      The piptm schema list from `piptm::pip_arrow_schema()`.
+#' @param recode_spec The parsed recode spec list from `.read_recode_spec()`.
+#'
+#' @return `dt` invisibly (modified by reference).
+#' @keywords internal
+.convert_factors_to_integer <- function(dt, schema, recode_spec) {
+  fields      <- schema$fields
+  recode_vars <- recode_spec$variables
+
+  # Identify columns that are: present in dt, factor, declared int32 in schema
+  factor_cols <- names(fields)[vapply(names(fields), function(col) {
+    col %in% names(dt) &&
+      is.factor(dt[[col]]) &&
+      identical(tolower(fields[[col]]$type$ToString()), "int32")
+  }, logical(1L))]
+
+  if (length(factor_cols) == 0L) return(invisible(dt))
+
+  errors <- character(0L)
+
+  for (col in factor_cols) {
+    spec_var <- recode_vars[[col]]
+
+    # No recode_spec entry or not a factor type — cannot convert safely
+    if (is.null(spec_var) || !identical(as.character(spec_var$type), "factor")) {
+      errors <- c(errors, paste0(
+        col, ": is a factor in data and int32 in schema but has no factor ",
+        "mapping in recode_spec. Cannot convert safely."
+      ))
+      next
+    }
+
+    label_to_code <- .build_label_to_code_map(col, spec_var)
+
+    if (is.null(label_to_code)) {
+      errors <- c(errors, paste0(
+        col, ": recode_spec entry has no mapping. Cannot convert factor to integer."
+      ))
+      next
+    }
+
+    # Get the character values of the factor
+    char_vals <- as.character(dt[[col]])
+
+    # Check for labels not in the mapping
+    unique_vals  <- unique(char_vals[!is.na(char_vals)])
+    unknown_vals <- setdiff(unique_vals, names(label_to_code))
+    if (length(unknown_vals) > 0L) {
+      errors <- c(errors, paste0(
+        col, ": factor label(s) not found in recode_spec mapping: ",
+        paste(unknown_vals, collapse = ", ")
+      ))
+      next
+    }
+
+    # Convert: map each label to its code, preserve NA
+    int_vals <- label_to_code[char_vals]
+    int_vals[is.na(char_vals)] <- NA_integer_
+    data.table::set(dt, j = col, value = as.integer(int_vals))
+  }
+
+  if (length(errors) > 0L) {
+    cli::cli_abort(c(
+      "Factor-to-integer conversion failed for {length(errors)} column(s).",
+      setNames(errors, rep("x", length(errors)))
+    ))
+  }
+
+  invisible(dt)
+}
+
+
 # ---------------------------------------------------------------------------
 # Internal helper: Arrow type → R type predicate
 # ---------------------------------------------------------------------------
 
 #' Map an Arrow type object to an R type-checking predicate
 #'
-#' Used by [validate_schema_conformance()] to assert that each column already
-#' carries the correct R type as declared in `piptm::pip_arrow_schema()`.
-#'
-#' @param arrow_type An Arrow type object (e.g. `schema$fields[[col]]$type`).
-#'
-#' @return A predicate function (`is.integer`, `is.double`, `is.character`)
-#'   or `NULL` when the type is unrecognised.
+#' @param arrow_type An Arrow type object.
+#' @return A predicate function or `NULL` when unrecognised.
 #' @keywords internal
 .arrow_type_predicate <- function(arrow_type) {
   type_str <- tolower(arrow_type$ToString())
@@ -34,19 +222,11 @@
 #' Inject survey metadata as constant columns into a microdata data.table
 #'
 #' Adds `country_code`, `surveyid_year`, `welfare_type`, `pip_id`, and
-#' `version` columns **by reference**, reading values directly from the dataset
-#' attributes set by `pipload::load_pip_deflated_data()`. No recoding or type
-#' casting is applied — the attribute values are assumed to already conform to
-#' the schema.
+#' `version` columns **by reference** from dataset attributes set by
+#' `pipload::load_pip_deflated_data()`. No recoding or type casting applied.
 #'
-#' This is the only transformation performed by the preparation pipeline.
-#' Everything else is validation.
-#'
-#' @param dt     A `data.table` of deflated survey microdata. Must carry
-#'   `country_code`, `surveyid_year`, `welfare_type`, `vermast`, and `veralt`
-#'   as attributes. Modified **by reference**.
-#' @param pip_id The canonical pip_id string for this survey file
-#'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`), taken from the release inventory.
+#' @param dt     A `data.table` of deflated survey microdata. Modified by reference.
+#' @param pip_id The canonical pip_id string (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`).
 #'
 #' @return `dt` invisibly (modified by reference).
 #' @keywords internal
@@ -83,31 +263,16 @@ inject_metadata_cols <- function(dt, pip_id) {
 
 
 # ---------------------------------------------------------------------------
-# §2 — Schema conformance validation
+# §5 — Schema conformance validation
 # ---------------------------------------------------------------------------
 
 #' Validate a data.table for full conformance with the piptm Arrow schema
 #'
-#' Collects **all** schema violations before aborting so the caller can fix
-#' everything in one pass. No fixing or casting is performed — the data must
-#' already conform.
+#' Collects all violations before aborting. Must be called after factor
+#' conversion — all factor columns should already be integer by this point.
 #'
-#' Checks performed (in order):
-#' \enumerate{
-#'   \item All `required = TRUE` schema columns are present.
-#'   \item All `welfare_vars` columns are present.
-#'   \item Each present schema column carries the correct R type.
-#'   \item All welfare columns are `double` (float64).
-#'   \item `welfare_type` values are `"INC"` or `"CON"`.
-#'   \item `country_code` matches `^[A-Z]{3}$`.
-#'   \item Partition key columns are constant within the file.
-#'   \item All welfare columns are finite and non-negative (zeros → warning).
-#'   \item `weight` is strictly positive and finite.
-#' }
-#'
-#' @param dt A `data.table` with metadata columns already injected and
-#'   extra / all-NA columns already dropped. Must carry a non-empty
-#'   `welfare_vars` attribute.
+#' @param dt A `data.table` with metadata injected, drops applied, and
+#'   factor columns converted. Must carry a non-empty `welfare_vars` attribute.
 #'
 #' @return `TRUE` invisibly when all checks pass; aborts otherwise.
 #' @keywords internal
@@ -119,7 +284,7 @@ validate_schema_conformance <- function(dt) {
 
   errors <- character(0L)
 
-  # §2.1 — Required schema columns present -----------------------------------
+  # §5.1 — Required schema columns present
   required_cols    <- names(fields)[
     vapply(fields, function(f) isTRUE(f$required), logical(1L))
   ]
@@ -130,7 +295,7 @@ validate_schema_conformance <- function(dt) {
     ))
   }
 
-  # §2.2 — All welfare_vars columns present ----------------------------------
+  # §5.2 — All welfare_vars columns present
   if (is.null(welfare_vars) || length(welfare_vars) == 0L) {
     errors <- c(errors, "welfare_vars attribute is absent or empty.")
   } else {
@@ -143,15 +308,14 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # §2.3 — Type conformance for schema columns present in dt -----------------
+  # §5.3 — Type conformance for schema columns present in dt
   schema_cols_present <- intersect(names(fields), names(dt))
   type_errors <- vapply(schema_cols_present, function(col) {
     predicate <- .arrow_type_predicate(fields[[col]]$type)
     if (is.null(predicate)) {
       return(paste0(
         col, ": unrecognised schema type '",
-        fields[[col]]$type$ToString(),
-        "' — cannot validate."
+        fields[[col]]$type$ToString(), "' — cannot validate."
       ))
     }
     if (!predicate(dt[[col]])) {
@@ -167,12 +331,12 @@ validate_schema_conformance <- function(dt) {
     errors <- c(errors, paste0("Type mismatch — ", type_errors))
   }
 
-  # §2.4 — Welfare columns must be double ------------------------------------
+  # §5.4 — Welfare columns must be double
   if (!is.null(welfare_vars) && length(welfare_vars) > 0L) {
-    wv_present   <- intersect(welfare_vars, names(dt))
-    wv_not_dbl   <- wv_present[!vapply(wv_present,
-                                       function(col) is.double(dt[[col]]),
-                                       logical(1L))]
+    wv_present <- intersect(welfare_vars, names(dt))
+    wv_not_dbl <- wv_present[!vapply(wv_present,
+                                     function(col) is.double(dt[[col]]),
+                                     logical(1L))]
     if (length(wv_not_dbl) > 0L) {
       errors <- c(errors, paste0(
         "Welfare column(s) must be double (float64): ",
@@ -187,7 +351,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # §2.5 — welfare_type values -----------------------------------------------
+  # §5.5 — welfare_type values
   if ("welfare_type" %in% names(dt)) {
     invalid_wt <- setdiff(dt[, unique(welfare_type)], c("INC", "CON"))
     if (length(invalid_wt) > 0L) {
@@ -198,7 +362,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # §2.6 — country_code format -----------------------------------------------
+  # §5.6 — country_code format
   if ("country_code" %in% names(dt)) {
     bad_cc <- dt[!grepl("^[A-Z]{3}$", country_code), unique(country_code)]
     if (length(bad_cc) > 0L) {
@@ -209,7 +373,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # §2.7 — Partition key consistency -----------------------------------------
+  # §5.7 — Partition key consistency
   for (key in c("country_code", "surveyid_year", "welfare_type", "version")) {
     if (key %in% names(dt)) {
       n <- dt[, data.table::uniqueN(get(key))]
@@ -222,7 +386,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # §2.8 — Welfare column data quality ---------------------------------------
+  # §5.8 — Welfare column data quality
   if (!is.null(welfare_vars) && length(welfare_vars) > 0L) {
     wv_present <- intersect(welfare_vars, names(dt))
     survey_id  <- if ("pip_id" %in% names(dt)) dt[1L, pip_id] else "unknown"
@@ -245,7 +409,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # §2.9 — Weight quality ----------------------------------------------------
+  # §5.9 — Weight quality
   if ("weight" %in% names(dt)) {
     if (dt[, any(is.na(weight))]) {
       errors <- c(errors, "weight: contains NA values.")
@@ -256,7 +420,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # --- Report all violations at once ----------------------------------------
+  # --- Report all violations at once
   if (length(errors) > 0L) {
     cli::cli_abort(c(
       "Data does not conform to the piptm Arrow schema.",
@@ -279,42 +443,21 @@ validate_schema_conformance <- function(dt) {
 #' `pipload::load_pip_deflated_data()`) into a schema-conformant `data.table`
 #' ready for [write_survey_parquet()].
 #'
-#' **Design philosophy — "assert, don't fix"**: the only transformation
-#' applied is injecting metadata attributes as columns (§1). All column lists
-#' and type requirements are derived exclusively from `piptm::pip_arrow_schema()`
-#' — nothing is hardcoded. After injection, the function asserts full schema
-#' conformance and aborts with a complete violation report if anything is wrong.
+#' **Steps applied in order:**
+#' 1. Inject metadata attributes as columns (only structural transformation).
+#' 2. Drop columns not in schema + welfare_vars (warn).
+#' 3. Drop optional schema columns that are entirely NA (warn).
+#' 4. Drop welfare columns with no finite values (warn); abort if none survive.
+#' 4b. Convert factor columns declared as int32 in schema to integer using
+#'     the recode_spec mapping in `inst/extdata/recode_spec.yml`. Aborts if
+#'     any factor label is not found in the mapping.
+#' 5. Assert full schema conformance — collect ALL violations, then abort.
 #'
-#' **Silent operations** (no error, no warning):
-#' \itemize{
-#'   \item Columns not in the schema and not in `welfare_vars` are dropped.
-#'   \item Optional schema columns that are entirely `NA` are dropped.
-#' }
+#' @param data   A `data.table` from `pipload::load_pip_deflated_data()`.
+#' @param pip_id The canonical pip_id string (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`).
 #'
-#' **Warning** (non-fatal):
-#' \itemize{
-#'   \item Welfare columns with no finite values at all are dropped and a
-#'     warning is emitted. These correspond to PPP reference years with no
-#'     valid deflation for this survey. The function aborts if no welfare
-#'     column survives this step.
-#' }
-#'
-#' The input `data.table` is **copied** before any modification; the caller's
-#' object is never changed.
-#'
-#' @param data   A `data.table` as returned by
-#'   `pipload::load_pip_deflated_data()`. Must carry `welfare_vars`,
-#'   `ppp_sort`, `country_code`, `surveyid_year`, `welfare_type`, `vermast`,
-#'   and `veralt` as attributes, plus `weight` and all welfare columns listed
-#'   in `welfare_vars` as data columns. All columns must already be of the
-#'   R type corresponding to their declaration in `piptm::pip_arrow_schema()`.
-#' @param pip_id The canonical pip_id string for this survey file
-#'   (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`), taken from the release inventory.
-#'
-#' @return A new `data.table` containing only schema-allowed columns and
-#'   available welfare columns, with `welfare_vars` and `ppp_sort` preserved
-#'   as attributes. Ready for [write_survey_parquet()].
-#'
+#' @return A schema-conformant `data.table` with `welfare_vars` and `ppp_sort`
+#'   preserved as attributes. Ready for [write_survey_parquet()].
 #' @seealso [write_survey_parquet()], [generate_arrow_dataset()]
 #' @family arrow-prep
 #' @export
@@ -349,16 +492,33 @@ prepare_for_arrow <- function(data, pip_id) {
   # ---- Step 1: inject metadata attributes as columns ----------------------
   inject_metadata_cols(dt, pip_id)
 
-  # ---- Step 2: drop columns outside the allowed set (silent) --------------
+  # ---- Step 1b: normalise welfare_type to INC/CON -------------------------
+welfare_type_map <- c(
+  "income"      = "INC",
+  "inc"         = "INC",
+  "consumption" = "CON",
+  "con"         = "CON"
+)
+current_wt <- tolower(dt[1L, welfare_type])
+if (current_wt %in% names(welfare_type_map)) {
+  data.table::set(dt, j = "welfare_type",
+                  value = welfare_type_map[[current_wt]])
+}
+
+
+  # ---- Step 2: drop columns outside the allowed set (warn) ----------------
   schema       <- piptm::pip_arrow_schema()
-  
   allowed_cols <- c(names(schema$fields), wv)
   extra_cols   <- setdiff(names(dt), allowed_cols)
   if (length(extra_cols) > 0L) {
+    cli::cli_warn(c(
+      "Dropping column(s) not in the piptm Arrow schema for survey {.val {pip_id}}:",
+      setNames(extra_cols, rep("!", length(extra_cols)))
+    ))
     dt[, (extra_cols) := NULL]
   }
 
-  # ---- Step 3: drop optional schema columns that are entirely NA (silent) --
+  # ---- Step 3: drop optional schema columns that are entirely NA (warn) ---
   optional_cols <- names(schema$fields)[
     !vapply(schema$fields, function(f) isTRUE(f$required), logical(1L))
   ]
@@ -367,13 +527,14 @@ prepare_for_arrow <- function(data, pip_id) {
     vapply(all_na_cols, function(col) dt[, all(is.na(get(col)))], logical(1L))
   ]
   if (length(all_na_cols) > 0L) {
+    cli::cli_warn(c(
+      "Dropping optional column(s) that are entirely NA for survey {.val {pip_id}}:",
+      setNames(all_na_cols, rep("!", length(all_na_cols)))
+    ))
     dt[, (all_na_cols) := NULL]
   }
 
-  # ---- Step 4: drop welfare columns with no finite values (warn) -----------
-  # Occurs when a PPP reference year has no valid deflation for this survey.
-  # The welfare_vars attribute is updated to reflect surviving columns.
-  # Aborts if no welfare column survives.
+  # ---- Step 4: drop welfare columns with no finite values (warn) ----------
   wv_bad <- wv[vapply(wv, function(col) {
     col %in% names(dt) && !dt[, any(is.finite(get(col)))]
   }, logical(1L))]
@@ -393,6 +554,10 @@ prepare_for_arrow <- function(data, pip_id) {
       "i" = "No finite welfare values found in any deflated welfare column."
     ))
   }
+
+  # ---- Step 4b: convert factor columns → integer using recode_spec --------
+  recode_spec <- .read_recode_spec()
+  .convert_factors_to_integer(dt, schema, recode_spec)
 
   # ---- Restore attributes on output ----------------------------------------
   data.table::setattr(dt, "welfare_vars", wv)
