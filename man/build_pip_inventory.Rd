@@ -4,7 +4,11 @@
 \alias{build_pip_inventory}
 \title{Build the PIP master and release inventories from stamp catalogs}
 \usage{
-build_pip_inventory(inv_to_clean, pip_id_map)
+build_pip_inventory(
+  inv_to_clean,
+  pip_id_map,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+)
 }
 \arguments{
 \item{inv_to_clean}{A \code{data.table} of DLW surveys sent for processing (as
@@ -13,6 +17,10 @@ returned by \code{\link[=valid_dlw_load]{valid_dlw_load()}}). Must have unique \
 \item{pip_id_map}{A \code{data.table} with exactly two columns: \code{survey_id}
 (DLW survey identifier) and \code{pip_id} (PIP identifier, uppercase). Built
 from successful \code{process_data()} calls in \code{\link[=pd_process_data]{pd_process_data()}}.}
+
+\item{verbose}{Logical. Controls verbosity of downstream
+\code{\link[pipload:load_pip_data]{pipload::load_pip_master_inventory()}} and \code{\link[pipload:load_aux_data]{pipload::load_aux_data()}}
+calls. Default: \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A \code{data.table}: the updated PIP master inventory. Does \strong{not}

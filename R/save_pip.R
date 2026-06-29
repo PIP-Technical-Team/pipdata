@@ -10,20 +10,38 @@
 #' @param alias Character scalar. The storage alias passed to
 #'   [pipload::pip_write()] (e.g., `"pip"` for survey data,
 #'   `"pip_meta"` for metadata).
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::pip_write()] calls. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @return A named list with one entry per artifact: `list(pip_id, success = TRUE)`
 #'   on success or `NULL` on failure. Version metadata is persisted to the
 #'   stamp catalog and read back by [build_pip_inventory()] — it is not
 #'   returned here.
 #'
+#' @details
+#' Artifacts are written largest-first (by `object.size()`) so that the
+#' largest serialisation buffers are allocated while the heap is cleanest.
+#' Before writing any artifact whose in-memory size exceeds
+#' `getOption("pipdata.gc_threshold_bytes", default = 100e6)` (default 100 MB),
+#' a `gc()` cycle is triggered to reclaim fragmented memory and reduce the risk
+#' of `cannot allocate buffer` errors from `qs2`.
+#'
 #' @family pd_process_data pipeline
 #' @export
-save_pip_data <- function(data, alias) {
+save_pip_data <- function(
+  data,
+  alias,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  versions <- lapply(names(data), \(y) {
+  survey_sizes <- vapply(names(data), \(y) as.numeric(object.size(data[[y]])), numeric(1))
+  sorted_names <- names(sort(survey_sizes, decreasing = TRUE))
+
+  versions <- lapply(sorted_names, \(y) {
     # on.exit ------------
     on.exit({
       pd_env_rm("save_id_name")
@@ -33,8 +51,13 @@ save_pip_data <- function(data, alias) {
 
     tryCatch(
       expr = {
+        threshold <- getOption("pipdata.gc_threshold_bytes", default = 100e6)
+        if (as.numeric(object.size(data[[y]])) > threshold) {
+          gc(verbose = FALSE)
+        }
+
         # Save data (version metadata is persisted to stamp catalog)
-        pipload::pip_write(x = data[[y]], id = y, alias = alias)
+        pipload::pip_write(x = data[[y]], id = y, alias = alias, verbose = verbose)
 
         list(pip_id = y, success = TRUE)
       },
@@ -57,7 +80,7 @@ save_pip_data <- function(data, alias) {
     )
   })
 
-  names(versions) <- names(data)
+  names(versions) <- sorted_names
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------

@@ -4,10 +4,12 @@
 \alias{inv_to_process}
 \title{Remove surveys already cleaned from the processing inventory}
 \usage{
-inv_to_process(inv)
+inv_to_process(inv, verbose = TRUE)
 }
 \arguments{
 \item{inv}{A \code{data.table} of DLW surveys (latest versions).}
+
+\item{verbose}{Logical. Print progress messages.}
 }
 \value{
 A \code{data.table} of surveys still needing processing, or

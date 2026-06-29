@@ -4,12 +4,19 @@
 \alias{valid_aux_load}
 \title{Retrieve the inventory of aux files that changed from previous release or vintage}
 \usage{
-valid_aux_load(measure = c("cpi", "ppp", "pfw", "pop"), compare = "all")
+valid_aux_load(
+  measure = c("cpi", "ppp", "pfw", "pop"),
+  compare = "all",
+  verbose = getOption("pipdata.verbose", default = TRUE)
+)
 }
 \arguments{
 \item{measure}{measure of auxiliary files to compare}
 
 \item{compare}{either \code{release}, \code{vintage} or \code{all}}
+
+\item{verbose}{Logical. Print progress messages. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 list

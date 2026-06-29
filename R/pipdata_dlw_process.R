@@ -37,7 +37,8 @@ pipdata_dlw_process <- function(
     save_log = TRUE,
     check_missing = TRUE,
     release = NULL,
-    identity = NULL
+    identity = NULL,
+    verbose = getOption("pipdata.verbose", default = TRUE)
 ){
 
   # 0) setup working environment
@@ -114,14 +115,15 @@ pipdata_dlw_process <- function(
     pipdata_get_gmd(inv_gmd_list = inv_gmd_list,
                         log  = log,
                         save_log = save_log,
-                        check_missing = check_missing)
+                        check_missing = check_missing,
+                        verbose = verbose)
 
   }
 
   # 3) Validate the datasets and update the inventory
   if (validate_dlw_data){
 
-    pipdata_validate_gmd(log = log, save_log = save_log)
+    pipdata_validate_gmd(log = log, save_log = save_log, verbose = verbose)
   }
 
 }

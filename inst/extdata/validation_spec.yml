@@ -1,0 +1,483 @@
+schema_version: "1.0"
+
+# DLW Data Validation Specification
+# Organized by module type (GPWG, GROUP, BIN, HIST, ALL, ASPIRE, L)
+# Each rule specifies the condition, error handling, and applicable modules
+
+modules:
+
+  gpwg:
+    description: "GPWG module validation rules"
+    core_variables:
+      - countrycode
+      - year
+      - hhid
+      - pid
+      - welfare
+      - welfshprosperity
+      - weight
+      - hsize
+
+    validations:
+
+      weight_welfare_availability:
+        type: variable_availability
+        pattern: "^weight|^welfare"
+        error_function: error_append
+        description: "Variables starting with 'weight' or 'welfare' must be present"
+
+      countrycode:
+        type: variable_type
+        required: false
+        data_type: character
+        error_function: warning_append
+        description: "countrycode must be character type if present"
+
+      urban:
+        type: categorical_check
+        required: false
+        check_function: check_urban
+        error_function: warning_append
+        description: "urban variable must have more than one reporting level"
+
+      hhid:
+        type: not_missing
+        required: true
+        error_function: warning_append
+        description: "hhid should not be missing"
+
+      pid:
+        type: not_missing
+        required: true
+        error_function: warning_append
+        description: "pid should not be missing"
+
+      hhid_pid_uniqueness:
+        type: uniqueness
+        key_variables: [hhid, pid]
+        required: true
+        error_function: warning_append
+        description: "No duplicate records in key variables hhid, pid"
+
+      numeric_core_variables:
+        type: numeric_validation
+        variables: [year, hsize, welfshprosperity]
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Numeric variables must be numeric, > 0, not missing, NAs within 10%"
+
+      weight_welfare_numeric:
+        type: numeric_validation
+        pattern: "^weight|^welfare"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: error_append
+        description: "Weight and welfare variables must be numeric, > 0, not missing, NAs within 10%"
+
+  group:
+    description: "GROUP module validation rules"
+
+    validations:
+
+      weight_welfare_availability:
+        type: variable_availability
+        pattern: "^weight|^welfare"
+        error_function: error_append
+        description: "Variables starting with 'weight' or 'welfare' must be present"
+
+      numeric_variables:
+        type: numeric_validation
+        pattern: "urban"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Numeric variables (e.g., urban) must be numeric, > 0, not missing, NAs within 10%"
+
+      urban:
+        type: categorical_check
+        required: false
+        check_function: check_urban
+        error_function: warning_append
+        description: "urban variable must have more than one reporting level"
+
+      weight_welfare_numeric:
+        type: numeric_validation
+        pattern: "^weight|^welfare"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: error_append
+        description: "Weight and welfare variables must be numeric, > 0, not missing, NAs within 10%"
+
+      character_variables:
+        type: character_validation
+        pattern: "code$|type$"
+        checks:
+          - is_character: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Character variables must be character type, not missing, NAs within 10%"
+
+      welfare_type_values:
+        type: value_constraint
+        variable: welfare_type
+        required: false
+        valid_values: ["C", "I", "income", "consumption"]
+        error_function: warning_append
+        description: "welfare_type should only contain values C, I, income, or consumption"
+
+  bin:
+    description: "BIN module validation rules"
+    core_variables:
+      - code
+      - year
+      - bins
+      - weight
+      - welfare
+      - verm
+      - vera
+      - region
+      - countryname
+
+    validations:
+
+      bins_availability:
+        type: variable_availability
+        pattern: "^bins"
+        error_function: error_append
+        description: "Variables starting with 'bins' must be present"
+
+      weight_welfare_availability:
+        type: variable_availability
+        pattern: "^weight|^welfare"
+        error_function: error_append
+        description: "Variables starting with 'weight' or 'welfare' must be present"
+
+      numeric_variables:
+        type: numeric_validation
+        variables: [year, share]
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Numeric variables must be numeric, > 0, not missing, NAs within 10%"
+
+      weight_welfare_numeric:
+        type: numeric_validation
+        pattern: "^weight|^welfare"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: error_append
+        description: "Weight and welfare variables must be numeric, > 0, not missing, NAs within 10%"
+
+      character_variables:
+        type: character_validation
+        pattern: "code$|verm$|vera$|^region|^country"
+        checks:
+          - is_character: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Character variables must be character type, not missing, NAs within 10%"
+
+  hist:
+    description: "HIST module validation rules"
+    core_variables:
+      - regioncode
+      - countrycode
+      - year
+      - datayear
+      - survname
+      - hhid
+      - hsize
+      - weight
+      - urban
+      - welfare
+      - coveragetype
+      - datatype
+      - code
+
+    validations:
+
+      weight_welfare_availability:
+        type: variable_availability
+        pattern: "^weight|^welfare"
+        error_function: error_append
+        description: "Variables starting with 'weight' or 'welfare' must be present"
+
+      numeric_variables:
+        type: numeric_validation
+        variables: [urban, year, hsize, datayear, type]
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Numeric variables must be numeric, > 0, not missing, NAs within 10%"
+
+      urban:
+        type: categorical_check
+        required: false
+        check_function: check_urban
+        error_function: warning_append
+        description: "urban variable must have more than one reporting level"
+
+      weight_welfare_numeric:
+        type: numeric_validation
+        pattern: "^weight|^welfare"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: error_append
+        description: "Weight and welfare variables must be numeric, > 0, not missing, NAs within 10%"
+
+      character_variables:
+        type: character_validation
+        pattern: "code$|survname$"
+        checks:
+          - is_character: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Character variables must be character type, not missing, NAs within 10%"
+
+  all:
+    description: "ALL module validation rules"
+
+    validations:
+
+      weight_welfare_availability:
+        type: variable_availability
+        pattern: "^weight|^welfare"
+        error_function: error_append
+        description: "Variables starting with 'weight' or 'welfare' must be present"
+
+      age_availability:
+        type: variable_availability
+        pattern: "^age"
+        error_function: error_append
+        description: "Variables starting with 'age' must be present"
+
+      urban:
+        type: categorical_check
+        required: false
+        check_function: check_urban
+        error_function: warning_append
+        description: "urban variable must have more than one reporting level"
+
+      age:
+        type: numeric_range
+        required: false
+        checks:
+          - is_positive_or_zero: true
+          - value_range: [0, 110]
+        error_function: warning_append
+        description: "age must be >= 0 and between 0-110 (or NA)"
+
+      male:
+        type: categorical_check
+        required: false
+        check_function: check_gender
+        error_function: warning_append
+        description: "gender (male) must have more than two categories"
+
+      weight_welfare_numeric:
+        type: numeric_validation
+        pattern: "^weight|^welfare"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: error_append
+        description: "Weight and welfare variables must be numeric, > 0, not missing, NAs within 10%"
+
+      demographic_variables:
+        type: validation_group
+        pattern: "^male|^educat|^school"
+        checks:
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Demographic variables must not be missing, NAs within 10%"
+
+  aspire:
+    description: "ASPIRE module validation rules"
+
+    validations:
+
+      hhweight_availability:
+        type: variable_availability
+        pattern: "^hhweight"
+        error_function: error_append
+        description: "Variables starting with 'hhweight' must be present"
+
+      numeric_variables:
+        type: numeric_validation
+        variables: [year, hsize]
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Numeric variables must be numeric, > 0, not missing, NAs within 10%"
+
+      urban:
+        type: categorical_check
+        required: false
+        check_function: check_urban
+        error_function: warning_append
+        description: "urban variable must have more than one reporting level"
+
+      hhweight_numeric:
+        type: numeric_validation
+        pattern: "^hhweight"
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: error_append
+        description: "hhweight variables must be numeric, > 0, not missing, NAs within 10%"
+
+  l:
+    description: "Labor (L) module validation rules"
+
+    validations:
+
+      lstatus_availability:
+        type: variable_availability
+        pattern: "^lstatus"
+        error_function: error_append
+        description: "Variables starting with 'lstatus' must be present"
+
+      empstat_availability:
+        type: variable_availability
+        pattern: "^empstat"
+        error_function: error_append
+        description: "Variables starting with 'empstat' must be present"
+
+      countrycode:
+        type: variable_type
+        required: false
+        data_type: character
+        error_function: warning_append
+        description: "countrycode must be character type if present"
+
+      hhid:
+        type: not_missing
+        required: false
+        error_function: warning_append
+        description: "hhid should not be missing if present"
+
+      pid:
+        type: not_missing
+        required: false
+        error_function: warning_append
+        description: "pid should not be missing if present"
+
+      hhid_pid_uniqueness:
+        type: uniqueness
+        key_variables: [hhid, pid]
+        required: false
+        error_function: warning_append
+        description: "No duplicate records in key variables hhid, pid if present"
+
+      numeric_variables:
+        type: numeric_validation
+        variables: [year, whours]
+        checks:
+          - is_numeric: true
+          - is_positive: true
+          - not_missing: true
+          - na_threshold: 0.10
+        error_function: warning_append
+        description: "Numeric variables must be numeric, > 0, not missing, NAs within 10%"
+
+  skip:
+    description: "Skip validation - minimal checks"
+
+    validations:
+
+      not_blank:
+        type: data_presence
+        check: "nrow > 0"
+        error_function: warning_append
+        description: "Data should not be blank (must have at least one row)"
+
+# Global thresholds and defaults
+defaults:
+  na_threshold_percent: 10.0
+  error_handling:
+    critical: error_append
+    warning: warning_append
+  description: "Global defaults for validation thresholds"
+
+# Custom validation functions referenced
+validation_functions:
+
+  check_urban:
+    description: "Check that urban variable has more than one reporting level"
+    implementation: "Custom R function"
+
+  check_gender:
+    description: "Check that gender (male) variable has more than two categories"
+    implementation: "Custom R function"
+
+  is_character:
+    description: "Validate variable is of character type"
+    implementation: "R base function is.character()"
+
+  is_numeric:
+    description: "Validate variable is of numeric type"
+    implementation: "R base function is.numeric()"
+
+  is_positive:
+    description: "Validate variable values are all greater than zero"
+    implementation: "Vectorized comparison: x > 0"
+
+  is_positive_or_zero:
+    description: "Validate variable values are all greater than or equal to zero"
+    implementation: "Vectorized comparison: x >= 0"
+
+  not_missing:
+    description: "Validate variable has no missing values"
+    implementation: "Check !is.na()"
+
+  na_within_threshold:
+    description: "Validate missing values do not exceed threshold percentage"
+    implementation: "sum(is.na(x)) / length(x) <= threshold"
+
+  within_range:
+    description: "Validate variable values fall within specified range [min, max]"
+    implementation: "Vectorized comparison: (x >= min & x <= max) | is.na(x)"
+
+  in_set:
+    description: "Validate variable values are in a specified set"
+    implementation: "x %in% valid_set"
+
+  is_unique_key:
+    description: "Validate no duplicate records on key variable(s)"
+    implementation: "!duplicated() on key combination"

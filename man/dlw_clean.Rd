@@ -4,7 +4,7 @@
 \alias{dlw_clean}
 \title{Clean data from datalibweb structure (lower level, S3 methods)}
 \usage{
-dlw_clean(df, ...)
+dlw_clean(df, verbose = getOption("pipdata.verbose", TRUE), ...)
 }
 \arguments{
 \item{df}{data.table}

@@ -20,7 +20,7 @@
                 {
                     "id": "logging-refactor",
                     "title": "Standardize logging approach",
-                    "description": "Review and standardize log = TRUE argument vs. if statement pattern across functions. Enforce consistent logging style",
+                    "description": "Review and standardize log = TRUE argument vs. if statement pattern across functions. Enforce consistent logging style. Also include the pipaux update log (accessible via pipfun::log_load(id = \"pipaux_update_log\", alias = \"aux_meta\")) in the unified logging surface so pipaux update events are captured alongside pipeline logs.",
                     "status": "planned",
                     "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
                     "tags": [
@@ -114,9 +114,40 @@
                     ]
                 },
                 {
+                    "id": "yaml-recode-dictionary",
+                    "title": "Auto-sync YAML recode dictionary with stamp versioning",
+                    "description": "Replace hardcoded recode_edu(), recode_gndr(), recode_age() functions with a declarative YAML specification. Package YAML (inst/extdata/recode_spec.yml) is the source of truth — edit it directly, commit changes. Pipeline auto-syncs to stamp: sync_recode_spec() compares package YAML to latest stamp version, saves new version if changed. Implement: sync_recode_spec() auto-sync, apply_recode_spec() dispatcher with version_id attribute, typed handlers (recode_range, recode_binary, recode_haven), utility functions (export_recode_spec_yaml, import_recode_spec_yaml, list_recode_spec_versions, diff_recode_spec), and inventory tracking via version_id_recode_spec column. Benefits: zero manual sync, single source of truth, full GitHub tracking, fast qs2 loading at runtime.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-06-18-yaml-recode-dictionary.md",
+                    "tags": [
+                        "data-quality",
+                        "refactoring",
+                        "recode",
+                        "validation",
+                        "stamp",
+                        "yaml",
+                        "auto-sync"
+                    ]
+                },
+                {
+                    "id": "yaml-validation-unification",
+                    "title": "Explore recode spec consolidation with dlw_pip_var_type.csv",
+                    "description": "Investigate whether the YAML-based recode dictionary (from yaml-recode-dictionary) can be extended to replace or absorb inst/extdata/dlw_pip_var_type.csv used in the validation step. Current CSV contains DLW→PIP variable name mappings and type declarations. Extended YAML spec could unify three concerns: (1) name mapping (dlw_var_names → pip_var_names), (2) type validation (expected class), (3) recode rules (range clamps, categorical mappings). Enables single source of truth for variable transformations across validation and cleaning. Prerequisite: yaml-recode-dictionary must be completed first. Deliverable: feasibility assessment and proof-of-concept extended spec schema.",
+                    "status": "idea",
+                    "tags": [
+                        "validation",
+                        "consolidation",
+                        "architecture",
+                        "dlw",
+                        "stamp",
+                        "yaml"
+                    ]
+                },
+                {
                     "id": "dlw-wrapper-rewrite",
                     "title": "Rewrite DLW wrapper to mirror pipeline architecture",
                     "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",
+                    "status": "idea",
                     "tags": [
                         "architecture",
                         "dlw",
@@ -128,6 +159,7 @@
                     "id": "unified-log-folder",
                     "title": "Consolidate log checkpoint storage into a single folder/alias",
                     "description": "Review the possibility of using a single stamp alias and folder for all log checkpoints (DLW and pipeline), instead of writing DLW checkpoints to dlw_meta and pipeline checkpoints to piplog. Simplifies log discovery and retrieval.",
+                    "status": "idea",
                     "tags": [
                         "logging",
                         "infrastructure",
@@ -147,6 +179,36 @@
                         "master-inventory",
                         "cleanup"
                     ]
+                },
+                {
+                    "id": "save-pip-memory-resilience",
+                    "title": "Fix save_pip_data() memory resilience: largest-first order and GC guard",
+                    "description": "save_pip_data() fails with 'cannot allocate buffer' when a large merged survey (e.g. ARG_2014_EPHC-S2_INC_ALL) arrives late in the iteration loop after heap fragmentation has accumulated. Fix: sort iteration order largest-first by object.size() so big artifacts are written when the heap is cleanest, and add a gc() call before pip_write() for objects above a configurable threshold (getOption(\"pipdata.gc_threshold_bytes\", 100e6)). No new imports — base R only.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-06-18-save-pip-memory-resilience.md",
+                    "tags": [
+                        "save_pip",
+                        "memory",
+                        "gc",
+                        "qs2",
+                        "reliability",
+                        "pipeline"
+                    ]
+                },
+                {
+                    "id": "pd-process-data-oom-crash",
+                    "title": "Fix pd_process_data() OOM crash on full 4000+ survey inventory runs",
+                    "description": "R session aborts mid-run because lapply(inv_ls, process_data) never frees survey intermediates (df, ls_cpfw, ls_clean, metadata) between iterations. Fix: explicitly rm() those objects and call gc() inside process_data() after saves, and convert the main lapply to a for loop with a periodic gc() every getOption('pipdata.gc_interval', 50L) surveys. No new imports — base R only.",
+                    "status": "active",
+                    "plan": ".cg-docs/plans/2026-06-24-pd-process-data-oom-crash.md",
+                    "tags": [
+                        "pd_process_data",
+                        "memory",
+                        "gc",
+                        "oom",
+                        "reliability",
+                        "pipeline"
+                    ]
                 }
             ]
         },
@@ -158,6 +220,7 @@
                     "id": "subfunctions",
                     "title": "Create subfunctions for long functions",
                     "description": "Identify functions with excessive lines or complexity and extract subfunctions to improve readability and testability",
+                    "status": "idea",
                     "tags": [
                         "refactoring",
                         "maintainability",
@@ -216,6 +279,19 @@
                         "testing",
                         "code-quality",
                         "review-findings"
+                    ]
+                },
+                {
+                    "id": "verbose-option-propagation",
+                    "title": "Implement verbose option propagation (Phase 1 & 2)",
+                    "description": "Completed 2026-06-04: Implemented verbose option propagation across 9 exported functions (pd_deflation, pd_process_data, pipdata_copy_dlw_meta, pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd, save_pip, valid_aux_load, valid_dlw_load). Added comprehensive test coverage for verbose propagation chains. Tests verify: Mode A (direct dt) and Mode B (pip_id) verbose propagation in pd_deflation(); verbose propagation to pipaux::compare_aux_releases/vintages in valid_aux_load(); verbose chain from valid_dlw_load() to valid_aux_load(). See .cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md.",
+                    "status": "done",
+                    "review": ".cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md",
+                    "tags": [
+                        "testing",
+                        "api-design",
+                        "logging",
+                        "code-quality"
                     ]
                 }
             ]
@@ -277,6 +353,7 @@
                     "id": "audit-copy-dlw-meta",
                     "title": "Audit pipdata_copy_dlw_meta.R standalone utility",
                     "description": "copy_dlw_metadata() is a standalone admin utility not called by either wrapper. Confirm it is intentionally standalone, document its role, and verify it works with current stamp/pipload APIs.",
+                    "status": "idea",
                     "tags": [
                         "documentation",
                         "admin-utility",
@@ -287,6 +364,7 @@
                     "id": "new-orchestration-script",
                     "title": "Create new pipeline orchestration script to replace Pipdata_script.R",
                     "description": "Write a new orchestration script with all pipeline wrappers (DLW acquisition, survey cleaning, report generation) using the unified logging conventions. Deprecate Pipdata_script.R which uses the old log/save_log API.",
+                    "status": "idea",
                     "tags": [
                         "pipeline",
                         "orchestration",
@@ -298,6 +376,7 @@
                     "id": "audit-dontrun-examples",
                     "title": "Audit and fix \\dontrun{} examples",
                     "description": "Review all @examples blocks currently wrapped in \\dontrun{} across the package. For each: determine whether the example can be made runnable (e.g., by using local test data or mocks), update it, or add a comment explaining why \\dontrun{} is required (e.g., requires network access or a working release). Ensures examples are as useful as possible for documentation readers.",
+                    "status": "idea",
                     "tags": [
                         "documentation",
                         "examples",
@@ -388,6 +467,7 @@
                     "id": "deflate-pipeline-wrapper",
                     "title": "Create pd_deflate_pipeline() batch orchestrator",
                     "description": "Build a pipeline wrapper that iterates over an entire inventory of cleaned surveys, applies pd_deflation() to each, saves deflated outputs to a stamp alias (e.g. pip_deflated), and logs a summary entry. Prerequisite: integrate-deflation must be completed first.",
+                    "status": "idea",
                     "tags": [
                         "deflation",
                         "pipeline",

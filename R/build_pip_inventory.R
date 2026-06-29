@@ -42,9 +42,17 @@
 #' - `first_release_version_id`, `latest_release_version_id` â€” stamp version
 #'   IDs of the release inventory (first appearance and most recent).
 #'
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::load_pip_master_inventory()] and [pipload::load_aux_data()]
+#'   calls. Default: `getOption("pipdata.verbose", default = TRUE)`.
+#'
 #' @family pd_process_data pipeline
 #' @export
-build_pip_inventory <- function(inv_to_clean, pip_id_map) {
+build_pip_inventory <- function(
+  inv_to_clean,
+  pip_id_map,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defensive assertions  ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,7 +64,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # forward from here unchanged.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   old_inv <- tryCatch(
-    expr = pipload::load_pip_master_inventory(verbose = FALSE),
+    expr = pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) NULL
   )
 
@@ -133,8 +141,15 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   target_ids <- unique(pip_id_map$pip_id)
 
-  cat_data <- stamp::st_catalog_query(alias = "pip")
-  cat_meta <- stamp::st_catalog_query(alias = "pip_meta")
+  cat_data    <- stamp::st_catalog_query(alias = "pip")
+  cat_meta    <- stamp::st_catalog_query(alias = "pip_meta")
+  cat_inv     <- stamp::st_catalog_query(alias = "pip_inv")
+  recode_rows <- cat_inv[grepl("recode_spec", cat_inv$path, fixed = TRUE), ]
+  recode_spec_vid <- if (nrow(recode_rows) > 0L) {
+    recode_rows$version_id[[1L]]
+  } else {
+    NA_character_
+  }
 
   # Derive pip_id from artifact filename (e.g. "bol_2022_eh_inc_all.qs2")
   cat_data[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
@@ -148,10 +163,10 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
 
   # P1.2: Validate pip_id format on the already-filtered set.
   # Expected: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE (5 _-delimited segments,
-  # e.g. BOL_2022_EH_INC_ALL). Artifacts with non-standard names produce
-  # garbage pip_ids — warn explicitly so misconfigurations are visible in
-  # the log.
-  pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9]+_[A-Z]+_[A-Z0-9]+$"
+  # e.g. BOL_2022_EH_INC_ALL). Acronym may contain hyphens (e.g. EPHC-S2).
+  # Artifacts with non-standard names produce garbage pip_ids — warn
+  # explicitly so misconfigurations are visible in the log.
+  pip_id_pattern <- "^[A-Z]{3}_[0-9]{4}_[A-Z0-9-]+_[A-Z]+_[A-Z0-9]+$"
   bad_data <- cat_data[!grepl(pip_id_pattern, pip_id), path]
   bad_meta <- cat_meta[!grepl(pip_id_pattern, pip_id), path]
   bad_paths <- union(bad_data, bad_meta)
@@ -252,6 +267,8 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # pip_ids absent from either catalog are excluded by nomatch = 0.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   new_versions <- cat_data[cat_meta, on = "pip_id", nomatch = 0L]
+
+  new_versions[, version_id_recode_spec := recode_spec_vid]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Step 6: Add survey_id from pip_id_map  ---------
@@ -355,7 +372,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     run_inv[, latest_release_version_id := NA_character_]
   }
 
-  pfw <- pipload::load_aux_data("pfw", verbose = FALSE)
+  pfw <- pipload::load_aux_data("pfw", verbose = verbose)
 
   pfw_release <- pfw |>
     collapse::fsubset(inpovcal == 1) |>
@@ -374,7 +391,8 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
       x = release_pip_inv,
       id = "pip_release_inventory",
       alias = "pip_inv",
-      pk = c("survey_id", "pip_id")
+      pk = c("survey_id", "pip_id"),
+      verbose = verbose
     ),
     error = function(e) {
       pipfun::log_error(
@@ -432,7 +450,8 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     x = run_inv,
     id = "pip_master_inventory",
     alias = "pip_master",
-    pk = c("survey_id", "pip_id")
+    pk = c("survey_id", "pip_id"),
+    verbose = verbose
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -440,7 +459,7 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
   # Verify that surveys from this run appear in the saved master.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   pip_inv <- tryCatch(
-    pipload::load_pip_master_inventory(),
+    pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) NULL
   )
 
@@ -531,8 +550,9 @@ build_pip_inventory <- function(inv_to_clean, pip_id_map) {
     "Checksum_dlw"
   )
   release_cols <- c("first_release_version_id", "latest_release_version_id")
+  spec_cols    <- c("version_id_recode_spec")
 
-  ordered_cols <- c(id_cols, data_cols, meta_cols, dlw_cols, release_cols)
+  ordered_cols <- c(id_cols, data_cols, meta_cols, dlw_cols, release_cols, spec_cols)
   # Only reorder columns that actually exist (fill = TRUE may add extras)
   present_ordered <- intersect(ordered_cols, names(run_inv))
   remainder <- setdiff(names(run_inv), present_ordered)

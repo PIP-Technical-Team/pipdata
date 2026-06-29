@@ -4,7 +4,7 @@
 \alias{pd_dlw_clean}
 \title{Clean data from datalibweb structure (High level)}
 \usage{
-pd_dlw_clean(ls)
+pd_dlw_clean(ls, verbose = getOption("pipdata.verbose", TRUE))
 }
 \arguments{
 \item{ls}{List of data frames or single dataframe.}

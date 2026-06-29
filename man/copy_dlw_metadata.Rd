@@ -8,7 +8,8 @@ copy_dlw_metadata(
   from_release = NULL,
   from_identity = NULL,
   to_release = NULL,
-  to_identity = NULL
+  to_identity = NULL,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -19,6 +20,10 @@ copy_dlw_metadata(
 \item{to_release}{Character. Release period \strong{to copy metadata to}.}
 
 \item{to_identity}{Character. Identity type \strong{to copy metadata to}.}
+
+\item{verbose}{Logical. Controls verbosity of downstream
+\code{\link[pipload:pip_write]{pipload::pip_write()}} and \code{\link[pipfun:get_wrk_release]{pipfun::get_wrk_release()}} calls. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 Invisibly returns \code{TRUE} if the operation completes successfully.

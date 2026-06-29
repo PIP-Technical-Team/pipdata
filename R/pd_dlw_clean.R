@@ -24,12 +24,11 @@
 #' lf    <- pd_dlw_clean(ls)
 #' names(lf)
 #' }
-pd_dlw_clean <- function(ls) {
+pd_dlw_clean <- function(ls, verbose = getOption("pipdata.verbose", TRUE)) {
 
   # Computations -------
 
-      rl <- purrr::map(.x = ls,
-                       .f = dlw_clean)
+  rl <- purrr::map(.x = ls, .f = dlw_clean, verbose = verbose)
 
   # Return -------------
   return(rl)
@@ -44,9 +43,10 @@ pd_dlw_clean <- function(ls) {
 #'
 #' @return data.table
 #' @export
-dlw_clean <- function(df,...) {
+dlw_clean <- function(df, verbose = getOption("pipdata.verbose", TRUE), ...) {
   UseMethod("dlw_clean")
 }
+
 
 #' Clean micro data from Datalibweb original file
 #'
@@ -55,52 +55,19 @@ dlw_clean <- function(df,...) {
 #'
 #' @return data.table
 #' @export
-dlw_clean.pipmd <- function(df, ...) {
-  #   ____________________________________________________________________________
-  #   Initial formatting                                                      ####
-
-  # hard copy
+dlw_clean.pipmd <- function(df, verbose = getOption("pipdata.verbose", TRUE), ...) {
   md <- copy(df)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Area --------
-  md <- add_area(md)
-
-  ## clean weight variable
-  md <- format_wgt(md)
-
-  ## format welfare variable
+  md <- shift_subnatid(md)   # normalise subnatid columns before area recode
+  md <- format_wgt(md)       # weight column must exist before apply_recode_spec
   md <- format_wlf(md)
 
-  #   ____________________________________________________________________________
-  #   Recode variables                                                      ####
-
-  ## Education
-  md <- recode_edu(md)
-
-  ## Gender
-  md <- recode_gndr(md)
-
-  ## Age
-  md <- recode_age(md)
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Wbpip clean (need to updata) --------
+  # Replaces add_area(), recode_edu(), recode_gndr(), recode_age()
+  # Spec lives in inst/extdata/recode_spec.yml; auto-synced to stamp on change
+  md <- apply_recode_spec(md, verbose = verbose)
 
   md <- wbpip_clean(md)
-
-  #   ____________________________________________________________________________
-  #   Final formatting                                                        ####
-
   md <- pip_vars(md)
-
-  # Sort by welfare (commented because it gives an error)
-  # sortbycol <- c(
-  #   "welfare",
-  #   "hhid",
-  #   "pid")
-
-  # setorderv(md, cols = "welfare")
 
   return(md)
 }

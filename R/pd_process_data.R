@@ -14,7 +14,7 @@
 #'   switching stamp versioning to `"timestamp"` and bypassing the master
 #'   inventory comparison. Default `FALSE`.
 #' @param verbose Logical. Print progress messages. Default:
-#'   `getOption("pipdata.verbose", default = FALSE)`.
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
 #'
@@ -36,7 +36,7 @@ pd_process_data <- function(
   inv = inv,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Temporarily switch stamp versioning to "timestamp" when force = TRUE
@@ -51,7 +51,7 @@ pd_process_data <- function(
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load aux data for metadata attributes and processing
-  aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = FALSE)
+  aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = verbose)
   names(aux_list) <- aux_measures
 
   # Load valid inventory
@@ -63,33 +63,43 @@ pd_process_data <- function(
   )
 
   if (is.null(inv_to_clean) || nrow(inv_to_clean) == 0) {
-    cli::cli_alert_info("No surveys to process.")
+    if (verbose) {
+      cli::cli_alert_info("No surveys to process.")
+    }
 
     # Load old pip inventory and return (with default enrichment for consumer)
-    old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
+    old_pip_inv <- pipload::load_pip_master_inventory(verbose = verbose)
     return(old_pip_inv)
   }
+
+  # Sync recode spec to stamp once before the per-survey loop
+  sync_recode_spec(alias = "pip_inv", verbose = verbose)
 
   # Process data
   inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
   names(inv_ls) <- inv_to_clean$survey_id
-  results <- lapply(inv_ls, process_data, aux_list = aux_list)
+  results <- lapply(
+    inv_ls,
+    process_data,
+    aux_list = aux_list,
+    verbose = verbose
+  )
   names(results) <- inv_to_clean$survey_id
 
   # Log processing summary
-  n_total   <- length(results)
+  n_total <- length(results)
   n_success <- sum(!vapply(results, is.null, logical(1)))
-  n_failed  <- n_total - n_success
+  n_failed <- n_total - n_success
   successful <- names(Filter(Negate(is.null), results))
 
   pipfun::log_info(
     "Processing complete.",
-    name    = "pipdata_log",
+    name = "pipdata_log",
     logmeta = list(
-      info            = "process_summary_inf",
-      n_total         = n_total,
-      n_success       = n_success,
-      n_failed        = n_failed,
+      info = "process_summary_inf",
+      n_total = n_total,
+      n_success = n_success,
+      n_failed = n_failed,
       surveys_success = successful
     )
   )
@@ -98,9 +108,9 @@ pd_process_data <- function(
   null_ls <- names(Filter(is.null, results))
   if (length(null_ls) > 0L) {
     pipfun::log_add(
-      event   = "info",
+      event = "info",
       message = "Some surveys were not cleaned. Review logmeta to identify which ones.",
-      name    = "pipdata_log",
+      name = "pipdata_log",
       logmeta = list(info = "null_svys_inf", surveys = null_ls)
     )
   }
@@ -127,7 +137,8 @@ pd_process_data <- function(
   # Update inventory via catalog-based assembler
   new_pip_inv <- build_pip_inventory(
     inv_to_clean = inv_to_clean,
-    pip_id_map   = pip_id_map
+    pip_id_map = pip_id_map,
+    verbose = verbose
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,6 +152,7 @@ pd_process_data <- function(
 #' @param inv inventory with survey_id and pins folder
 #' @param aux_list Named list of auxiliary data frames; expected keys:
 #'   `"pfw"`, `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`.
+#' @param verbose Logical. Print progress messages. Default `TRUE`.
 #' @param ...  other parameters
 #'
 #' @return data.table
@@ -161,7 +173,7 @@ pd_process_data <- function(
 #' md  <- survey_id_to_attr(md, unique(md$survey_id))
 #' process_data(md, pfw)
 #' }
-process_data <- function(inv, aux_list, ...) {
+process_data <- function(inv, aux_list, verbose = TRUE, ...) {
   # on.exit ------------
   on.exit({
     pd_env_rm("process_survey_id")
@@ -194,8 +206,8 @@ process_data <- function(inv, aux_list, ...) {
 
       # Save clean data and metadata to stamp (side effect; version facts
       # are read back from the stamp catalog by build_pip_inventory()).
-      save_pip_data(ls_clean, alias = "pip")
-      save_pip_data(metadata, alias = "pip_meta")
+      save_pip_data(ls_clean, alias = "pip", verbose = verbose)
+      save_pip_data(metadata, alias = "pip_meta", verbose = verbose)
 
       # Return only pip_names — version metadata is no longer tracked
       # in-memory; the assembler reads it from stamp catalogs directly.

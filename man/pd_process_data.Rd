@@ -8,7 +8,7 @@ pd_process_data(
   inv = inv,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -23,7 +23,7 @@ switching stamp versioning to \code{"timestamp"} and bypassing the master
 inventory comparison. Default \code{FALSE}.}
 
 \item{verbose}{Logical. Print progress messages. Default:
-\code{getOption("pipdata.verbose", default = FALSE)}.}
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A data.frame: updated pip inventory (\code{new_pip_inv}) with new

@@ -174,5 +174,6 @@ utils::globalVariables(c(
   "version_dlw",
   "version_id_data",
   "version_id_metadata",
+  "version_id_recode_spec",
   "welfare_type"
 ))

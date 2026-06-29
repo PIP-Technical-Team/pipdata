@@ -1,0 +1,456 @@
+schema_version: "1.0"
+
+variables:
+
+  # Numeric range clamping
+  educy:
+    type: numeric
+    recode_type: range_clamp
+    valid_range: [0, 50]
+    na_outside: true
+
+  age:
+    type: numeric
+    recode_type: range_clamp
+    valid_range: [0, 110]
+    na_outside: true
+
+  hsize:
+    type: numeric
+    recode_type: range_clamp
+    valid_range: [1, 100]
+    na_outside: true
+
+  # Haven-labeled factors (Education)
+  educat7:
+    type: factor
+    recode_type: haven_labels
+    label: "Highest level of education completed (7 categories)"
+    mapping:
+      1: "No education"
+      2: "Primary incomplete"
+      3: "Primary complete"
+      4: "Secondary incomplete"
+      5: "Secondary complete"
+      6: "Post-secondary"
+      7: "Tertiary"
+
+  educat5:
+    type: factor
+    recode_type: haven_labels
+    label: "Highest level of education completed (5 categories)"
+    mapping:
+      1: "No education"
+      2: "Primary incomplete"
+      3: "Primary complete but secondary incomplete"
+      4: "Secondary complete"
+      5: "Some tertiary/post-secondary"
+
+  educat4:
+    type: factor
+    recode_type: haven_labels
+    label: "Highest level of education completed (4 categories)"
+    mapping:
+      1: "Incomplete secondary"
+      2: "General Secondary"
+      3: "Special Secondary"
+      4: "Tertiary"
+      5: "None or incomplete primary"
+
+  # Binary categorical mapping
+  gender:
+    source_column: male
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "male"
+      0: "female"
+
+  literacy:
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "yes"
+      0: "no"
+
+  school:
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "yes"
+      0: "no"
+
+  area:
+    source_column: urban
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "urban"
+      0: "rural"
+
+  imp_wat_rec:
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "yes"
+      0: "no"
+
+  imp_san_rec:
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "yes"
+      0: "no"
+
+  electricity:
+    type: factor
+    recode_type: binary_map
+    mapping:
+      1: "yes"
+      0: "no"
+
+  # Labor Status Variables (Haven Labels)
+  lstatus:
+    type: factor
+    recode_type: haven_labels
+    label: "Labor status (7-day ref period)"
+    mapping:
+      1: "Employed"
+      2: "Unemployed"
+      3: "Not-in-labor force"
+
+  lstatus_year:
+    type: factor
+    recode_type: haven_labels
+    label: "Labor status (12-month ref period)"
+    mapping:
+      1: "Employed"
+      2: "Unemployed"
+      3: "Not-in-labor force"
+
+  # Employment Status - Primary Job (7-day)
+  empstat:
+    type: factor
+    recode_type: haven_labels
+    label: "Employment status, primary job (7-day ref period)"
+    mapping:
+      1: "Paid Employee"
+      2: "Non-Paid Employee"
+      3: "Employer"
+      4: "Self-employed"
+      5: "Other workers not classifiable by status"
+
+  empstat_2:
+    type: factor
+    recode_type: haven_labels
+    label: "Employment status, secondary job (7-day ref period)"
+    mapping:
+      1: "Paid Employee"
+      2: "Non-Paid Employee"
+      3: "Employer"
+      4: "Self-employed"
+      5: "Other workers not classifiable by status"
+
+  # Employment Status - Primary Job (12-month)
+  empstat_year:
+    type: factor
+    recode_type: haven_labels
+    label: "Employment status, primary job (12-month ref period)"
+    mapping:
+      1: "Paid Employee"
+      2: "Non-Paid Employee"
+      3: "Employer"
+      4: "Self-employed"
+      5: "Other workers not classifiable by status"
+
+  empstat_2_year:
+    type: factor
+    recode_type: haven_labels
+    label: "Employment status, secondary job (12-month ref period)"
+    mapping:
+      1: "Paid Employee"
+      2: "Non-Paid Employee"
+      3: "Employer"
+      4: "Self-employed"
+      5: "Other workers not classifiable by status"
+
+  # Industry Classification (4-category) - 7-day
+  industrycat4:
+    type: factor
+    recode_type: haven_labels
+    label: "4-category industry classification, primary job (7-day ref period)"
+    mapping:
+      1: "Agriculture"
+      2: "Industry"
+      3: "Services"
+      4: "Other"
+
+  industrycat4_2:
+    type: factor
+    recode_type: haven_labels
+    label: "4-category industry classification, secondary job (7-day ref period)"
+    mapping:
+      1: "Agriculture"
+      2: "Industry"
+      3: "Services"
+      4: "Other"
+
+  # Industry Classification (4-category) - 12-month
+  industrycat4_year:
+    type: factor
+    recode_type: haven_labels
+    label: "4-category industry classification, primary job (12-month ref period)"
+    mapping:
+      1: "Agriculture"
+      2: "Industry"
+      3: "Services"
+      4: "Other"
+
+  industrycat4_2_year:
+    type: factor
+    recode_type: haven_labels
+    label: "4-category industry classification, secondary job (12-month ref period)"
+    mapping:
+      1: "Agriculture"
+      2: "Industry"
+      3: "Services"
+      4: "Other"
+
+  # Industry Classification (10-category) - 7-day
+  industrycat10:
+    type: factor
+    recode_type: haven_labels
+    label: "1 digit industry classification, primary job (7-day ref period)"
+    mapping:
+      1: "Agriculture, Hunting, Fishing, etc."
+      2: "Mining"
+      3: "Manufacturing"
+      4: "Public Utility Services"
+      5: "Construction"
+      6: "Commerce"
+      7: "Transport and Communications"
+      8: "Financial and Business Services"
+      9: "Public Administration"
+      10: "Other Services, Unspecified"
+
+  industrycat10_2:
+    type: factor
+    recode_type: haven_labels
+    label: "1 digit industry classification, secondary job (7-day ref period)"
+    mapping:
+      1: "Agriculture, Hunting, Fishing, etc."
+      2: "Mining"
+      3: "Manufacturing"
+      4: "Public Utility Services"
+      5: "Construction"
+      6: "Commerce"
+      7: "Transport and Communications"
+      8: "Financial and Business Services"
+      9: "Public Administration"
+      10: "Other Services, Unspecified"
+
+  # Industry Classification (10-category) - 12-month
+  industrycat10_year:
+    type: factor
+    recode_type: haven_labels
+    label: "1 digit industry classification, primary job (12-month ref period)"
+    mapping:
+      1: "Agriculture, Hunting, Fishing, etc."
+      2: "Mining"
+      3: "Manufacturing"
+      4: "Public Utility Services"
+      5: "Construction"
+      6: "Commerce"
+      7: "Transport and Communications"
+      8: "Financial and Business Services"
+      9: "Public Administration"
+      10: "Other Services, Unspecified"
+
+  industrycat10_2_year:
+    type: factor
+    recode_type: haven_labels
+    label: "1 digit industry classification, secondary job (12-month ref period)"
+    mapping:
+      1: "Agriculture, Hunting, Fishing, etc."
+      2: "Mining"
+      3: "Manufacturing"
+      4: "Public Utility Services"
+      5: "Construction"
+      6: "Commerce"
+      7: "Transport and Communications"
+      8: "Financial and Business Services"
+      9: "Public Administration"
+      10: "Other Services, Unspecified"
+
+  # Derived Factor Variables (from continuous)
+  age_group:
+    type: factor
+    recode_type: binned_from_continuous
+    source_column: age
+    label: "Age group (4-category)"
+    mapping:
+      1: "0–14"
+      2: "15–24"
+      3: "25–64"
+      4: "65+"
+    bin_rules:
+      - bin: 1
+        condition: "age >= 0 & age <= 14"
+      - bin: 2
+        condition: "age >= 15 & age <= 24"
+      - bin: 3
+        condition: "age >= 25 & age <= 64"
+      - bin: 4
+        condition: "age >= 65"
+
+  age_group2:
+    type: factor
+    recode_type: binned_from_continuous
+    source_column: age
+    label: "Age group (7-category)"
+    mapping:
+      1: "0–14"
+      2: "15–24"
+      3: "25–34"
+      4: "35–44"
+      5: "45–54"
+      6: "55–64"
+      7: "65+"
+    bin_rules:
+      - bin: 1
+        condition: "age >= 0 & age <= 14"
+      - bin: 2
+        condition: "age >= 15 & age <= 24"
+      - bin: 3
+        condition: "age >= 25 & age <= 34"
+      - bin: 4
+        condition: "age >= 35 & age <= 44"
+      - bin: 5
+        condition: "age >= 45 & age <= 54"
+      - bin: 6
+        condition: "age >= 55 & age <= 64"
+      - bin: 7
+        condition: "age >= 65"
+
+  hsize_group:
+    type: factor
+    recode_type: binned_from_continuous
+    source_column: hsize
+    label: "Household size group (4-category)"
+    mapping:
+      1: "1 person"
+      2: "2–3 persons"
+      3: "4–6 persons"
+      4: "7+ persons"
+    bin_rules:
+      - bin: 1
+        condition: "hsize == 1"
+      - bin: 2
+        condition: "hsize >= 2 & hsize <= 3"
+      - bin: 3
+        condition: "hsize >= 4 & hsize <= 6"
+      - bin: 4
+        condition: "hsize >= 7"
+
+  wquintile:
+    type: factor
+    recode_type: quantile_from_continuous
+    source_column: welfare
+    weight_col: weight
+    label: "Welfare quintile"
+    mapping:
+      1: "quintile1"
+      2: "quintile2"
+      3: "quintile3"
+      4: "quintile4"
+      5: "quintile5"
+
+  # Binary Indicator Variables (1 if condition met, 0 otherwise)
+
+  # Age group indicators (source: age_group2 — 7-category bins)
+  youth:
+    type: numeric
+    recode_type: indicator
+    source_column: age_group2
+    match_values: [2]          # bin 2 = 15–24
+
+  prime_work_age:
+    type: numeric
+    recode_type: indicator
+    source_column: age_group2
+    match_values: [3, 4, 5]    # bins 3–5 = 25–34, 35–44, 45–54
+
+  elderly:
+    type: numeric
+    recode_type: indicator
+    source_column: age_group2
+    match_values: [7]          # bin 7 = 65+
+
+  # Labor status indicators (source: lstatus — 1=Employed, 2=Unemployed, 3=NILF)
+  employed:
+    type: numeric
+    recode_type: indicator
+    source_column: lstatus
+    match_values: [1]
+
+  unemployed:
+    type: numeric
+    recode_type: indicator
+    source_column: lstatus
+    match_values: [2]
+
+  in_labor_force:
+    type: numeric
+    recode_type: indicator
+    source_column: lstatus
+    match_values: [1, 2]       # employed + unemployed
+
+  # Employment status indicators (source: empstat — 1=Paid, 2=Non-Paid, 3=Employer, 4=Self-emp, 5=Other)
+  paid_emp:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [1]
+
+  self_emp:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [4]
+
+  employer:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [3]
+
+  inf_emp:
+    type: numeric
+    recode_type: indicator
+    source_column: empstat
+    match_values: [2, 4, 5]    # non-paid employee, self-employed, other unclassifiable
+
+  # Industry sector indicators (source: industrycat4 — 1=Agriculture, 2=Industry, 3=Services, 4=Other)
+  emp_agri:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [1]
+
+  emp_indu:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [2]
+
+  emp_serv:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [3]
+
+  emp_others:
+    type: numeric
+    recode_type: indicator
+    source_column: industrycat4
+    match_values: [4]

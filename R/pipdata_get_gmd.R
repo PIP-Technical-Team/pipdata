@@ -15,6 +15,9 @@
 #' @param log Logical. Whether to keep logging information. Default is `TRUE`.
 #' @param save_log Logical. Whether to save logging information to a file. Default is `TRUE`.
 #' @param check_missing Logical. Whether to check for and retrieve missing data. Default is `TRUE`.
+#' @param verbose Logical. Controls verbosity of downstream
+#'   [pipload::pip_write()] calls. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @note This function expects a working release to be configured via
 #'   [pipfun::setup_working_release()]. When called from
@@ -36,7 +39,8 @@ pipdata_get_gmd <- function(
   inv_gmd_list = "dlw_gmd_inv",
   log = TRUE,
   save_log = TRUE,
-  check_missing = TRUE
+  check_missing = TRUE,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #### logging -----------------------------------------------------------------
 
@@ -157,7 +161,8 @@ pipdata_get_gmd <- function(
     x = inv_gmd,
     id = inv_gmd_list,
     pk = c("Checksum", "FileName"),
-    alias = "dlw_inv"
+    alias = "dlw_inv",
+    verbose = verbose
   )
 
   cli::cli_alert_success(

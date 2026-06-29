@@ -62,11 +62,13 @@
 #' @param version Character scalar or `NULL`. If `NULL`, the most recent
 #'   inventory entry for `pip_id` (by `created_at_metadata`) is used. When
 #'   supplied, it must match the `content_hash_data` column in the inventory.
+#' @param verbose Logical scalar passed from [pd_deflation()]. Controls
+#'   whether `pipload` I/O calls emit informational messages.
 #' @return A named list with elements `cpi`, `ppp`, and `pop`, each a named
 #'   numeric vector as stored in the `pip_meta` stamp alias.
 #' @noRd
-.load_deflation_aux <- function(pip_id, version = NULL) {
-  inv <- pipload::load_pip_master_inventory()
+.load_deflation_aux <- function(pip_id, version = NULL, verbose) {
+  inv <- pipload::load_pip_master_inventory(verbose = verbose)
 
   # Use a local binding with a different name to avoid data.table scoping:
   # inside DT[i], bare names resolve to columns first, so `pip_id` would
@@ -117,7 +119,8 @@
     pipload::pip_read(
       id = pip_id,
       alias = "pip_meta",
-      version = meta_version
+      version = meta_version,
+      verbose = verbose
     ),
     error = function(e) NULL
   )
@@ -133,7 +136,8 @@
     meta <- pipload::pip_read(
       id = pip_id,
       alias = "pip_meta",
-      version = NULL
+      version = NULL,
+      verbose = verbose
     )
   }
 
@@ -170,6 +174,9 @@
 #' @param version Character scalar or `NULL`. Stamp version used when loading
 #'   the survey (Mode B) or resolving the metadata version from the master
 #'   inventory.
+#' @param verbose Logical. When `TRUE` (the default), informational messages
+#'   from downstream `pipload`/`stamp` I/O calls are shown. Set to `FALSE` to
+#'   suppress them. Defaults to `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @return The input survey `data.table` augmented with `welfare_lcu` and
 #'   `welfare_ppp_*` columns, and three attributes:
@@ -215,7 +222,8 @@ pd_deflation <- function(
   ppp = NULL,
   pop = NULL,
   pip_id = NULL,
-  version = NULL
+  version = NULL,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Input resolution   ---------
@@ -229,7 +237,7 @@ pd_deflation <- function(
         class = c("pd_deflation", "piperr")
       )
     }
-    dt <- pipload::pip_read(id = pip_id, alias = "pip", version = version)
+    dt <- pipload::pip_read(id = pip_id, alias = "pip", version = version, verbose = verbose)
     # stamp round-trips strip the pip S3 class prefix — restore it.
     # Prefer assign_pipclass() (reads the `module` column); fall back to
     # inferring from the pip_id last segment when module was dropped on save.
@@ -286,7 +294,7 @@ pd_deflation <- function(
       data.table::setnames(cpi, "cpi2005_SM21", "cpi2005") # temporal solution
     }
   } else {
-    aux <- .load_deflation_aux(pip_id = pip_id, version = version)
+    aux <- .load_deflation_aux(pip_id = pip_id, version = version, verbose = verbose)
     cpi <- aux$cpi
     ppp <- aux$ppp
     pop <- aux$pop
