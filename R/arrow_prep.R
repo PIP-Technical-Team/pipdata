@@ -6,13 +6,15 @@
 # Transforms a deflated survey data.table (from pipload::load_pip_deflated_data())
 # into a schema-conformant data.table ready for arrow::write_parquet().
 #
-# Design philosophy — "assert, don't fix", with one controlled exception:
-#   Factor columns declared as int32 in the piptm schema are converted to
-#   integer using the recode_spec mapping bundled in inst/extdata/recode_spec.yml.
-#   This is the only transformation beyond metadata injection. The mapping is
-#   used in reverse (label → code) to guarantee correctness regardless of R's
-#   internal factor level ordering. Any factor label not found in the mapping
-#   causes a hard abort.
+# Design philosophy — "assert, don't fix", with controlled exceptions:
+#   1. welfare_type is normalised from "income"/"consumption" to "INC"/"CON".
+#   2. Factor columns declared as int32 in the piptm schema are converted to
+#      integer using the recode_spec mapping bundled in inst/extdata/recode_spec.yml.
+#      The mapping is used in reverse (label → code) to guarantee correctness
+#      regardless of R's internal factor level ordering. Any factor label not
+#      found in the mapping causes a hard abort.
+#   3. Binary columns female, male, urban, rural are derived from the integer-
+#      coded gender and area columns after factor conversion.
 #
 #   All other columns must already conform to the schema. If they do not,
 #   the function aborts with a complete error report.
@@ -25,16 +27,17 @@
 #
 # Exported functions
 # ------------------
-#   prepare_for_arrow()           — orchestrator
+#   prepare_for_arrow()              — orchestrator
 #
 # Internal helpers
 # ----------------
-#   inject_metadata_cols()        — §1: dataset attributes → data.table columns
-#   .read_recode_spec()           — reads inst/extdata/recode_spec.yml
-#   .build_label_to_code_map()    — builds label→code reverse lookup for one variable
-#   .convert_factors_to_integer() — §4b: factor cols → integer using recode_spec
-#   .arrow_type_predicate()       — maps Arrow type → R type-checking predicate
-#   validate_schema_conformance() — §5: collect all violations, abort if any
+#   inject_metadata_cols()           — §1:  dataset attributes → data.table columns
+#   .read_recode_spec()              — reads inst/extdata/recode_spec.yml
+#   .build_label_to_code_map()       — builds label→code reverse lookup for one variable
+#   .convert_factors_to_integer()    — §4b: factor cols → integer using recode_spec
+#   .derive_gender_area_binaries()   — §4c: derive female/male/urban/rural from gender/area
+#   .arrow_type_predicate()          — maps Arrow type → R type-checking predicate
+#   validate_schema_conformance()    — §5:  collect all violations, abort if any
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +195,56 @@
 
 
 # ---------------------------------------------------------------------------
+# Internal helper: derive gender/area binary columns
+# ---------------------------------------------------------------------------
+
+#' Derive female, male, urban, rural binary columns from gender and area
+#'
+#' Creates binary integer columns (1/0/NA) from the integer-coded `gender`
+#' and `area` columns. Must be called after `.convert_factors_to_integer()`
+#' so that `gender` and `area` are already plain integers.
+#'
+#' Only creates a binary column when:
+#'   (a) the source column (`gender` or `area`) is present in `dt`, AND
+#'   (b) the binary column name is present in the piptm schema (i.e. in
+#'       `piptm.optional_vars`).
+#'
+#' NA values in the source column propagate to all derived binaries.
+#'
+#' Mappings applied:
+#'   gender: 0 = female, 1 = male
+#'   area:   0 = rural,  1 = urban
+#'
+#' @param dt     A `data.table` of survey microdata. Modified by reference.
+#' @param schema The piptm schema list from `piptm::pip_arrow_schema()`.
+#'
+#' @return `dt` invisibly (modified by reference).
+#' @keywords internal
+.derive_gender_area_binaries <- function(dt, schema) {
+
+  schema_cols <- names(schema$fields)
+
+  # gender → female, male
+  if ("gender" %in% names(dt)) {
+    if ("female" %in% schema_cols)
+      data.table::set(dt, j = "female", value = as.integer(dt[["gender"]] == 0L))
+    if ("male" %in% schema_cols)
+      data.table::set(dt, j = "male",   value = as.integer(dt[["gender"]] == 1L))
+  }
+
+  # area → rural, urban
+  if ("area" %in% names(dt)) {
+    if ("rural" %in% schema_cols)
+      data.table::set(dt, j = "rural", value = as.integer(dt[["area"]] == 0L))
+    if ("urban" %in% schema_cols)
+      data.table::set(dt, j = "urban", value = as.integer(dt[["area"]] == 1L))
+  }
+
+  invisible(dt)
+}
+
+
+# ---------------------------------------------------------------------------
 # Internal helper: Arrow type → R type predicate
 # ---------------------------------------------------------------------------
 
@@ -269,10 +322,12 @@ inject_metadata_cols <- function(dt, pip_id) {
 #' Validate a data.table for full conformance with the piptm Arrow schema
 #'
 #' Collects all violations before aborting. Must be called after factor
-#' conversion — all factor columns should already be integer by this point.
+#' conversion and binary derivation — all columns should be correctly typed
+#' by this point.
 #'
-#' @param dt A `data.table` with metadata injected, drops applied, and
-#'   factor columns converted. Must carry a non-empty `welfare_vars` attribute.
+#' @param dt A `data.table` with metadata injected, drops applied, factor
+#'   columns converted, and binary columns derived. Must carry a non-empty
+#'   `welfare_vars` attribute.
 #'
 #' @return `TRUE` invisibly when all checks pass; aborts otherwise.
 #' @keywords internal
@@ -420,7 +475,7 @@ validate_schema_conformance <- function(dt) {
     }
   }
 
-  # --- Report all violations at once
+  # --- Report all violations at once ----------------------------------------
   if (length(errors) > 0L) {
     cli::cli_abort(c(
       "Data does not conform to the piptm Arrow schema.",
@@ -444,14 +499,18 @@ validate_schema_conformance <- function(dt) {
 #' ready for [write_survey_parquet()].
 #'
 #' **Steps applied in order:**
-#' 1. Inject metadata attributes as columns (only structural transformation).
-#' 2. Drop columns not in schema + welfare_vars (warn).
-#' 3. Drop optional schema columns that are entirely NA (warn).
-#' 4. Drop welfare columns with no finite values (warn); abort if none survive.
+#' 1.  Inject metadata attributes as columns.
+#' 1b. Normalise welfare_type to "INC" or "CON".
+#' 2.  Drop columns not in schema + welfare_vars (warn).
+#' 3.  Drop optional schema columns that are entirely NA (warn).
+#' 4.  Drop welfare columns with no finite values (warn); abort if none survive.
 #' 4b. Convert factor columns declared as int32 in schema to integer using
 #'     the recode_spec mapping in `inst/extdata/recode_spec.yml`. Aborts if
 #'     any factor label is not found in the mapping.
-#' 5. Assert full schema conformance — collect ALL violations, then abort.
+#' 4c. Derive binary columns female, male, urban, rural from the integer-coded
+#'     gender and area columns. Only created when source column is present and
+#'     binary column is in the piptm schema.
+#' 5.  Assert full schema conformance — collect ALL violations, then abort.
 #'
 #' @param data   A `data.table` from `pipload::load_pip_deflated_data()`.
 #' @param pip_id The canonical pip_id string (e.g. `"ARG_2003_EPHC-S2_INC_ALL"`).
@@ -493,18 +552,17 @@ prepare_for_arrow <- function(data, pip_id) {
   inject_metadata_cols(dt, pip_id)
 
   # ---- Step 1b: normalise welfare_type to INC/CON -------------------------
-welfare_type_map <- c(
-  "income"      = "INC",
-  "inc"         = "INC",
-  "consumption" = "CON",
-  "con"         = "CON"
-)
-current_wt <- tolower(dt[1L, welfare_type])
-if (current_wt %in% names(welfare_type_map)) {
-  data.table::set(dt, j = "welfare_type",
-                  value = welfare_type_map[[current_wt]])
-}
-
+  welfare_type_map <- c(
+    "income"      = "INC",
+    "inc"         = "INC",
+    "consumption" = "CON",
+    "con"         = "CON"
+  )
+  current_wt <- tolower(dt[1L, welfare_type])
+  if (current_wt %in% names(welfare_type_map)) {
+    data.table::set(dt, j = "welfare_type",
+                    value = welfare_type_map[[current_wt]])
+  }
 
   # ---- Step 2: drop columns outside the allowed set (warn) ----------------
   schema       <- piptm::pip_arrow_schema()
@@ -558,6 +616,9 @@ if (current_wt %in% names(welfare_type_map)) {
   # ---- Step 4b: convert factor columns → integer using recode_spec --------
   recode_spec <- .read_recode_spec()
   .convert_factors_to_integer(dt, schema, recode_spec)
+
+  # ---- Step 4c: derive female/male/urban/rural from gender/area -----------
+  .derive_gender_area_binaries(dt, schema)
 
   # ---- Restore attributes on output ----------------------------------------
   data.table::setattr(dt, "welfare_vars", wv)
