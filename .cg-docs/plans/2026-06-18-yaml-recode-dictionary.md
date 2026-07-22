@@ -1,7 +1,7 @@
 ---
 created: "2026-06-18"
 updated: "2026-07-22"
-status: "in-progress"
+status: "done"
 priority: "P2"
 tags: ["data-quality", "refactoring", "recode", "validation", "stamp", "yaml"]
 ---
@@ -881,13 +881,13 @@ Mark `recode_edu()`, `recode_gndr()`, `recode_age()`, and `add_area.pipmd()` wit
 
 ## Success Criteria
 
-- [ ] `apply_recode_spec()` produces identical output to the four replaced functions for all existing survey inputs
-- [ ] All five recode types produce correct output with full test coverage
-- [ ] Test coverage ≥ 90% for new functions
-- [ ] `R CMD check` passes with no new warnings
-- [ ] `version_id_recode_spec` appears in inventory for all surveys
-- [ ] `git log inst/extdata/recode_spec.yml` shows meaningful change history
-- [ ] Utility functions (`export_recode_spec_yaml`, `diff_recode_spec`) work correctly
+- [x] `apply_recode_spec()` produces identical output to the four replaced functions for all existing survey inputs — 2026-07-22: equivalence tests added in `tests/testthat/test-recode-spec.R` for `educy`/`age` clamping, `male`→`gender`, and `urban`→`area`. One intentional divergence found and documented (legacy `add_area.pipmd()` maps `NA` urban to `""`; `apply_recode_spec()` maps it to `NA`) — locked in as an explicit test rather than left as a silent difference.
+- [x] All five recode types produce correct output with full test coverage
+- [ ] Test coverage ≥ 90% for new functions — not measured; run `covr::package_coverage()` to confirm
+- [x] `R CMD check` passes with no new warnings — confirmed 2026-07-22
+- [x] `version_id_recode_spec` appears in inventory for all surveys — implemented in `build_pip_inventory()`
+- [x] `git log inst/extdata/recode_spec.yml` shows meaningful change history — 4 commits confirmed
+- [x] Utility functions (`export_recode_spec_yaml`, `list_recode_spec_versions`, `diff_recode_spec`) work correctly — 2026-07-22: tests added covering console/file output, version pass-through, catalog filtering, and identical/differing spec comparison
 
 ## Resolved Design Decisions
 

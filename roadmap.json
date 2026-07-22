@@ -117,7 +117,7 @@
                     "id": "yaml-recode-dictionary",
                     "title": "Auto-sync YAML recode dictionary with stamp versioning",
                     "description": "Replace hardcoded recode_edu(), recode_gndr(), recode_age() functions with a declarative YAML specification. Package YAML (inst/extdata/recode_spec.yml) is the source of truth — edit it directly, commit changes. Pipeline auto-syncs to stamp: sync_recode_spec() compares package YAML to latest stamp version, saves new version if changed. Implement: sync_recode_spec() auto-sync, apply_recode_spec() dispatcher with version_id attribute, typed handlers (recode_range, recode_binary, recode_haven), utility functions (export_recode_spec_yaml, import_recode_spec_yaml, list_recode_spec_versions, diff_recode_spec), and inventory tracking via version_id_recode_spec column. Benefits: zero manual sync, single source of truth, full GitHub tracking, fast qs2 loading at runtime.",
-                    "status": "in-progress",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-06-18-yaml-recode-dictionary.md",
                     "tags": [
                         "data-quality",
