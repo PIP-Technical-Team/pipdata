@@ -38,7 +38,7 @@ save_pip_data <- function(
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  survey_sizes <- vapply(names(data), \(y) as.numeric(object.size(data[[y]])), numeric(1))
+  survey_sizes <- vapply(names(data), \(y) as.numeric(utils::object.size(data[[y]])), numeric(1))
   sorted_names <- names(sort(survey_sizes, decreasing = TRUE))
 
   versions <- lapply(sorted_names, \(y) {

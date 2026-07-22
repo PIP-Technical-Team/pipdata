@@ -146,13 +146,13 @@ add_main_att <- function(dt, cpfw) {
 
 }
 
-#' Add metadata variables to country/survey
-#'
-#' @inheritParams cpfw_merge
-#'
-#' @return data.table
-#'
-#' @keywords internal
+# Add metadata variables to country/survey
+#
+# @inheritParams cpfw_merge
+#
+# @return data.table
+#
+# @keywords internal
 # add_main_vars <- function(dt, cpfw) {
 #
 #       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

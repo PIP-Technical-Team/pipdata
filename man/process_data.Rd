@@ -4,13 +4,17 @@
 \alias{process_data}
 \title{Process datalibweb data: merge PFW data and clean variables}
 \usage{
-process_data(inv, aux_list, verbose = TRUE, ...)
+process_data(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...)
 }
 \arguments{
 \item{inv}{inventory with survey_id and pins folder}
 
 \item{aux_list}{Named list of auxiliary data frames; expected keys:
 \code{"pfw"}, \code{"cpi"}, \code{"ppp"}, \code{"pop"}, \code{"gdp"}, \code{"pce"}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (as returned by
+\code{\link[=sync_recode_spec]{sync_recode_spec()}}) threaded to \code{\link[=pd_dlw_clean]{pd_dlw_clean()}}/\code{\link[=apply_recode_spec]{apply_recode_spec()}} so
+the spec is read once upstream rather than once per survey. Default \code{NULL}.}
 
 \item{verbose}{Logical. Print progress messages. Default \code{TRUE}.}
 

@@ -199,11 +199,19 @@ format_wlf <- function(dt) {
 
 #' Recoding education variables
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which applies the
+#' declarative YAML recode specification (`inst/extdata/recode_spec.yml`).
+#' Kept only for backward compatibility; calling this function now emits a
+#' deprecation warning via [base::.Deprecated()].
+#'
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 recode_edu <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Education   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,11 +316,18 @@ recode_edu <- function(dt) {
 
 #' Recoding gender variable
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which applies the
+#' declarative YAML recode specification (`inst/extdata/recode_spec.yml`).
+#' Kept only for backward compatibility; calling this function now emits a
+#' deprecation warning via [base::.Deprecated()].
+#'
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 recode_gndr <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Recode male to string   ---------
@@ -340,11 +355,19 @@ recode_gndr <- function(dt) {
 
 #' Recoding age variable
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which applies the
+#' declarative YAML recode specification (`inst/extdata/recode_spec.yml`).
+#' Kept only for backward compatibility; calling this function now emits a
+#' deprecation warning via [base::.Deprecated()].
+#'
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 recode_age <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
+
   if (c("age") %in% colnames(dt)) {
     dt <- dt |>
       collapse::fmutate(age = as.double(age)) |>
@@ -373,12 +396,20 @@ add_area <- function(dt) {
 
 #' Recode urban to area for micro data
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which recodes
+#' `urban` -> `area` (and normalises `subnatid` via `shift_subnatid()`) from
+#' the YAML recode specification (`inst/extdata/recode_spec.yml`). Kept only
+#' for backward compatibility; calling this method now emits a deprecation
+#' warning via [base::.Deprecated()].
+#'
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
 #' @method add_area pipmd
 #' @export
 add_area.pipmd <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------

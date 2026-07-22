@@ -4,10 +4,20 @@
 \alias{dlw_clean.pipmd}
 \title{Clean micro data from Datalibweb original file}
 \usage{
-\method{dlw_clean}{pipmd}(df, verbose = getOption("pipdata.verbose", TRUE), ...)
+\method{dlw_clean}{pipmd}(
+  df,
+  verbose = getOption("pipdata.verbose", TRUE),
+  recode_spec = NULL,
+  ...
+)
 }
 \arguments{
 \item{df}{data frame with micro data,}
+
+\item{verbose}{Logical. Print progress messages.
+Default: \code{getOption("pipdata.verbose", TRUE)}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (see \code{\link[=pd_dlw_clean]{pd_dlw_clean()}}).}
 
 \item{...}{other parameters}
 }

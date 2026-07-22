@@ -4,7 +4,7 @@
 \alias{apply_recode_spec}
 \title{Apply recode specification to a data.table}
 \usage{
-apply_recode_spec(dt, alias = "pip_inv", verbose = TRUE)
+apply_recode_spec(dt, alias = "pip_inv", verbose = TRUE, recode_spec = NULL)
 }
 \arguments{
 \item{dt}{data.table with DLW survey data.}
@@ -12,13 +12,21 @@ apply_recode_spec(dt, alias = "pip_inv", verbose = TRUE)
 \item{alias}{Stamp alias. Default: \code{"pip_inv"}.}
 
 \item{verbose}{Logical. Default: \code{TRUE}.}
+
+\item{recode_spec}{Optional pre-resolved spec as returned by
+\code{\link[=sync_recode_spec]{sync_recode_spec()}} — a named list with \code{spec} (the full recode spec) and
+\code{version_id}. When supplied, the spec and version are taken from it and
+\strong{no} stamp I/O is performed. When \code{NULL} (the default), the spec is read
+from stamp on each call. In the per-survey pipeline the spec is synced once
+upstream and threaded in via this argument to avoid thousands of redundant
+catalog reads.}
 }
 \value{
 \code{dt} (modified by reference) with attribute \code{recode_spec_version_id}.
 }
 \description{
-Syncs \code{inst/extdata/recode_spec.yml} to stamp (creates a new stamp version
-only when the content has changed), then applies all matching rules to \code{dt}.
+Reads the recode spec from stamp (synced once upstream by \code{\link[=sync_recode_spec]{sync_recode_spec()}})
+and applies all matching rules to \code{dt}.
 }
 \details{
 \strong{Replace-type recodes} (\code{range_clamp}, \code{binary_map}, \code{haven_labels}): if

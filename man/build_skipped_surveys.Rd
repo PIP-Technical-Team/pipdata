@@ -14,7 +14,7 @@ Character vector of markdown lines.
 }
 \description{
 Reads \code{skipped_svys_data} and \code{skipped_svys_metadata} log entries written
-by \code{\link[=update_pip_inventory]{update_pip_inventory()}} and renders each group with its skip reasons.
+by \code{\link[=build_pip_inventory]{build_pip_inventory()}} and renders each group with its skip reasons.
 Returns an empty character vector when no skipped-survey entries exist.
 }
 \keyword{internal}

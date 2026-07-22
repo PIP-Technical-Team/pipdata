@@ -15,7 +15,7 @@ Character vector of markdown lines.
 \description{
 Renders the cross-check between successfully cleaned surveys and the master
 inventory, from the \code{inv_update_inf} log entry written by
-\code{\link[=update_pip_inventory]{update_pip_inventory()}}. Lists any surveys confirmed missing.
+\code{\link[=build_pip_inventory]{build_pip_inventory()}}. Lists any surveys confirmed missing.
 Returns an empty character vector when the entry is absent.
 }
 \keyword{internal}

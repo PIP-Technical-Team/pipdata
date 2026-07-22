@@ -109,6 +109,7 @@ utils::globalVariables(c(
   "count_valid",
   "country",
   "country_code",
+  "created_at",
   "created_at_data",
   "created_at_metadata",
   "data_available",

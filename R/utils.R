@@ -204,8 +204,6 @@ num_vars_to_attr <- function(df, num_var, name_var) {
 #'
 #' @param message message
 #' @param name name assigned to the error. When "skip"
-#' @param call parent call
-#' @param ...
 #'
 #' @return error
 #' @keywords internal

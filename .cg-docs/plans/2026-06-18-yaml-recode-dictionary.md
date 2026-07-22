@@ -1,6 +1,6 @@
 ---
 created: "2026-06-18"
-updated: "2026-06-19"
+updated: "2026-07-22"
 status: "in-progress"
 priority: "P2"
 tags: ["data-quality", "refactoring", "recode", "validation", "stamp", "yaml"]
@@ -876,7 +876,7 @@ Mark `recode_edu()`, `recode_gndr()`, `recode_age()`, and `add_area.pipmd()` wit
    - Test round-trip: edit YAML → pipeline run → auto-sync → inventory column populated
 4. **Week 4**:
    - Regression testing against current hardcoded behavior
-   - Deprecate `recode_edu()`, `recode_gndr()`, `recode_age()`, `add_area.pipmd()`
+   - [x] Deprecate `recode_edu()`, `recode_gndr()`, `recode_age()`, `add_area.pipmd()` — 2026-07-22: each now calls `.Deprecated("apply_recode_spec", package = "pipdata")` and roxygen docs note the replacement; existing tests updated to `suppressWarnings()` the old behavior checks and new tests assert the deprecation warning fires (`tests/testthat/test-pd_dlw_clean.R`)
    - Document workflow: "how to add/modify a recode rule"
 
 ## Success Criteria

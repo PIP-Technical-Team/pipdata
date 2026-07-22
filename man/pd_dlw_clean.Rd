@@ -4,10 +4,22 @@
 \alias{pd_dlw_clean}
 \title{Clean data from datalibweb structure (High level)}
 \usage{
-pd_dlw_clean(ls, verbose = getOption("pipdata.verbose", TRUE))
+pd_dlw_clean(
+  ls,
+  verbose = getOption("pipdata.verbose", TRUE),
+  recode_spec = NULL
+)
 }
 \arguments{
 \item{ls}{List of data frames or single dataframe.}
+
+\item{verbose}{Logical. Print progress messages.
+Default: \code{getOption("pipdata.verbose", TRUE)}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (as returned by
+\code{\link[=sync_recode_spec]{sync_recode_spec()}}) threaded down to \code{\link[=apply_recode_spec]{apply_recode_spec()}} so the spec is
+read once upstream instead of once per survey. Default \code{NULL} (each survey
+reads the spec from stamp).}
 }
 \value{
 list with data.tables

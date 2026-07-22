@@ -5,11 +5,11 @@
 #' @section pipdata functions:
 #' The function in pipdata...
 #'
-#' @docType package
-#' @name pipdata
 #' @rawNamespace import(collapse, except = fdroplevels)
 #' @rawNamespace import(data.table, except = fdroplevels)
 #' @importFrom glue glue
+#' @keywords internal
+"_PACKAGE"
 
 # Make sure data.table knows we know we're using it
 .datatable.aware = TRUE

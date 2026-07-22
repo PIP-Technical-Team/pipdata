@@ -34,21 +34,29 @@ each one to the PIP storage backend via \code{\link[pipload:pip_write]{pipload::
 Errors during individual saves are caught, logged, and returned as
 \code{NULL} so that remaining surveys can continue.
 }
+\details{
+Artifacts are written largest-first (by \code{object.size()}) so that the
+largest serialisation buffers are allocated while the heap is cleanest.
+Before writing any artifact whose in-memory size exceeds
+\code{getOption("pipdata.gc_threshold_bytes", default = 100e6)} (default 100 MB),
+a \code{gc()} cycle is triggered to reclaim fragmented memory and reduce the risk
+of \verb{cannot allocate buffer} errors from \code{qs2}.
+}
 \seealso{
-Other pd_process_data pipeline: 
-\code{\link{add_attr}()},
-\code{\link{build_pip_inventory}()},
-\code{\link{create_attr}()},
-\code{\link{data_to_dt}()},
-\code{\link{filter_aux_data}()},
-\code{\link{filter_aux_inv}()},
-\code{\link{fix_year_var}()},
-\code{\link{inv_dlw_load}()},
-\code{\link{inv_to_process}()},
-\code{\link{log_report}()},
-\code{\link{pd_aux_attr}()},
-\code{\link{pd_deflation}()},
-\code{\link{survey_id_to_attr}()},
-\code{\link{valid_dlw_load}()}
+Other pd_process_data pipeline:
+\code{\link[=add_attr]{add_attr()}},
+\code{\link[=build_pip_inventory]{build_pip_inventory()}},
+\code{\link[=create_attr]{create_attr()}},
+\code{\link[=data_to_dt]{data_to_dt()}},
+\code{\link[=filter_aux_data]{filter_aux_data()}},
+\code{\link[=filter_aux_inv]{filter_aux_inv()}},
+\code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=inv_dlw_load]{inv_dlw_load()}},
+\code{\link[=inv_to_process]{inv_to_process()}},
+\code{\link[=log_report]{log_report()}},
+\code{\link[=pd_aux_attr]{pd_aux_attr()}},
+\code{\link[=pd_deflation]{pd_deflation()}},
+\code{\link[=survey_id_to_attr]{survey_id_to_attr()}},
+\code{\link[=valid_dlw_load]{valid_dlw_load()}}
 }
 \concept{pd_process_data pipeline}
