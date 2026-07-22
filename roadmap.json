@@ -198,8 +198,8 @@
                 {
                     "id": "pd-process-data-oom-crash",
                     "title": "Fix pd_process_data() OOM crash on full 4000+ survey inventory runs",
-                    "description": "R session aborts mid-run because lapply(inv_ls, process_data) never frees survey intermediates (df, ls_cpfw, ls_clean, metadata) between iterations. Fix: explicitly rm() those objects and call gc() inside process_data() after saves, and convert the main lapply to a for loop with a periodic gc() every getOption('pipdata.gc_interval', 50L) surveys. No new imports — base R only.",
-                    "status": "active",
+                    "description": "Completed 2026-07-22: R session aborted mid-run because lapply(inv_ls, process_data) never freed survey intermediates (df, ls_cpfw, ls_clean, metadata) between iterations. Implemented explicit rm() + gc() inside process_data() after saves. The remaining root cause turned out to be pipfun::log_info()/log_add() capturing the full cleaned survey dt by reference into the persistent session log (.piplogenv) via capture_log_args() on every call, which defeated gc(); fixed by not emitting a per-survey log_info() inside apply_recode_spec() (see NOTE comment in R/recode_spec.R). The periodic gc()-in-main-loop safety net and NEWS.md bullet were determined unnecessary and not implemented. See .cg-docs/plans/2026-06-24-pd-process-data-oom-crash.md.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-06-24-pd-process-data-oom-crash.md",
                     "tags": [
                         "pd_process_data",

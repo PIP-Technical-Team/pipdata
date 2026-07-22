@@ -1,7 +1,7 @@
 ---
 date: 2026-06-24
 title: "pd_process_data: OOM crash fix for 4000+ survey runs"
-status: active
+status: completed
 scope: "Lightweight"
 brainstorm: null
 language: "R"
@@ -9,6 +9,21 @@ estimated-effort: "small"
 deviation-policy: "ask"
 tags: [pd_process_data, memory, gc, oom, reliability, pipeline]
 ---
+
+## Resolution Note (2026-07-22)
+
+Step 1 (explicit `rm()` + `gc()` in `process_data()`'s success branch) and
+Step 3 (roxygen `@details`) were implemented as planned. Steps 2 and 4
+(periodic `gc()` in the main loop via a `for` loop + `NEWS.md` bullet) were
+determined unnecessary: the remaining OOM risk was actually caused by
+`pipfun::log_info()`/`log_add()` capturing the full cleaned survey `dt`
+(hundreds of MB) by reference into the persistent session log
+(`.piplogenv`) on every call via `capture_log_args()`, which defeated `gc()`
+across the run. The fix was to avoid emitting a per-survey `log_info()` call
+inside `apply_recode_spec()` (see the `NOTE` comment above
+`data.table::setattr(dt, "recode_spec_version_id", version_id)` in
+`R/recode_spec.R`) rather than adding a periodic-`gc()` safety net. Plan
+closed without Steps 2 and 4.
 
 # Plan: pd_process_data — OOM Crash Fix for Large Inventory Runs
 
