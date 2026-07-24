@@ -10,7 +10,8 @@ pd_deflation(
   ppp = NULL,
   pop = NULL,
   pip_id = NULL,
-  version = NULL
+  version = NULL,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -35,6 +36,10 @@ stamp). Ignored when \code{dt} is provided.}
 \item{version}{Character scalar or \code{NULL}. Stamp version used when loading
 the survey (Mode B) or resolving the metadata version from the master
 inventory.}
+
+\item{verbose}{Logical. When \code{TRUE} (the default), informational messages
+from downstream \code{pipload}/\code{stamp} I/O calls are shown. Set to \code{FALSE} to
+suppress them. Defaults to \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 The input survey \code{data.table} augmented with \code{welfare_lcu} and
@@ -93,20 +98,20 @@ pd_deflation(pip_id = "CHN_2015_CHIP_INC_D1")
 }
 }
 \seealso{
-Other pd_process_data pipeline: 
-\code{\link{add_attr}()},
-\code{\link{build_pip_inventory}()},
-\code{\link{create_attr}()},
-\code{\link{data_to_dt}()},
-\code{\link{filter_aux_data}()},
-\code{\link{filter_aux_inv}()},
-\code{\link{fix_year_var}()},
-\code{\link{inv_dlw_load}()},
-\code{\link{inv_to_process}()},
-\code{\link{log_report}()},
-\code{\link{pd_aux_attr}()},
-\code{\link{save_pip_data}()},
-\code{\link{survey_id_to_attr}()},
-\code{\link{valid_dlw_load}()}
+Other pd_process_data pipeline:
+\code{\link[=add_attr]{add_attr()}},
+\code{\link[=build_pip_inventory]{build_pip_inventory()}},
+\code{\link[=create_attr]{create_attr()}},
+\code{\link[=data_to_dt]{data_to_dt()}},
+\code{\link[=filter_aux_data]{filter_aux_data()}},
+\code{\link[=filter_aux_inv]{filter_aux_inv()}},
+\code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=inv_dlw_load]{inv_dlw_load()}},
+\code{\link[=inv_to_process]{inv_to_process()}},
+\code{\link[=log_report]{log_report()}},
+\code{\link[=pd_aux_attr]{pd_aux_attr()}},
+\code{\link[=save_pip_data]{save_pip_data()}},
+\code{\link[=survey_id_to_attr]{survey_id_to_attr()}},
+\code{\link[=valid_dlw_load]{valid_dlw_load()}}
 }
 \concept{pd_process_data pipeline}

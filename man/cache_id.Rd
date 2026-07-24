@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_country_pfw.R
 \name{cache_id}
 \alias{cache_id}
-\title{Duplicate country PFW if there are two types of welfare}
+\title{Create cache ID for country PFW}
 \usage{
 cache_id(att, cpfw)
 }
@@ -12,51 +12,14 @@ Must contain: \code{country_code}, \code{surveyid_year}, \code{survey_acronym}, 
 
 \item{cpfw}{data.table with country Price Framework, containing at minimum
 \code{welfare_type} and \code{reporting_level} columns.}
-
-\item{log_wrn}{boolean value for logging warning in log.txt}
 }
 \value{
-data.table
-
 Named list of data.tables, one element per unique \code{cache_id}.
 }
 \description{
-Duplicate country PFW if there are two types of welfare
+Constructs a \code{cache_id} string of the form
+\verb{\{country_code\}_\{surveyid_year\}_\{survey_acronym\}_\{INC|CON\}_\{module\}}
+and adds it as a column to \code{cpfw}. The table is then split by \code{cache_id}
+and returned as a named list — one element per welfare type.
 }
-\keyword{Constructs}
-\keyword{Create}
-\keyword{ID}
-\keyword{PFW}
-\keyword{The}
-\keyword{`cache_id`}
-\keyword{`cpfw`.}
-\keyword{`{country_code}_{surveyid_year}_{survey_acronym}_{INC|CON}_{module}`}
-\keyword{a}
-\keyword{adds}
-\keyword{and}
-\keyword{as}
-\keyword{by}
-\keyword{cache}
-\keyword{column}
-\keyword{country}
-\keyword{element}
-\keyword{for}
-\keyword{form}
 \keyword{internal}
-\keyword{is}
-\keyword{it}
-\keyword{list}
-\keyword{named}
-\keyword{of}
-\keyword{one}
-\keyword{per}
-\keyword{returned}
-\keyword{split}
-\keyword{string}
-\keyword{table}
-\keyword{the}
-\keyword{then}
-\keyword{to}
-\keyword{type.}
-\keyword{welfare}
-\keyword{—}

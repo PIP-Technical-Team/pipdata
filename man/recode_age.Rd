@@ -10,6 +10,9 @@ recode_age(dt)
 data.table
 }
 \description{
-Recoding age variable
+\strong{Deprecated.} Superseded by \code{\link[=apply_recode_spec]{apply_recode_spec()}}, which applies the
+declarative YAML recode specification (\code{inst/extdata/recode_spec.yml}).
+Kept only for backward compatibility; calling this function now emits a
+deprecation warning via \code{\link[base:.Deprecated]{base::.Deprecated()}}.
 }
 \keyword{internal}

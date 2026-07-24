@@ -1,6 +1,12 @@
 #' Clean data from datalibweb structure (High level)
 #'
 #' @param ls List of data frames or single dataframe.
+#' @param verbose Logical. Print progress messages.
+#'   Default: `getOption("pipdata.verbose", TRUE)`.
+#' @param recode_spec Optional pre-resolved recode spec (as returned by
+#'   [sync_recode_spec()]) threaded down to [apply_recode_spec()] so the spec is
+#'   read once upstream instead of once per survey. Default `NULL` (each survey
+#'   reads the spec from stamp).
 #'
 #' @return list with data.tables
 #' @export
@@ -24,12 +30,13 @@
 #' lf    <- pd_dlw_clean(ls)
 #' names(lf)
 #' }
-pd_dlw_clean <- function(ls) {
+pd_dlw_clean <- function(ls, verbose = getOption("pipdata.verbose", TRUE),
+                         recode_spec = NULL) {
 
   # Computations -------
 
-      rl <- purrr::map(.x = ls,
-                       .f = dlw_clean)
+  rl <- purrr::map(.x = ls, .f = dlw_clean, verbose = verbose,
+                   recode_spec = recode_spec)
 
   # Return -------------
   return(rl)
@@ -40,13 +47,18 @@ pd_dlw_clean <- function(ls) {
 #' Clean data from datalibweb structure (lower level, S3 methods)
 #'
 #' @param df data.table
+#' @param verbose Logical. Print progress messages.
+#'   Default: `getOption("pipdata.verbose", TRUE)`.
+#' @param recode_spec Optional pre-resolved recode spec (see [pd_dlw_clean()]).
 #' @param ...  other parameters
 #'
 #' @return data.table
 #' @export
-dlw_clean <- function(df,...) {
+dlw_clean <- function(df, verbose = getOption("pipdata.verbose", TRUE),
+                      recode_spec = NULL, ...) {
   UseMethod("dlw_clean")
 }
+
 
 #' Clean micro data from Datalibweb original file
 #'
@@ -55,52 +67,20 @@ dlw_clean <- function(df,...) {
 #'
 #' @return data.table
 #' @export
-dlw_clean.pipmd <- function(df, ...) {
-  #   ____________________________________________________________________________
-  #   Initial formatting                                                      ####
-
-  # hard copy
+dlw_clean.pipmd <- function(df, verbose = getOption("pipdata.verbose", TRUE),
+                            recode_spec = NULL, ...) {
   md <- copy(df)
 
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Area --------
-  md <- add_area(md)
-
-  ## clean weight variable
-  md <- format_wgt(md)
-
-  ## format welfare variable
+  md <- shift_subnatid(md)   # normalise subnatid columns before area recode
+  md <- format_wgt(md)       # weight column must exist before apply_recode_spec
   md <- format_wlf(md)
 
-  #   ____________________________________________________________________________
-  #   Recode variables                                                      ####
-
-  ## Education
-  md <- recode_edu(md)
-
-  ## Gender
-  md <- recode_gndr(md)
-
-  ## Age
-  md <- recode_age(md)
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ## Wbpip clean (need to updata) --------
+  # Replaces add_area(), recode_edu(), recode_gndr(), recode_age()
+  # Spec lives in inst/extdata/recode_spec.yml; auto-synced to stamp on change
+  md <- apply_recode_spec(md, verbose = verbose, recode_spec = recode_spec)
 
   md <- wbpip_clean(md)
-
-  #   ____________________________________________________________________________
-  #   Final formatting                                                        ####
-
   md <- pip_vars(md)
-
-  # Sort by welfare (commented because it gives an error)
-  # sortbycol <- c(
-  #   "welfare",
-  #   "hhid",
-  #   "pid")
-
-  # setorderv(md, cols = "welfare")
 
   return(md)
 }
@@ -219,11 +199,19 @@ format_wlf <- function(dt) {
 
 #' Recoding education variables
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which applies the
+#' declarative YAML recode specification (`inst/extdata/recode_spec.yml`).
+#' Kept only for backward compatibility; calling this function now emits a
+#' deprecation warning via [base::.Deprecated()].
+#'
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 recode_edu <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Education   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -328,11 +316,18 @@ recode_edu <- function(dt) {
 
 #' Recoding gender variable
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which applies the
+#' declarative YAML recode specification (`inst/extdata/recode_spec.yml`).
+#' Kept only for backward compatibility; calling this function now emits a
+#' deprecation warning via [base::.Deprecated()].
+#'
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 recode_gndr <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Recode male to string   ---------
@@ -360,11 +355,19 @@ recode_gndr <- function(dt) {
 
 #' Recoding age variable
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which applies the
+#' declarative YAML recode specification (`inst/extdata/recode_spec.yml`).
+#' Kept only for backward compatibility; calling this function now emits a
+#' deprecation warning via [base::.Deprecated()].
+#'
 #' @inheritParams dlw_clean
 #'
 #' @return data.table
 #' @keywords internal
 recode_age <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
+
   if (c("age") %in% colnames(dt)) {
     dt <- dt |>
       collapse::fmutate(age = as.double(age)) |>
@@ -393,12 +396,20 @@ add_area <- function(dt) {
 
 #' Recode urban to area for micro data
 #'
+#' @description
+#' **Deprecated.** Superseded by [apply_recode_spec()], which recodes
+#' `urban` -> `area` (and normalises `subnatid` via `shift_subnatid()`) from
+#' the YAML recode specification (`inst/extdata/recode_spec.yml`). Kept only
+#' for backward compatibility; calling this method now emits a deprecation
+#' warning via [base::.Deprecated()].
+#'
 #' @inheritParams cpfw_merge
 #'
 #' @return data.table
 #' @method add_area pipmd
 #' @export
 add_area.pipmd <- function(dt) {
+  .Deprecated("apply_recode_spec", package = "pipdata")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------

@@ -35,7 +35,7 @@ valid_aux_load <- function(
 
     changes_release <- pipaux::compare_aux_releases(
       measure = measure,
-      owner = "RossanaTat",
+      # owner = "RossanaTat",
       verbose = verbose
     )
 

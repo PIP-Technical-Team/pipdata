@@ -10,10 +10,6 @@ piperr(message, name = "skip")
 \item{message}{message}
 
 \item{name}{name assigned to the error. When "skip"}
-
-\item{call}{parent call}
-
-\item{...}{}
 }
 \value{
 error

@@ -445,7 +445,7 @@ build_aux_changes <- function(dt) {
 #'
 #' Renders the cross-check between successfully cleaned surveys and the master
 #' inventory, from the `inv_update_inf` log entry written by
-#' [update_pip_inventory()]. Lists any surveys confirmed missing.
+#' [build_pip_inventory()]. Lists any surveys confirmed missing.
 #' Returns an empty character vector when the entry is absent.
 #'
 #' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
@@ -499,7 +499,7 @@ build_inventory_additions <- function(dt) {
 #' Build the skipped-surveys section
 #'
 #' Reads `skipped_svys_data` and `skipped_svys_metadata` log entries written
-#' by [update_pip_inventory()] and renders each group with its skip reasons.
+#' by [build_pip_inventory()] and renders each group with its skip reasons.
 #' Returns an empty character vector when no skipped-survey entries exist.
 #'
 #' @param dt Parsed log `data.table` (output of [parse_log_meta()]).

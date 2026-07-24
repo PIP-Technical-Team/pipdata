@@ -8,7 +8,7 @@ pd_process_data(
   inv = inv,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -23,7 +23,7 @@ switching stamp versioning to \code{"timestamp"} and bypassing the master
 inventory comparison. Default \code{FALSE}.}
 
 \item{verbose}{Logical. Print progress messages. Default:
-\code{getOption("pipdata.verbose", default = FALSE)}.}
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A data.frame: updated pip inventory (\code{new_pip_inv}) with new
@@ -41,6 +41,16 @@ pip inventory with the new versions recorded.
 to the \code{"pipdata_log"}, summarizing totals and failed surveys. Additional entries for
 auxiliary file changes and inventory verification are emitted by \code{\link[=valid_dlw_load]{valid_dlw_load()}}
 and \code{\link[=build_pip_inventory]{build_pip_inventory()}} respectively.
+
+\strong{Recode spec}: the recode specification is synced to stamp once via
+\code{\link[=sync_recode_spec]{sync_recode_spec()}} before the per-survey loop and the resolved spec is
+threaded into each \code{\link[=process_data]{process_data()}} call, so \code{\link[=apply_recode_spec]{apply_recode_spec()}} performs
+no stamp I/O per survey.
+
+\strong{Memory management}: surveys are processed one at a time. After each survey
+is saved, the large intermediates (\code{df}, \code{ls_cpfw}, \code{ls_clean}, \code{metadata})
+are explicitly removed and \code{gc()} is called inside \code{\link[=process_data]{process_data()}} before
+the next survey is loaded, keeping peak heap bounded on full-inventory runs.
 }
 \examples{
 \dontrun{

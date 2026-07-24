@@ -4,12 +4,20 @@
 \alias{pipdata_validate_gmd}
 \title{Validate GMD data and generate inventory report data}
 \usage{
-pipdata_validate_gmd(log = TRUE, save_log = TRUE)
+pipdata_validate_gmd(
+  log = TRUE,
+  save_log = TRUE,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+)
 }
 \arguments{
 \item{log}{Logical. Keep logging file, TRUE/FALSE default value is \code{TRUE}}
 
 \item{save_log}{Logical. Save logging file, TRUE/FALSE default value is \code{TRUE}}
+
+\item{verbose}{Logical. Controls verbosity of downstream I/O calls
+(including \code{\link[pipload:pip_write]{pipload::pip_write()}}). Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 data.table, inventory report

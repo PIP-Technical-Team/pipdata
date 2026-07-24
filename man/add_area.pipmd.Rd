@@ -13,5 +13,9 @@
 data.table
 }
 \description{
-Recode urban to area for micro data
+\strong{Deprecated.} Superseded by \code{\link[=apply_recode_spec]{apply_recode_spec()}}, which recodes
+\code{urban} -> \code{area} (and normalises \code{subnatid} via \code{shift_subnatid()}) from
+the YAML recode specification (\code{inst/extdata/recode_spec.yml}). Kept only
+for backward compatibility; calling this method now emits a deprecation
+warning via \code{\link[base:.Deprecated]{base::.Deprecated()}}.
 }

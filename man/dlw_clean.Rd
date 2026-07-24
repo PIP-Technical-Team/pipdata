@@ -4,10 +4,20 @@
 \alias{dlw_clean}
 \title{Clean data from datalibweb structure (lower level, S3 methods)}
 \usage{
-dlw_clean(df, ...)
+dlw_clean(
+  df,
+  verbose = getOption("pipdata.verbose", TRUE),
+  recode_spec = NULL,
+  ...
+)
 }
 \arguments{
 \item{df}{data.table}
+
+\item{verbose}{Logical. Print progress messages.
+Default: \code{getOption("pipdata.verbose", TRUE)}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (see \code{\link[=pd_dlw_clean]{pd_dlw_clean()}}).}
 
 \item{...}{other parameters}
 }

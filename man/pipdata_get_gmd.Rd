@@ -8,7 +8,8 @@ pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
   log = TRUE,
   save_log = TRUE,
-  check_missing = TRUE
+  check_missing = TRUE,
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -19,6 +20,10 @@ pipdata_get_gmd(
 \item{save_log}{Logical. Whether to save logging information to a file. Default is \code{TRUE}.}
 
 \item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
+
+\item{verbose}{Logical. Controls verbosity of downstream
+\code{\link[pipload:pip_write]{pipload::pip_write()}} calls. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A \code{data.table} object saved in the local folder.

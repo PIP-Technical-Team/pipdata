@@ -141,8 +141,15 @@ build_pip_inventory <- function(
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   target_ids <- unique(pip_id_map$pip_id)
 
-  cat_data <- stamp::st_catalog_query(alias = "pip")
-  cat_meta <- stamp::st_catalog_query(alias = "pip_meta")
+  cat_data    <- stamp::st_catalog_query(alias = "pip")
+  cat_meta    <- stamp::st_catalog_query(alias = "pip_meta")
+  cat_inv     <- stamp::st_catalog_query(alias = "pip_inv")
+  recode_rows <- cat_inv[grepl("recode_spec", cat_inv$path, fixed = TRUE), ]
+  recode_spec_vid <- if (nrow(recode_rows) > 0L) {
+    recode_rows$version_id[[1L]]
+  } else {
+    NA_character_
+  }
 
   # Derive pip_id from artifact filename (e.g. "bol_2022_eh_inc_all.qs2")
   cat_data[, pip_id := toupper(fs::path_ext_remove(fs::path_file(path)))]
@@ -260,6 +267,8 @@ build_pip_inventory <- function(
   # pip_ids absent from either catalog are excluded by nomatch = 0.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   new_versions <- cat_data[cat_meta, on = "pip_id", nomatch = 0L]
+
+  new_versions[, version_id_recode_spec := recode_spec_vid]
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Step 6: Add survey_id from pip_id_map  ---------
@@ -541,8 +550,9 @@ build_pip_inventory <- function(
     "Checksum_dlw"
   )
   release_cols <- c("first_release_version_id", "latest_release_version_id")
+  spec_cols    <- c("version_id_recode_spec")
 
-  ordered_cols <- c(id_cols, data_cols, meta_cols, dlw_cols, release_cols)
+  ordered_cols <- c(id_cols, data_cols, meta_cols, dlw_cols, release_cols, spec_cols)
   # Only reorder columns that actually exist (fill = TRUE may add extras)
   present_ordered <- intersect(ordered_cols, names(run_inv))
   remainder <- setdiff(names(run_inv), present_ordered)

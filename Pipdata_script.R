@@ -28,15 +28,23 @@ pipfun::setup_working_release(
 # First run pipaux::update_aux_data and pipdata::pipdata_dlw_process,
 # then continue with the rest of the script.
 
+#  report <- pipload::pip_read(
+#     id = "validation_report",
+#     alias = "dlw_meta",
+#     verbose = TRUE
+#   )
+
 # ----- Load inventory to clean -----
 inv <- pipload::load_gmd_valid_inv(verbose = FALSE)
-inv_ARG <- inv[country_code == "ARG", ]
+inv_all <- inv[module == "ALL", ]
+# inv_3 <- inv[country_code %in% c("ARG", "MEX") & module == "ALL", ]
 
 #--------- Clean surveys and create metadata -----
 old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
+old_pip_release <- pipload::load_pip_release_inventory(verbose = FALSE)
 
-new_pip_inv <- pd_process_data(inv = inv, verbose = FALSE)
-new_pip_inv <- pd_process_data(inv = inv_ARG, verbose = FALSE)
+# new_pip_inv <- pd_process_data(inv = inv, force = TRUE, verbose = FALSE)
+new_pip_inv <- pd_process_data(inv = inv_all)
 
 # Compare inventories
 waldo::compare(old_pip_inv, new_pip_inv)
@@ -159,3 +167,10 @@ cat_pip[, .(
 # Issue with ARG 2003
 
 arg_deflated <- pd_deflation(pip_id = "ARG_2003_EPHC-S2_INC_ALL")
+
+
+# Issue with corrupted catalog:
+source("data-raw/rebuild_stamp_catalog.R")
+rebuild_stamp_catalog(alias = "pip")                # dry run — prints counts
+rebuild_stamp_catalog(alias = "pip", dry_run = FALSE)# commit
+pipload::pip_read(id = "BOL_2022_EH_INC_ALL", alias = "pip")  # verify

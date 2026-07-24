@@ -9,7 +9,7 @@ valid_dlw_load(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = FALSE)
+  verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -24,7 +24,8 @@ Default: \code{c("ALL", "GROUP", "HIST", "GPWG", "BIN")}.}
 \item{force}{Logical. If \code{TRUE}, skip the comparison against the
 master inventory and process all surveys.}
 
-\item{verbose}{Logical. Print progress messages.}
+\item{verbose}{Logical. Print progress messages. Default:
+\code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A \code{data.table} of surveys to process, or \code{NULL} if none.
@@ -51,20 +52,20 @@ when changes are detected in any of the requested auxiliary measures. The logmet
 entry includes the measures that changed and the number of affected surveys.
 }
 \seealso{
-Other pd_process_data pipeline: 
-\code{\link{add_attr}()},
-\code{\link{build_pip_inventory}()},
-\code{\link{create_attr}()},
-\code{\link{data_to_dt}()},
-\code{\link{filter_aux_data}()},
-\code{\link{filter_aux_inv}()},
-\code{\link{fix_year_var}()},
-\code{\link{inv_dlw_load}()},
-\code{\link{inv_to_process}()},
-\code{\link{log_report}()},
-\code{\link{pd_aux_attr}()},
-\code{\link{pd_deflation}()},
-\code{\link{save_pip_data}()},
-\code{\link{survey_id_to_attr}()}
+Other pd_process_data pipeline:
+\code{\link[=add_attr]{add_attr()}},
+\code{\link[=build_pip_inventory]{build_pip_inventory()}},
+\code{\link[=create_attr]{create_attr()}},
+\code{\link[=data_to_dt]{data_to_dt()}},
+\code{\link[=filter_aux_data]{filter_aux_data()}},
+\code{\link[=filter_aux_inv]{filter_aux_inv()}},
+\code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=inv_dlw_load]{inv_dlw_load()}},
+\code{\link[=inv_to_process]{inv_to_process()}},
+\code{\link[=log_report]{log_report()}},
+\code{\link[=pd_aux_attr]{pd_aux_attr()}},
+\code{\link[=pd_deflation]{pd_deflation()}},
+\code{\link[=save_pip_data]{save_pip_data()}},
+\code{\link[=survey_id_to_attr]{survey_id_to_attr()}}
 }
 \concept{pd_process_data pipeline}

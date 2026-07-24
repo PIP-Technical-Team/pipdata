@@ -127,13 +127,13 @@ report_lvl <- function(cpfw) {
 }
 
 
-#' Duplicate country PFW if there are two types of welfare
-#'
-#' @param cpfw country PFW data.table
-#' @param log_wrn boolean value for logging warning in log.txt
-#'
-#' @return data.table
-#' @keywords internal
+# Duplicate country PFW if there are two types of welfare
+#
+# @param cpfw country PFW data.table
+# @param log_wrn boolean value for logging warning in log.txt
+#
+# @return data.table
+# @keywords internal
 # othr_wlf <- function(cpfw) {
 #
 #   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

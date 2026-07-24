@@ -169,4 +169,5 @@ return(val)
 
 - [testing-patterns/2026-04-27-contract-testing-for-logging-side-effects.md](./2026-04-27-contract-testing-for-logging-side-effects.md) — how to write contract tests for functions with external I/O that log inside handlers
 - [testing-patterns/2026-04-07-synthetic-piplog-testing-pattern.md](./2026-04-07-synthetic-piplog-testing-pattern.md) — how to build synthetic `piplog` objects for testing builders
+- [../performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md](../performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md) — related memory-retention pitfall when typed wrappers capture large per-survey formals into persistent log state
 - Plan: [.cg-docs/plans/2026-04-29-unified-logging-v2.md](../../plans/2026-04-29-unified-logging-v2.md) — canonical logmeta type definitions and DLW refactoring steps
