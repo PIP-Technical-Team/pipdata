@@ -362,14 +362,15 @@
                 },
                 {
                     "id": "new-orchestration-script",
-                    "title": "Create new pipeline orchestration script to replace Pipdata_script.R",
-                    "description": "Pipdata_script.R already uses the current logging API (pipfun::log_filter / log_report). The real remaining gap: the script does not include pipaux::update_aux_data or pipdata::pipdata_dlw_process (DLW acquisition + validation) as orchestrated steps, and it does not generate a final consolidated report at the end of a full end-to-end run. Goal: a single script that runs all three wrappers (pipaux update → DLW acquisition/validation → survey cleaning) and produces a report, with production-grade error handling.",
-                    "status": "idea",
+                    "title": "Document pipeline orchestration via vignettes (superseded orchestration-script idea)",
+                    "description": "Superseded 2026-08-03: originally proposed as a new orchestration script to replace Pipdata_script.R. Decided instead to document the orchestration architecture and end-to-end wrapper sequence (pipdata_dlw_process, pd_process_data, deflation, log_report) via two narrative vignettes rather than writing a new script. See .cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md. Fill vignettes/articles/PIP-data-pipeline.Rmd with the orchestration/architecture overview and rewrite vignettes/articles/Processing-Data.Rmd around pd_process_data + deflation + log_report.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
                     "tags": [
                         "pipeline",
-                        "orchestration",
-                        "logging",
-                        "cleanup"
+                        "documentation",
+                        "vignettes",
+                        "architecture"
                     ]
                 },
                 {
