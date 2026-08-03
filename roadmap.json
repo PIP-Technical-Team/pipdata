@@ -132,7 +132,7 @@
                 {
                     "id": "yaml-validation-unification",
                     "title": "Explore recode spec consolidation with dlw_pip_var_type.csv",
-                    "description": "Investigate whether the YAML-based recode dictionary (from yaml-recode-dictionary) can be extended to replace or absorb inst/extdata/dlw_pip_var_type.csv used in the validation step. Current CSV contains DLW→PIP variable name mappings and type declarations. Extended YAML spec could unify three concerns: (1) name mapping (dlw_var_names → pip_var_names), (2) type validation (expected class), (3) recode rules (range clamps, categorical mappings). Enables single source of truth for variable transformations across validation and cleaning. Prerequisite: yaml-recode-dictionary must be completed first. Deliverable: feasibility assessment and proof-of-concept extended spec schema.",
+                    "description": "Partial progress: inst/extdata/validation_spec.yml now exists and covers module-level validation rules (variable availability, types, categorical checks). The remaining gap is the name-mapping/type portion of dlw_pip_var_type.csv (DLW→PIP variable name mappings and pip_vars_class declarations), which is not yet absorbed into a YAML spec. Extended YAML could unify: (1) name mapping (dlw_var_names → pip_var_names), (2) type validation (expected class), (3) recode rules. Prerequisite: yaml-recode-dictionary (done). Deliverable: extend recode_spec.yml or validation_spec.yml to absorb dlw_pip_var_type.csv.",
                     "status": "idea",
                     "tags": [
                         "validation",
@@ -363,7 +363,7 @@
                 {
                     "id": "new-orchestration-script",
                     "title": "Create new pipeline orchestration script to replace Pipdata_script.R",
-                    "description": "Write a new orchestration script with all pipeline wrappers (DLW acquisition, survey cleaning, report generation) using the unified logging conventions. Deprecate Pipdata_script.R which uses the old log/save_log API.",
+                    "description": "Pipdata_script.R already uses the current logging API (pipfun::log_filter / log_report). The real remaining gap: the script does not include pipaux::update_aux_data or pipdata::pipdata_dlw_process (DLW acquisition + validation) as orchestrated steps, and it does not generate a final consolidated report at the end of a full end-to-end run. Goal: a single script that runs all three wrappers (pipaux update → DLW acquisition/validation → survey cleaning) and produces a report, with production-grade error handling.",
                     "status": "idea",
                     "tags": [
                         "pipeline",

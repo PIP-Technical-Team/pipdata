@@ -116,19 +116,37 @@ Relevant solution docs:
     inv_aux <- ls_inv_aux |>
       data.table::rbindlist() |>
       collapse::funique()
+
+    # aux_changes_inf fires here, inside the branch where inv_aux is
+    # actually non-empty -- not on the mere non-NULL-ness of all_changes_aux.
+    changed_measures <- unique(unlist(lapply(all_changes_aux, names)))
+    pipfun::log_info(
+      "Auxiliary file changes detected.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "aux_changes_inf",
+        measures = changed_measures,
+        n_surveys_affected = nrow(inv_aux),
+        surveys_affected = inv_aux$survey_id
+      )
+    )
   }
   ```
 
-  Remove the existing `if (!is.null(all_changes_aux))` block that logs
-  `"aux_changes_inf"` — that log is now covered by the else branch above (the
-  `aux_changes_inf` entry for the case where surveys ARE affected remains in place
-  just below; verify it is still emitted only when `inv_aux` is non-NULL).
+  Delete the separate, standalone `if (!is.null(all_changes_aux))` block further
+  down that currently logs `"aux_changes_inf"` — it is fully replaced by the log
+  call now inside the `else` branch above. `aux_changes_inf` must fire exactly
+  once, gated on `inv_aux` being non-NULL/non-empty (not on `all_changes_aux`
+  alone), otherwise it would fire simultaneously with `aux_changes_no_surveys_inf`
+  for the same event.
 - **Test Scenarios**: (a) `all_changes_aux` is NULL → `"aux_no_changes_inf"` logged,
   `inv_aux` NULL; (b) `all_changes_aux` non-NULL but all `ls_inv_aux` elements NULL →
-  `"aux_changes_no_surveys_inf"` logged, `inv_aux` NULL; (c) normal path → existing
-  `"aux_changes_inf"` entry still logged.
-- **Acceptance criteria**: `"aux_no_changes_inf"` and `"aux_changes_no_surveys_inf"`
-  are string literals; `logmeta$info` is never an R condition object.
+  `"aux_changes_no_surveys_inf"` logged, `inv_aux` NULL; (c) normal path → exactly
+  one `"aux_changes_inf"` entry logged, from inside the `else` branch.
+- **Acceptance criteria**: `"aux_no_changes_inf"`, `"aux_changes_no_surveys_inf"`,
+  and `"aux_changes_inf"` are string literals; `logmeta$info` is never an R
+  condition object; `"aux_changes_inf"` never fires alongside
+  `"aux_changes_no_surveys_inf"` for the same call.
 
 ### 3. Replace silent `return(NULL)` with `cli_abort`
 
@@ -195,27 +213,46 @@ Relevant solution docs:
 - **Requirements**: R5, R6
 - **Files**: `R/valid_dlw_load.R`
 - **Details**: Replace the entire function body with a `joyn::left_join` on
-  `survey_id`, comparing `content_hash` (DLW) against `content_hash_dlw` (master):
+  `survey_id`, comparing `content_hash` (DLW) against `content_hash_dlw` (master).
+  **`verbose` must be kept in the signature and propagated** — the existing call
+  site in `valid_dlw_load()` (`inv_to_process(inv_svy, verbose = verbose)`) is
+  unchanged and would error on an `unused argument` if `verbose` were dropped.
+  **`dt_master` must be deduplicated by `survey_id` before the join** — the master
+  inventory's primary key is `c("survey_id", "pip_id")` (see `build_pip_inventory.R`),
+  so a single `survey_id` can have multiple rows (e.g. `BOL_2022_EH` splits into
+  `..._INC_ALL` / `..._INC_GPWG`). Joining on `survey_id` alone against a
+  non-deduplicated table fans out matching rows in `inv`, reintroducing the
+  duplicate-`survey_id` bug class from
+  `.cg-docs/solutions/bugs/2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id.md`:
 
   ```r
-  inv_to_process <- function(inv) {
+  inv_to_process <- function(inv, verbose = TRUE) {
     dt_master <- tryCatch(
-      pipload::load_pip_master_inventory(),
+      pipload::load_pip_master_inventory(verbose = verbose),
       error = function(e) {
-        cli::cli_alert_warning(
-          "Could not load PIP master inventory. Processing all surveys."
-        )
+        if (verbose) {
+          cli::cli_alert_warning(
+            "Could not load PIP master inventory. Processing all surveys."
+          )
+        }
         return(NULL)
       }
     )
 
     if (is.null(dt_master)) return(inv)
 
+    # Deduplicate by survey_id: content_hash_dlw is expected to be identical
+    # across pip_id splits of the same survey_id, but the join must not rely
+    # on that being true for row cardinality -- dedup first, and let
+    # relationship = "many-to-one" raise if it is ever violated.
+    dt_master_hash <- collapse::funique(dt_master[, .(survey_id, content_hash_dlw)])
+
     # Join on survey_id to compare content hashes
     inv_compare <- joyn::left_join(
       inv,
-      dt_master[, .(survey_id, content_hash_dlw)],
+      dt_master_hash,
       by = "survey_id",
+      relationship = "many-to-one",
       verbose = FALSE,
       reportvar = FALSE
     )
@@ -241,10 +278,14 @@ Relevant solution docs:
   - Survey in DLW but not in master (`content_hash_dlw` is NA) → kept.
   - Survey in master with same hash → excluded (already clean).
   - Survey in master with different hash → kept (DLW content changed).
-  - `load_pip_master_inventory()` throws error → returns all surveys, no abort.
+  - Survey with multiple `pip_id` rows in master (same `content_hash_dlw`) → only
+    one output row per `survey_id`, no fan-out duplication.
+  - `load_pip_master_inventory()` throws error → returns all surveys, no abort;
+    `verbose = FALSE` suppresses the warning message.
   - `.joyn` column must not be present in result (regression guard from 2026-06-05 bug).
-- **Acceptance criteria**: all 5 scenarios pass; no `.joyn` column; no `_dlw` suffix
-  renaming in function body.
+- **Acceptance criteria**: all 6 scenarios pass; no `.joyn` column; no `_dlw` suffix
+  renaming in function body; `verbose` param present and propagated; `dt_master`
+  hash lookup deduplicated by `survey_id` before the join.
 
 ### 6. Update tests in test-valid_dlw_load.R
 
@@ -255,11 +296,17 @@ Relevant solution docs:
   - **Step 2**: Add two `valid_dlw_load` tests mocking `valid_aux_load` to return (a) `NULL` and (b) non-NULL but `filter_aux_inv` returns all-NULL; assert correct logmeta `info` value captured.
   - **Step 3**: Add a test where both `inv_svy` and `inv_aux` are empty after filtering; assert `expect_error(..., class = "piperr")`.
   - **Step 4**: In the happy-path test, capture the `pipdata_log` and assert a `surveys_to_clean_inf` entry exists with correct `n_total_unique`.
-  - **Step 5**: Add the 5 content-hash scenarios described above for `inv_to_process`.
-  - Update the existing `inv_to_process` test: it currently mocks `load_pip_master_inventory` returning 3-key columns — update the mock to include `survey_id` and `content_hash_dlw` columns.
+  - **Step 5**: Add the 6 content-hash scenarios described above for `inv_to_process`.
+  - Update **both** existing tests that mock `load_pip_master_inventory` with the old
+    3-key-only structure: (1) the direct `inv_to_process` unit test, and (2) the
+    `"valid_dlw_load returns no duplicate survey_ids..."` test (~line 90–114), which
+    exercises `inv_to_process` indirectly via `valid_dlw_load(force = FALSE)`. Grep
+    the test file for all `load_pip_master_inventory = function` mocks before
+    starting Phase 2 to confirm no others were missed.
 - **Acceptance criteria**: `devtools::test(filter = "valid_dlw")` passes; no test
   fixtures reference `country_code`/`surveyid_year`/`survey_acronym` as the
-  comparison keys.
+  comparison keys; all `load_pip_master_inventory` mocks in the file include
+  `survey_id` and `content_hash_dlw`.
 
 ### 7. Update roxygen @details and compound-gpid.context.md
 
@@ -272,11 +319,13 @@ Relevant solution docs:
     - `"aux_changes_no_surveys_inf"` — emitted when auxiliary files changed but no
       surveys match.
     - `"surveys_to_clean_inf"` — emitted after rbind/dedup with counts.
-  - In `compound-gpid.context.md`, under "The pipeline emits four canonical logmeta
-    entry types", add the three new strings to the list with the same format used for
-    existing entries.
-- **Acceptance criteria**: three new strings appear in both locations; no description
-  refers to the old 4-type count ("four" → update to "seven" or restructure section).
+  - In `compound-gpid.context.md`, re-read the **current** canonical logmeta list at
+    implementation time (do not trust this plan's snapshot — as of the plan-review
+    pass on 2026-08-03 it already lists six entries, not four) and add the three new
+    strings, updating the count/prose to match whatever is actually there.
+- **Acceptance criteria**: three new strings appear in both locations; the canonical
+  list's count/prose accurately reflects the total entries present after the edit
+  (verify by counting, don't assume a fixed number).
 
 ## Testing Strategy
 
@@ -301,8 +350,10 @@ Relevant solution docs:
 |------|-----------|------------|
 | `content_hash_dlw` absent from master inventory (schema drift) | Low | Blocked-stop condition in Step 5; check column names before implementing |
 | `joyn::left_join` column suffix collision (`content_hash.x`/`.y`) | Low | `content_hash_dlw` is only in `dt_master`; `content_hash` only in `inv` — no collision; verify with `names()` after join |
-| Existing tests break because they mock 3-key master columns | Medium | Step 6 explicitly updates the mock structure |
+| `dt_master` has multiple rows per `survey_id` (one per `pip_id`), causing join fan-out | Medium | Dedup `dt_master[, .(survey_id, content_hash_dlw)]` via `collapse::funique()` before the join; `relationship = "many-to-one"` raises if violated |
+| Existing tests break because they mock 3-key master columns | Medium | Step 6 explicitly updates **both** affected test mocks |
 | `pipdata_log` not initialized in test context | Low | Existing tests already initialize it via helpers; reuse pattern |
+| Dropping `verbose` from `inv_to_process()` breaks the existing call site | High (caught in plan review) | New signature retains `verbose`, propagated to `load_pip_master_inventory()` and gating the warning message |
 
 ## Out of Scope
 
@@ -331,9 +382,10 @@ when truly nothing to clean, and `inv_to_process()` detects DLW source changes v
 | V2 | Two distinct `if` branches replace the single all-NULL guard; `"aux_no_changes_inf"` and `"aux_changes_no_surveys_inf"` used as logmeta discriminators | code review + test | yes |
 | V3 | Combined-check `return(NULL)` replaced by `cli::cli_abort(class = "piperr")` | code review + test | yes |
 | V4 | `log_info(..., logmeta = list(info = "surveys_to_clean_inf", ...))` present after rbind/dedup | code review + test | yes |
-| V5 | `inv_to_process` joins on `survey_id`, compares `content_hash` vs `content_hash_dlw` | code review | yes |
+| V5 | `inv_to_process(inv, verbose = ...)` retains `verbose`, propagates it to `load_pip_master_inventory(verbose = verbose)`, gates its `cli_alert_warning` on `verbose`; joins on `survey_id` against a deduplicated `dt_master[, .(survey_id, content_hash_dlw)]`; call site in `valid_dlw_load()` unchanged | code review | yes |
 | V6 | `devtools::test(filter = "valid_dlw")` passes | terminal | yes |
 | V7 | `devtools::test()` full suite passes with no regressions | terminal | yes |
+| V8 | `aux_changes_inf` log call fires exactly once, from inside the `else` branch of the 3-way split, gated on `inv_aux` being non-NULL/non-empty; no standalone duplicate log block remains | code review + test | yes |
 
 ### Constraints
 
@@ -343,7 +395,9 @@ when truly nothing to clean, and `inv_to_process()` detects DLW source changes v
 | C2 | `logmeta$info` values are string literals; never R condition objects | code review |
 | C3 | `inv_to_process` returns all surveys when master cannot be loaded (graceful fallback) | code review + test |
 | C4 | `Checksum` is NOT used as a fallback for content comparison | code review |
-| C5 | Three new logmeta discriminator strings added to canonical list in `compound-gpid.context.md` | documentation step |
+| C5 | Three new logmeta discriminator strings added to canonical list in `compound-gpid.context.md` (re-count actual entries at implementation time; do not assume "four") | documentation step |
+| C6 | `dt_master[, .(survey_id, content_hash_dlw)]` deduplicated via `collapse::funique()` before the join; `joyn::left_join(..., relationship = "many-to-one")` set explicitly | code review + test |
+| C7 | Both `load_pip_master_inventory` mocks in `test-valid_dlw_load.R` (direct `inv_to_process` test and the duplicate-survey_id test) updated to the new schema | code review + test |
 
 ### Boundaries
 
