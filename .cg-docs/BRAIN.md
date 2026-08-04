@@ -1,6 +1,6 @@
 # 🧠 Project Brain
 
-_Generated 2026-07-22 · 102 entities · 2 topics · 25 edges_
+_Generated 2026-08-04 · 102 entities · 2 topics · 27 edges_
 
 ## How to Use
 
@@ -13,26 +13,26 @@ _Generated 2026-07-22 · 102 entities · 2 topics · 25 edges_
 
 | # | Topic | Entities | File |
 |---|-------|----------|------|
-| 1 | [Reporting_Level / Aaa.R / Pd_Deflation.R](BRAIN-01.md#reporting-level-aaa-r-pd-deflation-r) | 78 | BRAIN-01.md |
+| 1 | [Reporting_Level / Aaa.R / Pd_Deflation.R](BRAIN-01.md#reporting-level-aaa-r-pd-deflation-r) | 75 | BRAIN-01.md |
 | 2 | [Old_Files/ / Archive / Devtools::Document\(\)](BRAIN-01.md#old-files-archive-devtools-document) | 4 | BRAIN-01.md |
 
 ## Entity Summary
 
 | Type | Count |
 |------|-------|
-| brainstorm | 7 |
-| plan | 32 |
+| brainstorm | 8 |
+| plan | 33 |
 | review | 20 |
-| solution | 42 |
+| solution | 40 |
 | strategy | 1 |
 
-_20 entities not assigned to any topic_
+_23 entities not assigned to any topic_
 
 ## Relationship Summary
 
 | Edge Type | Count |
 |-----------|-------|
-| decided_from | 7 |
-| references | 2 |
+| decided_from | 8 |
+| references | 3 |
 | reviews | 14 |
 | verifies | 2 |

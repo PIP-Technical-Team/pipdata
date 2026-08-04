@@ -8,7 +8,7 @@ tags: [deflation, subnational, area, ppp_data_level, cpi_data_level, pop_data_le
 root-cause: "add_dom_vars() stores 'area' as a column-pointer in *_data_level attributes, but add_rep_lvl/add_ppp/add_cpi treated the attribute as a literal level name — so named-vector lookup fails with NA for all urban/rural surveys. Compounded by add_rep_lvl() being an unnecessary intermediary that translates per-function semantics into a shared column."
 severity: "P1"
 test-written: "no"
-fix-confirmed: "plan-written"
+fix-confirmed: "yes"
 ---
 
 # Subnational deflation produces NA: `ppp_data_level = "area"` not resolved to per-row column values
