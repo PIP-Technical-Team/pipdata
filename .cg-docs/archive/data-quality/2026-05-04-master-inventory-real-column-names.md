@@ -8,6 +8,15 @@ root-cause: "Assumed column names version_id_data and version_id_metadata do not
 severity: "P2"
 ---
 
+> **ARCHIVED 2026-08-04 — SUPERSEDED**: This document's central claim ("No
+> `version_id_*` columns exist") is now factually incorrect. The later fix in
+> [`.cg-docs/solutions/bugs/2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md`](../../solutions/bugs/2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md)
+> added `version_id_data`/`version_id_metadata` columns back to the master
+> inventory schema (confirmed in `R/build_pip_inventory.R`, which now writes
+> both `version_id_*` and `content_hash_*` columns). Do not use this document
+> as a reference for the current inventory schema — kept for historical
+> context only.
+
 # Master inventory real column names for data and metadata versioning
 
 ## Problem

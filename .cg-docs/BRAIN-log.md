@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-04 · 103 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -34,8 +34,20 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
   > **Review depth**: light **Files reviewed**: 4 **Findings**: 6 (P0: 0, P1: 0, P2: 4, P3: 2)
 - **[2026-05-19-fix-reporting-level-duplication-review](.cg-docs/reviews/2026-05-19-fix-reporting-level-duplication-review.md)** · `review` · _—_ · `—`
   > **Review depth**: standard **Files reviewed**: 3 (`R/update_pip_inventory.R`, `tests/testthat/test-update_pip_invento…
-- **[2026-06-18-yaml-recode-dictionary](.cg-docs/plans/2026-06-18-yaml-recode-dictionary.md)** · `plan` · _in-progress_ · `—`
+- **[2026-06-18-yaml-recode-dictionary](.cg-docs/plans/2026-06-18-yaml-recode-dictionary.md)** · `plan` · _done_ · `—`
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
+
+## 2026-08-04
+
+- **[Verify subagent audit claims independently before trusting severity or schema conclusions](.cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md)** · `solution` · _—_ · `2026-08-04`
+  > During a `/cg-compound-refresh` run auditing all 31 `.cg-docs/solutions/*.md` files for drift, 4 parallel `Explore` s…
+
+## 2026-08-03
+
+- **[Vignettes for pipeline wrapper, deflation, and logging functions](.cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md)** · `brainstorm` · _decided_ · `2026-08-03`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
+- **[Vignettes for pipeline wrapper, deflation, and logging functions](.cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md)** · `plan` · _complete_ · `2026-08-03`
+  > Replace outdated/empty vignette content with accurate, non-executing narrative documentation covering the two pipelin…
 
 ## 2026-07-22
 
@@ -44,7 +56,7 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
 
 ## 2026-06-28
 
-- **[pd_process_data: RAM regression fix \(spec-once + per-survey gc\)](.cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md)** · `plan` · _active_ · `2026-06-28`
+- **[pd_process_data: RAM regression fix \(spec-once + per-survey gc\)](.cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md)** · `plan` · _completed_ · `2026-06-28`
   > Running `pd_process_data()` on the current `var_tabmaker2` branch makes RAM explode, whereas commit `3e00987a` did no…
 
 ## 2026-06-24
@@ -106,7 +118,7 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
 - **[joyn suffix columns persisted to master inventory cause duplicate reporting_level on re-run](.cg-docs/solutions/bugs/2026-05-20-joyn-suffix-collision-persisted-to-inventory.md)** · `solution` · _—_ · `2026-05-20`
   > After running `pd_process_data()`, `names(new_pip_inv)` contained: `reporting_level.x` and `reporting_level.y` were a…
 - **[Package-imported operators \(%||%, %in%, etc.\) are not available in test helper functions](.cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md)** · `solution` · _—_ · `2026-05-20`
-  > A test helper in `tests/testthat/test-update_pip_inventory.R` used `%||%`: Running `devtools::test_active_file()` pro…
+  > A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used …
 - **[Refactor inventory architecture: catalog-based assembler](.cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md)** · `brainstorm` · _decided_ · `2026-05-20`
   > `update_pip_inventory()` is ~350 lines handling 8+ responsibilities: version extraction from in-memory `proc_dta`, sk…
 - **[Refactor inventory architecture: catalog-based assembler](.cg-docs/plans/2026-05-20-inventory-architecture-refactor.md)** · `plan` · _completed_ · `2026-05-20`
@@ -123,7 +135,7 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
 - **[Guard before join: dropping reentrant columns in load-then-recompute functions](.cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md)** · `solution` · _—_ · `2026-05-19`
   > A pipeline function that: 1. loads an existing artifact from disk (`old_x <- load_...()`) 2. row-binds it with freshl…
 - **[reporting_level duplicate column on re-run of pd_process_data](.cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md)** · `solution` · _—_ · `2026-05-19`
-  > `pd_process_data()` (and by extension `update_pip_inventory()`) errors on a second (or any subsequent) run with:
+  > > **UPDATED 2026-08-04**: `update_pip_inventory()` has been replaced by > `build_pip_inventory()` (`R/build_pip_inven…
 - **[Store version_id \(not just content_hash\) in master inventory for reliable deflation loading](.cg-docs/solutions/bugs/2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md)** · `solution` · _—_ · `2026-05-19`
   > `pd_deflation()` always emitted a stale-version warning and fell back to loading the latest `pip_meta` artifact, even…
 
@@ -172,10 +184,8 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
   > **Review depth**: standard **Scope**: commit `78fb46e` — stamp round-trip attribute/column bug fixes **Files reviewed…
 - **[pipmd/pipgd S3 class stripped when loading survey from stamp](.cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md)** · `solution` · _—_ · `2026-05-05`
   > `pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")` loads the survey from stamp but the `deflation()` S3 dispatch then fai…
-- **[ppp_data_level / cpi_data_level columns stripped on stamp round-trip](.cg-docs/solutions/bugs/2026-05-05-data-level-columns-stripped-on-stamp-round-trip.md)** · `solution` · _—_ · `2026-05-05`
-  > `pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")` silently returns `NA`. Calling `.deflation_pipmd_core()` directly surf…
 - **[Stale content_hash_metadata in .load_deflation_aux\(\) aborts deflation](.cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md)** · `solution` · _—_ · `2026-05-05`
-  > Calling `pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")` aborts even though the `pip_meta` artifact for that survey exi…
+  > > **UPDATED 2026-08-04**: The graceful-fallback principle described here is > still correct, but the implementation h…
 - **[stamp version_id ≠ content_hash: resolving the correct version for pip_read](.cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md)** · `solution` · _—_ · `2026-05-05`
   > `pd_deflation()` in `R/pd_deflation.R` failed with: (The exact hash varies per survey.) The function was passing `row…
 - **[survey_year vs surveyid_year attribute name mismatch between pipeline and stamp](.cg-docs/solutions/bugs/2026-05-05-surveyid-year-attribute-name-mismatch.md)** · `solution` · _—_ · `2026-05-05`
@@ -185,8 +195,6 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
 
 - **[Integrate pd_deflation.R into the active pipeline](.cg-docs/plans/2026-05-04-integrate-deflation.md)** · `plan` · _completed_ · `2026-05-04`
   > Make `pd_deflation()` usable as a self-contained single-survey helper: given one cleaned survey `data.table` (or its …
-- **[Master inventory real column names for data and metadata versioning](.cg-docs/solutions/data-quality/2026-05-04-master-inventory-real-column-names.md)** · `solution` · _—_ · `2026-05-04`
-  > `R/pd_deflation.R` referenced three non-existent columns in the PIP master inventory when filtering and sorting rows:…
 - **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
   > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
 
@@ -210,7 +218,7 @@ _Generated 2026-07-22 · 102 artifacts (newest first) + 0 roadmap features_
 ## 2026-04-29
 
 - **[Conditional column initialization produces inconsistent data.table schema](.cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md)** · `solution` · _—_ · `2026-04-29`
-  > `update_pip_inventory()` populates two new columns on the master inventory (`first_release_version_id`, `latest_relea…
+  > `update_pip_inventory()` (now `build_pip_inventory()`) populates two new columns on the master inventory (`first_rele…
 - **[Duplicate logmeta discriminator key causes malformed report sections](.cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md)** · `solution` · _—_ · `2026-04-29`
   > `update_pip_inventory()` emits an `inv_update_inf` event for the inventory verification block (fields: `n_expected`, …
 - **[Logging inside tryCatch error handlers and lapply callbacks with pipfun typed wrappers](.cg-docs/solutions/testing-patterns/2026-04-29-logging-in-trycatch-handlers.md)** · `solution` · _—_ · `2026-04-29`

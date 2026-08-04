@@ -8,6 +8,10 @@ root-cause: "roxygen2 [foo()] link syntax generates an Rd cross-reference that r
 severity: "P2"
 ---
 
+> **RECONFIRMED 2026-08-04**: Still the team's established roxygen practice
+> — referenced by multiple other solution docs in this repo. No content
+> changes needed.
+
 # Roxygen `[foo()]` cross-reference to unexported function causes R CMD check WARNING
 
 ## Problem

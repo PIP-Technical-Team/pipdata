@@ -1,5 +1,5 @@
 {
-  "edge_count": 25,
+  "edge_count": 27,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -41,6 +41,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
       "target": ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
       "target_missing": false
     },
     {
@@ -149,6 +155,12 @@
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md",
       "target": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
       "target_missing": false
     }
   ],
@@ -351,6 +363,35 @@
         "max_year",
         "ls_inv_aux",
         "null"
+      ]
+    },
+    {
+      "date": "2026-08-03",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "slug": "2026-08-03-pipeline-wrapper-vignettes",
+      "status": "decided",
+      "summary": "<!-- Valid status values: decided, in-progress, abandoned -->",
+      "tags": [
+        "documentation",
+        "vignettes",
+        "pkgdown",
+        "pipeline",
+        "deflation",
+        "logging"
+      ],
+      "title": "Vignettes for pipeline wrapper, deflation, and logging functions",
+      "top_keywords": [
+        "pd_process_data",
+        "deflation",
+        "_pkgdown.yml",
+        "pip-data-pipeline.rmd",
+        "processing-data.rmd",
+        "pipdata_dlw_process",
+        "log_report",
+        "pd_*",
+        "pd_deflation",
+        "approach"
       ]
     },
     {
@@ -1083,14 +1124,14 @@
       ],
       "title": "Refactor valid_dlw_load: logging, abort, and content-hash comparison",
       "top_keywords": [
+        "survey_id",
         "inv_to_process",
         "content_hash_dlw",
         "filter_aux_inv",
         "compound-gpid.context.md",
-        "survey_id",
-        "content_hash",
-        "valid_dlw_load",
         "inv_aux",
+        "valid_dlw_load",
+        "verbose",
         "max_year",
         "r/valid_dlw_load.r"
       ]
@@ -1129,7 +1170,7 @@
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-06-18-yaml-recode-dictionary.md",
       "slug": "2026-06-18-yaml-recode-dictionary",
-      "status": "in-progress",
+      "status": "done",
       "summary": "The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_gndr()`, `recode_age()`, `add_area()`). Each function contains repeated patterns: - Column existence checks (`if (\"varname\" %in% colnames(dt))`) - Type coercion (`as.double()`, `as.character()`) - Conditional remapping (`fcase()`, `haven::as_factor()`) Adding new variables or modifying recode rules requires: 1. Editing R source code 2. Updating function logic 3. Rebuilding the package 4. Writing new tests This tight coupling makes the pipeline inflexible and hard to maintain.",
       "tags": [
         "data-quality",
@@ -1217,7 +1258,7 @@
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md",
       "slug": "2026-06-28-pd-process-data-ram-regression",
-      "status": "active",
+      "status": "completed",
       "summary": "Running `pd_process_data()` on the current `var_tabmaker2` branch makes RAM explode, whereas commit `3e00987a` did not. The diff since that commit landed a large inventory-architecture refactor that introduced a YAML-driven recode engine (`recode_spec.R` / `inst/extdata/recode_spec.yml`) and moved version facts into the stamp catalog. Three changes in that work regressed memory/time:",
       "tags": [
         "pd_process_data",
@@ -1231,14 +1272,43 @@
       "top_keywords": [
         "lapply",
         "process_data()",
+        "gc()",
         "pd_process_data()",
         "apply_recode_spec()",
         "recode_spec",
         "fix",
         "recode_spec.r",
         "save_pip.r",
-        "recode_spec = null",
-        "gc()"
+        "news.md"
+      ]
+    },
+    {
+      "date": "2026-08-03",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
+      "slug": "2026-08-03-pipeline-wrapper-vignettes",
+      "status": "complete",
+      "summary": "Replace outdated/empty vignette content with accurate, non-executing narrative documentation covering the two pipeline wrapper functions (`pipdata_dlw_process`, `pd_process_data`), `deflation`/`pd_deflation`, and `log_report`, for both operators (how to run) and maintainers (architecture), and wire the result into `_pkgdown.yml`.",
+      "tags": [
+        "documentation",
+        "vignettes",
+        "pkgdown",
+        "pipeline",
+        "deflation",
+        "logging"
+      ],
+      "title": "Vignettes for pipeline wrapper, deflation, and logging functions",
+      "top_keywords": [
+        "_pkgdown.yml",
+        "pip-data-pipeline.rmd",
+        "validating-data.rmd",
+        "processing-data.rmd",
+        "pd_process_data()",
+        "pipdata_script.r",
+        "pd_process_data",
+        "rmarkdown::render()",
+        "docs/pipeline_overview.qmd",
+        "devtools::check()"
       ]
     },
     {
@@ -1715,7 +1785,7 @@
       "path": ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
       "slug": "2026-04-29-conditional-column-init-inconsistent-schema",
       "status": "",
-      "summary": "`update_pip_inventory()` populates two new columns on the master inventory (`first_release_version_id`, `latest_release_version_id`). The column initialization (`dt[, col := NA_character_]`) and the population logic were both inside an `if (!is.na(release_vid))` guard. When the release inventory write failed (`release_vid = NA_character_`), the guard never executed — the columns were never added. The master inventory was then saved via `pip_write()` without those columns, producing an inconsistent schema: some versions of the master inventory had both columns, others had neither. Downstream consumers seen with `collapse::rowbind(..., fill = TRUE)` would handle missing columns gracefully on load, but the columns were permanently absent from affected versions until...",
+      "summary": "`update_pip_inventory()` (now `build_pip_inventory()`) populates two new columns on the master inventory (`first_release_version_id`, `latest_release_version_id`). The column initialization (`dt[, col := NA_character_]`) and the population logic were both inside an `if (!is.na(release_vid))` guard. When the release inventory write failed (`release_vid = NA_character_`), the guard never executed — the columns were never added. The master inventory was then saved via `pip_write()` without those columns, producing an inconsistent schema: some versions of the master inventory had both columns, others had neither. Downstream consumers seen with `collapse::rowbind(..., fill = TRUE)` would handle missing columns gracefully on load, but the columns were permanently absent from affected...",
       "tags": [
         "data.table",
         "schema",
@@ -1727,16 +1797,16 @@
       ],
       "title": "Conditional column initialization produces inconsistent data.table schema",
       "top_keywords": [
+        "update_pip_inventory()",
+        "build_pip_inventory()",
         "guard",
         "schema",
+        "first_release_version_id",
+        "latest_release_version_id",
         "population",
         "inside",
         "init",
-        "dt[, col := na_character_]",
-        "table",
-        "conditional",
-        "column",
-        "initialization"
+        "dt[, col := na_character_]"
       ]
     },
     {
@@ -1801,40 +1871,6 @@
     {
       "date": "2026-05-05",
       "entity_type": "solution",
-      "path": ".cg-docs/solutions/bugs/2026-05-05-data-level-columns-stripped-on-stamp-round-trip.md",
-      "slug": "2026-05-05-data-level-columns-stripped-on-stamp-round-trip",
-      "status": "",
-      "summary": "`pd_deflation(pip_id = \"BOL_2022_EH_INC_ALL\")` silently returns `NA`. Calling `.deflation_pipmd_core()` directly surfaces two successive errors:",
-      "tags": [
-        "deflation",
-        "stamp",
-        "round-trip",
-        "data-level",
-        "ppp-data-level",
-        "cpi-data-level",
-        "attributes",
-        "add-rep-lvl",
-        "add-ppp",
-        "add-cpi",
-        "pd-deflation"
-      ],
-      "title": "ppp_data_level / cpi_data_level columns stripped on stamp round-trip",
-      "top_keywords": [
-        "ppp_data_level",
-        "cpi_data_level",
-        "add_rep_lvl()",
-        "safe_deflation()",
-        "restore_data_level_cols()",
-        "add_rep_lvl",
-        "data_level",
-        "na",
-        ".deflation_pipmd_core()",
-        "columns"
-      ]
-    },
-    {
-      "date": "2026-05-05",
-      "entity_type": "solution",
       "path": ".cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md",
       "slug": "2026-05-05-pip-class-stripped-on-stamp-round-trip",
       "status": "",
@@ -1869,7 +1905,7 @@
       "path": ".cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md",
       "slug": "2026-05-05-stale-content-hash-in-load-deflation-aux",
       "status": "",
-      "summary": "Calling `pd_deflation(pip_id = \"BOL_2022_EH_INC_ALL\")` aborts even though the `pip_meta` artifact for that survey exists in stamp.",
+      "summary": "> **UPDATED 2026-08-04**: The graceful-fallback principle described here is > still correct, but the implementation has moved on. The later fix in > [2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md](./2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md) > replaced the `content_hash_metadata` + `pip_read(version = \"available\")` > hash-matching approach entirely: `.load_deflation_aux()` now resolves the > version via `version_id_metadata` directly (confirmed in `R/pd_deflation.R` > lines ~105-134), with the same try-then-fall-back-to-latest behavior. Read > `content_hash_metadata` below as historical; current code uses > `version_id_metadata`.",
       "tags": [
         "deflation",
         "stamp",
@@ -1881,15 +1917,15 @@
       "title": "Stale content_hash_metadata in .load_deflation_aux() aborts deflation",
       "top_keywords": [
         "content_hash_metadata",
+        "version_id_metadata",
         "load_deflation_aux",
         "deflation",
         "pip_meta",
         "store-version-id-in-inventory",
+        ".load_deflation_aux()",
         "format_vrs()",
         "stale",
-        "aborts",
-        "content_hash",
-        "version_id"
+        "aborts"
       ]
     },
     {
@@ -2054,7 +2090,7 @@
       "path": ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md",
       "slug": "2026-05-19-reporting-level-duplicate-column-rerun",
       "status": "",
-      "summary": "`pd_process_data()` (and by extension `update_pip_inventory()`) errors on a second (or any subsequent) run with:",
+      "summary": "> **UPDATED 2026-08-04**: `update_pip_inventory()` has been replaced by > `build_pip_inventory()` (`R/build_pip_inventory.R`), which changes this > further than a simple rename: `build_pip_inventory()` no longer computes > `reporting_level` at all — it is treated as a legacy column and explicitly > **dropped** from `old_inv` before the upsert (see the `legacy_cols` list in > `build_pip_inventory()`). Enrichment with `reporting_level` is now opt-in, > done by callers via `pipload::pip_inv_enrich(inv, fields = \"reporting_level\")` > in the `pipload` package. The specific duplicate-column collision described > below therefore cannot recur inside `pipdata` today, but the general > \"guard before joining a column the target may already carry\" pattern...",
       "tags": [
         "update_pip_inventory",
         "reporting_level",
@@ -2071,11 +2107,11 @@
         "new_pip_inv",
         "pfw_rl_unq",
         "old_pip_inv",
+        "update_pip_inventory()",
+        "build_pip_inventory()",
         "column",
         "duplicate",
-        "cause",
-        "update_pip_inventory()",
-        "joyn::left_join"
+        "cause"
       ]
     },
     {
@@ -2099,13 +2135,13 @@
         "version_id",
         "format_vrs()",
         "ventry$version_id",
+        "version_id_metadata",
+        "pip_write()",
         "inventory",
         "content_hash",
         "artifact",
-        "version_id_metadata",
-        "pip_write()",
-        ".load_deflation_aux()",
-        "master"
+        "version_id_data",
+        ".load_deflation_aux()"
       ]
     },
     {
@@ -2377,35 +2413,6 @@
       ]
     },
     {
-      "date": "2026-05-04",
-      "entity_type": "solution",
-      "path": ".cg-docs/solutions/data-quality/2026-05-04-master-inventory-real-column-names.md",
-      "slug": "2026-05-04-master-inventory-real-column-names",
-      "status": "",
-      "summary": "`R/pd_deflation.R` referenced three non-existent columns in the PIP master inventory when filtering and sorting rows: | Code used (wrong) | Real column | |---|---| | `row$version_id_data` | `row$content_hash_data` | | `row$version_id_metadata` | `row$content_hash_metadata` | | `order(row$version_id_data, …)` | `order(row$created_at_metadata, …)` | These column names were invented during implementation without cross-checking against the live inventory object. The code contained a guard that detected the missing `version_id_metadata` column and aborted with an error, but the guard itself used the wrong column name so it never fired — the error would have surfaced only at the `row$version_id_metadata[[1L]]` assignment. Matching mock fixtures in `tests/testthat/test-pd-deflation.R`...",
-      "tags": [
-        "master-inventory",
-        "pipload",
-        "column-names",
-        "versioning",
-        "content-hash",
-        "metadata"
-      ],
-      "title": "Master inventory real column names for data and metadata versioning",
-      "top_keywords": [
-        "metadata",
-        "version",
-        "inventory",
-        "master",
-        "versioning",
-        "content_hash_metadata",
-        "identifier",
-        "artifact",
-        "old_pip_inv",
-        "names(pipload::load_pip_master_inventory())"
-      ]
-    },
-    {
       "date": "2026-05-07",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md",
@@ -2455,15 +2462,15 @@
       "title": "Guard before join: dropping reentrant columns in load-then-recompute functions",
       "top_keywords": [
         "reporting_level",
+        "update_pip_inventory()",
+        ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md",
         "collapse",
         "re-run",
         "load-then-recompute",
         "reentrant",
         "col",
-        "ftransform_core()",
-        "joyn::left_join",
-        "update_pip_inventory()",
-        ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md"
+        "r/update_pip_inventory.r",
+        "build_pip_inventory()"
       ]
     },
     {
@@ -2752,16 +2759,16 @@
       ],
       "title": "Mocking external package calls made at function startup so tests reach the actual logic",
       "top_keywords": [
+        "dlw_dta_to_qs()",
+        "local_mocked_bindings()",
         "tests",
         "mocking",
-        "dlw_dta_to_qs()",
         "pipfun::get_wrk_release()",
         "testthat::local_mocked_bindings()",
-        "local_mocked_bindings()",
         "test_that()",
         "function",
         "package",
-        "external"
+        "startup"
       ]
     },
     {
@@ -2896,7 +2903,7 @@
       "path": ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
       "slug": "2026-05-20-package-operators-not-available-in-test-helpers",
       "status": "",
-      "summary": "A test helper in `tests/testthat/test-update_pip_inventory.R` used `%||%`: Running `devtools::test_active_file()` produced:",
+      "summary": "A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used `%||%`: Running `devtools::test_active_file()` produced:",
       "tags": [
         "testthat",
         "rlang",
@@ -2909,15 +2916,15 @@
       "title": "Package-imported operators (%||%, %in%, etc.) are not available in test helper functions",
       "top_keywords": [
         "%||%",
+        "tests/testthat/test-update_pip_inventory.r",
+        "tests/testthat/test-build_pip_inventory.r",
         "devtools::test_active_file()",
         "test",
-        "operators",
         "helper",
+        "operators",
         "functions",
         "available",
-        "package-imported",
-        "related",
-        "requirenamespace"
+        "package-imported"
       ]
     },
     {
@@ -2949,6 +2956,37 @@
       ]
     },
     {
+      "date": "2026-08-04",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md",
+      "slug": "2026-08-04-verify-subagent-audit-claims-independently",
+      "status": "",
+      "summary": "During a `/cg-compound-refresh` run auditing all 31 `.cg-docs/solutions/*.md` files for drift, 4 parallel `Explore` subagents were dispatched (one per category group) to compare each solution doc's claims against current code. Two of their conclusions were wrong: 1. **False \"CRITICAL\" bug claim**: A subagent reported that `R/pd_deflation.R` has a critical bug because it uses `version_id_metadata`, which a 2026-05-04 solution doc claimed \"does not exist\" in the master inventory schema. Taken at face value, this would have led to \"fix the code\" — the wrong remediation. 2. **False schema-compliance claim**: A different subagent flagged 13 solution files as \"missing the required `status`...",
+      "tags": [
+        "subagent",
+        "explore-agent",
+        "verification",
+        "drift-detection",
+        "compound-refresh",
+        "hallucination",
+        "false-positive",
+        "knowledge-base-audit"
+      ],
+      "title": "Verify subagent audit claims independently before trusting severity or schema conclusions",
+      "top_keywords": [
+        "status",
+        "severity",
+        "subagent",
+        "2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md",
+        "cg-skill-compound-docs",
+        "version_id_*",
+        ".github/skills/cg-skill-compound-docs/references/solution-schema.md",
+        "solution-schema.md",
+        "schema",
+        "claims"
+      ]
+    },
+    {
       "date": "2026-04-27",
       "entity_type": "strategy",
       "path": ".cg-docs/strategy/2026-04-27-code-quality-focus.md",
@@ -2971,13 +3009,13 @@
       ]
     }
   ],
-  "entity_count": 102,
-  "generated": "2026-07-22",
+  "entity_count": 103,
+  "generated": "2026-08-04",
   "schema_version": "0.2.0",
   "topic_count": 2,
   "topics": [
     {
-      "entity_count": 78,
+      "entity_count": 75,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -3029,14 +3067,12 @@
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
         ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
-        ".cg-docs/solutions/bugs/2026-05-05-data-level-columns-stripped-on-stamp-round-trip.md",
         ".cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md",
         ".cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md",
         ".cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md",
         ".cg-docs/solutions/bugs/2026-05-05-surveyid-year-attribute-name-mismatch.md",
         ".cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md",
         ".cg-docs/solutions/bugs/2026-05-06-subnational-deflation-area-attribute-not-resolved.md",
-        ".cg-docs/solutions/bugs/2026-05-19-datatable-scoping-column-vs-argument.md",
         ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md",
         ".cg-docs/solutions/bugs/2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md",
         ".cg-docs/solutions/bugs/2026-05-20-joyn-suffix-collision-persisted-to-inventory.md",
@@ -3047,7 +3083,6 @@
         ".cg-docs/solutions/build-errors/2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md",
         ".cg-docs/solutions/build-errors/2026-04-29-roxygen-link-to-unexported-function.md",
         ".cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md",
-        ".cg-docs/solutions/data-quality/2026-05-04-master-inventory-real-column-names.md",
         ".cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md",
         ".cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md",
         ".cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md",

@@ -5,15 +5,16 @@
 \title{Process DLW inventory and create cleaned pip data}
 \usage{
 pd_process_data(
-  inv = inv,
+  inv = NULL,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
-\item{inv}{A data.frame or tibble containing the DLW inventory. It can be
-downloaded using \code{pipload::load_gmd_valid_inv()}.}
+\item{inv}{A data.frame or tibble containing the DLW inventory. Default
+\code{NULL}, in which case it is loaded internally via
+\code{pipload::load_gmd_valid_inv()}.}
 
 \item{aux_measures}{A character vector of auxiliary measures to load and merge
 with the DLW data. The default is \code{c("pfw", "cpi", "ppp", "pop", "gdp", "pce")}.}
@@ -56,7 +57,6 @@ the next survey is loaded, keeping peak heap bounded on full-inventory runs.
 \dontrun{
 release <- "20250203"
 pipfun::setup_working_release(release)
-inv <- pipload::load_gmd_valid_inv()
-pd_process_data(inv)
+pd_process_data()
 }
 }

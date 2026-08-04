@@ -4,10 +4,17 @@
 \alias{log_report}
 \title{Generate a markdown report from a pipeline log}
 \usage{
-log_report(log, path = NULL, title = "Pipeline Log Report", overwrite = FALSE)
+log_report(
+  log = NULL,
+  path = NULL,
+  title = "Pipeline Log Report",
+  overwrite = FALSE
+)
 }
 \arguments{
-\item{log}{A \code{piplog} object (inherits from \code{data.table}).}
+\item{log}{A \code{piplog} object (inherits from \code{data.table}). Default \code{NULL},
+in which case it is loaded internally via
+\code{pipfun::log_filter(name = "pipdata_log")}.}
 
 \item{path}{Character scalar. File path for the output \code{.md} file.
 If \code{NULL} (default), the report is returned as a character vector and
@@ -49,11 +56,10 @@ that entry is absent from the log.
 }
 \examples{
 \dontrun{
-log <- pipfun::log_filter(name = "pipdata_log")
-# Return as character vector
-report <- log_report(log)
+# Return as character vector (log defaults to the "pipdata_log")
+report <- log_report()
 # Write to file
-log_report(log, path = "log_report.md", overwrite = TRUE)
+log_report(path = "log_report.md", overwrite = TRUE)
 }
 }
 \seealso{

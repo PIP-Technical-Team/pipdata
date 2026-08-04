@@ -10,6 +10,14 @@ test-written: "yes"
 fix-confirmed: "yes"
 ---
 
+> **UPDATED 2026-08-04**: `format_vrs()` no longer exists as a separate named
+> function — its logic (capturing `ventry$version_id` from the top-level
+> `pip_write()` return) has been inlined directly into
+> `R/build_pip_inventory.R` (see the "Column provenance" section of its
+> roxygen header: `version_id_data`/`version_id_metadata` from the `"pip"`/
+> `"pip_meta"` catalogs). The version_id-capture principle described below is
+> unchanged, just relocated.
+
 # Store version_id from pip_write() return in master inventory
 
 ## Problem
@@ -114,3 +122,4 @@ entirely — it is not needed when `version_id` is stored correctly.
 - `R/pd_deflation.R` — `.load_deflation_aux()` updated to use `version_id_metadata`
 - `.cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md`
 - `.cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md`
+- `.cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md` — this fix is what made the archived 2026-05-04 doc's "no version_id_* columns" claim stale; cautionary tale for auditing solution docs against current code

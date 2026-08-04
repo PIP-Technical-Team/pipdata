@@ -132,7 +132,7 @@
                 {
                     "id": "yaml-validation-unification",
                     "title": "Explore recode spec consolidation with dlw_pip_var_type.csv",
-                    "description": "Investigate whether the YAML-based recode dictionary (from yaml-recode-dictionary) can be extended to replace or absorb inst/extdata/dlw_pip_var_type.csv used in the validation step. Current CSV contains DLW→PIP variable name mappings and type declarations. Extended YAML spec could unify three concerns: (1) name mapping (dlw_var_names → pip_var_names), (2) type validation (expected class), (3) recode rules (range clamps, categorical mappings). Enables single source of truth for variable transformations across validation and cleaning. Prerequisite: yaml-recode-dictionary must be completed first. Deliverable: feasibility assessment and proof-of-concept extended spec schema.",
+                    "description": "Partial progress: inst/extdata/validation_spec.yml now exists and covers module-level validation rules (variable availability, types, categorical checks). The remaining gap is the name-mapping/type portion of dlw_pip_var_type.csv (DLW→PIP variable name mappings and pip_vars_class declarations), which is not yet absorbed into a YAML spec. Extended YAML could unify: (1) name mapping (dlw_var_names → pip_var_names), (2) type validation (expected class), (3) recode rules. Prerequisite: yaml-recode-dictionary (done). Deliverable: extend recode_spec.yml or validation_spec.yml to absorb dlw_pip_var_type.csv.",
                     "status": "idea",
                     "tags": [
                         "validation",
@@ -164,6 +164,18 @@
                         "logging",
                         "infrastructure",
                         "stamp"
+                    ]
+                },
+                {
+                    "id": "persist-pipeline-log-via-stamp",
+                    "title": "Persist pipeline log via stamp after each run",
+                    "description": "Pipdata_script.R (~lines 60-66) currently persists the log_report() output manually and ad-hoc: it calls stamp::st_init() with the piplog alias pointed at pip_repository/pip_logs, then stamp::st_save(log, \"cleaning_log\", alias = \"piplog\", verbose = FALSE). This is only test-script code today — neither log_report() nor pd_process_data() perform this save automatically, so log archiving depends on someone manually copying the snippet. Goal: formalize/automate this pattern (reusing the piplog alias / cleaning_log pin name) so the pipeline log is systematically archived via stamp after every run instead of relying on manual steps. Related to but distinct from unified-log-folder (consolidating checkpoint storage location) and unified-logging-report (harmonizing DLW + pipeline logging into one report) — this idea is specifically about automating the st_save() persistence step itself.",
+                    "status": "idea",
+                    "tags": [
+                        "logging",
+                        "stamp",
+                        "persistence",
+                        "reliability"
                     ]
                 },
                 {
@@ -362,14 +374,15 @@
                 },
                 {
                     "id": "new-orchestration-script",
-                    "title": "Create new pipeline orchestration script to replace Pipdata_script.R",
-                    "description": "Write a new orchestration script with all pipeline wrappers (DLW acquisition, survey cleaning, report generation) using the unified logging conventions. Deprecate Pipdata_script.R which uses the old log/save_log API.",
-                    "status": "idea",
+                    "title": "Document pipeline orchestration via vignettes (superseded orchestration-script idea)",
+                    "description": "Superseded 2026-08-03: originally proposed as a new orchestration script to replace Pipdata_script.R. Decided instead to document the orchestration architecture and end-to-end wrapper sequence (pipdata_dlw_process, pd_process_data, deflation, log_report) via two narrative vignettes rather than writing a new script. See .cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md. Fill vignettes/articles/PIP-data-pipeline.Rmd with the orchestration/architecture overview and rewrite vignettes/articles/Processing-Data.Rmd around pd_process_data + deflation + log_report. Completed 2026-08-04: all three vignettes (PIP-data-pipeline.Rmd, Processing-Data.Rmd, and the mid-execution addition Validating-Data.Rmd) finished, _pkgdown.yml updated, verification surface V1-V8 passed. See .cg-docs/work-reports/2026-08-03-pipeline-wrapper-vignettes.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
                     "tags": [
                         "pipeline",
-                        "orchestration",
-                        "logging",
-                        "cleanup"
+                        "documentation",
+                        "vignettes",
+                        "architecture"
                     ]
                 },
                 {

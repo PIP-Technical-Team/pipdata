@@ -8,11 +8,17 @@ root-cause: "rlang::`%||%` is imported into the package namespace via NAMESPACE/
 severity: "P2"
 ---
 
+> **UPDATED 2026-08-04**: `tests/testthat/test-update_pip_inventory.R` has
+> been replaced by `tests/testthat/test-build_pip_inventory.R`. The scoping
+> gotcha and fix described below are dialect-neutral and still apply to any
+> test helper in that (or any other) test file.
+
 # Package-imported operators (%||%) are not available in test helper functions
 
 ## Problem
 
-A test helper in `tests/testthat/test-update_pip_inventory.R` used `%||%`:
+A test helper in `tests/testthat/test-update_pip_inventory.R` (now
+`tests/testthat/test-build_pip_inventory.R`) used `%||%`:
 
 ```r
 make_ventry <- function(content_hash = "abc123", version_id = NULL) {

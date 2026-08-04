@@ -11,6 +11,17 @@ test-written: "no"
 fix-confirmed: "yes"
 ---
 
+> **ARCHIVED 2026-08-04 — SUPERSEDED**: The "Fix" section below introduces
+> `restore_data_level_cols()` and patches `add_rep_lvl()` — **both functions
+> have since been removed from `R/pd_deflation.R`** (`add_rep_lvl()` removed
+> 2026-05-07; `restore_data_level_cols()` removed per
+> [`.cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md`](../../solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md)).
+> The current pattern is: `add_ppp()`, `add_cpi()`, and `adjust_population()`
+> read `*_data_level` directly via `attr(dt, ...)` — no restoration/fallback
+> step is needed. See `compound-gpid.context.md` for the current documented
+> pattern. Kept for historical context only; do not reintroduce the removed
+> functions described below.
+
 # `ppp_data_level` / `cpi_data_level` columns stripped on stamp round-trip
 
 ## Symptom

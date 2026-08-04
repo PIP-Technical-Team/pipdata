@@ -8,6 +8,10 @@ root-cause: "Literal Unicode characters (box-drawing, em-dash, multiplication si
 severity: "P2"
 ---
 
+> **RECONFIRMED 2026-08-04**: Still an accurate, active practice — `R CMD
+> check` / roxygen2 continue to flag non-ASCII characters in `R/*.R`. No
+> content changes needed.
+
 # R CMD check WARNING: non-ASCII characters in R source files
 
 ## Problem

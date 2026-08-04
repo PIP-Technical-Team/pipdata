@@ -1,7 +1,7 @@
 ---
 date: 2026-06-28
 title: "pd_process_data: RAM regression fix (spec-once + per-survey gc)"
-status: active
+status: completed
 scope: "Lightweight"
 language: "R"
 estimated-effort: "small"
@@ -143,6 +143,18 @@ This is a backup, not part of the initial change.
 - Any change to `stamp` (catalog caching) — Fix 1 makes per-survey catalog reads
   disappear, so a stamp-level cache is unnecessary.
 - Rewriting `lapply` to `for` as part of the main change (fallback only).
+
+## Deferred / Not Implemented
+
+- **`NEWS.md` bullet.** Originally planned under "Files to modify", but
+  deliberately skipped: the package is still under active development with no
+  external users yet, so a changelog entry for this internal fix was judged
+  unnecessary (user decision, 2026-08-03).
+- **Fallback `for`-loop with periodic `gc()`.** Documented in Fix 2 as a
+  backup only if the per-survey `gc()` proved insufficient on the full
+  4000+ run. The full run completed successfully with Fixes 1–2 alone (see
+  `log_reports/log_report.md`), so the fallback was never needed and
+  `lapply` was kept as-is.
 
 ## Verification
 

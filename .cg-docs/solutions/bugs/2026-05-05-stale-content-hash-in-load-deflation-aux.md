@@ -11,6 +11,16 @@ test-written: "yes"
 fix-confirmed: "yes"
 ---
 
+> **UPDATED 2026-08-04**: The graceful-fallback principle described here is
+> still correct, but the implementation has moved on. The later fix in
+> [2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md](./2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md)
+> replaced the `content_hash_metadata` + `pip_read(version = "available")`
+> hash-matching approach entirely: `.load_deflation_aux()` now resolves the
+> version via `version_id_metadata` directly (confirmed in `R/pd_deflation.R`
+> lines ~105-134), with the same try-then-fall-back-to-latest behavior. Read
+> `content_hash_metadata` below as historical; current code uses
+> `version_id_metadata`.
+
 # Stale content_hash_metadata in .load_deflation_aux() aborts deflation
 
 ## Symptom

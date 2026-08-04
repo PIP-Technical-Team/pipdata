@@ -2,3 +2,34 @@ url: https://pip-technical-team.github.io/pipdata/
 template:
   bootstrap: 5
 
+articles:
+- title: Pipeline
+  navbar: Pipeline
+  contents:
+  - PIP-data-pipeline
+  - Validating-Data
+  - Processing-Data
+
+reference:
+- title: Pipeline wrappers
+  desc: >
+    The three top-level wrapper functions that make up the pipeline (see
+    the "Pipeline" articles for the narrative walkthrough).
+  contents:
+  - pipdata_dlw_process
+  - pipdata_get_gmd
+  - pipdata_validate_gmd
+  - pd_process_data
+- title: Deflation
+  desc: >
+    Deflates a cleaned survey's welfare values; run as a separate,
+    post-hoc step after `pd_process_data()`.
+  contents:
+  - pd_deflation
+  - deflation
+- title: Logging
+  desc: >
+    Summarizes the `"pipdata_log"` written during `pd_process_data()`.
+  contents:
+  - log_report
+

@@ -8,6 +8,16 @@ root-cause: "Function calls an external dependency (e.g. pipfun::get_wrk_release
 severity: "P2"
 ---
 
+> **UPDATED 2026-08-04**: The original function-under-test, `dlw_dta_to_qs()`,
+> has been archived (see `old_files/dlw_dta_to_qs.R`). The `local_mocked_bindings()`
+> pattern below is still exactly how startup-guard mocking is done today — see
+> `tests/testthat/test-build_pip_inventory.R`, which mocks
+> `stamp::st_catalog_query`, `stamp::st_latest`,
+> `pipload::load_pip_master_inventory`, `pipload::load_aux_data`,
+> `pipload::pip_write`, and `pipfun::log_add`/`log_info`/`log_error` at
+> function startup using the identical `.package = "..."` technique. Treat the
+> `dlw_dta_to_qs()` example below as illustrative only.
+
 # Mocking external package calls made at function startup
 
 ## Problem
