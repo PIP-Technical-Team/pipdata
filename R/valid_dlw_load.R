@@ -56,32 +56,41 @@ valid_dlw_load <- function(
   ls_inv_aux <- lapply(all_changes_aux, filter_aux_inv, inv = inv)
 
   # Join release and vintage changes and select unique surveys
-  if (
-    is.null(ls_inv_aux) ||
-      length(ls_inv_aux) == 0 ||
-      all(sapply(ls_inv_aux, is.null))
-  ) {
-    cli::cli_alert_info("No changes in auxiliary files.")
+  if (is.null(all_changes_aux) || length(all_changes_aux) == 0) {
+    # Check 1: were any aux changes detected at all?
+    pipfun::log_info(
+      "No auxiliary file changes detected for survey cleaning.",
+      name = "pipdata_log",
+      logmeta = list(info = "aux_no_changes_inf")
+    )
+    inv_aux <- NULL
+  } else if (all(vapply(ls_inv_aux, is.null, logical(1)))) {
+    # Check 2: aux changed but no surveys match
+    pipfun::log_info(
+      "Auxiliary files changed but no surveys affected.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "aux_changes_no_surveys_inf",
+        measures = unique(unlist(lapply(all_changes_aux, names)))
+      )
+    )
     inv_aux <- NULL
   } else {
     inv_aux <- ls_inv_aux |>
       data.table::rbindlist() |>
       collapse::funique()
-  }
 
-  # Log aux changes if any were detected
-  if (!is.null(all_changes_aux)) {
+    # aux_changes_inf fires here, inside the branch where inv_aux is
+    # actually non-empty -- not on the mere non-NULL-ness of all_changes_aux.
     changed_measures <- unique(unlist(lapply(all_changes_aux, names)))
-    n_affected <- if (is.null(inv_aux)) 0L else nrow(inv_aux)
-    survey_ids_aux <- if (is.null(inv_aux)) character(0) else inv_aux$survey_id
     pipfun::log_info(
       "Auxiliary file changes detected.",
       name = "pipdata_log",
       logmeta = list(
         info = "aux_changes_inf",
         measures = changed_measures,
-        n_surveys_affected = n_affected,
-        surveys_affected = survey_ids_aux
+        n_surveys_affected = nrow(inv_aux),
+        surveys_affected = inv_aux$survey_id
       )
     )
   }
@@ -112,7 +121,10 @@ valid_dlw_load <- function(
     (is.null(inv_svy) || nrow(inv_svy) == 0) &&
       (is.null(inv_aux) || nrow(inv_aux) == 0)
   ) {
-    return(NULL)
+    cli::cli_abort(
+      "No surveys to process: all surveys are up to date and no auxiliary changes affect any survey.",
+      class = "piperr"
+    )
   }
 
   # Bind with inventory from aux changes
@@ -120,6 +132,20 @@ valid_dlw_load <- function(
 
   # Choose only unique
   inv_to_clean <- unique(inv_to_clean)
+
+  # Log summary of surveys identified for cleaning
+  pipfun::log_info(
+    "Surveys identified for cleaning.",
+    name = "pipdata_log",
+    logmeta = list(
+      info = "surveys_to_clean_inf",
+      n_dlw_new      = if (is.null(inv_svy)) 0L else nrow(inv_svy),
+      n_aux_changed  = if (is.null(inv_aux)) 0L else nrow(inv_aux),
+      n_total_unique = nrow(inv_to_clean),
+      aux_measures_triggered = if (is.null(all_changes_aux)) character(0)
+                               else unique(unlist(lapply(all_changes_aux, names)))
+    )
+  )
 
   # Order alphabetically
   setorder(inv_to_clean, survey_id)
@@ -163,12 +189,6 @@ filter_aux_inv <- function(inv, changes_aux) {
   # Row bind and select unique values from all aux files
 
   changes <- unique(rbindlist(changes, fill = TRUE))
-
-  # Temporary fix to test data from Rossana
-
-  max_year <- max(inv[!is.na(inv$surveyid_year), ]$surveyid_year)
-
-  changes <- changes[changes$surveyid_year <= max_year, ]
 
   # Merge inventory with aux changes
 
