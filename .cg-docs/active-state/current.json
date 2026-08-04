@@ -1,16 +1,29 @@
 {
   "plan": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
   "executionReport": ".cg-docs/work-reports/2026-08-04-valid-dlw-load-refactor.md",
-  "currentPhase": 1,
-  "completedPhases": [],
+  "currentPhase": null,
+  "completedPhases": [1, 2],
   "lastUpdated": "2026-08-04",
   "refs": {
     "roadmapFeature": null,
     "roadmapMilestone": null
   },
   "decisions": [
-    "No roadmap feature matches this plan path (2026-06-17-valid-dlw-load-refactor.md); content-hash-reclean-trigger is a related but distinct idea feature. Skipping roadmap active-status update."
+    "No roadmap feature matches this plan path (2026-06-17-valid-dlw-load-refactor.md); content-hash-reclean-trigger is a related but distinct idea feature. Skipped roadmap active-status update.",
+    "Phase 1 complete (Steps 1-4): max_year clamp removed; all-NULL guard split into aux_no_changes_inf / aux_changes_no_surveys_inf; aux_changes_inf moved into else branch (fires once); return(NULL) replaced with cli_abort(class='piperr'); surveys_to_clean_inf summary log added.",
+    "Phase 2 complete (Steps 5-7): inv_to_process rewritten to compare content_hash vs content_hash_dlw on survey_id (deduplicated dt_master, relationship='many-to-one'); both test-valid_dlw_load.R master-inventory mocks updated to new schema plus 9 new test scenarios; roxygen @details and compound-gpid.context.md canonical logmeta list updated (re-counted 6->9 entries, not the plan's stale 'four').",
+    "Regression fix in test-valid_aux_load.R:93 (outside plan's allowed test file): updated an assertion that relied on the old silent return(NULL) behavior Phase 1 intentionally replaced with cli_abort(class='piperr') -- a plan-named interface change, wrapped in expect_error(class='piperr') while preserving the verbose-propagation assertion.",
+    "Plan marked status: completed, completed-date: 2026-08-04."
   ],
-  "evidenceStatus": {},
-  "nextCommand": "/cg-work phase1"
+  "evidenceStatus": {
+    "V1": "passed (max_year clamp removed from filter_aux_inv)",
+    "V2": "passed (two distinct if branches; aux_no_changes_inf / aux_changes_no_surveys_inf discriminators)",
+    "V3": "passed (cli_abort class piperr replaces return(NULL))",
+    "V4": "passed (surveys_to_clean_inf log present after rbind/dedup)",
+    "V5": "passed (verbose propagated; dedup + relationship=many-to-one; call site unchanged)",
+    "V6": "passed (devtools::test(filter='valid_dlw') = 27 PASS / 0 FAIL)",
+    "V7": "passed (devtools::test() full suite = 425 PASS / 0 FAIL / 2 SKIP, after 1 targeted fix)",
+    "V8": "passed (aux_changes_inf fires once in else branch, gated on inv_aux non-empty)"
+  },
+  "nextCommand": "none - plan complete"
 }

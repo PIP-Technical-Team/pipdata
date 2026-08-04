@@ -468,7 +468,8 @@
                     "id": "content-hash-reclean-trigger",
                     "title": "Use content_hash_dlw to detect DLW source changes in inv_to_process",
                     "description": "Enhance inv_to_process filtering to compare the previous master inventory's content_hash_dlw against the current DLW inventory's content_hash for each survey. If they differ, the DLW source data changed since last clean and the survey should be re-processed even if it was previously cleaned successfully. This avoids unnecessary re-cleaning of unchanged surveys while catching updated ones.",
-                    "status": "idea",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
                     "tags": [
                         "inventory",
                         "dlw",

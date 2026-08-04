@@ -16,9 +16,12 @@ A \code{data.table} of surveys still needing processing, or
 \code{NULL} if all surveys have already been cleaned.
 }
 \description{
-Anti-joins the current DLW inventory against the PIP master inventory
-to keep only surveys that have not yet been cleaned. If the master
-inventory cannot be loaded, all surveys are returned.
+Compares the current DLW inventory against the PIP master inventory by
+joining on \code{survey_id} and comparing \code{content_hash} (DLW) against
+\code{content_hash_dlw} (master). Surveys are kept when they are new to the
+master (no \code{content_hash_dlw}) or when their DLW content hash differs
+from the previously cleaned value. If the master inventory cannot be
+loaded, all surveys are returned.
 }
 \seealso{
 Other pd_process_data pipeline:

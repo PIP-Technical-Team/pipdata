@@ -29,9 +29,12 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 - Error handling uses custom `piperr` conditions for graceful recovery without silencing failures
 - `dplyr`, `tidyr`, and `tibble` are **not** in `DESCRIPTION Imports` — use `data.table` (`:=`, `rbindlist`, `[, .N, by]`) and `collapse` (`fcase`, `ftransform`, `fmutate`) instead. Do not add new dplyr/tidyr/tibble calls anywhere. `dlw_scan_and_validate.R` still has ~19 legacy dplyr calls (Phase 2 migration, tracked in roadmap as `dplyr-to-collapse-phase2`).
 - Always qualify `fcase()` and `fifelse()` with `data.table::` (i.e. `data.table::fcase(...)`) even when called inside `collapse::ftransform()` or `collapse::fmutate()`. This makes the dependency surface explicit and avoids ambiguity with similarly-named collapse functions.
-- The pipeline emits four canonical logmeta entry types, parsed by `log_report()` to build report sections. Their `info`/`error` field values are:
+- The pipeline emits nine canonical logmeta entry types, parsed by `log_report()` to build report sections. Their `info`/`error` field values are:
   - `"process_summary_inf"` — emitted by `pd_process_data()`
-  - `"aux_changes_inf"` — emitted by `valid_dlw_load()` when auxiliary files change
+  - `"aux_changes_inf"` — emitted by `valid_dlw_load()` when auxiliary files change and at least one survey is affected
+  - `"aux_no_changes_inf"` — emitted by `valid_dlw_load()` when no auxiliary file changes were detected at all
+  - `"aux_changes_no_surveys_inf"` — emitted by `valid_dlw_load()` when auxiliary files changed but no surveys in the inventory were affected
+  - `"surveys_to_clean_inf"` — emitted by `valid_dlw_load()` once after combining/deduplicating DLW-new and aux-changed surveys; includes counts of new, aux-changed, and total unique surveys
   - `"null_svys_inf"` — emitted by `update_pip_inventory()` when surveys fail (NULL)
   - `"inv_update_inf"` — emitted by `update_pip_inventory()` for inventory verification (info if all confirmed, error if any missing)
   - `"release_write_err"` — emitted by `update_pip_inventory()` when the release inventory write fails (error-level; includes `condition_msg`)

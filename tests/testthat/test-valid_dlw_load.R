@@ -1,9 +1,17 @@
 # Tests for valid_dlw_load.R helper functions
 #
 # Covers:
-#   inv_to_process()    — joyn::anti_join must not leak .joyn column
-#   valid_dlw_load()    — no duplicate survey_id in return value when a survey
-#                         appears in both new-survey and aux-changed sets
+#   filter_aux_inv()    — no max_year clamp; joyn::inner_join discards
+#                         unmatched years naturally
+#   valid_dlw_load()    — aux_no_changes_inf / aux_changes_no_surveys_inf /
+#                         aux_changes_inf logmeta discriminators; cli_abort
+#                         (class "piperr") when nothing to clean; no
+#                         duplicate survey_id in return value when a survey
+#                         appears in both new-survey and aux-changed sets;
+#                         surveys_to_clean_inf summary logmeta
+#   inv_to_process()    — content_hash vs content_hash_dlw comparison on
+#                         survey_id; joyn::left_join must not leak .joyn
+#                         column or duplicate rows on multi-pip_id surveys
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -48,12 +56,22 @@ make_dlw_inv <- function(
   )
 }
 
+# Minimal master-inventory fragment with survey_id + content_hash_dlw, the
+# only two columns inv_to_process() needs from the master inventory.
+make_master_hash <- function(survey_ids, content_hash_dlw) {
+  data.table::data.table(
+    survey_id = survey_ids,
+    content_hash_dlw = content_hash_dlw
+  )
+}
+
 # ---------------------------------------------------------------------------
 # inv_to_process: .joyn column must not be present in result
 # ---------------------------------------------------------------------------
 
 test_that("inv_to_process does not add .joyn column to result", {
-  # A single survey not in the master inventory — anti_join should keep it.
+  # A single survey not in the master inventory — the left_join leaves
+  # content_hash_dlw as NA, so the survey is kept.
   inv <- make_dlw_inv(
     "COL_2020_GEIH",
     country_codes = "COL",
@@ -61,12 +79,9 @@ test_that("inv_to_process does not add .joyn column to result", {
     survey_acronyms = "GEIH"
   )
 
-  # Master contains a DIFFERENT survey so our survey survives the anti_join.
-  master_no_col <- data.table::data.table(
-    country_code = "BRA",
-    surveyid_year = 2019L,
-    survey_acronym = "PNADC"
-  )
+  # Master contains a DIFFERENT survey so our survey has no matching
+  # content_hash_dlw (NA after the left_join) and is kept.
+  master_no_col <- make_master_hash("BRA_2019_PNADC", "h_9")
 
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) master_no_col,
@@ -78,10 +93,14 @@ test_that("inv_to_process does not add .joyn column to result", {
   expect_false(
     ".joyn" %in% names(result),
     info = paste0(
-      "joyn::anti_join in inv_to_process() must be called with ",
-      "reportvar = FALSE to avoid the .joyn column leaking into inv_to_clean ",
-      "and causing duplicate survey_id rows"
+      "joyn::left_join in inv_to_process() must be called with ",
+      "reportvar = FALSE to avoid the .joyn column leaking into the ",
+      "result and causing duplicate survey_id rows"
     )
+  )
+  expect_false(
+    "content_hash_dlw" %in% names(result),
+    info = "content_hash_dlw must be dropped from the result after comparison"
   )
 })
 
@@ -98,11 +117,11 @@ test_that("valid_dlw_load returns no duplicate survey_ids when survey appears in
     survey_acronyms = "GEIH"
   )
 
-  # Master without this survey → inv_to_process keeps it in inv_svy.
+  # Master without this survey → inv_to_process keeps it in inv_svy
+  # (content_hash_dlw is NA after the left_join).
   master_empty <- data.table::data.table(
-    country_code = character(0),
-    surveyid_year = integer(0),
-    survey_acronym = character(0)
+    survey_id = character(0),
+    content_hash_dlw = character(0)
   )
 
   # Aux change for COL 2020 → filter_aux_inv will add the same survey to inv_aux.
@@ -122,6 +141,8 @@ test_that("valid_dlw_load returns no duplicate survey_ids when survey appears in
     .package = "pipdata"
   )
 
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
   result <- valid_dlw_load(
     inv = inv,
     aux_measures = "cpi",
@@ -138,4 +159,317 @@ test_that("valid_dlw_load returns no duplicate survey_ids when survey appears in
     0L,
     info = "valid_dlw_load must return unique survey_id values (no duplicates)"
   )
+
+  # surveys_to_clean_inf summary logmeta must be present with correct counts.
+  log <- pipfun::log_get("pipdata_log")
+  summary_entries <- Filter(
+    function(x) !is.null(x) && identical(x$info, "surveys_to_clean_inf"),
+    log$logmeta
+  )
+  expect_length(summary_entries, 1L)
+  expect_equal(summary_entries[[1]]$n_total_unique, nrow(result))
+})
+
+# ---------------------------------------------------------------------------
+# filter_aux_inv: no max_year clamp -- join discards unmatched years
+# ---------------------------------------------------------------------------
+
+test_that("filter_aux_inv handles an aux-change year beyond the max inventory year without a clamp", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Aux change year (2099) is beyond max(inv$surveyid_year) == 2020. With the
+  # max_year clamp removed, joyn::inner_join must discard this naturally.
+  changes_aux <- list(
+    data.table::data.table(country_code = "COL", surveyid_year = 2099L)
+  )
+
+  result <- pipdata:::filter_aux_inv(inv, changes_aux)
+
+  expect_null(
+    result,
+    info = paste0(
+      "filter_aux_inv must rely on joyn::inner_join to discard unmatched ",
+      "years -- no max_year clamp should remain"
+    )
+  )
+})
+
+# ---------------------------------------------------------------------------
+# valid_dlw_load: aux-change logmeta discriminators (aux_no_changes_inf /
+# aux_changes_no_surveys_inf)
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load logs aux_no_changes_inf when valid_aux_load returns NULL", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  master_empty <- data.table::data.table(
+    survey_id = character(0),
+    content_hash_dlw = character(0)
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master_empty,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+  result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  log <- pipfun::log_get("pipdata_log")
+  info_values <- vapply(
+    log$logmeta,
+    function(x) if (is.null(x) || is.null(x$info)) NA_character_ else x$info,
+    character(1)
+  )
+
+  expect_true("aux_no_changes_inf" %in% info_values)
+  expect_false("aux_changes_no_surveys_inf" %in% info_values)
+  expect_false("aux_changes_inf" %in% info_values)
+})
+
+test_that("valid_dlw_load logs aux_changes_no_surveys_inf when aux changes affect no surveys", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  master_empty <- data.table::data.table(
+    survey_id = character(0),
+    content_hash_dlw = character(0)
+  )
+
+  # Aux change for a country/year combination absent from inv -- filter_aux_inv
+  # returns NULL for this measure, so ls_inv_aux is all-NULL.
+  cpi_changes <- list(
+    data.table::data.table(country_code = "BRA", surveyid_year = 2019L)
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master_empty,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) {
+      stats::setNames(list(cpi_changes), measure[[1]])
+    },
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+  result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  log <- pipfun::log_get("pipdata_log")
+  info_values <- vapply(
+    log$logmeta,
+    function(x) if (is.null(x) || is.null(x$info)) NA_character_ else x$info,
+    character(1)
+  )
+
+  expect_true("aux_changes_no_surveys_inf" %in% info_values)
+  expect_false("aux_no_changes_inf" %in% info_values)
+  expect_false("aux_changes_inf" %in% info_values)
+})
+
+# ---------------------------------------------------------------------------
+# valid_dlw_load: cli_abort (class "piperr") when nothing to clean
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load aborts with class piperr when nothing to clean", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Master already has this survey with the SAME content_hash -- already clean.
+  master_same <- make_master_hash("COL_2020_GEIH", "h_1")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master_same,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      force = FALSE,
+      verbose = FALSE
+    ),
+    class = "piperr"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# inv_to_process: content_hash vs content_hash_dlw comparison scenarios
+# ---------------------------------------------------------------------------
+
+test_that("inv_to_process keeps a survey absent from master (content_hash_dlw is NA)", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+  master <- make_master_hash("BRA_2019_PNADC", "h_9")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+
+  result <- pipdata:::inv_to_process(inv, verbose = FALSE)
+
+  expect_false(is.null(result))
+  expect_equal(nrow(result), 1L)
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+})
+
+test_that("inv_to_process excludes a survey whose content_hash matches content_hash_dlw", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+  # make_dlw_inv() sets content_hash = "h_1" for the first (only) row.
+  master <- make_master_hash("COL_2020_GEIH", "h_1")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+
+  result <- pipdata:::inv_to_process(inv, verbose = FALSE)
+
+  expect_null(
+    result,
+    info = "a survey whose content_hash is unchanged since last clean must be excluded"
+  )
+})
+
+test_that("inv_to_process keeps a survey whose content_hash differs from content_hash_dlw", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+  # content_hash is "h_1"; master's content_hash_dlw is different ("h_0").
+  master <- make_master_hash("COL_2020_GEIH", "h_0")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+
+  result <- pipdata:::inv_to_process(inv, verbose = FALSE)
+
+  expect_false(is.null(result))
+  expect_equal(nrow(result), 1L)
+  expect_false(
+    "content_hash_dlw" %in% names(result),
+    info = "content_hash_dlw must be dropped from the result after comparison"
+  )
+})
+
+test_that("inv_to_process does not fan out rows when master has multiple pip_id rows per survey_id", {
+  inv <- make_dlw_inv(
+    "BOL_2022_EH",
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  # Two pip_id rows (e.g. INC_ALL / INC_GPWG) for the same survey_id, both
+  # carrying the same content_hash_dlw, and different from the DLW's "h_1".
+  master_dup <- make_master_hash(
+    c("BOL_2022_EH", "BOL_2022_EH"),
+    c("h_0", "h_0")
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master_dup,
+    .package = "pipload"
+  )
+
+  result <- pipdata:::inv_to_process(inv, verbose = FALSE)
+
+  expect_false(is.null(result))
+  expect_equal(
+    nrow(result),
+    1L,
+    info = "joining on survey_id against a non-deduplicated master must not fan out matching rows"
+  )
+})
+
+test_that("inv_to_process returns all surveys when the master inventory cannot be loaded", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) stop("no master exists"),
+    .package = "pipload"
+  )
+
+  result <- pipdata:::inv_to_process(inv, verbose = FALSE)
+
+  expect_false(is.null(result))
+  expect_equal(nrow(result), nrow(inv))
+  expect_equal(result$survey_id, inv$survey_id)
+})
+
+test_that("inv_to_process result never carries a .joyn diagnostic column", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+  master <- make_master_hash("BRA_2019_PNADC", "h_9")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+
+  result <- pipdata:::inv_to_process(inv, verbose = FALSE)
+
+  expect_false(".joyn" %in% names(result))
 })

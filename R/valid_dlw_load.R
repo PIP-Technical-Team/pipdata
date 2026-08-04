@@ -26,9 +26,21 @@
 #' @return A `data.table` of surveys to process, or `NULL` if none.
 #'
 #' @details
-#' **Logging**: This function writes an `aux_changes_inf` entry to the `"pipdata_log"`
-#' when changes are detected in any of the requested auxiliary measures. The logmeta
-#' entry includes the measures that changed and the number of affected surveys.
+#' **Logging**: This function writes the following entries to the `"pipdata_log"`:
+#' - `aux_changes_inf` — changes were detected in any of the requested auxiliary
+#'   measures and at least one survey is affected. Includes the measures that
+#'   changed and the number/list of affected surveys.
+#' - `aux_no_changes_inf` — no auxiliary file changes were detected at all.
+#' - `aux_changes_no_surveys_inf` — auxiliary files changed but no surveys in
+#'   the inventory were affected by those changes.
+#' - `surveys_to_clean_inf` — emitted once after the DLW-new and aux-changed
+#'   inventories are combined and deduplicated; includes counts of new,
+#'   aux-changed, and total unique surveys, plus the aux measures that
+#'   triggered re-cleaning.
+#'
+#' When neither new DLW surveys nor auxiliary changes leave anything to
+#' process, the function aborts with `cli::cli_abort(class = "piperr")` rather
+#' than returning `NULL` silently.
 #'
 #' @family pd_process_data pipeline
 #' @export
@@ -269,9 +281,12 @@ fix_year_var <- function(dt) {
 
 #' Remove surveys already cleaned from the processing inventory
 #'
-#' Anti-joins the current DLW inventory against the PIP master inventory
-#' to keep only surveys that have not yet been cleaned. If the master
-#' inventory cannot be loaded, all surveys are returned.
+#' Compares the current DLW inventory against the PIP master inventory by
+#' joining on `survey_id` and comparing `content_hash` (DLW) against
+#' `content_hash_dlw` (master). Surveys are kept when they are new to the
+#' master (no `content_hash_dlw`) or when their DLW content hash differs
+#' from the previously cleaned value. If the master inventory cannot be
+#' loaded, all surveys are returned.
 #'
 #' @param inv A `data.table` of DLW surveys (latest versions).
 #' @param verbose Logical. Print progress messages.
@@ -285,49 +300,44 @@ inv_to_process <- function(
   inv,
   verbose = TRUE
 ) {
-  # Select valid surveys and compare to previous cleaning
-  inv_svy <- tryCatch(
-    expr = {
-      # Load master inventory to compare with previous cleaning
-      dt_master <- pipload::load_pip_master_inventory(verbose = verbose)
-
-      # Remove _dlw suffix from master inventory to be able to compare with current inventory
-      dlw_cols <- grep("_dlw$", names(dt_master), value = TRUE)
-      if (length(dlw_cols) > 0) {
-        new_names <- sub("_dlw$", "", dlw_cols)
-        data.table::setnames(dt_master, dlw_cols, new_names)
-      }
-
-      # keep only surveys not cleaned in previous version
-      key_inventory <- c("country_code", "surveyid_year", "survey_acronym") # Temporary fix until we have create keys in the inventory
-
-      # if (!all(key_inventory %in% names(inv))) {
-      #   cli::cli_abort(
-      #     "The inventory should contain the following variables: country_code, surveyid_year and survey_acronym"
-      #   )
-      # }
-
-      inv_svy <- inv |>
-        joyn::anti_join(
-          dt_master,
-          by = key_inventory,
-          verbose = FALSE,
-          reportvar = FALSE
-        )
-
-      inv_svy
-    },
+  # Load master inventory to compare with previous cleaning
+  dt_master <- tryCatch(
+    pipload::load_pip_master_inventory(verbose = verbose),
     error = function(e) {
       if (verbose) {
         cli::cli_alert_warning(
-          "Could not load PIP master inventory. Returning all valid surveys without comparing to previous cleaning."
+          "Could not load PIP master inventory. Processing all surveys."
         )
       }
-      return(inv)
+      return(NULL)
     }
   )
 
-  if (inv_svy[, .N] == 0) {
+  if (is.null(dt_master)) return(inv)
+
+  # Deduplicate by survey_id: content_hash_dlw is expected to be identical
+  # across pip_id splits of the same survey_id, but the join must not rely
+  # on that being true for row cardinality -- dedup first, and let
+  # relationship = "many-to-one" raise if it is ever violated.
+  dt_master_hash <- collapse::funique(dt_master[, .(survey_id, content_hash_dlw)])
+
+  # Join on survey_id to compare content hashes
+  inv_compare <- joyn::left_join(
+    inv,
+    dt_master_hash,
+    by = "survey_id",
+    relationship = "many-to-one",
+    verbose = FALSE,
+    reportvar = FALSE
+  )
+
+  # Keep: new surveys (NA hash in master) or surveys whose DLW content changed
+  inv_changed <- inv_compare[
+    is.na(content_hash_dlw) | content_hash != content_hash_dlw
+  ]
+  inv_changed[, content_hash_dlw := NULL]
+
+  if (nrow(inv_changed) == 0) {
     if (verbose) {
       cli::cli_alert_warning(
         "All surveys in the inventory have been cleaned in previous versions. No surveys to process."
@@ -336,5 +346,5 @@ inv_to_process <- function(
     return(NULL)
   }
 
-  return(inv_svy)
+  return(inv_changed)
 }

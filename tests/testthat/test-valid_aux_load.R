@@ -115,8 +115,15 @@ test_that("valid_dlw_load(verbose=FALSE) propagates verbose=FALSE to valid_aux_l
     .package = "pipdata"
   )
 
+  # With no aux changes and no surveys to process (inv_to_process mocked to
+  # NULL, last_ver_inv mocked to empty), valid_dlw_load() now aborts
+  # (class "piperr") instead of silently returning NULL -- verbose is still
+  # propagated to valid_aux_load() before the abort is raised.
   suppressMessages(
-    valid_dlw_load(inv = fake_inv, verbose = FALSE)
+    expect_error(
+      valid_dlw_load(inv = fake_inv, verbose = FALSE),
+      class = "piperr"
+    )
   )
 
   expect_true(

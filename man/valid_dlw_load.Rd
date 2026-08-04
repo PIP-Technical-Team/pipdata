@@ -47,9 +47,23 @@ master inventory via \code{inv_to_process()}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
 
-\strong{Logging}: This function writes an \code{aux_changes_inf} entry to the \code{"pipdata_log"}
-when changes are detected in any of the requested auxiliary measures. The logmeta
-entry includes the measures that changed and the number of affected surveys.
+\strong{Logging}: This function writes the following entries to the \code{"pipdata_log"}:
+\itemize{
+\item \code{aux_changes_inf} — changes were detected in any of the requested auxiliary
+measures and at least one survey is affected. Includes the measures that
+changed and the number/list of affected surveys.
+\item \code{aux_no_changes_inf} — no auxiliary file changes were detected at all.
+\item \code{aux_changes_no_surveys_inf} — auxiliary files changed but no surveys in
+the inventory were affected by those changes.
+\item \code{surveys_to_clean_inf} — emitted once after the DLW-new and aux-changed
+inventories are combined and deduplicated; includes counts of new,
+aux-changed, and total unique surveys, plus the aux measures that
+triggered re-cleaning.
+}
+
+When neither new DLW surveys nor auxiliary changes leave anything to
+process, the function aborts with \code{cli::cli_abort(class = "piperr")} rather
+than returning \code{NULL} silently.
 }
 \seealso{
 Other pd_process_data pipeline:
