@@ -1,7 +1,7 @@
 ---
 plan: ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md"
 started: 2026-08-03
-status: in-progress
+status: complete
 ---
 
 # Work Report: Vignettes for pipeline wrapper, deflation, and logging functions
@@ -203,3 +203,28 @@ index with three groups: "Pipeline wrappers" (`pipdata_dlw_process`,
 or, as fallback, `yaml::read_yaml("_pkgdown.yml")` for syntax-only
 validation — to be run by the user, since R is unavailable in this
 environment.
+
+### Step 6: Final validation pass
+
+User ran `devtools::document()` — regenerated `man/pd_process_data.Rd` and
+`man/log_report.Rd` confirmed (by direct read) to exactly match the prior
+manual patches (`inv = NULL` / `log = NULL` defaults, updated `@param`
+descriptions, simplified `@examples`), including a `\seealso` "Family:
+pd_process_data pipeline" block that roxygen2's family-tag cross-linking
+adds automatically. **V3: PASS** (docs regenerate cleanly with no
+pkgdown-related roxygen errors).
+
+User ran `devtools::check()` — 3 NOTEs, all pre-existing and unrelated to
+this documentation-only change (none touch `R/pd_process_data.R`,
+`R/log_report.R`, `vignettes/`, or `_pkgdown.yml`):
+
+- "unable to verify current time" (future file timestamps) — environment
+  clock artifact.
+- `wbpip:::md_clean_data` unexported `:::` import — pre-existing in
+  unrelated code.
+- `object.size` undefined global in `save_pip_data()` — pre-existing,
+  unrelated function.
+
+**V4: PASS** — no new NOTEs/WARNINGs attributable to this change.
+
+All verification surface items (V1-V8) now pass. Plan complete.

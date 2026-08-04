@@ -1,14 +1,14 @@
 ---
 date: 2026-08-03
 title: "Vignettes for pipeline wrapper, deflation, and logging functions"
-status: active
+status: complete
 scope: "Standard"
 brainstorm: ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md"
 language: "R"
 estimated-effort: "medium"
 deviation-policy: "ask"
 execution-report: ".cg-docs/work-reports/2026-08-03-pipeline-wrapper-vignettes.md"
-current-phase: 1
+current-phase: 2
 tags: [documentation, vignettes, pkgdown, pipeline, deflation, logging]
 ---
 
