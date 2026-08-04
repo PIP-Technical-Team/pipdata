@@ -122,3 +122,4 @@ entirely — it is not needed when `version_id` is stored correctly.
 - `R/pd_deflation.R` — `.load_deflation_aux()` updated to use `version_id_metadata`
 - `.cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md`
 - `.cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md`
+- `.cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md` — this fix is what made the archived 2026-05-04 doc's "no version_id_* columns" claim stale; cautionary tale for auditing solution docs against current code

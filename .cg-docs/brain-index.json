@@ -2956,6 +2956,37 @@
       ]
     },
     {
+      "date": "2026-08-04",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md",
+      "slug": "2026-08-04-verify-subagent-audit-claims-independently",
+      "status": "",
+      "summary": "During a `/cg-compound-refresh` run auditing all 31 `.cg-docs/solutions/*.md` files for drift, 4 parallel `Explore` subagents were dispatched (one per category group) to compare each solution doc's claims against current code. Two of their conclusions were wrong: 1. **False \"CRITICAL\" bug claim**: A subagent reported that `R/pd_deflation.R` has a critical bug because it uses `version_id_metadata`, which a 2026-05-04 solution doc claimed \"does not exist\" in the master inventory schema. Taken at face value, this would have led to \"fix the code\" — the wrong remediation. 2. **False schema-compliance claim**: A different subagent flagged 13 solution files as \"missing the required `status`...",
+      "tags": [
+        "subagent",
+        "explore-agent",
+        "verification",
+        "drift-detection",
+        "compound-refresh",
+        "hallucination",
+        "false-positive",
+        "knowledge-base-audit"
+      ],
+      "title": "Verify subagent audit claims independently before trusting severity or schema conclusions",
+      "top_keywords": [
+        "status",
+        "severity",
+        "subagent",
+        "2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md",
+        "cg-skill-compound-docs",
+        "version_id_*",
+        ".github/skills/cg-skill-compound-docs/references/solution-schema.md",
+        "solution-schema.md",
+        "schema",
+        "claims"
+      ]
+    },
+    {
       "date": "2026-04-27",
       "entity_type": "strategy",
       "path": ".cg-docs/strategy/2026-04-27-code-quality-focus.md",
@@ -2978,7 +3009,7 @@
       ]
     }
   ],
-  "entity_count": 102,
+  "entity_count": 103,
   "generated": "2026-08-04",
   "schema_version": "0.2.0",
   "topic_count": 2,

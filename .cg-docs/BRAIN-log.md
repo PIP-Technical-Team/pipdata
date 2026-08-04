@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-04 · 102 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-04 · 103 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -36,6 +36,11 @@ _Generated 2026-08-04 · 102 artifacts (newest first) + 0 roadmap features_
   > **Review depth**: standard **Files reviewed**: 3 (`R/update_pip_inventory.R`, `tests/testthat/test-update_pip_invento…
 - **[2026-06-18-yaml-recode-dictionary](.cg-docs/plans/2026-06-18-yaml-recode-dictionary.md)** · `plan` · _done_ · `—`
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
+
+## 2026-08-04
+
+- **[Verify subagent audit claims independently before trusting severity or schema conclusions](.cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md)** · `solution` · _—_ · `2026-08-04`
+  > During a `/cg-compound-refresh` run auditing all 31 `.cg-docs/solutions/*.md` files for drift, 4 parallel `Explore` s…
 
 ## 2026-08-03
 
