@@ -10,6 +10,14 @@ test-written: "yes"
 fix-confirmed: "yes"
 ---
 
+> **UPDATED 2026-08-04**: `format_vrs()` no longer exists as a separate named
+> function — its logic (capturing `ventry$version_id` from the top-level
+> `pip_write()` return) has been inlined directly into
+> `R/build_pip_inventory.R` (see the "Column provenance" section of its
+> roxygen header: `version_id_data`/`version_id_metadata` from the `"pip"`/
+> `"pip_meta"` catalogs). The version_id-capture principle described below is
+> unchanged, just relocated.
+
 # Store version_id from pip_write() return in master inventory
 
 ## Problem

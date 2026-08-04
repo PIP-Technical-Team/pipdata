@@ -375,8 +375,8 @@
                 {
                     "id": "new-orchestration-script",
                     "title": "Document pipeline orchestration via vignettes (superseded orchestration-script idea)",
-                    "description": "Superseded 2026-08-03: originally proposed as a new orchestration script to replace Pipdata_script.R. Decided instead to document the orchestration architecture and end-to-end wrapper sequence (pipdata_dlw_process, pd_process_data, deflation, log_report) via two narrative vignettes rather than writing a new script. See .cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md. Fill vignettes/articles/PIP-data-pipeline.Rmd with the orchestration/architecture overview and rewrite vignettes/articles/Processing-Data.Rmd around pd_process_data + deflation + log_report.",
-                    "status": "active",
+                    "description": "Superseded 2026-08-03: originally proposed as a new orchestration script to replace Pipdata_script.R. Decided instead to document the orchestration architecture and end-to-end wrapper sequence (pipdata_dlw_process, pd_process_data, deflation, log_report) via two narrative vignettes rather than writing a new script. See .cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md. Fill vignettes/articles/PIP-data-pipeline.Rmd with the orchestration/architecture overview and rewrite vignettes/articles/Processing-Data.Rmd around pd_process_data + deflation + log_report. Completed 2026-08-04: all three vignettes (PIP-data-pipeline.Rmd, Processing-Data.Rmd, and the mid-execution addition Validating-Data.Rmd) finished, _pkgdown.yml updated, verification surface V1-V8 passed. See .cg-docs/work-reports/2026-08-03-pipeline-wrapper-vignettes.md.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
                     "tags": [
                         "pipeline",

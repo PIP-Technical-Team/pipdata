@@ -8,11 +8,18 @@ root-cause: "Columns were only added to a data.table inside a guard block (if !i
 severity: "P2"
 ---
 
+> **UPDATED 2026-08-04**: `update_pip_inventory()` has been renamed/rewritten
+> as `build_pip_inventory()` (`R/build_pip_inventory.R`). The unconditional-init
+> pattern described below is preserved there — see lines ~368-372
+> (`first_release_version_id`/`latest_release_version_id` initialised outside
+> the `is.na(release_vid)` guard). References to `update_pip_inventory()`
+> below are historical; read as `build_pip_inventory()` for current code.
+
 # Conditional column initialization produces inconsistent data.table schema
 
 ## Problem
 
-`update_pip_inventory()` populates two new columns on the master inventory
+`update_pip_inventory()` (now `build_pip_inventory()`) populates two new columns on the master inventory
 (`first_release_version_id`, `latest_release_version_id`). The column
 initialization (`dt[, col := NA_character_]`) and the population logic were
 both inside an `if (!is.na(release_vid))` guard.

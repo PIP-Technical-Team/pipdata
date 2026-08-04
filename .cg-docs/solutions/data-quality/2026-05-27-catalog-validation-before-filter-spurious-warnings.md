@@ -75,4 +75,3 @@ cat_data <- cat_data[pip_id %in% target_ids]
 ## Related
 
 - `.cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md`
-- `.cg-docs/plans/2026-05-20-inventory-architecture-refactor.md` — P2.1 finding

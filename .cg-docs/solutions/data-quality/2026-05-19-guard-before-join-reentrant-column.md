@@ -8,6 +8,16 @@ root-cause: "Functions that load existing state from disk and later re-derive co
 severity: "P2"
 ---
 
+> **UPDATED 2026-08-04**: `update_pip_inventory()` / `R/update_pip_inventory.R`
+> have been replaced by `build_pip_inventory()` / `R/build_pip_inventory.R`.
+> That rewrite goes further than a rename: `build_pip_inventory()` no longer
+> computes `reporting_level` at all (it's dropped as a legacy column; see
+> `.cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md`
+> for the update note). The "Concrete instance" below is therefore now
+> illustrative-only of the general reentrant-column pattern, not a live code
+> path — the general guard-before-join principle remains valid for any new
+> load-then-recompute function.
+
 # Guard before join: dropping reentrant columns in load-then-recompute functions
 
 ## Problem

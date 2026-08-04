@@ -11,6 +11,20 @@ test-written: "yes"
 fix-confirmed: "yes"
 ---
 
+> **UPDATED 2026-08-04**: `update_pip_inventory()` has been replaced by
+> `build_pip_inventory()` (`R/build_pip_inventory.R`), which changes this
+> further than a simple rename: `build_pip_inventory()` no longer computes
+> `reporting_level` at all — it is treated as a legacy column and explicitly
+> **dropped** from `old_inv` before the upsert (see the `legacy_cols` list in
+> `build_pip_inventory()`). Enrichment with `reporting_level` is now opt-in,
+> done by callers via `pipload::pip_inv_enrich(inv, fields = "reporting_level")`
+> in the `pipload` package. The specific duplicate-column collision described
+> below therefore cannot recur inside `pipdata` today, but the general
+> "guard before joining a column the target may already carry" pattern (see
+> `.cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md`)
+> remains valid and worth checking if `pipload::pip_inv_enrich()` performs a
+> similar join.
+
 # reporting_level duplicate column on re-run of pd_process_data
 
 ## Symptom
