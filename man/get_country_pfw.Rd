@@ -2,12 +2,12 @@
 % Please edit documentation in R/get_country_pfw.R
 \name{get_country_pfw}
 \alias{get_country_pfw}
-\title{GEt Country Price framework  data based on PFW and DLW data info}
+\title{Get Country Price framework  data based on PFW and DLW data info}
 \usage{
-get_country_pfw(df, pfw)
+get_country_pfw(dt, pfw)
 }
 \arguments{
-\item{df}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
+\item{dt}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
 
 \item{pfw}{data frame with Price framework data, loaded with
 \code{pipload::pip_load_aux("pfw")}}
@@ -16,10 +16,16 @@ get_country_pfw(df, pfw)
 list of data.tables
 }
 \description{
-GEt Country Price framework  data based on PFW and DLW data info
+Get Country Price framework  data based on PFW and DLW data info
 }
 \examples{
+\dontrun{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 pfw <- pipload::pip_load_aux("pfw")
-gd   <- pipload::pip_load_dlw("CHN", 2015)
+gd   <- pipload::pip_load_dlw("PHL", 2012)
+gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
 cpfw <- get_country_pfw(gd, pfw)
+}
 }

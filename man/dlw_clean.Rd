@@ -2,12 +2,22 @@
 % Please edit documentation in R/pd_dlw_clean.R
 \name{dlw_clean}
 \alias{dlw_clean}
-\title{Clean data from datalibweb structure (lower level, S2 methods)}
+\title{Clean data from datalibweb structure (lower level, S3 methods)}
 \usage{
-dlw_clean(df, ...)
+dlw_clean(
+  df,
+  verbose = getOption("pipdata.verbose", TRUE),
+  recode_spec = NULL,
+  ...
+)
 }
 \arguments{
-\item{df}{dataframe loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{data.table}
+
+\item{verbose}{Logical. Print progress messages.
+Default: \code{getOption("pipdata.verbose", TRUE)}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (see \code{\link[=pd_dlw_clean]{pd_dlw_clean()}}).}
 
 \item{...}{other parameters}
 }
@@ -15,15 +25,5 @@ dlw_clean(df, ...)
 data.table
 }
 \description{
-PD: process data. Source: datalibweb. Action: Clean
-}
-\examples{
-gd  <- pipload::pip_load_dlw("CHN", 2015)
-pfw <- pipload::pip_load_aux("pfw")
-cpfw <- get_country_pfw(gd, pfw)
-dlw_clean(gd, cpfw[[1]])
-
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-cpfw <- get_country_pfw(md, pfw)
-dlw_clean(md, cpfw[[1]])
+Clean data from datalibweb structure (lower level, S3 methods)
 }

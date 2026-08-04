@@ -7,3 +7,12 @@
 ^pkgdown$
 ^\.github$
 ^vignettes/articles$
+^\.cg-docs$
+^\.vscode$
+^Pipdata_script\.R$
+^compound-gpid\.context\.md$
+^compound-gpid\.local\.md$
+^compound-gpid\.md$
+^log_reports$
+^old_files$
+^roadmap\.json$

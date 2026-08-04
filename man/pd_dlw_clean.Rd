@@ -4,15 +4,22 @@
 \alias{pd_dlw_clean}
 \title{Clean data from datalibweb structure (High level)}
 \usage{
-pd_dlw_clean(lf, cpfw)
+pd_dlw_clean(
+  ls,
+  verbose = getOption("pipdata.verbose", TRUE),
+  recode_spec = NULL
+)
 }
 \arguments{
-\item{lf}{List of data frames or single dataframe. In pipeline, the data
-frames come from \code{pd_split_alt_welfare()}}
+\item{ls}{List of data frames or single dataframe.}
 
-\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
-It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
-\code{pipload::pip_load_aux("pfw")}}
+\item{verbose}{Logical. Print progress messages.
+Default: \code{getOption("pipdata.verbose", TRUE)}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (as returned by
+\code{\link[=sync_recode_spec]{sync_recode_spec()}}) threaded down to \code{\link[=apply_recode_spec]{apply_recode_spec()}} so the spec is
+read once upstream instead of once per survey. Default \code{NULL} (each survey
+reads the spec from stamp).}
 }
 \value{
 list with data.tables
@@ -21,10 +28,22 @@ list with data.tables
 Clean data from datalibweb structure (High level)
 }
 \examples{
+\dontrun{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 pfw  <- pipload::pip_load_aux("pfw")
-md   <- pipload::pip_load_dlw(country = "PHL", 2012)
-cpfw <- get_country_pfw(md, pfw)
-lf   <- pd_split_alt_welfare(md, cpfw)
-l    <- pd_dlw_clean(lf, cpfw)
-names(l)
+
+gd    <- pipload::pip_load_dlw("CHN", 2015)
+gd  <- survey_id_to_attr(gd, unique(gd$survey_id))
+ls    <- pd_cpfw_merge(gd, pfw)
+lf    <- pd_dlw_clean(ls)
+names(lf)
+
+md    <- pipload::pip_load_dlw(country = "PHL", 2012)
+md  <- survey_id_to_attr(md, unique(md$survey_id))
+ls    <- pd_cpfw_merge(md, pfw)
+lf    <- pd_dlw_clean(ls)
+names(lf)
+}
 }

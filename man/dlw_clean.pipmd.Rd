@@ -4,14 +4,20 @@
 \alias{dlw_clean.pipmd}
 \title{Clean micro data from Datalibweb original file}
 \usage{
-\method{dlw_clean}{pipmd}(df, cpfw, ...)
+\method{dlw_clean}{pipmd}(
+  df,
+  verbose = getOption("pipdata.verbose", TRUE),
+  recode_spec = NULL,
+  ...
+)
 }
 \arguments{
-\item{df}{data frame with micro data, loaded with \code{pipload::pip_load_dlw()}}
+\item{df}{data frame with micro data,}
 
-\item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
-It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
-\code{pipload::pip_load_aux("pfw")}}
+\item{verbose}{Logical. Print progress messages.
+Default: \code{getOption("pipdata.verbose", TRUE)}.}
+
+\item{recode_spec}{Optional pre-resolved recode spec (see \code{\link[=pd_dlw_clean]{pd_dlw_clean()}}).}
 
 \item{...}{other parameters}
 }
@@ -20,10 +26,4 @@ data.table
 }
 \description{
 Clean micro data from Datalibweb original file
-}
-\examples{
-pfw <- pipload::pip_load_aux("pfw")
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-cpfw <- get_country_pfw(md, pfw)
-dlw_clean(md, cpfw[[1]])
 }

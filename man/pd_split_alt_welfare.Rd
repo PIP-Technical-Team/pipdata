@@ -4,10 +4,10 @@
 \alias{pd_split_alt_welfare}
 \title{Split data based on alternative welfare}
 \usage{
-pd_split_alt_welfare(df, cpfw)
+pd_split_alt_welfare(dt, cpfw)
 }
 \arguments{
-\item{df}{data frame with group data, loaded with \code{pipload::pip_load_dlw()}}
+\item{dt}{data table loaded with \code{pipload::pip_load_dlw()}}
 
 \item{cpfw}{data frame with Price framework data for country/survey in \code{df}.
 It is loaded with \code{get_country_pfw(df, pfw)}. \code{pfw} is loaded in
@@ -21,8 +21,14 @@ Split data into two dataframes when there is alternative welfare in the same
 survey
 }
 \examples{
+\dontrun{
+release <- "20250203"
+pipfun::setup_working_release(release)
+
 md   <- pipload::pip_load_dlw(country = "PHL", 2012)
+md  <- survey_id_to_attr(md, unique(md$survey_id))
 pfw  <- pipload::pip_load_aux("pfw")
 cpfw <- get_country_pfw(md, pfw)
-pd_split_alt_welfare(md, cpfw)
+df   <- pd_split_alt_welfare(md, cpfw)
+}
 }

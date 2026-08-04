@@ -1,81 +1,14 @@
 #' Clean data for wbpip compatibility (high level)
 #'
 #' @param lf list of dataframe returned by `pd_dlw_clean()`
-#' @inheritParams pd_dlw_clean
 #'
 #' @return list with data.tables
 #' @export
-#'
-#' @examples
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' pfw  <- pipload::pip_load_aux("pfw")
-#' cpfw <- get_country_pfw(md, pfw)
-#' md   <- pd_split_alt_welfare(md, cpfw)
-#' x    <- pd_dlw_clean(md, cpfw)
-#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
-#' summary(y$weight)
-#'
-#'
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' gd   <- pd_split_alt_welfare(gd, cpfw)
-#' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
-#' y[, unique(area)]
-#'
-#' gd   <- pipload::pip_load_dlw("ARE", 2019)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' gd   <- pd_split_alt_welfare(gd, cpfw)
-#' x <- pd_dlw_clean(gd, cpfw)
-#' y <- pd_wbpip_clean(lf = x, cpfw = cpfw)[[1]]
-#' y[, unique(area)]
-pd_wbpip_clean <- function(lf, cpfw) {
-
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+pd_wbpip_clean <- function(lf) {
 
   # Computations -------
-  rl <-
-    tryCatch(
-      expr = {
-        # Your code...
-        if (inherits(lf, "list")) {
-          y <- purrr::map(.x = lf, .f = wbpip_clean)
-        } else {
-          y <- wbpip_clean(lf)
-          y <- list(y)
-        }
 
-        names(y) <- sapply(cpfw, `[[`, "cache_id")
-        y
-      }, # end of expr section
-
-      error = function(e) {
-        glue("Error: {e$message}")
-      }, # end of error section
-
-      warning = function(w) {
-        glue("Warning: {w$message}")
-      }, # end of warning section
-
-      finally = {
-        # Do this at the end before quitting the tryCatch structure...
-      } # end of finally section
-
-    ) # End of trycatch
+  rl <- purrr::map(.x = lf, .f = wbpip_clean)
 
   # Return -------------
   return(rl)
@@ -89,30 +22,6 @@ pd_wbpip_clean <- function(lf, cpfw) {
 #'
 #' @return dataframe
 #' @export
-#'
-#' @examples
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' pfw <- pipload::pip_load_aux("pfw")
-#' cpfw <- get_country_pfw(md, pfw)
-#' md   <- pd_split_alt_welfare(md, cpfw)
-#' x <- pd_dlw_clean(md, cpfw)
-#' y <- wbpip_clean(x[[1]])
-#' summary(y$weight)
-#'
-#'
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' gd   <- pd_split_alt_welfare(gd, cpfw)
-#' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- wbpip_clean(x[[1]])
-#' y[, unique(area)]
-#'
-#' gd   <- pipload::pip_load_dlw("ARE", 2019)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' gd   <- pd_split_alt_welfare(gd, cpfw)
-#' x <- pd_dlw_clean(gd, cpfw)
-#' y <- wbpip_clean(x[[1]])
-#' y[, unique(area)]
 wbpip_clean <- function(df, ...) {
   UseMethod("wbpip_clean")
 }
@@ -125,45 +34,20 @@ wbpip_clean <- function(df, ...) {
 #'
 #' @return data.table
 #' @export
-#'
-#' @examples
-#' md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-#' pfw <- pipload::pip_load_aux("pfw")
-#' cpfw <- get_country_pfw(md, pfw)
-#' md   <- pd_split_alt_welfare(md, cpfw)
-#' x <- pd_dlw_clean(md, cpfw)
-#' y <- wbpip_clean(x[[1]])
-#' summary(y$weight)
 wbpip_clean.pipmd <- function(df, ...) {
 
-  # on.exit ------------
-  on.exit({
-
-  })
-
-  # Defenses -----------
-  stopifnot( exprs = {
-
-    }
-  )
-
-  # Early returns ------
-  if (FALSE) {
-    return()
-  }
+  md <- copy(df)
 
   # Computations -------
-  df <- wbpip:::md_clean_data(
-    df,
+  md <- wbpip:::md_clean_data(
+    md,
     welfare = "welfare",
     weight = "weight",
     quiet = TRUE
   )$data
 
-  df <- pipload::as_pipmd(df)
-
   # Return -------------
-  return(invisible(df))
+  return(md)
 
 }
 
@@ -173,65 +57,85 @@ wbpip_clean.pipmd <- function(df, ...) {
 #'
 #' @return data.table
 #' @export
-#'
-#' @examples
-#' pfw  <- pipload::pip_load_aux("pfw")
-#' gd   <- pipload::pip_load_dlw("CHN", 2015)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' gd   <- pd_split_alt_welfare(gd, cpfw)
-#' x    <- pd_dlw_clean(gd, cpfw)
-#' y    <- wbpip_clean(x[[1]])
-#' y[, unique(area)]
-#'
-#' gd   <- pipload::pip_load_dlw("ARE", 2019)
-#' cpfw <- get_country_pfw(gd, pfw)
-#' gd   <- pd_split_alt_welfare(gd, cpfw)
-#' x <- pd_dlw_clean(gd, cpfw)
-#' y <- wbpip_clean(x[[1]])
-#' y[, unique(area)]
 wbpip_clean.pipgd <- function(df, ...) {
 
-  # on.exit ------------
-  on.exit({
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Select gd_type --------
 
-  })
+  gd_type <- get_gd_type(df)
 
-  # Defenses -----------
-  stopifnot( exprs = {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Clean per area --------
 
-    }
-  )
+  dt <- area_gd_clean(df, gd_type)
 
-  # Early returns ------
-  if (FALSE) {
-    return()
+  # Return -------------
+  return(dt)
+
+}
+
+
+#' Find group data type for cleaning
+#'
+#' @param df data.table
+#'
+#' @return data.table
+#' @keywords internal
+get_gd_type <- function(df) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  gd_type <- attributes(df)$gd_type
+
+  if (is.null(gd_type)) {
+    # piperr(message = "There is no gd_type in pfw",
+    #        name = "gd_type_miss")
+
+    # survey_id <- pd_env_get("log_survey_id")
+    #
+    cli::cli_abort(
+      message = "There is no gd_type variable",
+      class = c("piperr", "gd_type_miss")
+    )
   }
 
-  # Computations -------
-  gd_type <- df[, unique(gd_type)]
   gd_type <- as.numeric(sub("T0", "", gd_type))
 
-  areas <- df[, unique(area)]
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(gd_type)
 
-  dl <- lapply(areas, function(a) {
-    dtt <- df[area == a]
+}
 
-    dtt <- wbpip:::gd_clean_data(
-      dtt,
+#' Clean group data per area
+#'
+#' @param df data.frame
+#' @param gd_type group data type
+#'
+#' @return data.table
+#' @keywords internal
+area_gd_clean <- function(df, gd_type) {
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  dt <- df|>
+    collapse::fgroup_by(area)|>
+    collapse::fmutate(wbpip::gd_clean_data(.data,
       welfare = "welfare",
       population = "weight",
       gd_type = gd_type,
       quiet = TRUE
-    )
-  })
+    ))|>
+    collapse::fungroup()
 
-  ndf <- rbindlist(l = dl,
-                   use.names = TRUE,
-                   fill = TRUE)
-  ndf <- pipload::as_pipgd(ndf)
-
-
-  # Return -------------
-  return(ndf)
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(dt)
 
 }

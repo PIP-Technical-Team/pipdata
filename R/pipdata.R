@@ -5,19 +5,17 @@
 #' @section pipdata functions:
 #' The function in pipdata...
 #'
-#' @docType package
-#' @name pipdata
-#' @importFrom pipload pip_create_globals add_gls_to_env
-#' @import data.table
+#' @rawNamespace import(collapse, except = fdroplevels)
+#' @rawNamespace import(data.table, except = fdroplevels)
 #' @importFrom glue glue
+#' @keywords internal
+"_PACKAGE"
 
 # Make sure data.table knows we know we're using it
 .datatable.aware = TRUE
 
 # Prevent R CMD check from complaining about the use of pipe expressions
 # standard data.table variables
-if (getRversion() >= "2.15.1")
-  utils::globalVariables(c(".", ".I", ".N", ".SD"), utils::packageName())
 
 if (getRversion() >= "2.15.1") {
   utils::globalVariables(
@@ -84,7 +82,13 @@ if (getRversion() >= "2.15.1") {
       "release_version",
       "weighted.mean",
       "welfare_lcu",
-      "wght"
+      "wght",
+      "..c_col",
+      "..nm",
+      "..vars",
+      "label",
+      "file_hash",
+      "pipeline_version"
     ),
     package = utils::packageName()
   )

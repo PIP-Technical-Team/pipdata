@@ -1,0 +1,3121 @@
+{
+  "edge_count": 27,
+  "edges": [
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
+      "target": ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-04-28-unified-logging.md",
+      "target": ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-04-29-remove-date-valid-filter.md",
+      "target": ".cg-docs/brainstorms/2026-04-29-date-valid-vintage.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-04-29-unified-logging-v2.md",
+      "target": ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md",
+      "target": ".cg-docs/brainstorms/2026-05-06-subnational-deflation-area-resolution.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+      "target": ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
+      "target": ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-27-dplyr-to-collapse-phase1-review.md",
+      "target": ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-29-remove-date-valid-filter-light-review.md",
+      "target": ".cg-docs/plans/2026-04-29-remove-date-valid-filter.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-29-remove-date-valid-filter-review.md",
+      "target": ".cg-docs/plans/2026-04-29-remove-date-valid-filter.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-30-archive-legacy-dlw-review-2.md",
+      "target": ".cg-docs/plans/2026-04-30-archive-legacy-dlw.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-30-archive-legacy-dlw-review.md",
+      "target": ".cg-docs/plans/2026-04-30-archive-legacy-dlw.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-30-env-setup-v2-review.md",
+      "target": ".cg-docs/plans/2026-04-30-env-setup-v2.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-04-integrate-deflation-plan-review.md",
+      "target": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-04-integrate-deflation-review-2.md",
+      "target": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-05-04-integrate-deflation-review-2.md",
+      "target": ".cg-docs/reviews/2026-05-04-integrate-deflation-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-04-integrate-deflation-review.md",
+      "target": "2026-05-04-integrate-deflation",
+      "target_missing": true
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-05-07-get-country-pfw-verify-review.md",
+      "target": ".cg-docs/reviews/2026-05-07-get-country-pfw-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md",
+      "target": ".cg-docs/plans/2026-05-08-verbose-option-propagation.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-18-ppp-sort-attribute-review.md",
+      "target": ".cg-docs/plans/2026-05-18-ppp-sort-attribute.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-19-fix-inventory-save-reporting-level-review.md",
+      "target": ".cg-docs/plans/2026-05-19-fix-inventory-save-reporting-level.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-19-fix-reporting-level-duplication-review.md",
+      "target": ".cg-docs/plans/2026-05-19-fix-reporting-level-duplication.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-05-20-inventory-architecture-refactor-review.md",
+      "target": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
+      "target": ".cg-docs/plans/2026-04-28-unified-logging.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md",
+      "target": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target_missing": false
+    }
+  ],
+  "entities": [
+    {
+      "date": "2026-04-27",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
+      "slug": "2026-04-27-dplyr-to-collapse-dt",
+      "status": "decided",
+      "summary": "dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phantom dependencies. The project style guide mandates collapse for statistics and data.table for manipulation. Some files (e.g., `pd_wbpip_clean.R`, `update_pip_inventory.R`) already use collapse/data.table correctly.",
+      "tags": [
+        "refactoring",
+        "performance",
+        "dependencies",
+        "dplyr",
+        "collapse",
+        "data.table"
+      ],
+      "title": "Migrate dplyr calls to collapse/data.table (Phase 1: 3 files)",
+      "top_keywords": [
+        "pipdata_validation_report.r",
+        "pd_dlw_clean.r",
+        "pipdata_validate_gmd.r",
+        "dlw_scan_and_validate.r",
+        "approach",
+        "migrate",
+        "dplyr",
+        "collapse",
+        "tests",
+        "bind_rows"
+      ]
+    },
+    {
+      "date": "2026-04-28",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
+      "slug": "2026-04-28-unified-logging",
+      "status": "decided",
+      "summary": "<!-- Valid status values: decided, in-progress, abandoned -->",
+      "tags": [
+        "logging",
+        "reporting",
+        "dlw",
+        "pipeline",
+        "harmonization",
+        "pipfun"
+      ],
+      "title": "Unified logging and reporting across pipdata",
+      "top_keywords": [
+        "log_report()",
+        "pipfun",
+        "piplog",
+        "approach",
+        "pipdata_dlw_process",
+        "save_log",
+        "archive-legacy-dlw",
+        "log = true",
+        "logging",
+        "reporting"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-04-29-date-valid-vintage.md",
+      "slug": "2026-04-29-date-valid-vintage",
+      "status": "decided",
+      "summary": "The `date_valid` / `date_validated` mechanism in `valid_dlw_load()` (commented out) and `update_pip_inventory()` (active) was intended to create \"vintages\" within a release — only including surveys validated before a cutoff timestamp. In practice, the intent is simpler: all validated surveys should be cleaned, the release inventory is a point-in-time snapshot, and stamp's version history provides the vintage trail.",
+      "tags": [
+        "vintage",
+        "stamp",
+        "release-inventory",
+        "master-inventory",
+        "cleanup"
+      ],
+      "title": "Replace date_valid filter with stamp-based vintage tracking",
+      "top_keywords": [
+        "date_valid",
+        "vintage",
+        "update_pip_inventory()",
+        "approach",
+        "first_release_version_id",
+        "latest_release_version_id",
+        "valid_dlw_load()",
+        "filter",
+        "version_id",
+        "pipload::pip_write()"
+      ]
+    },
+    {
+      "date": "2026-05-06",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-05-06-subnational-deflation-area-resolution.md",
+      "slug": "2026-05-06-subnational-deflation-area-resolution",
+      "status": "decided",
+      "summary": "The new pipeline stores `ppp_data_level` and `cpi_data_level` as scalar attributes on survey data.tables. `add_dom_vars()` sets these to `\"area\"` when the PFW indicates subnational domains (reporting_level == 2, cpi_domain_var == \"urban\").",
+      "tags": [
+        "deflation",
+        "subnational",
+        "area",
+        "ppp_data_level",
+        "cpi_data_level",
+        "pipgd",
+        "pipmd"
+      ],
+      "title": "Fix subnational deflation: resolve area attribute to column values",
+      "top_keywords": [
+        "fix",
+        "area",
+        "\"area\"",
+        "add_rep_lvl()",
+        "add_ppp()",
+        "add_cpi()",
+        "cpi_data_level",
+        "approach",
+        "\"national\"",
+        "dt$area"
+      ]
+    },
+    {
+      "date": "2026-05-20",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md",
+      "slug": "2026-05-20-inventory-architecture-refactor",
+      "status": "decided",
+      "summary": "`update_pip_inventory()` is ~350 lines handling 8+ responsibilities: version extraction from in-memory `proc_dta`, skipped-survey removal, DLW inventory merging, PFW reporting_level computation, release inventory creation, release version tracking, master inventory persistence, and verification logging.",
+      "tags": [
+        "inventory",
+        "architecture",
+        "stamp",
+        "pipload",
+        "maintainability",
+        "correctness"
+      ],
+      "title": "Refactor inventory architecture: catalog-based assembler",
+      "top_keywords": [
+        "format_vrs()",
+        "approach",
+        "update_pip_inventory()",
+        "full catalog",
+        "based assembler",
+        "inventory",
+        "architecture",
+        "proc_dta",
+        "process_data()",
+        "pip_write()"
+      ]
+    },
+    {
+      "date": "2026-05-27",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-05-27-inventory-delta-strategy.md",
+      "slug": "2026-05-27-inventory-delta-strategy",
+      "status": "decided",
+      "summary": "The `build_pip_inventory()` function (implemented 2026-05-22) used a \"rebuild-from-scratch\" strategy: query entire catalogs, validate all pip_ids, deduplicate all versions, join everything, then recover old surveys at the end.",
+      "tags": [
+        "inventory",
+        "architecture",
+        "build_pip_inventory",
+        "simplification"
+      ],
+      "title": "Inventory assembler: delta/update strategy",
+      "top_keywords": [
+        "delta",
+        "inventory",
+        "approach",
+        "build_pip_inventory()",
+        "strategy",
+        "assembler",
+        "master",
+        "broken",
+        "current",
+        "joyn"
+      ]
+    },
+    {
+      "date": "2026-06-05",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md",
+      "slug": "2026-06-05-valid-dlw-load-review",
+      "status": "decided",
+      "summary": "Review of `valid_dlw_load()` and its helpers (`filter_aux_inv`, `inv_to_process`) to ensure the function accomplishes its purpose: identifying which DLW surveys need (re-)processing based on content changes and auxiliary-file updates.",
+      "tags": [
+        "pipeline",
+        "inventory",
+        "valid_dlw_load",
+        "inv_to_process",
+        "content_hash"
+      ],
+      "title": "valid_dlw_load review and inv_to_process rewrite",
+      "top_keywords": [
+        "inv_to_process",
+        "valid_dlw_load",
+        "inv_aux",
+        "content_hash",
+        "filter_aux_inv",
+        "survey_id",
+        "inv_svy",
+        "max_year",
+        "ls_inv_aux",
+        "null"
+      ]
+    },
+    {
+      "date": "2026-08-03",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "slug": "2026-08-03-pipeline-wrapper-vignettes",
+      "status": "decided",
+      "summary": "<!-- Valid status values: decided, in-progress, abandoned -->",
+      "tags": [
+        "documentation",
+        "vignettes",
+        "pkgdown",
+        "pipeline",
+        "deflation",
+        "logging"
+      ],
+      "title": "Vignettes for pipeline wrapper, deflation, and logging functions",
+      "top_keywords": [
+        "pd_process_data",
+        "deflation",
+        "_pkgdown.yml",
+        "pip-data-pipeline.rmd",
+        "processing-data.rmd",
+        "pipdata_dlw_process",
+        "log_report",
+        "pd_*",
+        "pd_deflation",
+        "approach"
+      ]
+    },
+    {
+      "date": "2026-04-06",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-06-enrich-log-report.md",
+      "slug": "2026-04-06-enrich-log-report",
+      "status": "completed",
+      "summary": "Extend the pipeline logging and `log_report()` so the markdown report includes: (a) the number of surveys successfully cleaned, (b) which surveys were added to the master inventory, and (c) which auxiliary files changed and which surveys they affected. Currently the log only captures failures; success-path information is discarded.",
+      "tags": [
+        "logging",
+        "reporting",
+        "pipeline"
+      ],
+      "title": "Enrich log report with success metrics and aux changes",
+      "top_keywords": [
+        "log_report()",
+        "process_summary_inf",
+        "valid_dlw_load",
+        "aux_changes_inf",
+        "pd_process_data",
+        "update_pip_inventory",
+        "piplog",
+        "r/log_report.r",
+        "changes",
+        "report"
+      ]
+    },
+    {
+      "date": "2026-04-23",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-23-audit-survey-id-to-vars.md",
+      "slug": "2026-04-23-audit-survey-id-to-vars",
+      "status": "completed",
+      "summary": "Determine whether `pipload::survey_id_to_vars()` is called redundantly across the pipdata pipeline and consolidate if so.",
+      "tags": [
+        "refactoring",
+        "survey-processing",
+        "pipload",
+        "audit"
+      ],
+      "title": "Audit survey_id_to_vars usage across pipeline",
+      "top_keywords": [
+        "audit",
+        "bind_rows(new_inv)",
+        "survey_id_to_vars()",
+        "pipload",
+        "survey_id_to_vars",
+        "across",
+        "pipeline",
+        "usage",
+        "pipdata",
+        "sites"
+      ]
+    },
+    {
+      "date": "2026-04-23",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
+      "slug": "2026-04-23-remove-redundant-get-wrk-release",
+      "status": "completed",
+      "summary": "Eliminate redundant `pipfun::get_wrk_release()` calls in DLW functions that are always invoked from a parent that already guards. Keep the guard only at genuine entry points — functions a user is likely to call directly. This reduces noise, simplifies mocking in tests, and clarifies the intended call hierarchy.",
+      "tags": [
+        "dlw",
+        "refactoring",
+        "get_wrk_release",
+        "guard-pattern"
+      ],
+      "title": "Remove redundant get_wrk_release() guards from DLW call chains",
+      "top_keywords": [
+        "get_wrk_release",
+        "pipdata_dlw_compare.r",
+        "pipdata_dlw_process()",
+        "dlw_gmd_new()",
+        "pipfun::get_wrk_release()",
+        "get_pip_folders()",
+        "@note",
+        "dlw",
+        "pipdata_get_gmd()",
+        "pipdata_get_gmd.r"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
+      "slug": "2026-04-27-dplyr-to-collapse-phase1",
+      "status": "completed",
+      "summary": "Replace all `dplyr::`, `tidyr::`, and `tibble::` calls in three pipdata source files with collapse/data.table equivalents. These packages are used via `::` but are **not declared in DESCRIPTION Imports** — phantom dependencies that will break if dplyr is not loaded in the session.",
+      "tags": [
+        "refactoring",
+        "performance",
+        "dependencies",
+        "dplyr",
+        "collapse",
+        "data.table"
+      ],
+      "title": "Migrate dplyr to collapse/data.table (Phase 1: 3 files)",
+      "top_keywords": [
+        "pd_dlw_clean.r",
+        "dlw_scan_and_validate.r",
+        "recode_edu()",
+        "migrate",
+        "fcase",
+        "pipdata_validation_report.r",
+        "pipdata_validate_gmd.r",
+        "dplyr::case_when",
+        "devtools::check()",
+        "test scenarios"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-27-error-handling-audit.md",
+      "slug": "2026-04-27-error-handling-audit",
+      "status": "",
+      "summary": "grep -r \"uniq_vars\\|nums_vars_to_attr\\|vars_to_attr\\|add_attributes\" R/ tests/ old_inv <- if (file.exists(path)) { if (log) { tryCatch(qs::qread(path), error = function(e) { log_add(...); NULL }) } else { qs::qread(path)  # No error guard } } else { tibble::tibble(...)  # empty default } old_inv <- if (!file.exists(path)) { tibble::tibble(...)  # empty default } else { result <- tryCatch( qs::qread(path), error = function(e) { if (log) pipfun::log_add(\"error\", ...) NULL  # Always return NULL on error (unified) } ) result %||na% tibble::tibble(...) }",
+      "tags": [],
+      "title": "2026-04-27-error-handling-audit",
+      "top_keywords": [
+        "utils.r",
+        "audit",
+        "unq_obs_dt()",
+        "dlw_scan_and_validate.r",
+        "phase",
+        "pd_deflation.r",
+        "pipdata_dlw_compare.r",
+        "part",
+        "uniq_vars_to_list()",
+        "cli::cli_abort()"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-27-logging-integration-tests.md",
+      "slug": "2026-04-27-logging-integration-tests",
+      "status": "completed",
+      "summary": "Write integration tests to verify that the pipeline functions `valid_dlw_load()` and `update_pip_inventory()` emit correct logmeta entries. These tests ensure logging contract stability and prevent regressions in the logging infrastructure.",
+      "tags": [
+        "testing",
+        "logging",
+        "integration-tests",
+        "p2-finding"
+      ],
+      "title": "Integration tests for logging side effects",
+      "top_keywords": [
+        "tests",
+        "inv_update_inf",
+        "aux_changes_inf",
+        "logging",
+        "test",
+        "structure",
+        "null_svys_inf",
+        "valid_dlw_load()",
+        "update_pip_inventory()",
+        "2026-04-06-enrich-log-report-review.md"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-27-nested-trycatch.md",
+      "slug": "2026-04-27-nested-trycatch",
+      "status": "completed",
+      "summary": "Review all tryCatch blocks in `R/` for nesting, necessity, and clarity. Consolidate where appropriate.",
+      "tags": [
+        "error-handling",
+        "code-quality",
+        "refactoring"
+      ],
+      "title": "Audit nested tryCatch patterns",
+      "top_keywords": [
+        "pd_deflation.r",
+        "trycatch",
+        "dlw_scan_and_validate.r",
+        "issue",
+        "subfunctions",
+        "dlw_get_dta.r",
+        "roadmap.json",
+        "audit",
+        "conditional",
+        "nested-trycatch"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-27-utils-cleanup.md",
+      "slug": "2026-04-27-utils-cleanup",
+      "status": "completed",
+      "summary": "Audit all functions in `R/utils.R`, confirm which exported functions are actually used within the package, and remove or deprecate any that are dead API surface.",
+      "tags": [
+        "cleanup",
+        "utilities",
+        "code-quality"
+      ],
+      "title": "utils.R cleanup",
+      "top_keywords": [
+        "utils.r",
+        "vars_to_attr()",
+        "num_vars_to_attr()",
+        "uniq_vars_to_attr()",
+        "log_failure()",
+        "utils",
+        "cleanup",
+        "exported",
+        "functions",
+        "usage"
+      ]
+    },
+    {
+      "date": "2026-04-28",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-28-env-setup.md",
+      "slug": "2026-04-28-env-setup",
+      "status": "superseded",
+      "summary": "Merge the two pipeline-active environments (`.pipdata`, `.pipdataenv`) into a single `.pipdataenv` environment with namespaced keys. Add accessor/reset helpers to replace raw `assign()`/`rm()`/`get()` calls. Eliminate the redundant dual initialization of `.pipdataenv` in `aaa.R` + `zzz.R`.",
+      "tags": [
+        "environment",
+        "setup",
+        "infrastructure",
+        "code-quality"
+      ],
+      "title": "Unified environment configuration",
+      "top_keywords": [
+        ".pipdataenv",
+        "aaa.r",
+        ".logenv",
+        ".pipdata",
+        "zzz.r",
+        "assign()",
+        "rm()",
+        "pd_deflation.r",
+        "position-deflation",
+        "r/aaa.r"
+      ]
+    },
+    {
+      "date": "2026-04-28",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-28-loop-to-apply.md",
+      "slug": "2026-04-28-loop-to-apply",
+      "status": "active",
+      "summary": "Audit all `for`/`while` loops in pipdata R source files and replace those that are amenable to `lapply()`, `vapply()`, `Map()`, or data.table vectorized operations. Loops that are inherently sequential (side-effect iteration, metaprogramming, condition traversal) are documented and retained.",
+      "tags": [
+        "performance",
+        "vectorization",
+        "code-quality",
+        "validation"
+      ],
+      "title": "Replace explicit loops with vectorized/lapply patterns",
+      "top_keywords": [
+        "pipdata_dlw_validation.r",
+        "utils.r",
+        "pipdata_get_gmd.r",
+        "pd_deflation.r",
+        "lapply()",
+        "loops",
+        "while",
+        "validation",
+        "replace",
+        "pd_process_data.r"
+      ]
+    },
+    {
+      "date": "2026-04-28",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-28-unified-logging.md",
+      "slug": "2026-04-28-unified-logging",
+      "status": "active",
+      "summary": "Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to the same `piplog` format, use canonical logmeta types, and produce a single consolidated report via `log_report()`. Eliminate the `log`/`save_log` arguments and replace with unconditional logging and automatic checkpoint saves.",
+      "tags": [
+        "logging",
+        "reporting",
+        "dlw",
+        "pipeline",
+        "harmonization",
+        "pipfun"
+      ],
+      "title": "Unified logging and reporting across pipdata",
+      "top_keywords": [
+        "save_log",
+        "log_report()",
+        "piplog",
+        "log_info()",
+        "test scenarios",
+        "logmeta",
+        "args",
+        "dlw_download_inf",
+        "log_save()",
+        "log_report.r"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-29-remove-date-valid-filter.md",
+      "slug": "2026-04-29-remove-date-valid-filter",
+      "status": "completed",
+      "summary": "Remove the `date_valid` / `date_validated` filtering mechanism from `update_pip_inventory()` and `valid_dlw_load()`. All validated surveys should be cleaned unconditionally. Release inventory vintages are handled by stamp's version history. Add `first_release_version_id` and `latest_release_version_id` columns to the master inventory to track when each survey entered and was last confirmed in the release inventory.",
+      "tags": [
+        "vintage",
+        "stamp",
+        "release-inventory",
+        "master-inventory",
+        "cleanup"
+      ],
+      "title": "Replace date_valid filter with stamp-based vintage tracking",
+      "top_keywords": [
+        "date_valid",
+        "first_release_version_id",
+        "update_pip_inventory()",
+        "valid_dlw_load()",
+        "pip_write()",
+        "latest_release_version_id",
+        "pipload::pip_write()",
+        "test-logging-integration.r",
+        "aaa.r",
+        "date_validated"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-29-unified-logging-v2.md",
+      "slug": "2026-04-29-unified-logging-v2",
+      "status": "active",
+      "summary": "Supersedes: `.cg-docs/plans/2026-04-28-unified-logging.md` Review findings incorporated from `/cg-plan-review` session (2026-04-29).",
+      "tags": [
+        "logging",
+        "reporting",
+        "dlw",
+        "pipeline",
+        "harmonization",
+        "pipfun"
+      ],
+      "title": "Unified logging and reporting across pipdata (revised)",
+      "top_keywords": [
+        "save_log",
+        "piplog",
+        "log_report()",
+        "aaa.r",
+        "logmeta",
+        "args",
+        "test scenarios",
+        "phase",
+        "log_report.r",
+        "log_save()"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-30-archive-dead-pip-vars.md",
+      "slug": "2026-04-30-archive-dead-pip-vars",
+      "status": "completed",
+      "summary": "Move `pd_add_pip_vars.R` (defines `pd_add_pip_vars()`, `add_pip_vars()`, `adjust_population()`) to `old_files/`. None are called by the active pipeline call tree. Remove exports and .Rd files.",
+      "tags": [
+        "cleanup",
+        "dead-code",
+        "architecture",
+        "inline"
+      ],
+      "title": "Archive pd_add_pip_vars.R (dead code)",
+      "top_keywords": [
+        "pd_add_pip_vars.r",
+        "old_files/",
+        "pd_add_pip_vars",
+        "archive",
+        "r/pd_add_pip_vars.r",
+        "add_pip_vars",
+        "delete",
+        "objective",
+        "acceptance",
+        "criteria"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-30-archive-legacy-dlw.md",
+      "slug": "2026-04-30-archive-legacy-dlw",
+      "status": "completed",
+      "summary": "Move 4 pre-stamp legacy DLW files not called by either pipeline wrapper to `old_files/`. Remove exports and .Rd files. Update NAMESPACE via `devtools::document()`.",
+      "tags": [
+        "cleanup",
+        "legacy",
+        "dlw",
+        "architecture",
+        "inline"
+      ],
+      "title": "Archive legacy DLW files",
+      "top_keywords": [
+        "old_files/",
+        "archive",
+        "legacy",
+        "dlw",
+        "devtools::document()",
+        "devtools::check()",
+        "dlw_scan_and_validate",
+        "dlw_dta_to_qs",
+        "dlw_get_dta",
+        "update_dlw_inventory"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-30-env-setup-v2.md",
+      "slug": "2026-04-30-env-setup-v2",
+      "status": "completed",
+      "summary": "Supersedes: `.cg-docs/plans/2026-04-28-env-setup.md` Review findings incorporated from `/cg-plan-review` session (2026-04-30).",
+      "tags": [
+        "environment",
+        "setup",
+        "infrastructure",
+        "code-quality"
+      ],
+      "title": "Unified environment configuration (revised)",
+      "top_keywords": [
+        ".pipdataenv",
+        ".logenv",
+        "aaa.r",
+        "zzz.r",
+        ".pipdata",
+        "rlang",
+        "pd_deflation.r",
+        "pd_env_append()",
+        "test-pipdata_validation_report.r",
+        "assign()"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-30-position-deflation.md",
+      "slug": "2026-04-30-position-deflation",
+      "status": "completed",
+      "summary": "Add `@note` to the `pd_deflation()` roxygen block explaining this function is not yet integrated into the active pipeline (`pd_process_data()`), and documenting its intended role as a future step.",
+      "tags": [
+        "documentation",
+        "architecture",
+        "deflation",
+        "inline"
+      ],
+      "title": "Position pd_deflation.R as future pipeline step",
+      "top_keywords": [
+        "@note",
+        "man/pd_deflation.rd",
+        "pd_deflation.r",
+        "pd_deflation",
+        "future",
+        "pipeline",
+        "position",
+        "objective",
+        "acceptance",
+        "criteria"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-04-30-relocate-mock-funs.md",
+      "slug": "2026-04-30-relocate-mock-funs",
+      "status": "completed",
+      "summary": "Move `R/mock_funs.R` to `tests/testthat/helper-mock_funs.R` so test helpers live alongside tests, not in the package namespace. Update `@examples` in affected R files that reference `pipdata:::m_svy_id_to_att()`.",
+      "tags": [
+        "testing",
+        "cleanup",
+        "architecture",
+        "inline"
+      ],
+      "title": "Relocate mock_funs.R to tests/",
+      "top_keywords": [
+        "mock_funs.r",
+        "helper-mock_funs.r",
+        "r/mock_funs.r",
+        "tests/testthat/helper-mock_funs.r",
+        "@examples",
+        "pipdata:::m_svy_id_to_att()",
+        "tests",
+        "mock_funs",
+        "relocate",
+        "testthat"
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-04-integrate-deflation.md",
+      "slug": "2026-05-04-integrate-deflation",
+      "status": "completed",
+      "summary": "Make `pd_deflation()` usable as a self-contained single-survey helper: given one cleaned survey `data.table` (or its `pip_id` + stamp version), it internally loads the corresponding metadata (CPI, PPP, pop) and returns the same survey enriched with deflated welfare vectors. Also extract a shared `safe_deflation()` helper from the duplicated `deflation.pipmd()`/ `deflation.pipgd()` tryCatch structure.",
+      "tags": [
+        "deflation",
+        "pipeline",
+        "architecture",
+        "integration",
+        "refactoring"
+      ],
+      "title": "Integrate pd_deflation.R into the active pipeline",
+      "top_keywords": [
+        "pip_id",
+        "pd_deflation()",
+        "safe_deflation()",
+        "pd_aux_attr()",
+        "data.table",
+        "deflation.pipmd()",
+        "deflation.pipgd()",
+        "@note",
+        "version",
+        "cpi"
+      ]
+    },
+    {
+      "date": "2026-05-06",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md",
+      "slug": "2026-05-06-subnational-deflation-fast-fix",
+      "status": "completed",
+      "summary": "Fix subnational deflation by eliminating the `reporting_level` **column** and using the `area` column directly as the per-row lookup key in all deflation functions. Each deflation function branches on its **own** `*_data_level` attribute (`ppp_data_level`, `cpi_data_level`, `pop_data_level`) rather than a single integer discriminator — this correctly handles the mixed-domain case where `reporting_level == 2` but some domains are national.",
+      "tags": [
+        "deflation",
+        "subnational",
+        "area",
+        "ppp_data_level",
+        "cpi_data_level",
+        "fast-fix",
+        "prerequisite"
+      ],
+      "title": "Fix subnational deflation: resolve area attribute to column values",
+      "top_keywords": [
+        "area",
+        "reporting_level",
+        "adjust_population()",
+        "add_ppp()",
+        "add_cpi()",
+        "ppp_data_level",
+        "\"area\"",
+        "add_rep_lvl()",
+        "dt$area",
+        "na"
+      ]
+    },
+    {
+      "date": "2026-05-08",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-08-verbose-option-propagation.md",
+      "slug": "2026-05-08-verbose-option-propagation",
+      "status": "completed",
+      "summary": "Make `getOption(\"pipdata.verbose\")` control verbosity of all downstream `pipload`/`stamp` calls (e.g., `pip_read()`, `pip_write()`, `load_pip_master_inventory()`, `load_aux_data()`). Currently most calls hard-code `verbose = FALSE`, silencing all output even when the user has set `options(pipdata.verbose = TRUE)`.",
+      "tags": [
+        "verbose",
+        "options",
+        "pipload",
+        "stamp",
+        "ux",
+        "code-quality"
+      ],
+      "title": "Propagate pipdata.verbose option to downstream package calls",
+      "top_keywords": [
+        "verbose",
+        "pip_write()",
+        "verbose = false",
+        "pd_deflation()",
+        "load_pip_master_inventory()",
+        "load_aux_data()",
+        "zzz.r",
+        "phase",
+        ".load_deflation_aux()",
+        "valid_dlw_load()"
+      ]
+    },
+    {
+      "date": "2026-05-13",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-13-load-pip-deflated-data.md",
+      "slug": "2026-05-13-load-pip-deflated-data",
+      "status": "moved",
+      "summary": "Create a convenience function `load_pip_deflated_data()` in **pipload** that chains `load_pip_data()` → `pipdata::pd_deflation()` in a single call. Users pass the same filtering arguments as `load_pip_data()` (country_code, surveyid_year, survey_acronym, welfare_type, module, id_name, etc.) and get back the deflated survey data.table.",
+      "tags": [
+        "deflation",
+        "pipload",
+        "wrapper",
+        "convenience"
+      ],
+      "title": "Create load_pip_deflated_data() wrapper in pipload",
+      "top_keywords": [
+        "pipdata",
+        "load_pip_data()",
+        "pd_deflation()",
+        "\\dontrun{}",
+        "load_pip_deflated_data",
+        "pipload",
+        "wrapper",
+        "imports",
+        "suggests",
+        "load_pip_deflated_data()"
+      ]
+    },
+    {
+      "date": "2026-05-18",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-18-ppp-sort-attribute.md",
+      "slug": "2026-05-18-ppp-sort-attribute",
+      "status": "completed",
+      "summary": "Record which PPP base year was used to sort the deflated survey as an attribute (`ppp_sort`) on the output `data.table`. Downstream consumers can inspect `attr(result, \"ppp_sort\")` to know the sorting key year (e.g., `2017`) without parsing column names.",
+      "tags": [
+        "deflation",
+        "attributes",
+        "output-contract",
+        "ppp"
+      ],
+      "title": "Add ppp_sort attribute to deflation output",
+      "top_keywords": [
+        "ppp_sort",
+        "attr(result, \"ppp_sort\")",
+        "null",
+        "finalize_deflation_output()",
+        "welfare_ppp_*",
+        "attribute",
+        "deflation",
+        "finalize_deflation_output",
+        "documentation",
+        "r/pd_deflation.r"
+      ]
+    },
+    {
+      "date": "2026-05-19",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-19-fix-inventory-save-reporting-level.md",
+      "slug": "2026-05-19-fix-inventory-save-reporting-level",
+      "status": "completed",
+      "summary": "Fix three related bugs in the pipeline save/inventory flow:",
+      "tags": [
+        "inventory",
+        "save",
+        "deflation",
+        "metadata",
+        "reporting_level",
+        "fix"
+      ],
+      "title": "Fix inventory save: primary key, version cross-join, reporting_level",
+      "top_keywords": [
+        "reporting_level",
+        "update_pip_inventory()",
+        "report_lvl()",
+        "load_pip_data()",
+        "format_vrs()",
+        "get_country_pfw.r",
+        "pip_read()",
+        "(survey_id, pip_id)",
+        "\"1\"",
+        "\"2\""
+      ]
+    },
+    {
+      "date": "2026-05-19",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-19-fix-reporting-level-duplication.md",
+      "slug": "2026-05-19-fix-reporting-level-duplication",
+      "status": "completed",
+      "summary": "Remove spurious `reporting_level.x` and `reporting_level.y` columns from the PIP master inventory. These are ALL-NA artifacts from a previous join collision that got persisted and now cascade into every subsequent run.",
+      "tags": [
+        "inventory",
+        "reporting_level",
+        "join-cleanup",
+        "bug"
+      ],
+      "title": "Fix reporting_level column duplication in master inventory",
+      "top_keywords": [
+        "reporting_level",
+        "reporting_level.x",
+        "reporting_level.y",
+        "inventory",
+        "old_pip_inv",
+        "update_pip_inventory()",
+        "fix",
+        "\"reporting_level\"",
+        "^reporting_level",
+        ".x"
+      ]
+    },
+    {
+      "date": "2026-05-20",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+      "slug": "2026-05-20-inventory-architecture-refactor",
+      "status": "completed",
+      "summary": "Replace the 350-line `update_pip_inventory()` + `format_vrs()` with a catalog-based assembler that reads version facts directly from stamp's persisted catalog. This eliminates the in-memory dependency on `proc_dta` (crash-safe), simplifies the code (~80 lines), and decouples metadata enrichment into pipload.",
+      "tags": [
+        "architecture",
+        "inventory",
+        "stamp",
+        "pipload",
+        "maintainability",
+        "correctness"
+      ],
+      "title": "Refactor inventory architecture: catalog-based assembler",
+      "top_keywords": [
+        "reporting_level",
+        "build_pip_inventory()",
+        "test scenarios",
+        "update_pip_inventory()",
+        "load_pip_master_inventory()",
+        "fields",
+        "compound-gpid.context.md",
+        "build_pip_inventory.r",
+        "build_pip_inventory",
+        "version_id"
+      ]
+    },
+    {
+      "date": "2026-06-17",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
+      "slug": "2026-06-17-valid-dlw-load-refactor",
+      "status": "active",
+      "summary": "Implement the 5 decisions from the 2026-06-05 brainstorm:",
+      "tags": [
+        "pipeline",
+        "inventory",
+        "valid_dlw_load",
+        "inv_to_process",
+        "filter_aux_inv",
+        "logging",
+        "content_hash"
+      ],
+      "title": "Refactor valid_dlw_load: logging, abort, and content-hash comparison",
+      "top_keywords": [
+        "survey_id",
+        "inv_to_process",
+        "content_hash_dlw",
+        "filter_aux_inv",
+        "compound-gpid.context.md",
+        "inv_aux",
+        "valid_dlw_load",
+        "verbose",
+        "max_year",
+        "r/valid_dlw_load.r"
+      ]
+    },
+    {
+      "date": "2026-06-18",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-06-18-save-pip-memory-resilience.md",
+      "slug": "2026-06-18-save-pip-memory-resilience",
+      "status": "done",
+      "summary": "Prevent `cannot allocate buffer` failures in `save_pip_data()` when serializing large survey artifacts (e.g. `ARG_2014_EPHC-S2_INC_ALL`) via `qs2::qs_save()`. Two changes: sort the iteration order largest-first, and force a GC cycle before serializing any artifact above a configurable size threshold.",
+      "tags": [
+        "save_pip",
+        "memory",
+        "gc",
+        "qs2",
+        "reliability",
+        "pipeline"
+      ],
+      "title": "save_pip_data: memory-resilient save order and GC guard",
+      "top_keywords": [
+        "save_pip_data()",
+        "object.size()",
+        "lapply",
+        "arg_2014_ephc-s2_inc_all",
+        "cannot allocate buffer",
+        "save_pip.r",
+        "r/save_pip.r",
+        "save_error",
+        "gc()",
+        "qs2"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-06-18-yaml-recode-dictionary.md",
+      "slug": "2026-06-18-yaml-recode-dictionary",
+      "status": "done",
+      "summary": "The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_gndr()`, `recode_age()`, `add_area()`). Each function contains repeated patterns: - Column existence checks (`if (\"varname\" %in% colnames(dt))`) - Type coercion (`as.double()`, `as.character()`) - Conditional remapping (`fcase()`, `haven::as_factor()`) Adding new variables or modifying recode rules requires: 1. Editing R source code 2. Updating function logic 3. Rebuilding the package 4. Writing new tests This tight coupling makes the pipeline inflexible and hard to maintain.",
+      "tags": [
+        "data-quality",
+        "refactoring",
+        "recode",
+        "validation",
+        "stamp",
+        "yaml"
+      ],
+      "title": "2026-06-18-yaml-recode-dictionary",
+      "top_keywords": [
+        "apply_recode_spec()",
+        "recode_spec.yml",
+        "recode_edu()",
+        "recode_gndr()",
+        "recode_age()",
+        "source_column",
+        "dlw_clean.pipmd()",
+        "recode_quantile()",
+        "recode_spec",
+        "imports"
+      ]
+    },
+    {
+      "date": "2026-06-24",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-06-24-pd-process-data-oom-crash.md",
+      "slug": "2026-06-24-pd-process-data-oom-crash",
+      "status": "completed",
+      "summary": "Step 1 (explicit `rm()` + `gc()` in `process_data()`'s success branch) and Step 3 (roxygen `@details`) were implemented as planned. Steps 2 and 4 (periodic `gc()` in the main loop via a `for` loop + `NEWS.md` bullet) were determined unnecessary: the remaining OOM risk was actually caused by `pipfun::log_info()`/`log_add()` capturing the full cleaned survey `dt` (hundreds of MB) by reference into the persistent session log (`.piplogenv`) on every call via `capture_log_args()`, which defeated `gc()` across the run. The fix was to avoid emitting a per-survey `log_info()` call inside `apply_recode_spec()` (see the `NOTE` comment above `data.table::setattr(dt, \"recode_spec_version_id\", version_id)` in `R/recode_spec.R`) rather than...",
+      "tags": [
+        "pd_process_data",
+        "memory",
+        "gc",
+        "oom",
+        "reliability",
+        "pipeline"
+      ],
+      "title": "pd_process_data: OOM crash fix for 4000+ survey runs",
+      "top_keywords": [
+        "gc()",
+        "process_data()",
+        "news.md",
+        "pd_process_data()",
+        "rm()",
+        "pd_dlw_clean.r",
+        "ls_clean",
+        "metadata",
+        "lapply",
+        "inv"
+      ]
+    },
+    {
+      "date": "2026-06-24",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-06-24-stamp-atomic-catalog-write.md",
+      "slug": "2026-06-24-stamp-atomic-catalog-write",
+      "status": "draft",
+      "summary": "Make `stamp`'s on-disk writes survive a process abort (OOM kill, Ctrl-C, machine crash) without producing a **truncated/corrupt `catalog.qs2`** that takes down reads for every artifact under an alias. Add a cheap recovery path so a damaged catalog can be rebuilt from the surviving per-artifact version data instead of forcing a full pipeline re-run.",
+      "tags": [
+        "stamp",
+        "catalog",
+        "qs2",
+        "atomicity",
+        "durability",
+        "corruption",
+        "reliability"
+      ],
+      "title": "stamp: crash-safe catalog/data writes + catalog self-heal",
+      "top_keywords": [
+        "delete",
+        "st_rebuild_catalog()",
+        "ebusy",
+        "catalog.qs2",
+        ".st_catalog_write()",
+        ".st_catalog_read()",
+        "catalog",
+        "tmp",
+        "temp",
+        "fs::file_move"
+      ]
+    },
+    {
+      "date": "2026-06-28",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md",
+      "slug": "2026-06-28-pd-process-data-ram-regression",
+      "status": "completed",
+      "summary": "Running `pd_process_data()` on the current `var_tabmaker2` branch makes RAM explode, whereas commit `3e00987a` did not. The diff since that commit landed a large inventory-architecture refactor that introduced a YAML-driven recode engine (`recode_spec.R` / `inst/extdata/recode_spec.yml`) and moved version facts into the stamp catalog. Three changes in that work regressed memory/time:",
+      "tags": [
+        "pd_process_data",
+        "recode_spec",
+        "memory",
+        "gc",
+        "performance",
+        "regression"
+      ],
+      "title": "pd_process_data: RAM regression fix (spec-once + per-survey gc)",
+      "top_keywords": [
+        "lapply",
+        "process_data()",
+        "gc()",
+        "pd_process_data()",
+        "apply_recode_spec()",
+        "recode_spec",
+        "fix",
+        "recode_spec.r",
+        "save_pip.r",
+        "news.md"
+      ]
+    },
+    {
+      "date": "2026-08-03",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
+      "slug": "2026-08-03-pipeline-wrapper-vignettes",
+      "status": "complete",
+      "summary": "Replace outdated/empty vignette content with accurate, non-executing narrative documentation covering the two pipeline wrapper functions (`pipdata_dlw_process`, `pd_process_data`), `deflation`/`pd_deflation`, and `log_report`, for both operators (how to run) and maintainers (architecture), and wire the result into `_pkgdown.yml`.",
+      "tags": [
+        "documentation",
+        "vignettes",
+        "pkgdown",
+        "pipeline",
+        "deflation",
+        "logging"
+      ],
+      "title": "Vignettes for pipeline wrapper, deflation, and logging functions",
+      "top_keywords": [
+        "_pkgdown.yml",
+        "pip-data-pipeline.rmd",
+        "validating-data.rmd",
+        "processing-data.rmd",
+        "pd_process_data()",
+        "pipdata_script.r",
+        "pd_process_data",
+        "rmarkdown::render()",
+        "docs/pipeline_overview.qmd",
+        "devtools::check()"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
+      "slug": "2026-04-06-enrich-log-report-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Plan**: `.cg-docs/plans/2026-04-06-enrich-log-report.md` **Files reviewed**: 5 **Findings**: 0 P1, 3 P2 (1 fixed 2026-04-27), 5 P3",
+      "tags": [],
+      "title": "2026-04-06-enrich-log-report-review",
+      "top_keywords": [
+        "log_report.r",
+        "build_type_summary()",
+        "\"pipdata_log\"",
+        "pd_process_data.r",
+        "valid_dlw_load.r",
+        "update_pip_inventory.r",
+        "fix",
+        "aux_changes_inf",
+        "process_summary_inf",
+        "valid_dlw_load()"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-16-review.md",
+      "slug": "2026-04-16-review",
+      "status": "",
+      "summary": "**Review depth**: light **Files reviewed**: 7 (1 R script, 6 .Rd man files — last commit `ea358d1`) **Findings**: 0 P0, 0 P1, 3 P2, 2 P3",
+      "tags": [],
+      "title": "2026-04-16-review",
+      "top_keywords": [
+        "null",
+        "surveys",
+        "reasons",
+        "tests/testthat/test-log_report.r",
+        "dt",
+        "\"unknown\"",
+        "log_report.r",
+        "country",
+        "error_type",
+        "build_skipped_surveys()"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-27-branch-review.md",
+      "slug": "2026-04-27-branch-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Scope**: Full branch diff `DEV_v2`→`to_dos` **Files reviewed**: 13 (`R/pd_dlw_clean.R`, `R/pd_process_data.R`, `R/pipdata_dlw_compare.R`, `R/pipdata_dlw_process.R`, `R/pipdata_get_gmd.R`, `R/pipdata_validate_gmd.R`, `R/pipdata_validation_report.R`, `R/update_pip_inventory.R`, `R/utils.R`, `R/valid_dlw_load.R`, `tests/testthat/test-logging-integration.R`, `tests/testthat/test-pd_dlw_clean.R`, `tests/testthat/test-pipdata_validation_report.R`) **Findings**: 6 (P0: 0, P1: 0, P2: 3, P3: 3)",
+      "tags": [],
+      "title": "2026-04-27-branch-review",
+      "top_keywords": [
+        "pipdata_validate_gmd.r",
+        "rbindlist(fill = true)",
+        "utils.r",
+        "test-pd_dlw_clean.r",
+        "test-logging-integration.r",
+        "test-pipdata_validation_report.r",
+        "fix",
+        "school",
+        "aux_list",
+        "\"school\""
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-27-dplyr-to-collapse-phase1-review.md",
+      "slug": "2026-04-27-dplyr-to-collapse-phase1-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 4 (`R/pd_dlw_clean.R`, `R/pipdata_validate_gmd.R`, `R/pipdata_validation_report.R`, `tests/testthat/test-pd_dlw_clean.R`) **Findings**: 0 P1, 2 P2, 3 P3",
+      "tags": [],
+      "title": "2026-04-27-dplyr-to-collapse-phase1-review",
+      "top_keywords": [
+        "pipdata_validate_gmd.r",
+        "fix",
+        "data_status",
+        "r/pd_dlw_clean.r",
+        "data.table",
+        "|>",
+        "fcase()",
+        "pipdata_validation_report.r",
+        "roadmap.json",
+        "dlw_scan_and_validate.r"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-27-error-handling-audit-review.md",
+      "slug": "2026-04-27-error-handling-audit-review",
+      "status": "",
+      "summary": "Status: PASSED ✅",
+      "tags": [],
+      "title": "2026-04-27-error-handling-audit-review",
+      "top_keywords": [
+        "utils.r",
+        "review",
+        "audit",
+        "fix",
+        "r/utils.r",
+        "usage verification",
+        "utils",
+        "error",
+        "baseline",
+        "verification"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-29-remove-date-valid-filter-light-review.md",
+      "slug": "2026-04-29-remove-date-valid-filter-light-review",
+      "status": "",
+      "summary": "**Review depth**: light **Files reviewed**: 4 (`R/update_pip_inventory.R`, `R/valid_dlw_load.R`, `R/aaa.R`, `tests/testthat/test-logging-integration.R`) **Findings**: 5 (P0: 0, P1: 0, P2: 3, P3: 2)",
+      "tags": [],
+      "title": "2026-04-29-remove-date-valid-filter-light-review",
+      "top_keywords": [
+        "release_write_err",
+        "tests/testthat/test-logging-integration.r",
+        "#'",
+        "release_vid = na_character_",
+        "valid_dlw_load.r",
+        "test-logging-integration.r",
+        "update_pip_inventory.r",
+        "fix",
+        "condition_msg",
+        "force"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-29-remove-date-valid-filter-review.md",
+      "slug": "2026-04-29-remove-date-valid-filter-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 6 (`R/update_pip_inventory.R`, `R/valid_dlw_load.R`, `R/aaa.R`, `man/update_pip_inventory.Rd`, `tests/testthat/test-logging-integration.R`, `roadmap.json`) **Findings**: 8 (P0: 0, P1: 1, P2: 4, P3: 3)",
+      "tags": [],
+      "title": "2026-04-29-remove-date-valid-filter-review",
+      "top_keywords": [
+        "update_pip_inventory.r",
+        "release_write_err",
+        "na_character_",
+        "@details",
+        "aaa.r",
+        "fix",
+        "\"inv_update_inf\"",
+        ".qs2",
+        ":=",
+        "roadmap.json"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-30-archive-legacy-dlw-review-2.md",
+      "slug": "2026-04-30-archive-legacy-dlw-review-2",
+      "status": "",
+      "summary": "**Review depth**: light **Files reviewed**: 1 R source file (`R/pd_deflation.R`) **Findings**: 2 (P0: 0, P1: 0, P2: 0, P3: 2)",
+      "tags": [],
+      "title": "2026-04-30-archive-legacy-dlw-review-2",
+      "top_keywords": [
+        "#'",
+        "r/pd_deflation.r",
+        "@nord",
+        "by.x",
+        "by.y",
+        "pd_deflation.r",
+        "review",
+        "adjust_population",
+        "report",
+        "minor"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-30-archive-legacy-dlw-review.md",
+      "slug": "2026-04-30-archive-legacy-dlw-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 10 R source/test files + NAMESPACE + roadmap.json (31 total in diff) **Findings**: 4 (P0: 0, P1: 0, P2: 2, P3: 2)",
+      "tags": [],
+      "title": "2026-04-30-archive-legacy-dlw-review",
+      "top_keywords": [
+        "adjust_population()",
+        "m_inv_valid()",
+        "roadmap.json",
+        "inv_clean",
+        "r/pd_deflation.r",
+        "joyn::merge",
+        "pd_deflation()",
+        "m_svy_id_to_att()",
+        "\"random\"",
+        "@nord"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-04-30-env-setup-v2-review.md",
+      "slug": "2026-04-30-env-setup-v2-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 13 (8 R source, 2 man pages, 3 test) **Findings**: 3 (P0: 0, P1: 0, P2: 2, P3: 1)",
+      "tags": [],
+      "title": "2026-04-30-env-setup-v2-review",
+      "top_keywords": [
+        ".pipdataenv",
+        ".pipdata",
+        "add_log()",
+        ".logenv",
+        "pd_env_get(\"log_piperr\")",
+        "pd_deflation.r",
+        "aaa.r",
+        "class",
+        "paste0(\"log_\", class)",
+        "@param class"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-04-integrate-deflation-plan-review.md",
+      "slug": "2026-05-04-integrate-deflation-plan-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Plan reviewed**: `.cg-docs/plans/2026-05-04-integrate-deflation.md` **Date**: 2026-05-04",
+      "tags": [],
+      "title": "2026-05-04-integrate-deflation-plan-review",
+      "top_keywords": [
+        "version",
+        "fix",
+        "dt_c",
+        "pip_id",
+        "deflate_wlf()",
+        "2026-05-04-integrate-deflation.md",
+        "ppp",
+        "implementation",
+        "add_ppp",
+        "add_cpi"
+      ]
+    },
+    {
+      "date": "2026-05-05",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-04-integrate-deflation-review-2.md",
+      "slug": "2026-05-04-integrate-deflation-review-2",
+      "status": "",
+      "summary": "**Review depth**: standard **Scope**: commit `78fb46e` — stamp round-trip attribute/column bug fixes **Files reviewed**: 2 (`R/pd_deflation.R`, `tests/testthat/test-pd-deflation.R`) **Findings**: 6 (P0: 0, P1: 1, P2: 3, P3: 2)",
+      "tags": [],
+      "title": "2026-05-04-integrate-deflation-review-2",
+      "top_keywords": [
+        "r/pd_deflation.r",
+        "restore_data_level_cols()",
+        "dt",
+        "pd_deflation.r",
+        "tests/testthat/test-pd-deflation.r",
+        "list(values=...)",
+        "null",
+        "fix",
+        "ppp_data_level",
+        "pip_id"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-04-integrate-deflation-review.md",
+      "slug": "2026-05-04-integrate-deflation-review",
+      "status": "resolved",
+      "summary": "**Scope**: `R/pd_deflation.R` (rewrite, 816 lines), `tests/testthat/test-pd-deflation.R` (new, 28 tests), `roadmap.json`, `.cg-docs/plans/2026-05-04-integrate-deflation.md`",
+      "tags": [],
+      "title": "2026-05-04-integrate-deflation-review",
+      "top_keywords": [
+        "r/pd_deflation.r",
+        "get_welfare_ppp",
+        "cpi_ppp_years",
+        "pd_deflation.r",
+        "tests/testthat/test-pd-deflation.r",
+        "%||%",
+        "deflate_wlf()",
+        "get_welfare_ppp()",
+        "@nord",
+        "dt_c"
+      ]
+    },
+    {
+      "date": "2026-05-07",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-07-get-country-pfw-review.md",
+      "slug": "2026-05-07-get-country-pfw-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 1 (`R/get_country_pfw.R`) **Findings**: 7 (P0: 0, P1: 1, P2: 3, P3: 3)",
+      "tags": [],
+      "title": "2026-05-07-get-country-pfw-review",
+      "top_keywords": [
+        "get_country_pfw.r",
+        "report_lvl()",
+        "fix",
+        "dcols",
+        "reporting_level",
+        "r/get_country_pfw.r",
+        ".sd",
+        "inpovcal == 1",
+        "cli::cli_abort()",
+        ".sdcols"
+      ]
+    },
+    {
+      "date": "2026-05-07",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-07-get-country-pfw-verify-review.md",
+      "slug": "2026-05-07-get-country-pfw-verify-review",
+      "status": "",
+      "summary": "**Review depth**: light (verify mode) **Parent review**: `.cg-docs/reviews/2026-05-07-get-country-pfw-review.md` **Files reviewed**: 2 (`R/get_country_pfw.R`, `tests/testthat/test-get-country-pfw.R`) **Findings**: 2 (P0: 0, P1: 1, P2: 1, P3: 0)",
+      "tags": [],
+      "title": "2026-05-07-get-country-pfw-verify-review",
+      "top_keywords": [
+        ".domain_cols",
+        "get_country_pfw",
+        "report_lvl()",
+        "get_country_pfw.r",
+        "2026-05-07-get-country-pfw-review.md",
+        "review",
+        "cache_id",
+        "cli_abort",
+        "verify",
+        "pmax"
+      ]
+    },
+    {
+      "date": "2026-06-01",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md",
+      "slug": "2026-05-08-verbose-option-propagation-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 13 (`R/pd_deflation.R`, `R/pd_process_data.R`, `R/pipdata_copy_dlw_meta.R`, `R/pipdata_dlw_process.R`, `R/pipdata_get_gmd.R`, `R/pipdata_validate_gmd.R`, `R/save_pip.R`, `R/valid_aux_load.R`, `R/valid_dlw_load.R`, `R/pipdata-options.R`, `Pipdata_script.R`, `compound-gpid.context.md`, `tests/testthat/test-pd-deflation.R`) **Findings**: 7 (P0: 0, P1: 0, P2: 4, P3: 3)",
+      "tags": [],
+      "title": "2026-05-08-verbose-option-propagation-review",
+      "top_keywords": [
+        "verbose",
+        ".load_deflation_aux()",
+        "@param verbose",
+        "@return",
+        "pip_id",
+        "r/pipdata_validate_gmd.r",
+        "r/valid_aux_load.r",
+        "r/pipdata-options.r",
+        "verbose = false",
+        "valid_aux_load()"
+      ]
+    },
+    {
+      "date": "2026-05-18",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-18-ppp-sort-attribute-review.md",
+      "slug": "2026-05-18-ppp-sort-attribute-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 2 (`R/pd_deflation.R`, `tests/testthat/test-pd-deflation.R`) **Findings**: 4 (P0: 0, P1: 0, P2: 1, P3: 3)",
+      "tags": [],
+      "title": "2026-05-18-ppp-sort-attribute-review",
+      "top_keywords": [
+        "welfare_ppp_*",
+        "ppp_sort",
+        "null",
+        "welfare_vars",
+        "adj_pop",
+        "tests/testthat/test-pd-deflation.r",
+        "pd_deflation()",
+        "fix",
+        "welfare_lcu",
+        "r/pd_deflation.r"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-19-fix-inventory-save-reporting-level-review.md",
+      "slug": "2026-05-19-fix-inventory-save-reporting-level-review",
+      "status": "",
+      "summary": "**Review depth**: light **Files reviewed**: 4 **Findings**: 6 (P0: 0, P1: 0, P2: 4, P3: 2)",
+      "tags": [],
+      "title": "2026-05-19-fix-inventory-save-reporting-level-review",
+      "top_keywords": [
+        "format_vrs()",
+        "missing_metadata_err",
+        "reporting_level",
+        "r/update_pip_inventory.r",
+        "@details",
+        "sentinel_col",
+        "vrs_mdt",
+        "tests/testthat/test-update_pip_inventory.r",
+        "%||%",
+        "check_vrs_unique()"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-19-fix-reporting-level-duplication-review.md",
+      "slug": "2026-05-19-fix-reporting-level-duplication-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 3 (`R/update_pip_inventory.R`, `tests/testthat/test-update_pip_inventory.R`, `Pipdata_script.R`) **Findings**: 1 (P0: 0, P1: 0, P2: 0, P3: 1)",
+      "tags": [],
+      "title": "2026-05-19-fix-reporting-level-duplication-review",
+      "top_keywords": [
+        "reporting_level",
+        "tests/testthat/test-update_pip_inventory.r",
+        "update_pip_inventory()",
+        "pipdata_script.r",
+        "test-update_pip_inventory.r",
+        "review",
+        "fix_inventory",
+        "report",
+        "minor",
+        "nice"
+      ]
+    },
+    {
+      "date": "2026-05-27",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-05-20-inventory-architecture-refactor-review.md",
+      "slug": "2026-05-20-inventory-architecture-refactor-review",
+      "status": "",
+      "summary": "**Review depth**: standard **Files reviewed**: 6 (`R/build_pip_inventory.R`, `R/pd_process_data.R`, `R/pd_deflation.R`, `R/save_pip.R`, `R/aaa.R`, `tests/testthat/test-build_pip_inventory.R`) **Findings**: 5 (P0: 0, P1: 0, P2: 3, P3: 2)",
+      "tags": [],
+      "title": "2026-05-20-inventory-architecture-refactor-review",
+      "top_keywords": [
+        "tests/testthat/test-build_pip_inventory.r",
+        "test-build_pip_inventory.r",
+        "pd_deflation.r",
+        "target_ids",
+        "r/build_pip_inventory.r",
+        "\"pip\"",
+        "build_pip_inventory.r",
+        "pip_id",
+        "cat_data",
+        "fix"
+      ]
+    },
+    {
+      "date": "2026-04-07",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
+      "slug": "2026-04-07-internal-logmeta-types-polluting-type-summary",
+      "status": "",
+      "summary": "`log_report()` renders a \"Summary by Type\" table via `build_type_summary()`. The table was supposed to show only genuine pipeline errors and warnings so operators can quickly see what went wrong. Instead it also showed rows for internal markers like `process_summary_inf`, `aux_changes_inf`, `inv_update_inf`, etc. — entries that exist only to carry structured metadata for other report sections, not to flag actual problems. Symptoms: - \"Summary by Type\" table had confusing rows labelled `process_summary_inf`, `aux_changes_inf`, `null_svys_inf` alongside real errors. - Row count was inflated, making the table harder to read.",
+      "tags": [
+        "log_report",
+        "piplog",
+        "logmeta",
+        "build_type_summary",
+        "pipfun"
+      ],
+      "title": "Internal logmeta type markers polluting build_type_summary() table",
+      "top_keywords": [
+        "build_type_summary()",
+        "info",
+        "error",
+        "build_type_summary",
+        "logmeta",
+        "process_summary_inf",
+        "error_type",
+        "aux_changes_inf",
+        "log_report()",
+        "log_info()"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
+      "slug": "2026-04-29-conditional-column-init-inconsistent-schema",
+      "status": "",
+      "summary": "`update_pip_inventory()` (now `build_pip_inventory()`) populates two new columns on the master inventory (`first_release_version_id`, `latest_release_version_id`). The column initialization (`dt[, col := NA_character_]`) and the population logic were both inside an `if (!is.na(release_vid))` guard. When the release inventory write failed (`release_vid = NA_character_`), the guard never executed — the columns were never added. The master inventory was then saved via `pip_write()` without those columns, producing an inconsistent schema: some versions of the master inventory had both columns, others had neither. Downstream consumers seen with `collapse::rowbind(..., fill = TRUE)` would handle missing columns gracefully on load, but the columns were permanently absent from affected...",
+      "tags": [
+        "data.table",
+        "schema",
+        "column-init",
+        "data-quality",
+        "master-inventory",
+        "release-version",
+        "guard"
+      ],
+      "title": "Conditional column initialization produces inconsistent data.table schema",
+      "top_keywords": [
+        "update_pip_inventory()",
+        "build_pip_inventory()",
+        "guard",
+        "schema",
+        "first_release_version_id",
+        "latest_release_version_id",
+        "population",
+        "inside",
+        "init",
+        "dt[, col := na_character_]"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
+      "slug": "2026-04-29-duplicate-logmeta-discriminator-key",
+      "status": "",
+      "summary": "`update_pip_inventory()` emits an `inv_update_inf` event for the inventory verification block (fields: `n_expected`, `n_confirmed`, `n_missing`, `surveys_confirmed`, `surveys_missing`). When the release inventory write failed, the error handler was also emitting `error = \"inv_update_inf\"` — but with completely different fields (`condition_msg` only, no count or survey list fields). `parse_log_meta()` uses the discriminator string as the sole type key to route entries to report sections. With two structurally different events sharing one key, the verification section renderer received entries missing `n_expected`, `n_confirmed`, etc., causing `vapply(..., character(1))` to fail or produce garbled output.",
+      "tags": [
+        "logmeta",
+        "log_report",
+        "parse_log_meta",
+        "piplog",
+        "discriminator",
+        "inv_update_inf",
+        "release_write_err",
+        "aaa"
+      ],
+      "title": "Duplicate logmeta discriminator key causes malformed report sections",
+      "top_keywords": [
+        "compound-gpid.context.md",
+        ".log_internal_types",
+        "discriminator",
+        "logmeta",
+        "n_expected",
+        "n_confirmed",
+        "r/aaa.r",
+        "release_write_err",
+        "inv_update_inf",
+        "report"
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
+      "slug": "2026-05-04-null-coalescing-operator-not-in-namespace",
+      "status": "",
+      "summary": "`cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function \"%||%\"` error at runtime. The bug was not caught during interactive development because `devtools::load_all()` populates the search path with rlang's exports, making `%||%` available in the session even though it is not in pipdata's namespace.",
+      "tags": [
+        "namespace",
+        "operator",
+        "rlang",
+        "null-coalescing",
+        "package-development"
+      ],
+      "title": "NULL-coalescing operator %||% silently unavailable in package functions",
+      "top_keywords": [
+        "%||%",
+        "operator",
+        "null-coalescing",
+        "cpi_ppp_years()",
+        "r cmd check",
+        "if (is.null(...))",
+        "rlang",
+        "package",
+        "silently",
+        "unavailable"
+      ]
+    },
+    {
+      "date": "2026-05-05",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md",
+      "slug": "2026-05-05-pip-class-stripped-on-stamp-round-trip",
+      "status": "",
+      "summary": "`pd_deflation(pip_id = \"BOL_2022_EH_INC_ALL\")` loads the survey from stamp but the `deflation()` S3 dispatch then fails because the object has no `pipmd` or `pipgd` class.",
+      "tags": [
+        "deflation",
+        "stamp",
+        "pip-class",
+        "pipmd",
+        "pipgd",
+        "s3",
+        "round-trip",
+        "pd-deflation"
+      ],
+      "title": "pipmd/pipgd S3 class stripped when loading survey from stamp",
+      "top_keywords": [
+        "pipmd",
+        "pipgd",
+        "module",
+        "stamp",
+        "pip_write()",
+        "class",
+        "pip_id",
+        "pd_deflation",
+        "pip_read()",
+        "data.table"
+      ]
+    },
+    {
+      "date": "2026-05-05",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md",
+      "slug": "2026-05-05-stale-content-hash-in-load-deflation-aux",
+      "status": "",
+      "summary": "> **UPDATED 2026-08-04**: The graceful-fallback principle described here is > still correct, but the implementation has moved on. The later fix in > [2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md](./2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md) > replaced the `content_hash_metadata` + `pip_read(version = \"available\")` > hash-matching approach entirely: `.load_deflation_aux()` now resolves the > version via `version_id_metadata` directly (confirmed in `R/pd_deflation.R` > lines ~105-134), with the same try-then-fall-back-to-latest behavior. Read > `content_hash_metadata` below as historical; current code uses > `version_id_metadata`.",
+      "tags": [
+        "deflation",
+        "stamp",
+        "inventory",
+        "content-hash",
+        "pd-deflation",
+        "load-deflation-aux"
+      ],
+      "title": "Stale content_hash_metadata in .load_deflation_aux() aborts deflation",
+      "top_keywords": [
+        "content_hash_metadata",
+        "version_id_metadata",
+        "load_deflation_aux",
+        "deflation",
+        "pip_meta",
+        "store-version-id-in-inventory",
+        ".load_deflation_aux()",
+        "format_vrs()",
+        "stale",
+        "aborts"
+      ]
+    },
+    {
+      "date": "2026-05-05",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md",
+      "slug": "2026-05-05-stamp-version-id-vs-content-hash",
+      "status": "",
+      "summary": "`pd_deflation()` in `R/pd_deflation.R` failed with: (The exact hash varies per survey.) The function was passing `row$content_hash_metadata` directly as the `version` argument to `pip_read()`.",
+      "tags": [
+        "stamp",
+        "pip_read",
+        "version_id",
+        "content_hash",
+        "metadata",
+        "pipload",
+        "versioning"
+      ],
+      "title": "stamp version_id ≠ content_hash: resolving the correct version for pip_read",
+      "top_keywords": [
+        "version_id",
+        "content_hash",
+        "pip_read",
+        "content_hash_metadata",
+        "correct",
+        "stamp",
+        "pip_read(version=)",
+        "vintage == 0",
+        "version",
+        "available"
+      ]
+    },
+    {
+      "date": "2026-05-05",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-05-surveyid-year-attribute-name-mismatch.md",
+      "slug": "2026-05-05-surveyid-year-attribute-name-mismatch",
+      "status": "",
+      "summary": "`.validate_deflation_input()` aborted with:",
+      "tags": [
+        "deflation",
+        "attributes",
+        "survey-year",
+        "surveyid-year",
+        "stamp",
+        "round-trip",
+        "pd-deflation"
+      ],
+      "title": "survey_year vs surveyid_year attribute name mismatch between pipeline and stamp",
+      "top_keywords": [
+        "surveyid_year",
+        "survey_year",
+        "make_pipmd()",
+        ".validate_deflation_input()",
+        "pip_read()",
+        "add_cpi()",
+        "list(values=x)",
+        "attribute",
+        "mismatch",
+        "pd_deflation.r"
+      ]
+    },
+    {
+      "date": "2026-05-06",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md",
+      "slug": "2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path",
+      "status": "",
+      "summary": "An earlier version of this document (and several `is.list()` guards in `pd_deflation.R`) was based on the incorrect belief that survey attributes are stored as `list(values = X)` on the live pipeline path.",
+      "tags": [
+        "attributes",
+        "stamp",
+        "round-trip",
+        "pipmd",
+        "pipgd",
+        "retraction",
+        "fixture-bug"
+      ],
+      "title": "RETRACTED: list(values=...) was a fixture bug, not a real pipeline pattern",
+      "top_keywords": [
+        "pd_deflation.r",
+        "is.list()",
+        "ppp_data_level",
+        "attribute",
+        "list(values=...)",
+        "list(values = x)",
+        "make_pipmd()",
+        "add_ppp()",
+        "add_cpi()",
+        "real"
+      ]
+    },
+    {
+      "date": "2026-05-06",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-06-subnational-deflation-area-attribute-not-resolved.md",
+      "slug": "2026-05-06-subnational-deflation-area-attribute-not-resolved",
+      "status": "",
+      "summary": "All surveys with subnational domain (urban/rural in PFW) are silently deflated to `NA`. This affects group data (e.g., all CHN surveys) and any microdata survey where `cpi_domain_var == \"urban\"` in the PFW.",
+      "tags": [
+        "deflation",
+        "subnational",
+        "area",
+        "ppp_data_level",
+        "cpi_data_level",
+        "pop_data_level",
+        "add-ppp",
+        "add-cpi",
+        "adjust-population",
+        "pipgd",
+        "pipmd",
+        "urban",
+        "rural",
+        "national",
+        "mixed-domain"
+      ],
+      "title": "Subnational deflation produces NA: ppp_data_level='area' not resolved to per-row column values",
+      "top_keywords": [
+        "area",
+        "\"area\"",
+        "reporting_level",
+        "ppp_data_level",
+        "*_data_level",
+        "add_dom_vars()",
+        "pd_cpfw_merge.r",
+        "add_rep_lvl()",
+        "cpi_data_level",
+        "subnational"
+      ]
+    },
+    {
+      "date": "2026-05-19",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-19-datatable-scoping-column-vs-argument.md",
+      "slug": "2026-05-19-datatable-scoping-column-vs-argument",
+      "status": "",
+      "summary": "`.load_deflation_aux(pip_id = \"BOL_2022_EH_INC_ALL\")` returned the wrong metadata version. The function appeared to use `4dd1d6d669a5894d` (the GPWG survey's `version_id_metadata`) instead of `dd051b004b8ef091` (the ALL survey's). Diagnosis showed that `inv[inv$pip_id == pip_id, ]` returned ALL 4146 rows instead of 1. After sorting by `created_at_metadata` descending and taking `head(1)`, the row with the most recent timestamp — which happened to be GPWG — was selected.",
+      "tags": [
+        "data.table",
+        "scoping",
+        "filter",
+        "pip_id",
+        "load_deflation_aux"
+      ],
+      "title": "data.table scoping: column name shadows function argument in DT[i, ] filter",
+      "top_keywords": [
+        "table",
+        "scoping",
+        "pattern",
+        "dt[i, ]",
+        "==",
+        "pip_id",
+        "column",
+        "function",
+        "argument",
+        "shadows"
+      ]
+    },
+    {
+      "date": "2026-05-19",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md",
+      "slug": "2026-05-19-reporting-level-duplicate-column-rerun",
+      "status": "",
+      "summary": "> **UPDATED 2026-08-04**: `update_pip_inventory()` has been replaced by > `build_pip_inventory()` (`R/build_pip_inventory.R`), which changes this > further than a simple rename: `build_pip_inventory()` no longer computes > `reporting_level` at all — it is treated as a legacy column and explicitly > **dropped** from `old_inv` before the upsert (see the `legacy_cols` list in > `build_pip_inventory()`). Enrichment with `reporting_level` is now opt-in, > done by callers via `pipload::pip_inv_enrich(inv, fields = \"reporting_level\")` > in the `pipload` package. The specific duplicate-column collision described > below therefore cannot recur inside `pipdata` today, but the general > \"guard before joining a column the target may already carry\" pattern...",
+      "tags": [
+        "update_pip_inventory",
+        "reporting_level",
+        "joyn",
+        "collapse",
+        "ftransform",
+        "duplicate-column",
+        "re-run"
+      ],
+      "title": "reporting_level duplicate column on re-run of pd_process_data",
+      "top_keywords": [
+        "reporting_level",
+        "re-run",
+        "new_pip_inv",
+        "pfw_rl_unq",
+        "old_pip_inv",
+        "update_pip_inventory()",
+        "build_pip_inventory()",
+        "column",
+        "duplicate",
+        "cause"
+      ]
+    },
+    {
+      "date": "2026-05-19",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md",
+      "slug": "2026-05-19-version-id-vs-metadata-version-id-in-format-vrs",
+      "status": "",
+      "summary": "`pd_deflation()` always emitted a stale-version warning and fell back to loading the latest `pip_meta` artifact, even immediately after running `pd_process_data()`. Inspection showed the master inventory had `version_id_metadata = \"4dd1d6d669a5894d\"` for `BOL_2022_EH_INC_ALL`, but `pip_read()` could not find that version — it was actually the version_id of `BOL_2022_EH_INC_GPWG`.",
+      "tags": [
+        "deflation",
+        "stamp",
+        "inventory",
+        "version_id",
+        "format_vrs",
+        "load_deflation_aux",
+        "content_hash"
+      ],
+      "title": "Store version_id (not just content_hash) in master inventory for reliable deflation loading",
+      "top_keywords": [
+        "version_id",
+        "format_vrs()",
+        "ventry$version_id",
+        "version_id_metadata",
+        "pip_write()",
+        "inventory",
+        "content_hash",
+        "artifact",
+        "version_id_data",
+        ".load_deflation_aux()"
+      ]
+    },
+    {
+      "date": "2026-05-20",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-20-joyn-suffix-collision-persisted-to-inventory.md",
+      "slug": "2026-05-20-joyn-suffix-collision-persisted-to-inventory",
+      "status": "",
+      "summary": "After running `pd_process_data()`, `names(new_pip_inv)` contained: `reporting_level.x` and `reporting_level.y` were all `NA`; only `reporting_level` had correct values.",
+      "tags": [
+        "joyn",
+        "data.table",
+        "inventory",
+        "reporting_level",
+        "column-naming",
+        "suffix",
+        "left_join"
+      ],
+      "title": "joyn suffix columns persisted to master inventory cause duplicate reporting_level on re-run",
+      "top_keywords": [
+        "reporting_level",
+        "cause",
+        "joyn",
+        "inventory",
+        "suffix",
+        "new_pip_inv",
+        "related",
+        "old_pip_inv",
+        "reporting_level.x",
+        "reporting_level.y"
+      ]
+    },
+    {
+      "date": "2026-05-22",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-22-adjust-population-year-column-missing.md",
+      "slug": "2026-05-22-adjust-population-year-column-missing",
+      "status": "",
+      "summary": "Deflating ARG 2003 (an urban-only subnational survey with `pop_data_level = \"area\"`) produced a dataset where `welfare` and `weight` were both `NA`/`NaN` for every row. The joyn merge report was visible in the console but no error was thrown, so the survey silently passed through as corrupt output.",
+      "tags": [
+        "adjust_population",
+        "deflation",
+        "year",
+        "survey_year",
+        "NaN",
+        "weights",
+        "ARG",
+        "subnational"
+      ],
+      "title": "adjust_population silent NaN weights when 'year' column absent",
+      "top_keywords": [
+        "year",
+        "nan",
+        "weight",
+        ".validate_deflation_input()",
+        "adjust_population",
+        "weights",
+        "null",
+        "adjust_population()",
+        "r/pd_deflation.r",
+        "column"
+      ]
+    },
+    {
+      "date": "2026-05-27",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-05-27-fs-bytes-class-collapse-rowbind-abort.md",
+      "slug": "2026-05-27-fs-bytes-class-collapse-rowbind-abort",
+      "status": "",
+      "summary": "`pd_process_data()` aborts with:",
+      "tags": [
+        "collapse",
+        "rowbind",
+        "fs_bytes",
+        "class-mismatch",
+        "inventory",
+        "upsert",
+        "schema-drift"
+      ],
+      "title": "fs_bytes class on old master size columns causes collapse::rowbind abort",
+      "top_keywords": [
+        "fs_bytes",
+        "collapse",
+        "rowbind",
+        "build_pip_inventory.r",
+        "old_inv",
+        "collapse::rowbind(new_versions, old_retained, fill = true)",
+        "data.table::rbindlist",
+        "fill = true",
+        "collapse::rowbind",
+        "class"
+      ]
+    },
+    {
+      "date": "2026-06-05",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id.md",
+      "slug": "2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id",
+      "status": "",
+      "summary": "`pd_process_data()` aborted with:",
+      "tags": [
+        "joyn",
+        "anti_join",
+        "reportvar",
+        "survey_id",
+        "duplicate",
+        "inv_to_process",
+        "valid_dlw_load",
+        "build_pip_inventory"
+      ],
+      "title": "joyn::anti_join missing reportvar=FALSE leaks .joyn column causing duplicate survey_id in inv_to_clean",
+      "top_keywords": [
+        ".joyn",
+        "inv_to_process()",
+        "survey_id",
+        "reportvar = false",
+        "joyn",
+        "anti_join",
+        "build_pip_inventory()",
+        "filter_aux_inv()",
+        "inv_to_clean",
+        "reportvar"
+      ]
+    },
+    {
+      "date": "2026-04-16",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/build-errors/2026-04-16-non-ascii-characters-in-r-code.md",
+      "slug": "2026-04-16-non-ascii-characters-in-r-code",
+      "status": "",
+      "summary": "`devtools::check()` emits: The file passes `devtools::test()` without any failures.",
+      "tags": [
+        "r-cmd-check",
+        "encoding",
+        "ASCII",
+        "unicode",
+        "CRAN",
+        "package-check"
+      ],
+      "title": "R CMD check WARNING: non-ASCII characters in R source files",
+      "top_keywords": [
+        "log_report.r",
+        "non-ascii",
+        "# ── internal helpers ─────",
+        "r cmd check",
+        "\\uxxxx",
+        "characters",
+        "cmd",
+        "warning",
+        "source",
+        "2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md"
+      ]
+    },
+    {
+      "date": "2026-04-16",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/build-errors/2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md",
+      "slug": "2026-04-16-r-cmd-check-no-visible-binding-datatable-nse",
+      "status": "",
+      "summary": "Running `devtools::check()` produces a wall of NOTEs like: `devtools::test()` passes with zero failures — the issue only appears in `check()`.",
+      "tags": [
+        "r-cmd-check",
+        "data.table",
+        "NSE",
+        "globalVariables",
+        "CRAN",
+        "package-check"
+      ],
+      "title": "R CMD check 'no visible binding' notes from data.table NSE column names",
+      "top_keywords": [
+        "utils::globalvariables()",
+        "r/aaa.r",
+        "nse",
+        "check()",
+        ".r",
+        "aaa.r",
+        "table",
+        "visible",
+        "binding",
+        "column"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/build-errors/2026-04-29-roxygen-link-to-unexported-function.md",
+      "slug": "2026-04-29-roxygen-link-to-unexported-function",
+      "status": "",
+      "summary": "Running `devtools::check()` produces a WARNING: The offending line in the roxygen block:",
+      "tags": [
+        "r-cmd-check",
+        "roxygen2",
+        "documentation",
+        "unexported",
+        "cross-reference"
+      ],
+      "title": "Roxygen [foo()] cross-reference to unexported function causes R CMD check WARNING",
+      "top_keywords": [
+        "[foo()]",
+        "foo",
+        "warning",
+        "cross-reference",
+        "unexported",
+        "@nord",
+        "@export",
+        "roxygen",
+        "function",
+        "cmd"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/build-errors/2026-04-30-r-package-file-archival-checklist.md",
+      "slug": "2026-04-30-r-package-file-archival-checklist",
+      "status": "",
+      "summary": "When archiving (moving to `old_files/`) R source files from an active package, `devtools::check()` failed with multiple errors: 1. **Missing function**: `adjust_population()` was defined in the archived `pd_add_pip_vars.R` but still called in `pd_deflation.R`. Package failed to build. 2. **Undefined example symbol**: `@examples` blocks that called `survey_id_to_attr()` (a replacement for `pipdata:::m_svy_id_to_att()`) without `\\dontrun{}` caused R CMD check to flag the symbol as undefined. The original `:::` calls silently suppressed static analysis — removing them exposed the bare call to the checker. 3. **Orphaned test file**: `test-dlw_dta_to_qs.R` tested the archived `dlw_dta_to_qs()` function. With the source file gone, `devtools::test()` reported errors for a function...",
+      "tags": [
+        "archiving",
+        "r-cmd-check",
+        "namespace",
+        "examples",
+        "dontrun",
+        "test-files",
+        "dead-code"
+      ],
+      "title": "R package file archival checklist",
+      "top_keywords": [
+        ":::",
+        "@examples",
+        "devtools",
+        "\\dontrun{}",
+        "test-dlw_dta_to_qs.r",
+        "archived",
+        "function",
+        "test",
+        "tests",
+        "testthat"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md",
+      "slug": "2026-04-27-dplyr-to-datatable-collapse-migration-patterns",
+      "status": "",
+      "summary": "Functions used `dplyr::`, `tidyr::`, and `tibble::` without declaring these packages in `DESCRIPTION Imports`. This creates phantom dependencies — the package works only if those packages happen to be loaded in the session, not because they are formally required.",
+      "tags": [
+        "dplyr",
+        "data.table",
+        "collapse",
+        "fcase",
+        "rbindlist",
+        "migration",
+        "refactoring"
+      ],
+      "title": "dplyr/tidyr/tibble → data.table/collapse migration patterns",
+      "top_keywords": [
+        "table",
+        "dplyr",
+        "keyby",
+        "fcase",
+        "rbindlist",
+        "collapse",
+        "factor",
+        "bind_rows",
+        "tidyr",
+        "tibble"
+      ]
+    },
+    {
+      "date": "2026-05-07",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md",
+      "slug": "2026-05-07-deflation-output-contract",
+      "status": "",
+      "summary": "`pd_deflation()` returned both a `welfare` column and a `welfare_lcu` column, where `welfare_lcu` was created as a direct copy of `welfare` before the `deflate_wlf()` step. This caused two issues: 1. **Redundant column**: `welfare` and `welfare_lcu` were always identical in value. Downstream code had to know to use `welfare_lcu` (the pre-deflation LCU value) and ignore `welfare`. 2. **No discovery metadata**: callers had no structured way to find which welfare columns were created or whether population adjustment was applied. Typically required `grep(\"^welfare_\", names(result))` or manual inspection.",
+      "tags": [
+        "deflation",
+        "output-contract",
+        "welfare_vars",
+        "adj_pop",
+        "welfare_lcu",
+        "attributes",
+        "pd_deflation"
+      ],
+      "title": "Deflation output contract: welfare_lcu, welfare_vars, adj_pop",
+      "top_keywords": [
+        "welfare",
+        "welfare_lcu",
+        "adj_pop",
+        "welfare_vars",
+        "deflation",
+        "weight",
+        "finalize_deflation_output()",
+        "column",
+        "attribute",
+        "canonical"
+      ]
+    },
+    {
+      "date": "2026-05-19",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md",
+      "slug": "2026-05-19-guard-before-join-reentrant-column",
+      "status": "",
+      "summary": "A pipeline function that: 1. loads an existing artifact from disk (`old_x <- load_...()`) 2. row-binds it with freshly computed data (`new_x <- rowbind(fresh, old_x)`) 3. computes column `Y` and joins a lookup table that also contains column `Y` …works on the first run (disk artifact doesn't exist yet → `old_x` is NULL) but errors on every subsequent run with: Traceback traces through `joyn::left_join` → `collapse::ftransform`.",
+      "tags": [
+        "joyn",
+        "collapse",
+        "ftransform",
+        "duplicate-column",
+        "reentrant",
+        "load-then-recompute",
+        "data.table",
+        "re-run"
+      ],
+      "title": "Guard before join: dropping reentrant columns in load-then-recompute functions",
+      "top_keywords": [
+        "reporting_level",
+        "update_pip_inventory()",
+        ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md",
+        "collapse",
+        "re-run",
+        "load-then-recompute",
+        "reentrant",
+        "col",
+        "r/update_pip_inventory.r",
+        "build_pip_inventory()"
+      ]
+    },
+    {
+      "date": "2026-05-27",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-05-27-catalog-validation-before-filter-spurious-warnings.md",
+      "slug": "2026-05-27-catalog-validation-before-filter-spurious-warnings",
+      "status": "",
+      "summary": "`build_pip_inventory()` emitted `build_pip_inventory_bad_pip_id_format` warnings on every run — even when the current run's surveys were perfectly valid. The warnings listed artifact paths from historical stamp catalog entries (test artifacts, admin snapshots) completely unrelated to the current run.",
+      "tags": [
+        "stamp",
+        "catalog",
+        "validation",
+        "filter-first",
+        "pip_id",
+        "warning"
+      ],
+      "title": "Catalog-wide validation before scope filter generates spurious warnings",
+      "top_keywords": [
+        "validation",
+        "warnings",
+        "filter",
+        "spurious",
+        "target_ids",
+        "artifacts",
+        "current-run",
+        "validate",
+        "order",
+        "scope"
+      ]
+    },
+    {
+      "date": "2026-05-27",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md",
+      "slug": "2026-05-27-legacy-column-persistence-in-on-disk-inventory",
+      "status": "",
+      "summary": "After replacing `update_pip_inventory()` with `build_pip_inventory()`, `reporting_level` (and other stale columns) continued to appear in the loaded master inventory even though the new assembler never produces it. The column surfaced in `load_pip_master_inventory()` results and confused downstream consumers that expected a clean schema.",
+      "tags": [
+        "inventory",
+        "master-inventory",
+        "legacy-cleanup",
+        "reporting_level",
+        "data-migration"
+      ],
+      "title": "Legacy columns persist in on-disk master inventory across rebuilds",
+      "top_keywords": [
+        "build_pip_inventory()",
+        "reporting_level",
+        "inventory",
+        "legacy_cols",
+        "update_pip_inventory()",
+        "master",
+        "columns",
+        "on-disk",
+        "legacy",
+        "persist"
+      ]
+    },
+    {
+      "date": "2026-06-05",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md",
+      "slug": "2026-06-05-joyn-diagnostic-column-discipline",
+      "status": "",
+      "summary": "Two distinct classes of bug in this codebase were caused by the same underlying pattern: `joyn::` join diagnostic columns surviving into production data. **Class 1 — `.joyn` report column** (2026-06-05): `joyn::anti_join(..., verbose = FALSE)` without `reportvar = FALSE` appended a `.joyn` factor column to `inv_svy`. When `rbind`-ed with `inv_aux` (no `.joyn`), `fill = TRUE` set `.joyn = NA` for aux rows. `unique()` treated `.joyn = \"x\"` and `.joyn = NA` as distinct rows for the same `survey_id`, bypassing deduplication. `build_pip_inventory()` then aborted on `anyDuplicated(inv_to_clean$survey_id) == 0L`. **Class 2 — `.x`/`.y` suffix columns** (2026-05-20): `joyn::left_join()` suffixed a shared column (`reporting_level`) as...",
+      "tags": [
+        "joyn",
+        "reportvar",
+        "suffix",
+        "anti_join",
+        "left_join",
+        "inner_join",
+        ".joyn",
+        "schema",
+        "production-data",
+        "data-quality"
+      ],
+      "title": "joyn diagnostic columns in production data paths — reportvar and suffix discipline",
+      "top_keywords": [
+        "joyn",
+        "joyn::",
+        "reportvar",
+        ".joyn",
+        ".x",
+        ".y",
+        "reportvar = false",
+        "production",
+        "rule",
+        "columns"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
+      "slug": "2026-04-30-unified-package-environment-accessor-pattern",
+      "status": "",
+      "summary": "`pipdata` had three separate package-level environments: | Environment | Purpose | Defined in | |-------------|---------|------------| | `.pipdata` | DLW validation accumulator (`validation_report`) | `aaa.R` | | `.pipdataenv` | Save context (`save_id_name`) + pipeline context (`process_survey_id`) | `aaa.R` + re-init `zzz.R` | | `.logenv` | Deflation error log (`survey_id`, `piperr`, `unk_err`) | `aaa.R` + re-init `zzz.R` | This caused: - Raw `assign()`, `rm()`, `$`, `env_has()`, `env_poke()`, `get()` scattered across 7 source files — no encapsulation, no discoverability - Dual-initialization: `.pipdataenv` and `.logenv` were both created in `aaa.R` **and** re-created in `.onLoad()` in `zzz.R` — order-dependent, fragile - No consistent test pattern...",
+      "tags": [
+        "environment",
+        "package-state",
+        "accessor-helpers",
+        "refactoring",
+        "aaa.R",
+        ".pipdataenv"
+      ],
+      "title": "Unified package environment: merging .pipdata / .pipdataenv / .logenv into one",
+      "top_keywords": [
+        "aaa.r",
+        ".pipdataenv",
+        "zzz.r",
+        "environment",
+        ".logenv",
+        "pipdata",
+        "unified",
+        "2026-04-27-testing-package-environment-state.md",
+        "aaa",
+        "pattern"
+      ]
+    },
+    {
+      "date": "2026-04-23",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/git-workflows/2026-04-23-auditing-repeated-function-calls-by-data-object.md",
+      "slug": "2026-04-23-auditing-repeated-function-calls-by-data-object",
+      "status": "",
+      "summary": "A `survey_id_to_vars` audit was requested to check if the function was called redundantly across the pipdata pipeline. A naive grep found 3+ call sites and the assumption was that some were unnecessary duplicates.",
+      "tags": [
+        "refactoring",
+        "audit",
+        "call-graph",
+        "survey_id_to_vars",
+        "pipload",
+        "data-flow"
+      ],
+      "title": "Auditing repeated function calls by tracing data objects, not call counts",
+      "top_keywords": [
+        "survey_id_to_vars()",
+        "final_inv",
+        "bind_rows(new_inv)",
+        "function",
+        "survey_id_to_vars",
+        "objects",
+        "auditing",
+        "pipload",
+        "tracing",
+        "repeated"
+      ]
+    },
+    {
+      "date": "2026-04-23",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/git-workflows/2026-04-23-guard-at-entry-point-pattern.md",
+      "slug": "2026-04-23-guard-at-entry-point-pattern",
+      "status": "",
+      "summary": "`pipfun::get_wrk_release()` appeared in 13 call sites across 8 files in pipdata. Functions called from `pipdata_dlw_process()` re-called the guard even though their parent had already asserted the release was set. This produced: - Redundant assertions adding noise to call stacks - Every exported function needing to mock `get_wrk_release()` in tests (see related: mocking-external-package-calls) - An unclear picture of the intended call hierarchy",
+      "tags": [
+        "get_wrk_release",
+        "guard-pattern",
+        "call-hierarchy",
+        "pipfun",
+        "refactoring",
+        "entry-point"
+      ],
+      "title": "Guard-at-entry-point pattern for release validation in pipdata",
+      "top_keywords": [
+        "get_wrk_release()",
+        "pipfun::get_wrk_release()",
+        "@note",
+        "wrk_release",
+        "get_wrk_release",
+        "pipfun",
+        "guard-at-entry-point",
+        "pattern",
+        "2026-04-16-mocking-external-package-calls-at-function-startup.md",
+        "2026-04-23-remove-redundant-get-wrk-release.md"
+      ]
+    },
+    {
+      "date": "2026-07-22",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md",
+      "slug": "2026-07-22-per-survey-logging-retains-large-survey-objects",
+      "status": "",
+      "summary": "Full `pd_process_data()` runs on the `var_tabmaker2` branch showed runaway RAM use and eventual OOM/session aborts even after the pipeline started cleaning up survey intermediates more aggressively. The symptom was misleading because the obvious suspects were already known: - `process_data()` held several survey-sized objects (`df`, `ls_cpfw`, `ls_clean`, `metadata`) - `apply_recode_spec()` had recently added YAML-driven recoding to every survey - `save_pip_data()` failures surfaced as heap pressure / allocation errors The decisive clue was that memory still grew across the run unless a planned per-survey `log_info()` call inside `apply_recode_spec()` was avoided.",
+      "tags": [
+        "memory",
+        "performance",
+        "logging",
+        "pipfun",
+        "capture_log_args",
+        ".piplogenv",
+        "pd_process_data",
+        "apply_recode_spec",
+        "recode_spec",
+        "OOM"
+      ],
+      "title": "Per-survey typed logging can retain large survey objects and blow up RAM",
+      "top_keywords": [
+        "apply_recode_spec()",
+        "survey",
+        "per-survey",
+        "function",
+        "pd_process_data()",
+        "dt",
+        "pipfun",
+        "ram",
+        ".piplogenv",
+        "logging"
+      ]
+    },
+    {
+      "date": "2026-04-06",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-04-06-documenting-internal-pipeline-functions.md",
+      "slug": "2026-04-06-documenting-internal-pipeline-functions",
+      "status": "",
+      "summary": "The top-level wrapper `pd_process_data()` delegates to a chain of internal functions across four files. None of those functions had roxygen2 documentation, making it difficult to understand inputs, outputs, and responsibilities when reading or reviewing the code. The functions affected were: | File | Functions | |---|---| | `R/inv_dlw_load.R` | `inv_dlw_load`, `data_to_dt`, `survey_id_to_attr` | | `R/pd_aux_attr.R` | `pd_aux_attr`, `add_attr`, `filter_aux_data`, `create_attr` | | `R/save_pip.R` | `save_pip_data` | | `R/valid_dlw_load.R` | `valid_dlw_load`, `filter_aux_inv`, `fix_year_var`, `inv_to_process` | | `R/update_pip_inventory.R` | `update_pip_inventory`, `format_vrs` |",
+      "tags": [
+        "roxygen2",
+        "documentation",
+        "internal-functions",
+        "pipeline",
+        "r-package",
+        "pd_process_data"
+      ],
+      "title": "Documenting internal functions in the pd_process_data pipeline",
+      "top_keywords": [
+        "pipeline",
+        "@export",
+        "functions",
+        "internal",
+        "pd_process_data",
+        "namespace",
+        "template",
+        "pd_process_data()",
+        "r/inv_dlw_load.r",
+        "r/pd_aux_attr.r"
+      ]
+    },
+    {
+      "date": "2026-04-07",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-04-07-synthetic-piplog-testing-pattern.md",
+      "slug": "2026-04-07-synthetic-piplog-testing-pattern",
+      "status": "",
+      "summary": "`log_report()` and its builder functions (`build_type_summary()`, `build_processing_summary()`, `build_aux_changes()`, etc.) all take a `piplog` object as input. A real `piplog` is produced by running the full `pd_process_data()` pipeline, which requires DLW credentials and network access. This makes unit testing hard: tests cannot depend on external resources, and coverage would be impossible in CI.",
+      "tags": [
+        "log_report",
+        "piplog",
+        "pipfun",
+        "testthat",
+        "data.table",
+        "unit-testing",
+        "fixtures"
+      ],
+      "title": "Synthetic piplog construction for unit testing log_report builders",
+      "top_keywords": [
+        "piplog",
+        "log_report",
+        "testing",
+        "make_entry()",
+        "make_piplog()",
+        "fill = true",
+        "builders",
+        "unit",
+        "synthetic",
+        "construction"
+      ]
+    },
+    {
+      "date": "2026-04-16",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-04-16-mocking-external-package-calls-at-function-startup.md",
+      "slug": "2026-04-16-mocking-external-package-calls-at-function-startup",
+      "status": "",
+      "summary": "`dlw_dta_to_qs()` calls `pipfun::get_wrk_release()` as its very first line to assert that a working PIP release is configured. In the test environment no real release exists, so every test aborted immediately with: All 4 tests in `test-dlw_dta_to_qs.R` failed — not because of a logic bug, but because the tests never reached the code they were meant to exercise.",
+      "tags": [
+        "testthat",
+        "mocking",
+        "local_mocked_bindings",
+        "pipfun",
+        "unit-testing",
+        "startup-guard"
+      ],
+      "title": "Mocking external package calls made at function startup so tests reach the actual logic",
+      "top_keywords": [
+        "dlw_dta_to_qs()",
+        "local_mocked_bindings()",
+        "tests",
+        "mocking",
+        "pipfun::get_wrk_release()",
+        "testthat::local_mocked_bindings()",
+        "test_that()",
+        "function",
+        "package",
+        "startup"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-04-27-contract-testing-for-logging-side-effects.md",
+      "slug": "2026-04-27-contract-testing-for-logging-side-effects",
+      "status": "",
+      "summary": "Pipeline functions like `valid_dlw_load()` and `update_pip_inventory()` emit logmeta entries as a side effect. These logging branches were untested (P2.4 from review), but full integration testing is blocked by heavy external dependencies: - `valid_dlw_load()` calls `valid_aux_load()` → `pipaux` → network/disk - `update_pip_inventory()` calls `pipload::load_pip_master_inventory()`, `pipload::pip_write()`, `pipload::load_aux_data()` → file system Attempting to mock entire packages (`local_mocked_bindings(pipload = list(...)`) fails with `Can't find binding for 'pipload'`. Mocking internal helpers while leaving the external call chain live causes unexpected errors deep in the call stack. Full pipeline integration tests require a real release environment.",
+      "tags": [
+        "testing",
+        "logging",
+        "contract-testing",
+        "logmeta",
+        "side-effects",
+        "mocking",
+        "integration"
+      ],
+      "title": "Contract testing for logging side effects with external dependencies",
+      "top_keywords": [
+        "pattern",
+        "contract",
+        "logging",
+        "testing",
+        "source",
+        "valid_dlw_load()",
+        "update_pip_inventory()",
+        "use this pattern",
+        "logmeta",
+        "side"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-04-27-testing-package-environment-state.md",
+      "slug": "2026-04-27-testing-package-environment-state",
+      "status": "",
+      "summary": "Several pipdata functions (e.g., `get_data_status()`, `get_validation_report()`) read state from the unified package-level environment `.pipdataenv`. These functions cannot be unit tested without either: 1. Running the full pipeline (integration test — slow, fragile), or 2. Directly injecting state via accessor helpers (unit test — fast, isolated)",
+      "tags": [
+        "testing",
+        "environment",
+        "injection",
+        ".pipdataenv",
+        "pd_env_set",
+        "withr",
+        "on.exit",
+        "fixtures"
+      ],
+      "title": "Testing functions that read from the unified package environment (.pipdataenv)",
+      "top_keywords": [
+        ".pipdataenv",
+        "2026-04-30-unified-package-environment-accessor-pattern.md",
+        "environment",
+        "testing",
+        "force",
+        "testthat",
+        "pd_env_set()",
+        "on.exit(pd_env_rm(...))",
+        "assign()",
+        "pd_env_set"
+      ]
+    },
+    {
+      "date": "2026-04-29",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-04-29-logging-in-trycatch-handlers.md",
+      "slug": "2026-04-29-logging-in-trycatch-handlers",
+      "status": "",
+      "summary": "When `log_info()` or `log_error()` is called inside a `tryCatch` error handler, the `args` column in the `piplog` row contains garbage instead of the enclosing function's arguments: The same issue occurs inside `lapply()` callbacks:",
+      "tags": [
+        "logging",
+        "pipfun",
+        "log_info",
+        "log_error",
+        "capture_log_args",
+        "tryCatch",
+        "lapply",
+        "logmeta",
+        "args"
+      ],
+      "title": "Logging inside tryCatch error handlers and lapply callbacks with pipfun typed wrappers",
+      "top_keywords": [
+        "logmeta",
+        "args",
+        "trycatch",
+        "pipfun",
+        "piplog",
+        "log_info()",
+        "log_error()",
+        "logmeta$error",
+        "logmeta$info",
+        "handlers"
+      ]
+    },
+    {
+      "date": "2026-05-06",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md",
+      "slug": "2026-05-06-stamp-vs-pipeline-path-test-fixtures",
+      "status": "",
+      "summary": "`ppp_data_level`, `cpi_data_level`, and `pop_data_level` are **attributes only** — they are never columns in a `pipmd`/`pipgd` data.table. `add_ppp()`, `add_cpi()`, and `add_rep_lvl()` read them directly from `attr(dt, ...)`.",
+      "tags": [
+        "fixtures",
+        "stamp",
+        "round-trip",
+        "pipmd",
+        "pipgd",
+        "make_pipmd_stamp",
+        "make_pipmd",
+        "test-fixtures",
+        "attributes",
+        "data-level"
+      ],
+      "title": "Dual fixture pattern: stamp-path vs pipeline-path for pipmd/pipgd objects",
+      "top_keywords": [
+        "make_pipmd()",
+        "pipmd",
+        "pipgd",
+        "pip_id",
+        "module",
+        "pd_deflation()",
+        "welfare_type",
+        "country_code",
+        "surveyid_year",
+        "survey_acronym"
+      ]
+    },
+    {
+      "date": "2026-05-20",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
+      "slug": "2026-05-20-package-operators-not-available-in-test-helpers",
+      "status": "",
+      "summary": "A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used `%||%`: Running `devtools::test_active_file()` produced:",
+      "tags": [
+        "testthat",
+        "rlang",
+        "%||%",
+        "operator",
+        "test-helpers",
+        "namespace",
+        "devtools"
+      ],
+      "title": "Package-imported operators (%||%, %in%, etc.) are not available in test helper functions",
+      "top_keywords": [
+        "%||%",
+        "tests/testthat/test-update_pip_inventory.r",
+        "tests/testthat/test-build_pip_inventory.r",
+        "devtools::test_active_file()",
+        "test",
+        "helper",
+        "operators",
+        "functions",
+        "available",
+        "package-imported"
+      ]
+    },
+    {
+      "date": "2026-05-29",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-05-29-expect-warning-returns-condition-not-value.md",
+      "slug": "2026-05-29-expect-warning-returns-condition-not-value",
+      "status": "",
+      "summary": "A test that captures `expect_warning()`'s return value and then inspects fields on it silently receives `NULL` for all fields: The failures look like:",
+      "tags": [
+        "testthat",
+        "expect_warning",
+        "return-value",
+        "condition",
+        "mocking"
+      ],
+      "title": "expect_warning() returns the condition object, not the expression value",
+      "top_keywords": [
+        "expect_warning",
+        "null",
+        "expr",
+        "condition",
+        "result",
+        "actual",
+        "expected",
+        "expect_warning()",
+        "{ }",
+        "expect_error()"
+      ]
+    },
+    {
+      "date": "2026-08-04",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-08-04-verify-subagent-audit-claims-independently.md",
+      "slug": "2026-08-04-verify-subagent-audit-claims-independently",
+      "status": "",
+      "summary": "During a `/cg-compound-refresh` run auditing all 31 `.cg-docs/solutions/*.md` files for drift, 4 parallel `Explore` subagents were dispatched (one per category group) to compare each solution doc's claims against current code. Two of their conclusions were wrong: 1. **False \"CRITICAL\" bug claim**: A subagent reported that `R/pd_deflation.R` has a critical bug because it uses `version_id_metadata`, which a 2026-05-04 solution doc claimed \"does not exist\" in the master inventory schema. Taken at face value, this would have led to \"fix the code\" — the wrong remediation. 2. **False schema-compliance claim**: A different subagent flagged 13 solution files as \"missing the required `status`...",
+      "tags": [
+        "subagent",
+        "explore-agent",
+        "verification",
+        "drift-detection",
+        "compound-refresh",
+        "hallucination",
+        "false-positive",
+        "knowledge-base-audit"
+      ],
+      "title": "Verify subagent audit claims independently before trusting severity or schema conclusions",
+      "top_keywords": [
+        "status",
+        "severity",
+        "subagent",
+        "2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md",
+        "cg-skill-compound-docs",
+        "version_id_*",
+        ".github/skills/cg-skill-compound-docs/references/solution-schema.md",
+        "solution-schema.md",
+        "schema",
+        "claims"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "entity_type": "strategy",
+      "path": ".cg-docs/strategy/2026-04-27-code-quality-focus.md",
+      "slug": "2026-04-27-code-quality-focus",
+      "status": "",
+      "summary": "- All 3 active plans completed (log report enrichment, get_wrk_release guard cleanup, survey_id_to_vars audit). - No active work in progress; no open review findings. - Charter \"Current Focus\" was empty (placeholder). - Roadmap: 3 milestones, 11 features total (2 done, 9 unstarted — 82% idea stage).",
+      "tags": [],
+      "title": "Set Code Quality & Refactoring as current focus",
+      "top_keywords": [
+        "current focus",
+        "code quality",
+        "session",
+        "set code quality",
+        "quality",
+        "refactoring",
+        "current",
+        "focus",
+        "compound-gpid.md",
+        "roadmap.json"
+      ]
+    }
+  ],
+  "entity_count": 103,
+  "generated": "2026-08-04",
+  "schema_version": "0.2.0",
+  "topic_count": 2,
+  "topics": [
+    {
+      "entity_count": 75,
+      "entity_paths": [
+        ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
+        ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
+        ".cg-docs/brainstorms/2026-04-29-date-valid-vintage.md",
+        ".cg-docs/brainstorms/2026-05-06-subnational-deflation-area-resolution.md",
+        ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md",
+        ".cg-docs/brainstorms/2026-05-27-inventory-delta-strategy.md",
+        ".cg-docs/plans/2026-04-06-enrich-log-report.md",
+        ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
+        ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
+        ".cg-docs/plans/2026-04-27-error-handling-audit.md",
+        ".cg-docs/plans/2026-04-27-logging-integration-tests.md",
+        ".cg-docs/plans/2026-04-27-nested-trycatch.md",
+        ".cg-docs/plans/2026-04-27-utils-cleanup.md",
+        ".cg-docs/plans/2026-04-28-env-setup.md",
+        ".cg-docs/plans/2026-04-28-loop-to-apply.md",
+        ".cg-docs/plans/2026-04-28-unified-logging.md",
+        ".cg-docs/plans/2026-04-29-remove-date-valid-filter.md",
+        ".cg-docs/plans/2026-04-29-unified-logging-v2.md",
+        ".cg-docs/plans/2026-04-30-env-setup-v2.md",
+        ".cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md",
+        ".cg-docs/plans/2026-05-18-ppp-sort-attribute.md",
+        ".cg-docs/plans/2026-05-19-fix-inventory-save-reporting-level.md",
+        ".cg-docs/plans/2026-05-19-fix-reporting-level-duplication.md",
+        ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+        ".cg-docs/plans/2026-06-18-save-pip-memory-resilience.md",
+        ".cg-docs/plans/2026-06-24-pd-process-data-oom-crash.md",
+        ".cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md",
+        ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
+        ".cg-docs/reviews/2026-04-16-review.md",
+        ".cg-docs/reviews/2026-04-27-branch-review.md",
+        ".cg-docs/reviews/2026-04-27-dplyr-to-collapse-phase1-review.md",
+        ".cg-docs/reviews/2026-04-27-error-handling-audit-review.md",
+        ".cg-docs/reviews/2026-04-29-remove-date-valid-filter-light-review.md",
+        ".cg-docs/reviews/2026-04-29-remove-date-valid-filter-review.md",
+        ".cg-docs/reviews/2026-04-30-archive-legacy-dlw-review-2.md",
+        ".cg-docs/reviews/2026-04-30-archive-legacy-dlw-review.md",
+        ".cg-docs/reviews/2026-04-30-env-setup-v2-review.md",
+        ".cg-docs/reviews/2026-05-04-integrate-deflation-plan-review.md",
+        ".cg-docs/reviews/2026-05-04-integrate-deflation-review-2.md",
+        ".cg-docs/reviews/2026-05-04-integrate-deflation-review.md",
+        ".cg-docs/reviews/2026-05-07-get-country-pfw-review.md",
+        ".cg-docs/reviews/2026-05-07-get-country-pfw-verify-review.md",
+        ".cg-docs/reviews/2026-05-08-verbose-option-propagation-review.md",
+        ".cg-docs/reviews/2026-05-18-ppp-sort-attribute-review.md",
+        ".cg-docs/reviews/2026-05-19-fix-inventory-save-reporting-level-review.md",
+        ".cg-docs/reviews/2026-05-19-fix-reporting-level-duplication-review.md",
+        ".cg-docs/reviews/2026-05-20-inventory-architecture-refactor-review.md",
+        ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
+        ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
+        ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
+        ".cg-docs/solutions/bugs/2026-05-05-pip-class-stripped-on-stamp-round-trip.md",
+        ".cg-docs/solutions/bugs/2026-05-05-stale-content-hash-in-load-deflation-aux.md",
+        ".cg-docs/solutions/bugs/2026-05-05-stamp-version-id-vs-content-hash.md",
+        ".cg-docs/solutions/bugs/2026-05-05-surveyid-year-attribute-name-mismatch.md",
+        ".cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md",
+        ".cg-docs/solutions/bugs/2026-05-06-subnational-deflation-area-attribute-not-resolved.md",
+        ".cg-docs/solutions/bugs/2026-05-19-reporting-level-duplicate-column-rerun.md",
+        ".cg-docs/solutions/bugs/2026-05-19-version-id-vs-metadata-version-id-in-format-vrs.md",
+        ".cg-docs/solutions/bugs/2026-05-20-joyn-suffix-collision-persisted-to-inventory.md",
+        ".cg-docs/solutions/bugs/2026-05-22-adjust-population-year-column-missing.md",
+        ".cg-docs/solutions/bugs/2026-05-27-fs-bytes-class-collapse-rowbind-abort.md",
+        ".cg-docs/solutions/bugs/2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id.md",
+        ".cg-docs/solutions/build-errors/2026-04-16-non-ascii-characters-in-r-code.md",
+        ".cg-docs/solutions/build-errors/2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md",
+        ".cg-docs/solutions/build-errors/2026-04-29-roxygen-link-to-unexported-function.md",
+        ".cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md",
+        ".cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md",
+        ".cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md",
+        ".cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md",
+        ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
+        ".cg-docs/solutions/git-workflows/2026-04-23-guard-at-entry-point-pattern.md",
+        ".cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md",
+        ".cg-docs/solutions/testing-patterns/2026-04-27-contract-testing-for-logging-side-effects.md",
+        ".cg-docs/solutions/testing-patterns/2026-04-29-logging-in-trycatch-handlers.md",
+        ".cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md"
+      ],
+      "keywords": [
+        "reporting_level",
+        "aaa.r",
+        "pd_deflation.r"
+      ],
+      "label": "Reporting_Level / Aaa.R / Pd_Deflation.R",
+      "slug": "reporting-level-aaa-r-pd-deflation-r"
+    },
+    {
+      "entity_count": 4,
+      "entity_paths": [
+        ".cg-docs/plans/2026-04-30-archive-dead-pip-vars.md",
+        ".cg-docs/plans/2026-04-30-archive-legacy-dlw.md",
+        ".cg-docs/plans/2026-04-30-position-deflation.md",
+        ".cg-docs/plans/2026-04-30-relocate-mock-funs.md"
+      ],
+      "keywords": [
+        "old_files/",
+        "archive",
+        "devtools::document()"
+      ],
+      "label": "Old_Files/ / Archive / Devtools::Document()",
+      "slug": "old-files-archive-devtools-document"
+    }
+  ]
+}

@@ -17,12 +17,3 @@ data.table
 \description{
 wbpip_clean method for pipmd class (microdata)
 }
-\examples{
-md   <- pipload::pip_load_dlw(country = "PRY", 2012)
-pfw <- pipload::pip_load_aux("pfw")
-cpfw <- get_country_pfw(md, pfw)
-md   <- pd_split_alt_welfare(md, cpfw)
-x <- pd_dlw_clean(md, cpfw)
-y <- wbpip_clean(x[[1]])
-summary(y$weight)
-}
