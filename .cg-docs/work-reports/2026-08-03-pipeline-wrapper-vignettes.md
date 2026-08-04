@@ -136,3 +136,70 @@ to `Validating-Data.html`.
 Acceptance criteria met: knits cleanly, every named function/argument
 matches current source, `PIP-data-pipeline.Rmd` cross-reference updated in
 both locations, no image reference.
+
+## Run 3 — 2026-08-04 — Phase 2, Step 3: Rewrite `Processing-Data.Rmd`
+
+Re-read `R/pd_process_data.R` (full) and `R/pd_deflation.R` (full) to verify
+mechanics before rewriting. Replaced the entire old file content (which
+covered the archived/superseded `pd_split_alt_welfare` / `pd_wbpip_clean` /
+`get_country_pfw` / `pd_add_pip_vars` sub-chain and embedded
+`images/pd_functions.png`) via `replace_string_in_file` (`create_file`
+correctly refused since the file already existed).
+
+New structure: intro + cross-references to `PIP-data-pipeline.html` and
+`Validating-Data.html`; an "Important" callout that `pd_process_data()`
+does not deflate; a `pd_process_data()` section with full parameter
+breakdown and a 6-step "What happens inside" numbered walkthrough (aux
+load, `valid_dlw_load()` filtering + aux-change detection, `sync_recode_spec()`
+once, per-survey `process_data()` chain with error handling, logging, and
+`build_pip_inventory()` rebuild), followed by a "What is the recode spec?"
+subsection (added after user follow-up requests) defining
+`inst/extdata/recode_spec.yml`'s schema and how `apply_recode_spec()`
+applies replace-type vs. derive-type rules; a "Deflation is a separate
+step" section (Mode A / legacy Mode A / Mode B examples, S3 dispatch,
+`pipload::load_pip_deflated_data()` convenience wrapper, and a forward
+reference to the future `pd_deflate_pipeline()` roadmap idea); and a
+`log_report()` section (usage examples, report contents, and the same
+logging-scope caveat used in the other two vignettes, referencing
+`unified-logging-report`).
+
+**Self-verification (grep, agent-run):**
+
+- grep for `pd_add_pip_vars|pd_split_alt_welfare|pd_wbpip_clean|
+  get_country_pfw|pd_functions\.png|pipeline_flow\.png|deflated` — 6
+  matches, all legitimate (`pd_deflation(...)`/`bol_deflated`/
+  `load_pip_deflated_data`), none stale or image tags. **V2, V6: PASS.**
+- grep for the internal function names used in prose
+  (`valid_dlw_load`, `sync_recode_spec`, `build_pip_inventory`,
+  `pd_aux_attr`, `save_pip_data`, `pd_cpfw_merge`, `pd_dlw_clean`,
+  `inv_dlw_load`) against `R/*.R` — all confirmed to exist in current
+  source.
+
+**Verification (user-run in R console):**
+
+- `knitr::knit("vignettes/articles/Processing-Data.Rmd", output = tempfile(fileext = ".md"), quiet = FALSE)`
+  completed with no errors. **V1 (this file): PASS.**
+- `sapply(c("pd_process_data", "pd_deflation", "deflation", "log_report"), exists, where = asNamespace("pipdata"))`
+  — all `TRUE`.
+
+Acceptance criteria met: renders cleanly, accurately reflects deflation's
+standalone status and log_report's scope, no image reference. All three
+vignettes (`PIP-data-pipeline.Rmd`, `Validating-Data.Rmd`,
+`Processing-Data.Rmd`) now fully satisfy V1/V2/V6.
+
+### Step 5: Update `_pkgdown.yml`
+
+`pkgdown` is not currently a declared dependency (`DESCRIPTION` Suggests
+does not include it) — per the plan's Step 5 details, left `DESCRIPTION`
+untouched (no new dependency added, C2) and updated `_pkgdown.yml` only.
+Added an `articles:` index (single "Pipeline" group listing
+`PIP-data-pipeline`, `Validating-Data`, `Processing-Data`) and a `reference:`
+index with three groups: "Pipeline wrappers" (`pipdata_dlw_process`,
+`pipdata_get_gmd`, `pipdata_validate_gmd`, `pd_process_data`), "Deflation"
+(`pd_deflation`, `deflation`), and "Logging" (`log_report`).
+
+**Verification pending**: V3 requires either `pkgdown::build_site()`/
+`pkgdown::check_pkgdown()` (if `pkgdown` happens to be installed locally)
+or, as fallback, `yaml::read_yaml("_pkgdown.yml")` for syntax-only
+validation — to be run by the user, since R is unavailable in this
+environment.

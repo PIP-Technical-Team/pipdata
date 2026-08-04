@@ -12,15 +12,16 @@
     "Deflation is confirmed NOT integrated into pd_process_data(); vignettes must describe it as a standalone post-hoc step.",
     "docs/pipeline_overview.qmd has two known stalenesses (purrr::map vs lapply; 'deflated' output claim) - do not copy verbatim.",
     "No old .png diagrams (pipeline_flow.png, pd_functions.png) are reused in any rewritten/new vignette.",
-    "2026-08-04 mid-execution deviation (user-confirmed, plan amended first per deviation-policy 'ask'): added R6 - new Validating-Data.Rmd vignette covering pipdata_dlw_process() internals (pipdata_get_gmd, pipdata_validate_gmd); PIP-data-pipeline.Rmd cross-reference updated to link both companion articles; Processing-Data.Rmd scope unchanged."
+    "2026-08-04 mid-execution deviation (user-confirmed, plan amended first per deviation-policy 'ask'): added R6 - new Validating-Data.Rmd vignette covering pipdata_dlw_process() internals (pipdata_get_gmd, pipdata_validate_gmd); PIP-data-pipeline.Rmd cross-reference updated to link both companion articles; Processing-Data.Rmd scope unchanged.",
+    "2026-08-04 Step 3 complete: Processing-Data.Rmd fully rewritten around pd_process_data/deflation/log_report, knitr::knit() verified by user, all referenced functions confirmed exported. _pkgdown.yml updated (Step 5) with articles: and reference: indices; pkgdown not in DESCRIPTION Suggests so DESCRIPTION left untouched (C2) - V3 syntax/build verification still pending user run."
   ],
   "evidenceStatus": {
-    "V1": "passed (PIP-data-pipeline.Rmd, Validating-Data.Rmd; knitr::knit() pandoc-free verification; Processing-Data.Rmd pending Phase 2)",
-    "V2": "passed (PIP-data-pipeline.Rmd, Validating-Data.Rmd; Processing-Data.Rmd pending Phase 2)",
-    "V3": "pending (Phase 2 - _pkgdown.yml, now 3 vignettes)",
+    "V1": "passed (all three vignettes: PIP-data-pipeline.Rmd, Validating-Data.Rmd, Processing-Data.Rmd; knitr::knit() pandoc-free verification)",
+    "V2": "passed (all three vignettes; no stale/archived references, no deflated mischaracterization)",
+    "V3": "pending (_pkgdown.yml updated with articles:/reference: index; awaiting pkgdown::check_pkgdown() or yaml::read_yaml() fallback from user)",
     "V4": "pending (Phase 2 - final devtools::check())",
     "V5": "passed (no pipeline_flow.png reference in PIP-data-pipeline.Rmd)",
-    "V6": "pending (Phase 2 - Processing-Data.Rmd)",
+    "V6": "passed (no pd_functions.png reference in Processing-Data.Rmd - grep-confirmed 2026-08-04)",
     "V7": "passed (Validating-Data.Rmd renders; all referenced functions exist and exported)",
     "V8": "passed (PIP-data-pipeline.Rmd cross-reference links both Validating-Data.html and Processing-Data.html)"
   },

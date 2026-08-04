@@ -202,11 +202,11 @@ vignette build success + manual source cross-checks + `devtools::check()`.
 
 ## Documentation Checklist
 
-- [ ] `PIP-data-pipeline.Rmd` filled with orchestration/architecture overview
-- [ ] `Processing-Data.Rmd` rewritten around `pd_process_data` + deflation + `log_report`
-- [ ] `Validating-Data.Rmd` created covering `pipdata_dlw_process` internals
-- [ ] `PIP-data-pipeline.Rmd` cross-reference updated to link both companion articles
-- [ ] `_pkgdown.yml` updated with `articles:`/`reference:` index (3 vignettes)
+- [x] `PIP-data-pipeline.Rmd` filled with orchestration/architecture overview
+- [x] `Processing-Data.Rmd` rewritten around `pd_process_data` + deflation + `log_report`
+- [x] `Validating-Data.Rmd` created covering `pipdata_dlw_process` internals
+- [x] `PIP-data-pipeline.Rmd` cross-reference updated to link both companion articles
+- [x] `_pkgdown.yml` updated with `articles:`/`reference:` index (3 vignettes)
 - [ ] `NEWS.md` bullet (optional — ask before adding)
 
 ## Risks & Mitigations

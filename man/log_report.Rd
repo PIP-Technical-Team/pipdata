@@ -4,7 +4,12 @@
 \alias{log_report}
 \title{Generate a markdown report from a pipeline log}
 \usage{
-log_report(log = NULL, path = NULL, title = "Pipeline Log Report", overwrite = FALSE)
+log_report(
+  log = NULL,
+  path = NULL,
+  title = "Pipeline Log Report",
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{log}{A \code{piplog} object (inherits from \code{data.table}). Default \code{NULL},
