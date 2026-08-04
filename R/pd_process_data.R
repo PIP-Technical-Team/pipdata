@@ -6,8 +6,9 @@
 #' data and metadata into the pip storage. The function returns an updated
 #' pip inventory with the new versions recorded.
 #'
-#' @param inv A data.frame or tibble containing the DLW inventory. It can be
-#' downloaded using `pipload::load_gmd_valid_inv()`.
+#' @param inv A data.frame or tibble containing the DLW inventory. Default
+#' `NULL`, in which case it is loaded internally via
+#' `pipload::load_gmd_valid_inv()`.
 #' @param aux_measures A character vector of auxiliary measures to load and merge
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
 #' @param force Logical. If `TRUE`, forces reprocessing of all surveys by
@@ -39,11 +40,10 @@
 #' \dontrun{
 #' release <- "20250203"
 #' pipfun::setup_working_release(release)
-#' inv <- pipload::load_gmd_valid_inv()
-#' pd_process_data(inv)
+#' pd_process_data()
 #' }
 pd_process_data <- function(
-  inv = inv,
+  inv = NULL,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE)
@@ -60,6 +60,11 @@ pd_process_data <- function(
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Load the validated DLW inventory when the caller does not supply one
+  if (is.null(inv)) {
+    inv <- pipload::load_gmd_valid_inv(verbose = verbose)
+  }
+
   # Load aux data for metadata attributes and processing
   aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = verbose)
   names(aux_list) <- aux_measures

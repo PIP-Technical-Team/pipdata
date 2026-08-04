@@ -7,6 +7,8 @@ brainstorm: ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md"
 language: "R"
 estimated-effort: "medium"
 deviation-policy: "ask"
+execution-report: ".cg-docs/work-reports/2026-08-03-pipeline-wrapper-vignettes.md"
+current-phase: 1
 tags: [documentation, vignettes, pkgdown, pipeline, deflation, logging]
 ---
 
@@ -68,6 +70,7 @@ source, `Pipdata_script.R`, and `docs/pipeline_overview.qmd`):
 | R3 | Rewrite `Processing-Data.Rmd` around `pd_process_data`, `deflation`/`pd_deflation` (as a standalone post-hoc step), and `log_report` (scoped honestly to `pipdata_log`) | Brainstorm |
 | R4 | Add `articles:`/`reference:` index to `_pkgdown.yml` | Brainstorm |
 | R5 | Diagram refresh explicitly out of scope (deferred) | Brainstorm |
+| R6 | Create `Validating-Data.Rmd` documenting the internal mechanics of `pipdata_dlw_process()` and its delegates (`pipdata_get_gmd()`, `pipdata_validate_gmd()`); update `PIP-data-pipeline.Rmd`'s companion-article cross-reference to point to it alongside `Processing-Data.Rmd` | Mid-execution deviation, 2026-08-04, user-confirmed |
 
 ## Implementation Steps
 
@@ -108,7 +111,7 @@ source, `Pipdata_script.R`, and `docs/pipeline_overview.qmd`):
   separate manual step; no image reference; no "deflated" mischaracterization
   of `pd_process_data()` output.
 
-### Phase 2: Deep-dive rewrite, pkgdown wiring, validation
+### Phase 2: Deep-dive rewrite, new validation vignette, pkgdown wiring, validation
 
 ### 3. Rewrite `Processing-Data.Rmd` (deep dive)
 - **Requirements**: R1, R3
@@ -133,30 +136,60 @@ source, `Pipdata_script.R`, and `docs/pipeline_overview.qmd`):
   reflects deflation's standalone status and log_report's scope; no image
   reference.
 
-### 4. Update `_pkgdown.yml`
+### 4. Write `Validating-Data.Rmd` (DLW acquisition/validation deep dive)
+- **Requirements**: R1, R6
+- **Files**: `vignettes/articles/Validating-Data.Rmd` (new), `vignettes/articles/PIP-data-pipeline.Rmd` (cross-reference update)
+- **Details**: New non-executing (`eval = FALSE`) vignette explaining the
+  internal mechanics of `pipdata_dlw_process()`: its two delegates
+  `pipdata_get_gmd()` (checks `dlw_gmd_new()` for new/updated datasets,
+  downloads via `dlw::dlw_get_gmd()` per row, marks `data_available`) and
+  `pipdata_validate_gmd()` (identifies unvalidated local datasets via
+  `dlw_gmd_unvalidated()`, diffs against the prior validated inventory via
+  `gmd_to_validate()`/`gmd_validated()`, dispatches to module-specific
+  `dlw_validation_*()` functions, writes the updated `gmd_valid_inv`). Same
+  audience split as the other vignettes (operator + maintainer sections). No
+  image references (no old `.png` files reused). Update the "companion
+  article" cross-reference in `PIP-data-pipeline.Rmd` (the line currently
+  pointing only to `Processing-Data.html`) to reference both
+  `Validating-Data.html` (DLW acquisition/validation mechanics) and
+  `Processing-Data.html` (survey cleaning, deflation, logging).
+- **Test Scenarios**: renders without error; all referenced functions
+  (`pipdata_dlw_process`, `pipdata_get_gmd`, `pipdata_validate_gmd`,
+  `dlw_gmd_new`, `dlw_gmd_unvalidated`) exist in the current source; no image
+  references; `PIP-data-pipeline.Rmd`'s cross-reference correctly links both
+  companion articles.
+- **Tests**: `knitr::knit()`/`rmarkdown::render()` on the `.Rmd` directly
+  (pandoc unavailable in this environment — `knitr::knit()` to an
+  intermediate `.md` is an acceptable substitute since all chunks are
+  `eval = FALSE`); manual cross-check against `R/pipdata_dlw_process.R`,
+  `R/pipdata_get_gmd.R`, `R/pipdata_validate_gmd.R`.
+- **Acceptance criteria**: knits/renders cleanly; every named
+  function/argument matches current source; `PIP-data-pipeline.Rmd`
+  cross-reference updated; no image reference.
+
+### 5. Update `_pkgdown.yml`
 - **Requirements**: R4
 - **Files**: `_pkgdown.yml`
-- **Details**: Add an `articles:` section listing both vignettes (grouped,
-  e.g., "Pipeline"), and a minimal `reference:` index grouping the four
-  functions in scope (plus any needed neighbors) so the site organizes them.
-  First check whether `pkgdown` is installed locally before relying on it
-  (it is not currently a declared dependency in `DESCRIPTION` Suggests).
+- **Details**: Add an `articles:` section listing all three vignettes
+  (grouped, e.g., "Pipeline"), and a minimal `reference:` index grouping the
+  functions in scope (the four original plus `pipdata_get_gmd`,
+  `pipdata_validate_gmd`) so the site organizes them. First check whether
+  `pkgdown` is installed locally before relying on it (it is not currently a
+  declared dependency in `DESCRIPTION` Suggests).
 - **Test Scenarios**: `pkgdown::build_site()` (or `check_pkgdown()`) doesn't
-  error on the new YAML; no orphaned/undocumented `.Rd` warnings introduced;
-  if `pkgdown` is unavailable, YAML syntax is validated instead (e.g.
-  `yaml::read_yaml()`).
+  error on the new YAML; no orphaned/undocumented `.Rd` warnings introduced.
 - **Tests**: `pkgdown::build_site(preview = FALSE)` or
   `pkgdown::check_pkgdown()` if available locally; otherwise
   `yaml::read_yaml("_pkgdown.yml")` as a syntax-only fallback.
 - **Acceptance criteria**: YAML parses; site build (or dry-run) succeeds, or
   the syntax-only fallback passes with the gap noted.
 
-### 5. Final validation pass
-- **Requirements**: R1-R4
-- **Files**: both vignettes, `_pkgdown.yml`
-- **Details**: Full re-read of both vignettes side-by-side against source
-  once more; confirm no stale references remain; run `devtools::document()`/
-  `devtools::check()` to ensure nothing broke.
+### 6. Final validation pass
+- **Requirements**: R1-R4, R6
+- **Files**: all three vignettes, `_pkgdown.yml`
+- **Details**: Full re-read of all three vignettes side-by-side against
+  source once more; confirm no stale references remain; run
+  `devtools::document()`/`devtools::check()` to ensure nothing broke.
 - **Test Scenarios**: full package check passes (or shows only pre-existing,
   unrelated notes/warnings).
 - **Tests**: `devtools::check()`
@@ -171,7 +204,9 @@ vignette build success + manual source cross-checks + `devtools::check()`.
 
 - [ ] `PIP-data-pipeline.Rmd` filled with orchestration/architecture overview
 - [ ] `Processing-Data.Rmd` rewritten around `pd_process_data` + deflation + `log_report`
-- [ ] `_pkgdown.yml` updated with `articles:`/`reference:` index
+- [ ] `Validating-Data.Rmd` created covering `pipdata_dlw_process` internals
+- [ ] `PIP-data-pipeline.Rmd` cross-reference updated to link both companion articles
+- [ ] `_pkgdown.yml` updated with `articles:`/`reference:` index (3 vignettes)
 - [ ] `NEWS.md` bullet (optional — ask before adding)
 
 ## Risks & Mitigations
@@ -188,27 +223,31 @@ vignette build success + manual source cross-checks + `devtools::check()`.
 - New orchestrator script/function
 - Diagram image regeneration (`pd_functions.png`, `pipeline_flow.png`) — deferred per roadmap
 - Changes to `docs/pipeline_overview.qmd`
-- Changes to `pipdata_dlw_process`/`pd_process_data` source code
+- Changes to `pipdata_dlw_process`/`pd_process_data`/`pipdata_get_gmd`/`pipdata_validate_gmd` source code
+- New diagram/image for `Validating-Data.Rmd`
 
 ## Completion Contract
 
 ### Outcome
-`PIP-data-pipeline.Rmd` and `Processing-Data.Rmd` accurately document the
-current three-wrapper pipeline architecture (ingestion, processing,
-deflation, logging) for operators and maintainers — correctly describing
-deflation as a standalone step not part of "processing" — wired into
-`_pkgdown.yml`, with no references to outdated or archived functions, and no
-old `.png` diagram references (`pipeline_flow.png`, `pd_functions.png`).
+`PIP-data-pipeline.Rmd`, `Processing-Data.Rmd`, and `Validating-Data.Rmd`
+accurately document the current three-wrapper pipeline architecture
+(ingestion/validation, processing, deflation, logging) for operators and
+maintainers — correctly describing deflation as a standalone step not part
+of "processing" — wired into `_pkgdown.yml`, with no references to outdated
+or archived functions, and no old `.png` diagram references
+(`pipeline_flow.png`, `pd_functions.png`).
 
 ### Verification Surface
 | ID | Evidence Required | Command/Artifact | Required |
 |----|--------------------|-------------------|----------|
-| V1 | Both vignettes render without error (sole evidence — `devtools::check()` does NOT cover these files; `vignettes/articles` is `.Rbuildignore`'d) | `rmarkdown::render()` per `.Rmd`, or `devtools::build_rmd()` | yes |
+| V1 | All three vignettes render without error (sole evidence — `devtools::check()` does NOT cover these files; `vignettes/articles` is `.Rbuildignore`'d) | `rmarkdown::render()`/`knitr::knit()` per `.Rmd` | yes |
 | V2 | No stale/archived function references remain, and no "deflated" mischaracterization of `pd_process_data()` output | Manual grep of vignette text vs. exported `R/` functions; grep for "deflat" near `pd_process_data` prose | yes |
 | V3 | `_pkgdown.yml` parses and site builds | `pkgdown::build_site()`/`check_pkgdown()`, or `yaml::read_yaml()` fallback | yes |
 | V4 | `devtools::check()` shows no new package-level NOTEs/WARNINGs (does NOT cover vignette content — see V1) | Check log | yes |
 | V5 | No `pipeline_flow.png` reference remains | grep `vignettes/articles/PIP-data-pipeline.Rmd` | yes |
 | V6 | No `pd_functions.png` reference remains | grep `vignettes/articles/Processing-Data.Rmd` | yes |
+| V7 | `Validating-Data.Rmd` renders without error and references only current, exported functions | `knitr::knit()`/`rmarkdown::render()`; manual grep vs. `R/pipdata_get_gmd.R`, `R/pipdata_validate_gmd.R` | yes |
+| V8 | `PIP-data-pipeline.Rmd` cross-reference links both `Validating-Data.html` and `Processing-Data.html` | grep the "companion article" paragraph | yes |
 
 ### Constraints
 | ID | Constraint | Check |
@@ -218,7 +257,8 @@ old `.png` diagram references (`pipeline_flow.png`, `pd_functions.png`).
 | C3 | No source (`R/`) changes | git diff scoped to `vignettes/` + `_pkgdown.yml` |
 
 ### Boundaries
-- Allowed: edits to the two vignette `.Rmd` files, `_pkgdown.yml`.
+- Allowed: edits to the three vignette `.Rmd` files (including creating
+  `Validating-Data.Rmd`), `_pkgdown.yml`.
 - Out of scope: orchestrator script, diagram regeneration, `R/` source
   changes, `docs/pipeline_overview.qmd`.
 

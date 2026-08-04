@@ -167,6 +167,18 @@
                     ]
                 },
                 {
+                    "id": "persist-pipeline-log-via-stamp",
+                    "title": "Persist pipeline log via stamp after each run",
+                    "description": "Pipdata_script.R (~lines 60-66) currently persists the log_report() output manually and ad-hoc: it calls stamp::st_init() with the piplog alias pointed at pip_repository/pip_logs, then stamp::st_save(log, \"cleaning_log\", alias = \"piplog\", verbose = FALSE). This is only test-script code today — neither log_report() nor pd_process_data() perform this save automatically, so log archiving depends on someone manually copying the snippet. Goal: formalize/automate this pattern (reusing the piplog alias / cleaning_log pin name) so the pipeline log is systematically archived via stamp after every run instead of relying on manual steps. Related to but distinct from unified-log-folder (consolidating checkpoint storage location) and unified-logging-report (harmonizing DLW + pipeline logging into one report) — this idea is specifically about automating the st_save() persistence step itself.",
+                    "status": "idea",
+                    "tags": [
+                        "logging",
+                        "stamp",
+                        "persistence",
+                        "reliability"
+                    ]
+                },
+                {
                     "id": "remove-date-valid-filter",
                     "title": "Replace date_valid filter with stamp-based vintage tracking",
                     "description": "Remove the date_valid/date_validated filtering from update_pip_inventory() and valid_dlw_load(). All validated surveys get cleaned. Release inventory vintages are handled by stamp versions. Add first_release_version_id and latest_release_version_id columns to master inventory to track release membership.",
@@ -364,7 +376,7 @@
                     "id": "new-orchestration-script",
                     "title": "Document pipeline orchestration via vignettes (superseded orchestration-script idea)",
                     "description": "Superseded 2026-08-03: originally proposed as a new orchestration script to replace Pipdata_script.R. Decided instead to document the orchestration architecture and end-to-end wrapper sequence (pipdata_dlw_process, pd_process_data, deflation, log_report) via two narrative vignettes rather than writing a new script. See .cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md. Fill vignettes/articles/PIP-data-pipeline.Rmd with the orchestration/architecture overview and rewrite vignettes/articles/Processing-Data.Rmd around pd_process_data + deflation + log_report.",
-                    "status": "planned",
+                    "status": "active",
                     "plan": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
                     "tags": [
                         "pipeline",

@@ -4,7 +4,9 @@
 #' structured markdown document summarising errors, informational messages, and
 #' affected surveys.
 #'
-#' @param log A `piplog` object (inherits from `data.table`).
+#' @param log A `piplog` object (inherits from `data.table`). Default `NULL`,
+#'   in which case it is loaded internally via
+#'   `pipfun::log_filter(name = "pipdata_log")`.
 #' @param path Character scalar. File path for the output `.md` file.
 #'   If `NULL` (default), the report is returned as a character vector and
 #'   not written to disk.
@@ -40,19 +42,21 @@
 #'
 #' @examples
 #' \dontrun{
-#' log <- pipfun::log_filter(name = "pipdata_log")
-#' # Return as character vector
-#' report <- log_report(log)
+#' # Return as character vector (log defaults to the "pipdata_log")
+#' report <- log_report()
 #' # Write to file
-#' log_report(log, path = "log_report.md", overwrite = TRUE)
+#' log_report(path = "log_report.md", overwrite = TRUE)
 #' }
 log_report <- function(
-  log,
+  log = NULL,
   path = NULL,
   title = "Pipeline Log Report",
   overwrite = FALSE
 ) {
   # --- Validation ----------------------------------------------------------
+  if (is.null(log)) {
+    log <- pipfun::log_filter(name = "pipdata_log")
+  }
   if (!inherits(log, "piplog")) {
     cli::cli_abort("{.arg log} must be a {.cls piplog} object.")
   }
