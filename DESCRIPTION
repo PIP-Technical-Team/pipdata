@@ -42,9 +42,9 @@ Depends:
     R (>= 2.10)
 Remotes: 
     github::pip-technical-team/wbpip@DEV_v2,
-    github::PIP-Technical-Team/pipload,
-    github::PIP-Technical-team/pipfun,
-    github::PIP-Technical-Team/pipaux,
+    github::PIP-Technical-Team/pipload@PROD,
+    github::PIP-Technical-team/pipfun@PROD,
+    github::PIP-Technical-Team/pipaux@PROD,
     worldbank/dlw,
     randrescastaneda/stamp
 VignetteBuilder: knitr
