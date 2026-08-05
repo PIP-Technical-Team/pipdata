@@ -52,7 +52,7 @@ save_pip_data <- function(
     tryCatch(
       expr = {
         threshold <- getOption("pipdata.gc_threshold_bytes", default = 100e6)
-        if (as.numeric(object.size(data[[y]])) > threshold) {
+        if (as.numeric(utils::object.size(data[[y]])) > threshold) {
           gc(verbose = FALSE)
         }
 
