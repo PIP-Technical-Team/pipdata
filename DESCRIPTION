@@ -44,6 +44,7 @@ Remotes:
     github::pip-technical-team/wbpip@DEV_v2,
     github::PIP-Technical-Team/pipload@PROD,
     github::PIP-Technical-team/pipfun@PROD,
+    github::PIP-Technical-Team/pipaux@a83a40f,
     worldbank/dlw,
     randrescastaneda/stamp
 VignetteBuilder: knitr
