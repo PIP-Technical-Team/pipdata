@@ -33,8 +33,6 @@ Imports:
     dlw,
     stamp (>= 0.0.5)
 Suggests: 
-    knitr,
-    rmarkdown,
     testthat (>= 3.0.0),
     withr
 Config/testthat/edition: 3
@@ -44,9 +42,8 @@ Remotes:
     github::pip-technical-team/wbpip@DEV_v2,
     github::PIP-Technical-Team/pipload@PROD,
     github::PIP-Technical-team/pipfun@PROD,
-    github::PIP-Technical-Team/pipaux@a83a40f,
+    github::PIP-Technical-Team/pipaux@DEV,
     worldbank/dlw,
     randrescastaneda/stamp
-VignetteBuilder: knitr
 URL: https://pip-technical-team.github.io/pipdata/
 Config/roxygen2/version: 8.0.0
