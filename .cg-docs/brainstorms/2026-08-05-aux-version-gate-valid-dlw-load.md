@@ -96,6 +96,30 @@ couples `valid_dlw_load()` to metadata internals.
 - Only the aux-change detection path is gated; DLW-new surveys are always
   processed.
 
+## Refined Flow (confirmed 2026-08-05)
+
+The comparison happens **inside `valid_dlw_load()`** (not `valid_aux_load()`),
+because it is the only place with access to both the stored aux hashes (master
+inventory) and the current aux hashes (`st_catalog_query`). It applies to
+**every measure** in the `aux_measures` param.
+
+Two-stage filter:
+
+1. **Stage 1 — aux version changed (cheap)**: For each previously-cleaned
+   survey, compare its stored per-survey aux hash (master inventory) against
+   the current aux hash (`st_catalog_query`), per measure. Surveys whose
+   stored hash differs from current → **candidate** set. New surveys (never
+   cleaned) are always processed. A previously-cleaned survey with **no stored
+   aux hash** (cleaned before this feature) is treated as changed → re-clean.
+2. **Stage 2 — actual aux changes (detailed)**: For the **changed measures
+   only**, run `valid_aux_load()` / `compare_aux_*` (which accept measures,
+   not a survey set — pipaux is not modified), then **intersect** the affected
+   surveys with the candidate set. Only surveys with actual changes inside the
+   aux file are processed.
+
+`compare_aux_*` is **kept** but **gated**: it only runs for changed measures,
+and its results are intersected with the candidate set.
+
 ## Consequences
 
 - Master inventory schema gains aux hash columns (one per tracked measure).
@@ -113,8 +137,10 @@ couples `valid_dlw_load()` to metadata internals.
    used).
 2. Surface aux hash columns into the master inventory in `build_pip_inventory()`.
 3. Add a helper to fetch current aux hashes via `st_catalog_query()`.
-4. Rewrite the aux-change detection in `valid_dlw_load()` to compare stored
-   vs current hashes before calling `valid_aux_load()`.
+4. Rewrite the aux-change detection in `valid_dlw_load()` to implement the
+   two-stage filter: (a) per-survey stored-vs-current aux hash comparison to
+   build the candidate set, (b) run `valid_aux_load()`/`compare_aux_*` for
+   changed measures only and intersect with the candidate set.
 5. Update tests for `valid_dlw_load()`, `valid_aux_load()`, `pd_aux_attr()`,
    and `build_pip_inventory()`.
 6. Update roxygen `@details` and `compound-gpid.context.md` logmeta notes.

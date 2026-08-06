@@ -500,6 +500,20 @@
                         "subnational",
                         "code-quality"
                     ]
+                },
+                {
+                    "id": "aux-version-gate-valid-dlw-load",
+                    "title": "Gate aux-change detection on per-survey aux content-hash comparison",
+                    "description": "valid_dlw_load() always runs valid_aux_load()/compare_aux_*, which compare current aux data against the previous aux release/vintage — not against what the pipeline used last run — so every run re-cleans affected surveys unnecessarily. Fix: capture per-survey aux content hashes during processing (pd_aux_attr), surface them as new master-inventory columns (build_pip_inventory), and gate aux-change detection in valid_dlw_load() via a two-stage filter: (1) per-survey stored-vs-current aux hash comparison builds a candidate set; (2) valid_aux_load()/compare_aux_* runs only for changed measures, intersected with the candidate set.",
+                    "status": "planned",
+                    "plan": ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
+                    "tags": [
+                        "inventory",
+                        "aux",
+                        "incremental-processing",
+                        "performance",
+                        "stamp"
+                    ]
                 }
             ]
         }
