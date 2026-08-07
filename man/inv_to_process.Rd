@@ -4,31 +4,46 @@
 \alias{inv_to_process}
 \title{Remove surveys already cleaned from the processing inventory}
 \usage{
-inv_to_process(inv, verbose = TRUE)
+inv_to_process(inv, verbose = TRUE, dt_master = NULL, master_available = NULL)
 }
 \arguments{
 \item{inv}{A \code{data.table} of DLW surveys (latest versions).}
 
 \item{verbose}{Logical. Print progress messages.}
+
+\item{dt_master}{A \code{data.table} of the PIP master inventory, already loaded
+by the caller (\code{\link[=valid_dlw_load]{valid_dlw_load()}}) and shared with the aux-hash
+comparison. Default \code{NULL}, in which case the master is loaded here.}
+
+\item{master_available}{Logical. Whether the caller already attempted to
+load the master. When \code{TRUE}, \code{dt_master} is used as-is. When \code{FALSE},
+the master was attempted but unavailable, so all surveys are returned
+without re-loading. Default \code{NULL} (unknown — load here if \code{dt_master}
+is \code{NULL}).}
 }
 \value{
 A \code{data.table} of surveys still needing processing, or
 \code{NULL} if all surveys have already been cleaned.
 }
 \description{
-Anti-joins the current DLW inventory against the PIP master inventory
-to keep only surveys that have not yet been cleaned. If the master
-inventory cannot be loaded, all surveys are returned.
+Compares the current DLW inventory against the PIP master inventory by
+joining on \code{survey_id} and comparing \code{content_hash} (DLW) against
+\code{content_hash_dlw} (master). Surveys are kept when they are new to the
+master (no \code{content_hash_dlw}) or when their DLW content hash differs
+from the previously cleaned value. If the master inventory cannot be
+loaded, all surveys are returned.
 }
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=data_to_dt]{data_to_dt()}},
 \code{\link[=filter_aux_data]{filter_aux_data()}},
 \code{\link[=filter_aux_inv]{filter_aux_inv()}},
 \code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=get_aux_hashes]{get_aux_hashes()}},
 \code{\link[=inv_dlw_load]{inv_dlw_load()}},
 \code{\link[=log_report]{log_report()}},
 \code{\link[=pd_aux_attr]{pd_aux_attr()}},

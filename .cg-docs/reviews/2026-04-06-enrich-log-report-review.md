@@ -1,3 +1,17 @@
+---
+plan: .cg-docs/plans/2026-04-06-enrich-log-report.md
+findings:
+  P2.1: open
+  P2.2: open
+  P2.3: open
+  P2.4: open
+  P3.1: open
+  P3.2: open
+  P3.3: open
+  P3.4: open
+  P3.5: open
+---
+
 ## Review Report
 
 **Review depth**: standard

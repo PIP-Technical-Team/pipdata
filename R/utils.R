@@ -399,3 +399,104 @@ unq_obs_dt <- function(dt, keyVar) {
 
   return(dt)
 }
+
+#' Resolve current content hashes for auxiliary measures from the aux catalog
+#'
+#' Queries the `"aux"` stamp catalog once and returns the current
+#' `content_hash` for each requested auxiliary measure. Each measure is
+#' matched to exactly one catalog artifact whose path basename is
+#' `<measure>.qs2` (e.g. `cpi.qs2`, `ppp.qs2`, `pfw.qs2`).
+#'
+#' @param aux_measures Character vector of auxiliary measures to resolve.
+#' @param verbose Logical. Retained for consistency with pipeline helpers;
+#'   catalog lookup itself emits no progress messages. Default:
+#'   `getOption("pipdata.verbose", default = TRUE)`.
+#'
+#' @return A named character vector of `content_hash` values, one per
+#'   requested measure. Names are the measure names.
+#'
+#' @details
+#' This is the single source of the current aux hashes used to gate
+#' aux-change detection in [valid_dlw_load()]. It must be called once per
+#' pipeline run, before aux data is loaded, and the result passed through
+#' the run so that the hashes recorded in the master inventory match the
+#' aux data actually used.
+#'
+#' The function aborts loudly when the `"aux"` alias is unavailable, a
+#' requested artifact is missing, or multiple catalog rows match a measure.
+#' It never falls back to `stamp::st_latest()` or to hashing loaded aux
+#' tables.
+#'
+#' **Precondition**: the `"aux"` catalog and [pipload::load_aux_data()] must
+#' resolve through the same configured working release and storage root. The
+#' hashes returned here are only meaningful if the aux data subsequently
+#' loaded for processing comes from the same artifacts. Callers must ensure
+#' the working release is set up consistently before calling this function.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
+get_aux_hashes <- function(
+  aux_measures,
+  verbose = getOption("pipdata.verbose", default = TRUE)
+) {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # computations   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  cat_aux <- tryCatch(
+    stamp::st_catalog_query(alias = "aux"),
+    error = function(e) {
+      cli::cli_abort(
+        c(
+          "Could not query the aux stamp catalog.",
+          "i" = "Ensure the working release is set up with an aux_data folder.",
+          "x" = "Error: {conditionMessage(e)}"
+        ),
+        class = c("get_aux_hashes_catalog_failure", "piperr")
+      )
+    }
+  )
+
+  if (is.null(cat_aux) || nrow(cat_aux) == 0L) {
+    cli::cli_abort(
+      "The aux stamp catalog is empty. Cannot resolve auxiliary hashes.",
+      class = c("get_aux_hashes_empty_catalog", "piperr")
+    )
+  }
+
+  # Derive the artifact basename (e.g. "cpi.qs2") from each catalog path.
+  cat_aux[, artifact := fs::path_file(path)]
+
+  hashes <- vapply(aux_measures, function(m) {
+    target <- paste0(m, ".qs2")
+    matches <- cat_aux[artifact == target]
+
+    if (nrow(matches) == 0L) {
+      cli::cli_abort(
+        "No aux catalog artifact found for measure {.val {m}} (expected {.val {target}}).",
+        class = c("get_aux_hashes_missing_artifact", "piperr")
+      )
+    }
+    if (nrow(matches) > 1L) {
+      cli::cli_abort(
+        "Multiple aux catalog artifacts match measure {.val {m}} ({.val {target}}).",
+        class = c("get_aux_hashes_ambiguous_artifact", "piperr")
+      )
+    }
+
+    hash <- matches$content_hash[[1L]]
+    if (is.na(hash) || !nzchar(hash)) {
+      cli::cli_abort(
+        "Aux catalog artifact for measure {.val {m}} has no content_hash.",
+        class = c("get_aux_hashes_missing_hash", "piperr")
+      )
+    }
+
+    hash
+  }, character(1))
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return   ---------
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  return(hashes)
+}

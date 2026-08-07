@@ -43,6 +43,13 @@ to the \code{"pipdata_log"}, summarizing totals and failed surveys. Additional e
 auxiliary file changes and inventory verification are emitted by \code{\link[=valid_dlw_load]{valid_dlw_load()}}
 and \code{\link[=build_pip_inventory]{build_pip_inventory()}} respectively.
 
+\strong{Aux hashes}: the current \code{content_hash} for every requested auxiliary
+measure is resolved once from the \code{"aux"} stamp catalog via
+\code{\link[=get_aux_hashes]{get_aux_hashes()}} before aux data is loaded. The run-level hash map is
+passed to \code{\link[=build_pip_inventory]{build_pip_inventory()}} and recorded in the master inventory so
+that \code{\link[=valid_dlw_load]{valid_dlw_load()}} can gate aux-change detection against the aux data
+actually used in this run.
+
 \strong{Recode spec}: the recode specification is synced to stamp once via
 \code{\link[=sync_recode_spec]{sync_recode_spec()}} before the per-survey loop and the resolved spec is
 threaded into each \code{\link[=process_data]{process_data()}} call, so \code{\link[=apply_recode_spec]{apply_recode_spec()}} performs

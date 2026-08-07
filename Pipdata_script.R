@@ -35,16 +35,16 @@ pipfun::setup_working_release(
 #   )
 
 # ----- Load inventory to clean -----
-inv <- pipload::load_gmd_valid_inv(verbose = FALSE)
-inv_all <- inv[module == "ALL", ]
-# inv_3 <- inv[country_code %in% c("ARG", "MEX") & module == "ALL", ]
+# inv <- pipload::load_gmd_valid_inv(verbose = FALSE)
+# inv_all <- inv[module == "ALL", ]
+# inv_5 <- inv[country_code %in% c("ARG", "COL", "CHN", "IDN","PHL"), ]
 
 #--------- Clean surveys and create metadata -----
 old_pip_inv <- pipload::load_pip_master_inventory(verbose = FALSE)
 old_pip_release <- pipload::load_pip_release_inventory(verbose = FALSE)
 
 # new_pip_inv <- pd_process_data(inv = inv, force = TRUE, verbose = FALSE)
-new_pip_inv <- pd_process_data(inv = inv_all)
+new_pip_inv <- pd_process_data(force = TRUE, verbose = TRUE)
 
 # Compare inventories
 waldo::compare(old_pip_inv, new_pip_inv)

@@ -9,7 +9,8 @@ valid_dlw_load(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  aux_hashes = NULL
 )
 }
 \arguments{
@@ -26,9 +27,17 @@ master inventory and process all surveys.}
 
 \item{verbose}{Logical. Print progress messages. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
+
+\item{aux_hashes}{A named character vector of current aux \code{content_hash}
+values, one per requested auxiliary measure. Resolved once per run by
+\code{\link[=get_aux_hashes]{get_aux_hashes()}} and used to gate aux-change detection. When \code{NULL}
+(the default) and \code{force = FALSE}, the hashes are resolved internally so
+that direct callers retain the previous behavior of always running
+aux-change detection.}
 }
 \value{
-A \code{data.table} of surveys to process, or \code{NULL} if none.
+A \code{data.table} of surveys to process. If no surveys require
+processing, the function aborts with class \code{piperr}.
 }
 \description{
 Compares the current DLW inventory against previously cleaned data
@@ -47,19 +56,58 @@ master inventory via \code{inv_to_process()}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
 
-\strong{Logging}: This function writes an \code{aux_changes_inf} entry to the \code{"pipdata_log"}
-when changes are detected in any of the requested auxiliary measures. The logmeta
-entry includes the measures that changed and the number of affected surveys.
+\strong{Aux-change gating (two-stage)}: aux-change detection is gated on the
+current aux \code{content_hash} values passed via \code{aux_hashes}.
+\itemize{
+\item Stage 1 (cheap): for each filtered/latest survey, compare its stored
+per-survey aux hash (from the master inventory's \verb{aux_<measure>_hash}
+columns) against the current hash for that measure. A mismatch or a
+missing historical hash makes the survey a candidate. New surveys and
+DLW-content-changed surveys are also retained through
+\code{\link[=inv_to_process]{inv_to_process()}} and are deduplicated with the aux candidates.
+\item Stage 2 (detailed): for the changed measures only, \code{\link[=valid_aux_load]{valid_aux_load()}} /
+\verb{compare_aux_*} identifies which requested surveys actually have changed
+rows inside the aux file. The affected surveys are intersected with the
+candidate set, so a globally changed aux table that only affects
+non-requested countries does not re-clean requested surveys.
+}
+
+The master inventory is loaded at most once within this function and shared
+between the DLW comparison and the aux-hash comparison. This guarantee is
+scoped to \code{valid_dlw_load()}; downstream steps such as
+\code{\link[=build_pip_inventory]{build_pip_inventory()}} load the master again for their own assembly and
+verification. When \code{force = TRUE}, no master or aux comparison runs and all
+filtered/latest surveys are processed.
+
+\strong{Logging}: This function writes the following entries to the \code{"pipdata_log"}:
+\itemize{
+\item \code{aux_changes_inf} — changes were detected in any of the requested auxiliary
+measures and at least one survey is affected. Includes the measures that
+changed and the number/list of affected surveys.
+\item \code{aux_no_changes_inf} — no auxiliary file changes were detected at all.
+\item \code{aux_changes_no_surveys_inf} — auxiliary files changed but no surveys in
+the inventory were affected by those changes.
+\item \code{surveys_to_clean_inf} — emitted once after the DLW-new and aux-changed
+inventories are combined and deduplicated; includes counts of new,
+aux-changed, and total unique surveys, plus the aux measures that
+triggered re-cleaning.
+}
+
+When neither new DLW surveys nor auxiliary changes leave anything to
+process, the function aborts with \code{cli::cli_abort(class = "piperr")} rather
+than returning \code{NULL} silently.
 }
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=data_to_dt]{data_to_dt()}},
 \code{\link[=filter_aux_data]{filter_aux_data()}},
 \code{\link[=filter_aux_inv]{filter_aux_inv()}},
 \code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=get_aux_hashes]{get_aux_hashes()}},
 \code{\link[=inv_dlw_load]{inv_dlw_load()}},
 \code{\link[=inv_to_process]{inv_to_process()}},
 \code{\link[=log_report]{log_report()}},

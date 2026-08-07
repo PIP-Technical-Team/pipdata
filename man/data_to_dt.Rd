@@ -23,11 +23,13 @@ individual attributes, and assigns the PIP S3 class via
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=filter_aux_data]{filter_aux_data()}},
 \code{\link[=filter_aux_inv]{filter_aux_inv()}},
 \code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=get_aux_hashes]{get_aux_hashes()}},
 \code{\link[=inv_dlw_load]{inv_dlw_load()}},
 \code{\link[=inv_to_process]{inv_to_process()}},
 \code{\link[=log_report]{log_report()}},

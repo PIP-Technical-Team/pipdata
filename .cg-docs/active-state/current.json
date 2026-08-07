@@ -1,30 +1,40 @@
 {
-  "plan": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
-  "executionReport": ".cg-docs/work-reports/2026-08-03-pipeline-wrapper-vignettes.md",
-  "currentPhase": 2,
+  "plan": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+  "executionReport": ".cg-docs/work-reports/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+  "currentPhase": null,
   "completedPhases": [1, 2],
-  "lastUpdated": "2026-08-04",
+  "lastUpdated": "2026-08-07",
   "refs": {
-    "roadmapFeature": "new-orchestration-script",
+    "roadmapFeature": "aux-version-gate-valid-dlw-load",
     "roadmapMilestone": "Pipeline Alignment Audit"
   },
   "decisions": [
-    "Deflation is confirmed NOT integrated into pd_process_data(); vignettes must describe it as a standalone post-hoc step.",
-    "docs/pipeline_overview.qmd has two known stalenesses (purrr::map vs lapply; 'deflated' output claim) - do not copy verbatim.",
-    "No old .png diagrams (pipeline_flow.png, pd_functions.png) are reused in any rewritten/new vignette.",
-    "2026-08-04 mid-execution deviation (user-confirmed, plan amended first per deviation-policy 'ask'): added R6 - new Validating-Data.Rmd vignette covering pipdata_dlw_process() internals (pipdata_get_gmd, pipdata_validate_gmd); PIP-data-pipeline.Rmd cross-reference updated to link both companion articles; Processing-Data.Rmd scope unchanged.",
-    "2026-08-04 Step 3 complete: Processing-Data.Rmd fully rewritten around pd_process_data/deflation/log_report, knitr::knit() verified by user, all referenced functions confirmed exported. _pkgdown.yml updated (Step 5) with articles: and reference: indices; pkgdown not in DESCRIPTION Suggests so DESCRIPTION left untouched (C2) - V3 syntax/build verification still pending user run.",
-    "2026-08-04 Step 6 (final validation pass) complete: devtools::document() run by user, regenerated pd_process_data.Rd and log_report.Rd confirmed to exactly match prior manual patches. devtools::check() run by user - only 3 pre-existing NOTEs (future file timestamps; wbpip:::md_clean_data unexported import; object.size undefined global in save_pip_data), none attributable to this change (no touched file involved). Plan complete."
+    "Roadmap feature aux-version-gate-valid-dlw-load updated to status active and plan path repointed to the revised 2026-08-06 plan.",
+    "Phase 1 complete (Steps 1-2): get_aux_hashes() resolver added in R/utils.R; wired into pd_process_data() before aux loading; build_pip_inventory() gains aux_hashes param and writes aux_<measure>_hash columns on current-run rows, initialised to NA on assembled master for legacy/retained rows.",
+    "Phase 2 complete (Step 3): valid_dlw_load() rewritten with two-stage aux gating. Master loaded once (shared dt_master) and passed to inv_to_process() (now accepts dt_master) and aux_hash_candidates(). Stage 1 builds candidates from per-survey aux hash comparison over full filtered/latest inventory; missing historical hash is a candidate; conflicting same-survey/content hashes abort. Stage 2 runs valid_aux_load() only for changed measures and intersects affected surveys with candidates. force=TRUE skips master/aux comparisons and processes all rows.",
+    "Tests: test-get-aux-hashes.R (7), test-build_pip_inventory.R (3 aux-hash), test-valid_dlw_load.R (9 new gating + updated existing), test-valid_aux_load.R (updated verbose propagation). Full suite PASS (2 pre-existing skips). roxygenise regenerated .Rd files.",
+    "Plan marked status: completed, completed-date: 2026-08-07. Roadmap feature aux-version-gate-valid-dlw-load set to done.",
+    "Verification review 2026-08-07: full R suite PASS (0 failures, 2 pre-existing skips). Both light verification agents returned no usable output due to model-service 'Response contained no choices' errors; not retried per protocol."
   ],
   "evidenceStatus": {
-    "V1": "passed (all three vignettes: PIP-data-pipeline.Rmd, Validating-Data.Rmd, Processing-Data.Rmd; knitr::knit() pandoc-free verification)",
-    "V2": "passed (all three vignettes; no stale/archived references, no deflated mischaracterization)",
-    "V3": "passed (_pkgdown.yml articles:/reference: index added; devtools::document()/check() ran cleanly against it, no pkgdown-related errors)",
-    "V4": "passed (devtools::check() - only 3 pre-existing NOTEs, none attributable to this change)",
-    "V5": "passed (no pipeline_flow.png reference in PIP-data-pipeline.Rmd)",
-    "V6": "passed (no pd_functions.png reference in Processing-Data.Rmd - grep-confirmed 2026-08-04)",
-    "V7": "passed (Validating-Data.Rmd renders; all referenced functions exist and exported)",
-    "V8": "passed (PIP-data-pipeline.Rmd cross-reference links both Validating-Data.html and Processing-Data.html)"
+    "V1": "passed (resolver tests: all six measures incl. PFW)",
+    "V2": "passed (missing/ambiguous/empty/failure/missing-hash abort tests)",
+    "V3": "passed (pd_process_data resolves hashes once before aux loading)",
+    "V4": "passed (build_pip_inventory persists hashes on current-run rows)",
+    "V5": "passed (legacy/retained rows keep NA; schema initialised)",
+    "V6": "passed (master inventory loaded exactly once)",
+    "V7": "passed (changed measures only invoke valid_aux_load)",
+    "V8": "passed (COL/ARG vs USA/GER intersection test)",
+    "V9": "passed (conflicting same-survey hashes abort)",
+    "V10": "passed (new/DLW-changed surveys remain selected)",
+    "V11": "passed (force mode skips master/aux comparisons)",
+    "V12": "passed (no .joyn column, no duplicate survey IDs)",
+    "V13": "passed (targeted valid_dlw_load/valid_aux_load tests)",
+    "V14": "passed (full suite, 2 pre-existing skips)",
+    "V15": "passed (roxygen regenerated; context.md unchanged - no canonical logging semantics changed)",
+    "verification": "full suite passed; agent verification incomplete due to model-service errors"
   },
-  "nextCommand": "none - plan complete"
+  "nextCommand": "/cg-review mode:verify (rerun light agents if independent reviewer output is required)"
 }
+
+

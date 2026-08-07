@@ -20,6 +20,11 @@
 #' @param pip_id_map A `data.table` with exactly two columns: `survey_id`
 #'   (DLW survey identifier) and `pip_id` (PIP identifier, uppercase). Built
 #'   from successful `process_data()` calls in [pd_process_data()].
+#' @param aux_hashes A named character vector of current aux `content_hash`
+#'   values, one per requested auxiliary measure (e.g. `cpi`, `ppp`, `pfw`).
+#'   Resolved once per run by [get_aux_hashes()] and recorded on the
+#'   master-inventory rows produced for successfully processed surveys.
+#'   Default `NULL` (no aux hashes recorded).
 #'
 #' @return A `data.table`: the updated PIP master inventory. Does **not**
 #'   include `reporting_level` — enrich after load via
@@ -39,6 +44,10 @@
 #' - `pipeline_version_dlw`, `latest_version_id_dlw`, `content_hash_dlw`,
 #'   `Checksum_dlw`, `path_dlw` â€” renamed from DLW inventory columns.
 #' - `welfare_type` â€” derived from the 4th `_`-delimited segment of `pip_id`.
+#' - `aux_<measure>_hash` (e.g. `aux_cpi_hash`, `aux_ppp_hash`, `aux_pfw_hash`)
+#'   â€” current aux `content_hash` for each requested measure, from the
+#'   run-level `aux_hashes` map passed by [pd_process_data()]. Only populated
+#'   for surveys successfully processed in the current run.
 #' - `first_release_version_id`, `latest_release_version_id` â€” stamp version
 #'   IDs of the release inventory (first appearance and most recent).
 #'
@@ -51,7 +60,8 @@
 build_pip_inventory <- function(
   inv_to_clean,
   pip_id_map,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  aux_hashes = NULL
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defensive assertions  ---------
@@ -220,13 +230,15 @@ build_pip_inventory <- function(
     )
   }
 
-  # If same pip_id appears at multiple paths, keep the latest by created_at
+  # If same pip_id appears at multiple paths, keep the latest by created_at,
+  # with path as a deterministic secondary key so tied timestamps do not
+  # depend on catalog row order.
   if (anyDuplicated(cat_data$pip_id) != 0L) {
-    data.table::setorder(cat_data, pip_id, -created_at)
+    data.table::setorder(cat_data, pip_id, -created_at, path)
     cat_data <- cat_data[, .SD[1L], by = "pip_id"]
   }
   if (anyDuplicated(cat_meta$pip_id) != 0L) {
-    data.table::setorder(cat_meta, pip_id, -created_at)
+    data.table::setorder(cat_meta, pip_id, -created_at, path)
     cat_meta <- cat_meta[, .SD[1L], by = "pip_id"]
   }
 
@@ -302,6 +314,19 @@ build_pip_inventory <- function(
   )
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Step 7b: Attach run-level aux hashes  ---------
+  # Record the current aux content_hash for each requested measure on the
+  # current-run rows. These columns let valid_dlw_load() gate aux-change
+  # detection against the aux data actually used in this run.
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (!is.null(aux_hashes) && length(aux_hashes) > 0L) {
+    for (m in names(aux_hashes)) {
+      col <- paste0("aux_", m, "_hash")
+      data.table::set(new_versions, j = col, value = aux_hashes[[m]])
+    }
+  }
+
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Step 8: Derive welfare_type from pip_id  ---------
   # Format: COUNTRY_YEAR_ACRONYM_WELFARE_MODULE.
   # The 4th _-delimited segment is always welfare_type.
@@ -334,12 +359,17 @@ build_pip_inventory <- function(
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Step 9: Upsert into old master  ---------
-  # Remove old rows for pip_ids reprocessed this run (replace with fresh
-  # catalog data). Retain all other surveys from old master unchanged.
+  # When a survey is reprocessed, ALL of its old rows are dropped and replaced
+  # by the fresh catalog data for that survey. This ensures the survey's pip_id
+  # set in the master exactly matches the current reprocess — stale pip_id rows
+  # from a previous content version (e.g. a welfare-type split that no longer
+  # exists) are removed. Historical versions remain recoverable via stamp.
+  # Surveys not reprocessed this run are retained unchanged.
   # Result: one row per pip_id.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (!is.null(old_inv)) {
-    old_retained <- old_inv[!old_inv$pip_id %in% new_versions$pip_id]
+    reprocessed_surveys <- unique(new_versions$survey_id)
+    old_retained <- old_inv[!old_inv$survey_id %in% reprocessed_surveys]
     run_inv <- collapse::rowbind(new_versions, old_retained, fill = TRUE)
   } else {
     run_inv <- new_versions
@@ -370,6 +400,18 @@ build_pip_inventory <- function(
   }
   if (!"latest_release_version_id" %in% names(run_inv)) {
     run_inv[, latest_release_version_id := NA_character_]
+  }
+
+  # Initialise aux hash columns so the master schema is always consistent.
+  # Old retained rows preserve any existing hashes; missing columns are
+  # initialised to NA. Current-run rows were populated in Step 7b.
+  if (!is.null(aux_hashes) && length(aux_hashes) > 0L) {
+    for (m in names(aux_hashes)) {
+      col <- paste0("aux_", m, "_hash")
+      if (!col %in% names(run_inv)) {
+        run_inv[, (col) := NA_character_]
+      }
+    }
   }
 
   pfw <- pipload::load_aux_data("pfw", verbose = verbose)

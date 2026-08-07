@@ -1,13 +1,14 @@
 ---
 date: 2026-06-17
 title: "Refactor valid_dlw_load: logging, abort, and content-hash comparison"
-status: active
+status: completed
+completed-date: 2026-08-04
 scope: "Standard"
 brainstorm: ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md"
 language: "R"
 estimated-effort: "medium"
 phases: 2
-completed-phases: []
+completed-phases: [1, 2]
 deviation-policy: "ask"
 tags: [pipeline, inventory, valid_dlw_load, inv_to_process, filter_aux_inv, logging, content_hash]
 ---
