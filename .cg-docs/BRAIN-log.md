@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-04 · 103 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-07 · 109 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -36,6 +36,27 @@ _Generated 2026-08-04 · 103 artifacts (newest first) + 0 roadmap features_
   > **Review depth**: standard **Files reviewed**: 3 (`R/update_pip_inventory.R`, `tests/testthat/test-update_pip_invento…
 - **[2026-06-18-yaml-recode-dictionary](.cg-docs/plans/2026-06-18-yaml-recode-dictionary.md)** · `plan` · _done_ · `—`
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
+- **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
+  > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
+
+## 2026-08-07
+
+- **[2026-08-06-aux-version-gate-valid-dlw-load-revised-review](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md)** · `review` · _—_ · `2026-08-07`
+  > **Review mode**: standard **Files reviewed**: 33 changed paths from `origin/refactor_dlw_load..HEAD` **Findings**: 17…
+- **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md)** · `review` · _—_ · `2026-08-07`
+  > **Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-…
+- **[Gate auxiliary re-cleaning with run-level content hashes and row-level changes](.cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md)** · `solution` · _—_ · `2026-08-07`
+  > `valid_dlw_load()` always invoked `valid_aux_load()`, which compares current auxiliary releases/vintages and returns …
+
+## 2026-08-06
+
+- **[Aux version gate for valid_dlw_load — revised run-level hash design](.cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md)** · `plan` · _completed_ · `2026-08-06`
+  > Prevent unnecessary survey re-cleaning by comparing the current content hash of each requested auxiliary artifact wit…
+
+## 2026-08-05
+
+- **[Gate aux-change detection in valid_dlw_load on aux version change](.cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `brainstorm` · _draft_ · `2026-08-05`
+  > `valid_dlw_load()` always calls `valid_aux_load()`, which invokes `pipaux::compare_aux_releases()` and `pipaux::compa…
 
 ## 2026-08-04
 
@@ -73,7 +94,7 @@ _Generated 2026-08-04 · 103 artifacts (newest first) + 0 roadmap features_
 
 ## 2026-06-17
 
-- **[Refactor valid_dlw_load: logging, abort, and content-hash comparison](.cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md)** · `plan` · _active_ · `2026-06-17`
+- **[Refactor valid_dlw_load: logging, abort, and content-hash comparison](.cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md)** · `plan` · _completed_ · `2026-06-17`
   > Implement the 5 decisions from the 2026-06-05 brainstorm:
 
 ## 2026-06-05

@@ -1,5 +1,5 @@
 {
-  "edge_count": 27,
+  "edge_count": 32,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -47,6 +47,18 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
       "target": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+      "target": ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
+      "target": ".cg-docs/plans/2026-04-06-enrich-log-report.md",
       "target_missing": false
     },
     {
@@ -146,6 +158,18 @@
       "target_missing": false
     },
     {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "target": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
+      "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "target_missing": false
+    },
+    {
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
       "target": ".cg-docs/plans/2026-04-28-unified-logging.md",
@@ -161,6 +185,12 @@
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
       "target": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "target": ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
       "target_missing": false
     }
   ],
@@ -392,6 +422,36 @@
         "pd_*",
         "pd_deflation",
         "approach"
+      ]
+    },
+    {
+      "date": "2026-08-05",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "slug": "2026-08-05-aux-version-gate-valid-dlw-load",
+      "status": "draft",
+      "summary": "`valid_dlw_load()` always calls `valid_aux_load()`, which invokes `pipaux::compare_aux_releases()` and `pipaux::compare_aux_vintages()`. These compare the *current* aux data against the *previous release/vintage* in the aux data's own history — **not** against what the pipeline actually used in its last run. As a result, every pipeline run detects \"changes\" relative to the previous aux release/vintage and re-cleans all affected surveys, even when the pipeline already cleaned them with that same aux data.",
+      "tags": [
+        "valid_dlw_load",
+        "valid_aux_load",
+        "aux",
+        "stamp",
+        "content_hash",
+        "master-inventory",
+        "pipeline"
+      ],
+      "title": "Gate aux-change detection in valid_dlw_load on aux version change",
+      "top_keywords": [
+        "valid_dlw_load()",
+        "compare_aux_*",
+        "valid_aux_load()",
+        "aux",
+        "st_catalog_query()",
+        "pd_aux_attr()",
+        "build_pip_inventory()",
+        "st_catalog_query",
+        "approach",
+        "valid_dlw_load"
       ]
     },
     {
@@ -1111,7 +1171,7 @@
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
       "slug": "2026-06-17-valid-dlw-load-refactor",
-      "status": "active",
+      "status": "completed",
       "summary": "Implement the 5 decisions from the 2026-06-05 brainstorm:",
       "tags": [
         "pipeline",
@@ -1309,6 +1369,57 @@
         "rmarkdown::render()",
         "docs/pipeline_overview.qmd",
         "devtools::check()"
+      ]
+    },
+    {
+      "date": "",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "slug": "2026-08-05-aux-version-gate-valid-dlw-load",
+      "status": "",
+      "summary": "--- date: 2026-08-05 title: \"Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison\" status: active scope: \"Standard\" brainstorm: \".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md\" language: \"R\" estimated-effort: \"medium\" deviation-policy: \"ask\" artifact-schema-version: 1 tags: [valid_dlw_load, valid_aux_load, aux, stamp, content_hash, master-inventory, pipeline, incremental-processing] phases: 2  # convenience hint -- may be stale; always recount from ## Phase headers",
+      "tags": [],
+      "title": "2026-08-05-aux-version-gate-valid-dlw-load",
+      "top_keywords": [
+        "valid_dlw_load()",
+        "valid_aux_load()",
+        "st_catalog_query()",
+        "inv_to_process()",
+        "compare_aux_*",
+        "pd_aux_attr()",
+        "pip_meta",
+        "content_hash",
+        "build_pip_inventory()",
+        "aux"
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+      "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised",
+      "status": "completed",
+      "summary": "Prevent unnecessary survey re-cleaning by comparing the current content hash of each requested auxiliary artifact with the hash recorded for previously cleaned surveys, while retaining the detailed `pipaux::compare_aux_*` filter that identifies which requested surveys were actually affected.",
+      "tags": [
+        "valid_dlw_load",
+        "aux",
+        "stamp",
+        "content_hash",
+        "master-inventory",
+        "incremental-processing"
+      ],
+      "title": "Aux version gate for valid_dlw_load — revised run-level hash design",
+      "top_keywords": [
+        "valid_dlw_load()",
+        "aux",
+        "content_hash",
+        "force = true",
+        "valid_aux_load()",
+        "build_pip_inventory()",
+        "pip_meta",
+        "st_latest()",
+        "run-level",
+        "pfw"
       ]
     },
     {
@@ -1749,6 +1860,50 @@
         "pip_id",
         "cat_data",
         "fix"
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised-review",
+      "status": "",
+      "summary": "**Review mode**: standard **Files reviewed**: 33 changed paths from `origin/refactor_dlw_load..HEAD` **Findings**: 17 (P0: 0, P1: 5, P2: 10, P3: 2)",
+      "tags": [],
+      "title": "2026-08-06-aux-version-gate-valid-dlw-load-revised-review",
+      "top_keywords": [
+        "valid_dlw_load()",
+        "pip_id",
+        "survey_id",
+        "cg-documentation",
+        "build_pip_inventory()",
+        "aux_hashes",
+        "cg-testing",
+        "cg-reproducibility",
+        "cg-architecture",
+        "verbose"
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
+      "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review",
+      "status": "",
+      "summary": "**Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md` **Verification scope**: committed fixes in `origin/refactor_dlw_load..HEAD`",
+      "tags": [],
+      "title": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review",
+      "top_keywords": [
+        "verification",
+        "valid_dlw_load()",
+        "2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+        "incomplete",
+        "review",
+        "aux",
+        "result",
+        "version",
+        "valid_dlw_load",
+        "reviewer"
       ]
     },
     {
@@ -2564,6 +2719,39 @@
       ]
     },
     {
+      "date": "2026-08-07",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md",
+      "slug": "2026-08-07-aux-content-hash-gated-recleaning",
+      "status": "",
+      "summary": "`valid_dlw_load()` always invoked `valid_aux_load()`, which compares current auxiliary releases/vintages and returns changed country/year keys. This caused surveys to be considered for re-cleaning even when the pipeline had already processed them with the same auxiliary artifact. A global auxiliary table hash alone is insufficient: an updated CPI or PPP table may contain changes for countries that are not among the surveys requested in the current DLW inventory. The pipeline needs both a global artifact check and a row-level affected-survey check. The master inventory also has an important identity rule: its current snapshot contains one row per `(survey_id, pip_id)`, while stamp preserves...",
+      "tags": [
+        "auxiliary-data",
+        "content_hash",
+        "stamp",
+        "valid_dlw_load",
+        "valid_aux_load",
+        "master-inventory",
+        "pip_id",
+        "survey_id",
+        "joyn",
+        "incremental-processing"
+      ],
+      "title": "Gate auxiliary re-cleaning with run-level content hashes and row-level changes",
+      "top_keywords": [
+        "pip_id",
+        "valid_dlw_load()",
+        "survey_id",
+        "content_hash",
+        "content_hash_dlw",
+        "auxiliary",
+        "gate",
+        "hashes",
+        "current",
+        "aux"
+      ]
+    },
+    {
       "date": "2026-04-30",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
@@ -3009,13 +3197,13 @@
       ]
     }
   ],
-  "entity_count": 103,
-  "generated": "2026-08-04",
+  "entity_count": 109,
+  "generated": "2026-08-07",
   "schema_version": "0.2.0",
   "topic_count": 2,
   "topics": [
     {
-      "entity_count": 75,
+      "entity_count": 83,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -3023,6 +3211,8 @@
         ".cg-docs/brainstorms/2026-05-06-subnational-deflation-area-resolution.md",
         ".cg-docs/brainstorms/2026-05-20-inventory-architecture-refactor.md",
         ".cg-docs/brainstorms/2026-05-27-inventory-delta-strategy.md",
+        ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md",
+        ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
         ".cg-docs/plans/2026-04-06-enrich-log-report.md",
         ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
         ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
@@ -3041,9 +3231,12 @@
         ".cg-docs/plans/2026-05-19-fix-inventory-save-reporting-level.md",
         ".cg-docs/plans/2026-05-19-fix-reporting-level-duplication.md",
         ".cg-docs/plans/2026-05-20-inventory-architecture-refactor.md",
+        ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
         ".cg-docs/plans/2026-06-18-save-pip-memory-resilience.md",
         ".cg-docs/plans/2026-06-24-pd-process-data-oom-crash.md",
         ".cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md",
+        ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
+        ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
         ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
         ".cg-docs/reviews/2026-04-16-review.md",
         ".cg-docs/reviews/2026-04-27-branch-review.md",
@@ -3064,6 +3257,8 @@
         ".cg-docs/reviews/2026-05-19-fix-inventory-save-reporting-level-review.md",
         ".cg-docs/reviews/2026-05-19-fix-reporting-level-duplication-review.md",
         ".cg-docs/reviews/2026-05-20-inventory-architecture-refactor-review.md",
+        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
         ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
@@ -3086,6 +3281,7 @@
         ".cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md",
         ".cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md",
         ".cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md",
+        ".cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md",
         ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
         ".cg-docs/solutions/git-workflows/2026-04-23-guard-at-entry-point-pattern.md",
         ".cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md",
@@ -3096,10 +3292,10 @@
       "keywords": [
         "reporting_level",
         "aaa.r",
-        "pd_deflation.r"
+        "valid_dlw_load()"
       ],
-      "label": "Reporting_Level / Aaa.R / Pd_Deflation.R",
-      "slug": "reporting-level-aaa-r-pd-deflation-r"
+      "label": "Reporting_Level / Aaa.R / Valid_Dlw_Load()",
+      "slug": "reporting-level-aaa-r-valid-dlw-load"
     },
     {
       "entity_count": 4,

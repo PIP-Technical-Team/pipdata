@@ -13,7 +13,8 @@
     "Phase 1 complete (Steps 1-2): get_aux_hashes() resolver added in R/utils.R; wired into pd_process_data() before aux loading; build_pip_inventory() gains aux_hashes param and writes aux_<measure>_hash columns on current-run rows, initialised to NA on assembled master for legacy/retained rows.",
     "Phase 2 complete (Step 3): valid_dlw_load() rewritten with two-stage aux gating. Master loaded once (shared dt_master) and passed to inv_to_process() (now accepts dt_master) and aux_hash_candidates(). Stage 1 builds candidates from per-survey aux hash comparison over full filtered/latest inventory; missing historical hash is a candidate; conflicting same-survey/content hashes abort. Stage 2 runs valid_aux_load() only for changed measures and intersects affected surveys with candidates. force=TRUE skips master/aux comparisons and processes all rows.",
     "Tests: test-get-aux-hashes.R (7), test-build_pip_inventory.R (3 aux-hash), test-valid_dlw_load.R (9 new gating + updated existing), test-valid_aux_load.R (updated verbose propagation). Full suite PASS (2 pre-existing skips). roxygenise regenerated .Rd files.",
-    "Plan marked status: completed, completed-date: 2026-08-07. Roadmap feature aux-version-gate-valid-dlw-load set to done."
+    "Plan marked status: completed, completed-date: 2026-08-07. Roadmap feature aux-version-gate-valid-dlw-load set to done.",
+    "Verification review 2026-08-07: full R suite PASS (0 failures, 2 pre-existing skips). Both light verification agents returned no usable output due to model-service 'Response contained no choices' errors; not retried per protocol."
   ],
   "evidenceStatus": {
     "V1": "passed (resolver tests: all six measures incl. PFW)",
@@ -30,9 +31,10 @@
     "V12": "passed (no .joyn column, no duplicate survey IDs)",
     "V13": "passed (targeted valid_dlw_load/valid_aux_load tests)",
     "V14": "passed (full suite, 2 pre-existing skips)",
-    "V15": "passed (roxygen regenerated; context.md unchanged - no canonical logging semantics changed)"
+    "V15": "passed (roxygen regenerated; context.md unchanged - no canonical logging semantics changed)",
+    "verification": "full suite passed; agent verification incomplete due to model-service errors"
   },
-  "nextCommand": "none - plan complete"
+  "nextCommand": "/cg-review mode:verify (rerun light agents if independent reviewer output is required)"
 }
 
 
