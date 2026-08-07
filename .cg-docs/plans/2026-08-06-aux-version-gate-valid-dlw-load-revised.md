@@ -11,6 +11,9 @@ deviation-policy: "ask"
 artifact-schema-version: 1
 tags: [valid_dlw_load, aux, stamp, content_hash, master-inventory, incremental-processing]
 phases: 2
+completed-phases: [1]
+current-phase: 2
+execution-report: ".cg-docs/work-reports/2026-08-06-aux-version-gate-valid-dlw-load-revised.md"
 ---
 
 # Plan: Aux version gate for `valid_dlw_load()` — revised run-level hash design

@@ -7,6 +7,7 @@
 build_pip_inventory(
   inv_to_clean,
   pip_id_map,
+  aux_hashes = NULL,
   verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
@@ -17,6 +18,12 @@ returned by \code{\link[=valid_dlw_load]{valid_dlw_load()}}). Must have unique \
 \item{pip_id_map}{A \code{data.table} with exactly two columns: \code{survey_id}
 (DLW survey identifier) and \code{pip_id} (PIP identifier, uppercase). Built
 from successful \code{process_data()} calls in \code{\link[=pd_process_data]{pd_process_data()}}.}
+
+\item{aux_hashes}{A named character vector of current aux \code{content_hash}
+values, one per requested auxiliary measure (e.g. \code{cpi}, \code{ppp}, \code{pfw}).
+Resolved once per run by \code{\link[=get_aux_hashes]{get_aux_hashes()}} and recorded on the
+master-inventory rows produced for successfully processed surveys.
+Default \code{NULL} (no aux hashes recorded).}
 
 \item{verbose}{Logical. Controls verbosity of downstream
 \code{\link[pipload:load_pip_master_inventory]{pipload::load_pip_master_inventory()}} and \code{\link[pipload:load_aux_data]{pipload::load_aux_data()}}
@@ -62,6 +69,10 @@ surveys are retained from the prior master. One row per \code{pip_id}, always.
 \item \code{pipeline_version_dlw}, \code{latest_version_id_dlw}, \code{content_hash_dlw},
 \code{Checksum_dlw}, \code{path_dlw} â€” renamed from DLW inventory columns.
 \item \code{welfare_type} â€” derived from the 4th \verb{_}-delimited segment of \code{pip_id}.
+\item \verb{aux_<measure>_hash} (e.g. \code{aux_cpi_hash}, \code{aux_ppp_hash}, \code{aux_pfw_hash})
+â€” current aux \code{content_hash} for each requested measure, from the
+run-level \code{aux_hashes} map passed by \code{\link[=pd_process_data]{pd_process_data()}}. Only populated
+for surveys successfully processed in the current run.
 \item \code{first_release_version_id}, \code{latest_release_version_id} â€” stamp version
 IDs of the release inventory (first appearance and most recent).
 }
@@ -74,6 +85,7 @@ Other pd_process_data pipeline:
 \code{\link[=filter_aux_data]{filter_aux_data()}},
 \code{\link[=filter_aux_inv]{filter_aux_inv()}},
 \code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=get_aux_hashes]{get_aux_hashes()}},
 \code{\link[=inv_dlw_load]{inv_dlw_load()}},
 \code{\link[=inv_to_process]{inv_to_process()}},
 \code{\link[=log_report]{log_report()}},

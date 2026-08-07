@@ -25,6 +25,13 @@
 #' auxiliary file changes and inventory verification are emitted by [valid_dlw_load()]
 #' and [build_pip_inventory()] respectively.
 #'
+#' **Aux hashes**: the current `content_hash` for every requested auxiliary
+#' measure is resolved once from the `"aux"` stamp catalog via
+#' [get_aux_hashes()] before aux data is loaded. The run-level hash map is
+#' passed to [build_pip_inventory()] and recorded in the master inventory so
+#' that [valid_dlw_load()] can gate aux-change detection against the aux data
+#' actually used in this run.
+#'
 #' **Recode spec**: the recode specification is synced to stamp once via
 #' [sync_recode_spec()] before the per-survey loop and the resolved spec is
 #' threaded into each [process_data()] call, so [apply_recode_spec()] performs
@@ -64,6 +71,11 @@ pd_process_data <- function(
   if (is.null(inv)) {
     inv <- pipload::load_gmd_valid_inv(verbose = verbose)
   }
+
+  # Resolve current aux content hashes once, before aux data is loaded.
+  # These hashes are passed through the run and recorded in the master
+  # inventory so that aux-change detection can compare against them.
+  aux_hashes <- get_aux_hashes(aux_measures, verbose = verbose)
 
   # Load aux data for metadata attributes and processing
   aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = verbose)
@@ -155,6 +167,7 @@ pd_process_data <- function(
   new_pip_inv <- build_pip_inventory(
     inv_to_clean = inv_to_clean,
     pip_id_map = pip_id_map,
+    aux_hashes = aux_hashes,
     verbose = verbose
   )
 

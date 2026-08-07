@@ -1,29 +1,26 @@
 {
-  "plan": ".cg-docs/plans/2026-06-17-valid-dlw-load-refactor.md",
-  "executionReport": ".cg-docs/work-reports/2026-08-04-valid-dlw-load-refactor.md",
-  "currentPhase": null,
-  "completedPhases": [1, 2],
-  "lastUpdated": "2026-08-04",
+  "plan": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+  "executionReport": ".cg-docs/work-reports/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+  "currentPhase": 2,
+  "completedPhases": [1],
+  "lastUpdated": "2026-08-07",
   "refs": {
-    "roadmapFeature": null,
-    "roadmapMilestone": null
+    "roadmapFeature": "aux-version-gate-valid-dlw-load",
+    "roadmapMilestone": "Pipeline Alignment Audit"
   },
   "decisions": [
-    "No roadmap feature matches this plan path (2026-06-17-valid-dlw-load-refactor.md); content-hash-reclean-trigger is a related but distinct idea feature. Skipped roadmap active-status update.",
-    "Phase 1 complete (Steps 1-4): max_year clamp removed; all-NULL guard split into aux_no_changes_inf / aux_changes_no_surveys_inf; aux_changes_inf moved into else branch (fires once); return(NULL) replaced with cli_abort(class='piperr'); surveys_to_clean_inf summary log added.",
-    "Phase 2 complete (Steps 5-7): inv_to_process rewritten to compare content_hash vs content_hash_dlw on survey_id (deduplicated dt_master, relationship='many-to-one'); both test-valid_dlw_load.R master-inventory mocks updated to new schema plus 9 new test scenarios; roxygen @details and compound-gpid.context.md canonical logmeta list updated (re-counted 6->9 entries, not the plan's stale 'four').",
-    "Regression fix in test-valid_aux_load.R:93 (outside plan's allowed test file): updated an assertion that relied on the old silent return(NULL) behavior Phase 1 intentionally replaced with cli_abort(class='piperr') -- a plan-named interface change, wrapped in expect_error(class='piperr') while preserving the verbose-propagation assertion.",
-    "Plan marked status: completed, completed-date: 2026-08-04."
+    "Roadmap feature aux-version-gate-valid-dlw-load updated to status active and plan path repointed to the revised 2026-08-06 plan.",
+    "Phase 1 complete (Steps 1-2): get_aux_hashes() resolver added in R/utils.R (queries st_catalog_query(alias='aux'), matches <measure>.qs2, aborts on missing/ambiguous/empty/failure/missing-hash); wired into pd_process_data() before aux loading; build_pip_inventory() gains aux_hashes param and writes aux_<measure>_hash columns on current-run rows, initialised to NA on assembled master for legacy/retained rows.",
+    "Tests: test-get-aux-hashes.R (7 scenarios) + test-build_pip_inventory.R (3 aux-hash scenarios). Full suite PASS (2 pre-existing skips). roxygenise regenerated .Rd files.",
+    "get_aux_hashes is internal (@keywords internal), not exported (absent from NAMESPACE)."
   ],
   "evidenceStatus": {
-    "V1": "passed (max_year clamp removed from filter_aux_inv)",
-    "V2": "passed (two distinct if branches; aux_no_changes_inf / aux_changes_no_surveys_inf discriminators)",
-    "V3": "passed (cli_abort class piperr replaces return(NULL))",
-    "V4": "passed (surveys_to_clean_inf log present after rbind/dedup)",
-    "V5": "passed (verbose propagated; dedup + relationship=many-to-one; call site unchanged)",
-    "V6": "passed (devtools::test(filter='valid_dlw') = 27 PASS / 0 FAIL)",
-    "V7": "passed (devtools::test() full suite = 425 PASS / 0 FAIL / 2 SKIP, after 1 targeted fix)",
-    "V8": "passed (aux_changes_inf fires once in else branch, gated on inv_aux non-empty)"
+    "V1": "passed (resolver tests: all six measures incl. PFW)",
+    "V2": "passed (missing/ambiguous/empty/failure/missing-hash abort tests)",
+    "V3": "passed (pd_process_data resolves hashes once before aux loading)",
+    "V4": "passed (build_pip_inventory persists hashes on current-run rows)",
+    "V5": "passed (legacy/retained rows keep NA; schema initialised)"
   },
-  "nextCommand": "none - plan complete"
+  "nextCommand": "/cg-work phase2"
 }
+

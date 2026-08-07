@@ -759,3 +759,163 @@ test_that("build_pip_inventory rowbinds correctly when old master has fs_bytes s
   expect_true(old_pip_id %in% result$pip_id)
   expect_true(new_pip_id %in% result$pip_id)
 })
+
+# ---------------------------------------------------------------------------
+# Aux hashes: current-run rows receive the run-level aux hash columns
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory records run-level aux hashes on current-run rows", {
+  pip_id <- "BOL_2022_EH_INC_ALL"
+  survey <- "BOL_2022_EH"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  pip_id_map <- make_pip_id_map(survey, list(pip_id))
+
+  aux_hashes <- c(
+    pfw = "hash_pfw",
+    cpi = "hash_cpi",
+    ppp = "hash_ppp",
+    pop = "hash_pop",
+    gdp = "hash_gdp",
+    pce = "hash_pce"
+  )
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(pip_id),
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) NULL,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map, aux_hashes = aux_hashes)
+
+  expect_true("aux_cpi_hash" %in% names(result))
+  expect_true("aux_ppp_hash" %in% names(result))
+  expect_true("aux_pfw_hash" %in% names(result))
+  expect_true("aux_pop_hash" %in% names(result))
+  expect_true("aux_gdp_hash" %in% names(result))
+  expect_true("aux_pce_hash" %in% names(result))
+  expect_equal(result[result$pip_id == pip_id, aux_cpi_hash], "hash_cpi")
+  expect_equal(result[result$pip_id == pip_id, aux_ppp_hash], "hash_ppp")
+  expect_equal(result[result$pip_id == pip_id, aux_pfw_hash], "hash_pfw")
+})
+
+# ---------------------------------------------------------------------------
+# Aux hashes: old retained rows keep NA when not reprocessed this run
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory leaves old retained rows' aux hashes as NA", {
+  new_pip_id <- "BRA_2019_PNAD_INC_ALL"
+  new_survey <- "BRA_2019_PNAD"
+  old_pip_id <- "CHN_2018_HIES_INC_ALL"
+  old_survey <- "CHN_2018_HIES"
+
+  inv_to_clean <- make_inv_to_clean(
+    new_survey,
+    country_codes = "BRA",
+    surveyid_years = 2019L,
+    survey_acronyms = "PNAD"
+  )
+  pip_id_map <- make_pip_id_map(new_survey, list(new_pip_id))
+
+  old_master <- data.table::data.table(
+    survey_id = old_survey,
+    pip_id = old_pip_id,
+    version_id_data = "old_vid_data",
+    version_id_metadata = "old_vid_meta",
+    welfare_type = "INC",
+    country_code = "CHN",
+    surveyid_year = 2018L,
+    survey_acronym = "HIES",
+    first_release_version_id = NA_character_,
+    latest_release_version_id = NA_character_
+  )
+
+  aux_hashes <- c(cpi = "hash_cpi", ppp = "hash_ppp")
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(new_pip_id),
+    st_latest = function(...) "vid_bra",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) old_master,
+    load_aux_data = function(measure, ...) make_pfw("BRA", 2019L, "PNAD"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map, aux_hashes = aux_hashes)
+
+  # New row has the hash; old retained row has NA.
+  expect_equal(result[result$pip_id == new_pip_id, aux_cpi_hash], "hash_cpi")
+  expect_true(is.na(result[result$pip_id == old_pip_id, aux_cpi_hash]))
+  expect_true(is.na(result[result$pip_id == old_pip_id, aux_ppp_hash]))
+})
+
+# ---------------------------------------------------------------------------
+# Aux hashes: partial requested measures leave non-requested columns absent
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory only adds columns for requested aux measures", {
+  pip_id <- "BOL_2022_EH_INC_ALL"
+  survey <- "BOL_2022_EH"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  pip_id_map <- make_pip_id_map(survey, list(pip_id))
+
+  # Only cpi and ppp requested.
+  aux_hashes <- c(cpi = "hash_cpi", ppp = "hash_ppp")
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(pip_id),
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) NULL,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map, aux_hashes = aux_hashes)
+
+  expect_true("aux_cpi_hash" %in% names(result))
+  expect_true("aux_ppp_hash" %in% names(result))
+  expect_false("aux_pfw_hash" %in% names(result))
+  expect_false("aux_pop_hash" %in% names(result))
+})

@@ -71,6 +71,7 @@ Other pd_process_data pipeline:
 \code{\link[=filter_aux_data]{filter_aux_data()}},
 \code{\link[=filter_aux_inv]{filter_aux_inv()}},
 \code{\link[=fix_year_var]{fix_year_var()}},
+\code{\link[=get_aux_hashes]{get_aux_hashes()}},
 \code{\link[=inv_dlw_load]{inv_dlw_load()}},
 \code{\link[=inv_to_process]{inv_to_process()}},
 \code{\link[=pd_aux_attr]{pd_aux_attr()}},
