@@ -101,27 +101,42 @@ test_that("valid_dlw_load(verbose=FALSE) propagates verbose=FALSE to valid_aux_l
     module = "ALL"
   )
 
-  # Mock all three internal functions together so we isolate the
-  # verbose-propagation path and avoid any external I/O.
+  # Master already has this survey with a DIFFERENT aux hash than current,
+  # so Stage 1 marks it a candidate and Stage 2 calls valid_aux_load().
+  master <- data.table::data.table(
+    survey_id = "ABC_2015_TST_INC_D1",
+    content_hash_dlw = "h_1",
+    aux_cpi_hash = "old_cpi_hash"
+  )
+
+  # Mock the internal functions so we isolate the verbose-propagation path.
   testthat::local_mocked_bindings(
     valid_aux_load = function(measure, compare, verbose = TRUE, ...) {
       aux_verbose <<- c(aux_verbose, verbose)
       NULL # no aux changes → inv_aux = NULL
     },
-    # last_ver_inv requires many inventory columns; return empty table so the
-    # function hits the early-return branch (no surveys to process → NULL).
-    last_ver_inv = function(inv, ...) data.table::data.table(),
+    # last_ver_inv requires many inventory columns; return the input so the
+    # survey survives to the aux-hash comparison.
+    last_ver_inv = function(inv, ...) inv,
     inv_to_process = function(inv, ...) NULL,
     .package = "pipdata"
   )
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
 
-  # With no aux changes and no surveys to process (inv_to_process mocked to
-  # NULL, last_ver_inv mocked to empty), valid_dlw_load() now aborts
-  # (class "piperr") instead of silently returning NULL -- verbose is still
-  # propagated to valid_aux_load() before the abort is raised.
+  # With a changed aux hash, valid_aux_load() is called (Stage 2) with the
+  # changed measure and verbose=FALSE. inv_to_process returns NULL (no DLW-new
+  # surveys), so the function aborts (class "piperr") after the aux path.
   suppressMessages(
     expect_error(
-      valid_dlw_load(inv = fake_inv, verbose = FALSE),
+      valid_dlw_load(
+        inv = fake_inv,
+        aux_measures = "cpi",
+        aux_hashes = c(cpi = "new_cpi_hash"),
+        verbose = FALSE
+      ),
       class = "piperr"
     )
   )

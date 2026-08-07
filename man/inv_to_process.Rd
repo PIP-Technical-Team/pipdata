@@ -4,10 +4,14 @@
 \alias{inv_to_process}
 \title{Remove surveys already cleaned from the processing inventory}
 \usage{
-inv_to_process(inv, verbose = TRUE)
+inv_to_process(inv, dt_master = NULL, verbose = TRUE)
 }
 \arguments{
 \item{inv}{A \code{data.table} of DLW surveys (latest versions).}
+
+\item{dt_master}{A \code{data.table} of the PIP master inventory, already loaded
+by the caller (\code{\link[=valid_dlw_load]{valid_dlw_load()}}) and shared with the aux-hash
+comparison. Default \code{NULL}, in which case the master is loaded here.}
 
 \item{verbose}{Logical. Print progress messages.}
 }
@@ -26,6 +30,7 @@ loaded, all surveys are returned.
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=data_to_dt]{data_to_dt()}},

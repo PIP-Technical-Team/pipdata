@@ -1,7 +1,8 @@
 ---
 date: 2026-08-06
 title: "Aux version gate for valid_dlw_load — revised run-level hash design"
-status: active
+status: completed
+completed-date: 2026-08-07
 scope: "Standard"
 brainstorm: ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md"
 prior-plan: ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md"
@@ -11,8 +12,7 @@ deviation-policy: "ask"
 artifact-schema-version: 1
 tags: [valid_dlw_load, aux, stamp, content_hash, master-inventory, incremental-processing]
 phases: 2
-completed-phases: [1]
-current-phase: 2
+completed-phases: [1, 2]
 execution-report: ".cg-docs/work-reports/2026-08-06-aux-version-gate-valid-dlw-load-revised.md"
 ---
 

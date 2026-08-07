@@ -23,6 +23,7 @@ with a combination of version/year and reporting level.
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=data_to_dt]{data_to_dt()}},
 \code{\link[=filter_aux_data]{filter_aux_data()}},

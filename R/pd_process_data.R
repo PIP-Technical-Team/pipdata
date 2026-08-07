@@ -86,6 +86,7 @@ pd_process_data <- function(
     inv = inv,
     aux_measures = aux_measures,
     force = force,
+    aux_hashes = aux_hashes,
     verbose = verbose
   )
 

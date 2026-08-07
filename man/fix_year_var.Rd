@@ -21,6 +21,7 @@ Finds the column whose name contains \code{"year"}, renames it to
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=data_to_dt]{data_to_dt()}},

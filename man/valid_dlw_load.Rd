@@ -9,6 +9,7 @@ valid_dlw_load(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
+  aux_hashes = NULL,
   verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
@@ -23,6 +24,11 @@ Default: \code{c("ALL", "GROUP", "HIST", "GPWG", "BIN")}.}
 
 \item{force}{Logical. If \code{TRUE}, skip the comparison against the
 master inventory and process all surveys.}
+
+\item{aux_hashes}{A named character vector of current aux \code{content_hash}
+values, one per requested auxiliary measure. Resolved once per run by
+\code{\link[=get_aux_hashes]{get_aux_hashes()}} and used to gate aux-change detection. Default \code{NULL}
+(no aux hashes available — aux-change detection is skipped).}
 
 \item{verbose}{Logical. Print progress messages. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
@@ -47,6 +53,25 @@ master inventory via \code{inv_to_process()}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
 
+\strong{Aux-change gating (two-stage)}: aux-change detection is gated on the
+current aux \code{content_hash} values passed via \code{aux_hashes}.
+\itemize{
+\item Stage 1 (cheap): for each previously-cleaned survey, compare its stored
+per-survey aux hash (from the master inventory's \verb{aux_<measure>_hash}
+columns) against the current hash for that measure. A mismatch or a
+missing historical hash makes the survey a candidate. New surveys and
+DLW-content-changed surveys are always processed via \code{\link[=inv_to_process]{inv_to_process()}}.
+\item Stage 2 (detailed): for the changed measures only, \code{\link[=valid_aux_load]{valid_aux_load()}} /
+\verb{compare_aux_*} identifies which requested surveys actually have changed
+rows inside the aux file. The affected surveys are intersected with the
+candidate set, so a globally changed aux table that only affects
+non-requested countries does not re-clean requested surveys.
+}
+
+The master inventory is loaded at most once and shared between the DLW
+comparison and the aux-hash comparison. When \code{force = TRUE}, no master or
+aux comparison runs and all filtered/latest surveys are processed.
+
 \strong{Logging}: This function writes the following entries to the \code{"pipdata_log"}:
 \itemize{
 \item \code{aux_changes_inf} — changes were detected in any of the requested auxiliary
@@ -68,6 +93,7 @@ than returning \code{NULL} silently.
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=build_pip_inventory]{build_pip_inventory()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=data_to_dt]{data_to_dt()}},

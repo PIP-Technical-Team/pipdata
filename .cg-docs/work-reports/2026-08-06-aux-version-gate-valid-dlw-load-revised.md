@@ -49,3 +49,46 @@ measures leave non-requested columns absent).
 Phase 1 evidence: V1 (resolver tests), V2 (missing/ambiguous abort), V3
 (resolved once before aux loading), V4 (hashes persisted on current-run rows),
 V5 (legacy rows NA) — all passed.
+
+## Run 2 — 2026-08-07 — Phase 2 (Gate and filter aux changes)
+
+### Step 3: Load master once and implement two-stage aux filtering
+
+Rewrote `valid_dlw_load()` in `R/valid_dlw_load.R`:
+
+- Added `aux_hashes = NULL` parameter.
+- Loads the master inventory **once** (shared `dt_master`) and passes it to
+  both `inv_to_process()` (DLW comparison) and `aux_hash_candidates()` (aux
+  comparison). `inv_to_process()` now accepts `dt_master` to avoid a second
+  load.
+- Stage 1: `aux_hash_candidates()` compares each previously-cleaned survey's
+  stored `aux_<measure>_hash` against the current hash over the full
+  filtered/latest inventory. Missing historical hash → candidate (migration).
+  Aborts on conflicting aux hashes for the same `survey_id`/`content_hash_dlw`.
+- Stage 2: `valid_aux_load()` runs only for the changed measures, then
+  `filter_aux_inv()` results are intersected with the candidate set.
+- `force = TRUE` skips master load and all aux comparisons; processes all
+  filtered/latest surveys.
+- Preserved logmeta discriminators with revised trigger conditions.
+
+`pd_process_data()` passes `aux_hashes` to `valid_dlw_load()`.
+
+Tests: updated `test-valid_dlw_load.R` (existing scenarios adapted to the
+two-stage flow) and `test-valid_aux_load.R` (verbose propagation now exercises
+Stage 2). Added 9 new gating tests: unchanged hash skips comparison, changed
+hash invokes only changed measures, COL/ARG vs USA/GER non-affected, affected
+requested survey returned, missing historical hash candidate, conflicting
+hashes abort, master loaded once, force mode skips comparisons, no `.joyn` /
+no duplicate survey IDs.
+
+### Phase 2 verification
+
+- `testthat::test_local(filter = 'valid_dlw_load|valid_aux_load')` — PASS.
+- `testthat::test_local()` full suite — PASS (2 pre-existing skips, no failures).
+- `roxygen2::roxygenise('.')` — regenerated `.Rd` files incl. `valid_dlw_load.Rd`,
+  `inv_to_process.Rd`, `aux_hash_candidates.Rd`.
+
+Phase 2 evidence: V6 (master loaded once), V7 (changed measures only invoke
+valid_aux_load), V8 (COL/ARG vs USA/GER intersection), V9 (conflict abort),
+V10 (new/DLW-changed surveys remain), V11 (force mode skips), V12 (no .joyn /
+no duplicates), V13 (targeted tests), V14 (full suite) — all passed.

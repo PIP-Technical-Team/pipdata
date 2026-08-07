@@ -80,6 +80,7 @@ IDs of the release inventory (first appearance and most recent).
 \seealso{
 Other pd_process_data pipeline:
 \code{\link[=add_attr]{add_attr()}},
+\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
 \code{\link[=create_attr]{create_attr()}},
 \code{\link[=data_to_dt]{data_to_dt()}},
 \code{\link[=filter_aux_data]{filter_aux_data()}},
