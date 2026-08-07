@@ -7,8 +7,8 @@
 build_pip_inventory(
   inv_to_clean,
   pip_id_map,
-  aux_hashes = NULL,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  aux_hashes = NULL
 )
 }
 \arguments{
@@ -19,15 +19,15 @@ returned by \code{\link[=valid_dlw_load]{valid_dlw_load()}}). Must have unique \
 (DLW survey identifier) and \code{pip_id} (PIP identifier, uppercase). Built
 from successful \code{process_data()} calls in \code{\link[=pd_process_data]{pd_process_data()}}.}
 
+\item{verbose}{Logical. Controls verbosity of downstream
+\code{\link[pipload:load_pip_master_inventory]{pipload::load_pip_master_inventory()}} and \code{\link[pipload:load_aux_data]{pipload::load_aux_data()}}
+calls. Default: \code{getOption("pipdata.verbose", default = TRUE)}.}
+
 \item{aux_hashes}{A named character vector of current aux \code{content_hash}
 values, one per requested auxiliary measure (e.g. \code{cpi}, \code{ppp}, \code{pfw}).
 Resolved once per run by \code{\link[=get_aux_hashes]{get_aux_hashes()}} and recorded on the
 master-inventory rows produced for successfully processed surveys.
 Default \code{NULL} (no aux hashes recorded).}
-
-\item{verbose}{Logical. Controls verbosity of downstream
-\code{\link[pipload:load_pip_master_inventory]{pipload::load_pip_master_inventory()}} and \code{\link[pipload:load_aux_data]{pipload::load_aux_data()}}
-calls. Default: \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
 A \code{data.table}: the updated PIP master inventory. Does \strong{not}

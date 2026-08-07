@@ -22,8 +22,10 @@
 #'   master inventory and process all surveys.
 #' @param aux_hashes A named character vector of current aux `content_hash`
 #'   values, one per requested auxiliary measure. Resolved once per run by
-#'   [get_aux_hashes()] and used to gate aux-change detection. Default `NULL`
-#'   (no aux hashes available — aux-change detection is skipped).
+#'   [get_aux_hashes()] and used to gate aux-change detection. When `NULL`
+#'   (the default) and `force = FALSE`, the hashes are resolved internally so
+#'   that direct callers retain the previous behavior of always running
+#'   aux-change detection.
 #' @param verbose Logical. Print progress messages. Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
@@ -72,8 +74,8 @@ valid_dlw_load <- function(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  aux_hashes = NULL,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  aux_hashes = NULL
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -115,6 +117,13 @@ valid_dlw_load <- function(
   inv_svy <- inv_svy_full
   if (!force) {
     inv_svy <- inv_to_process(inv_svy_full, dt_master = dt_master, verbose = verbose)
+  }
+
+  # Resolve current aux hashes when the caller did not supply them, so that
+  # direct callers of valid_dlw_load() retain the previous behavior of always
+  # running aux-change detection (rather than silently skipping it).
+  if (!force && is.null(aux_hashes)) {
+    aux_hashes <- get_aux_hashes(aux_measures, verbose = verbose)
   }
 
   # Stage 1: build the aux candidate set from the per-survey aux hash
@@ -358,10 +367,10 @@ fix_year_var <- function(dt) {
 #' loaded, all surveys are returned.
 #'
 #' @param inv A `data.table` of DLW surveys (latest versions).
+#' @param verbose Logical. Print progress messages.
 #' @param dt_master A `data.table` of the PIP master inventory, already loaded
 #'   by the caller ([valid_dlw_load()]) and shared with the aux-hash
 #'   comparison. Default `NULL`, in which case the master is loaded here.
-#' @param verbose Logical. Print progress messages.
 #'
 #' @return A `data.table` of surveys still needing processing, or
 #'   `NULL` if all surveys have already been cleaned.
@@ -370,8 +379,8 @@ fix_year_var <- function(dt) {
 #' @keywords internal
 inv_to_process <- function(
   inv,
-  dt_master = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  dt_master = NULL
 ) {
   # Load master inventory to compare with previous cleaning, unless the
   # caller already loaded it (shared single-load handoff).
@@ -391,27 +400,35 @@ inv_to_process <- function(
 
   if (is.null(dt_master)) return(inv)
 
-  # Deduplicate by survey_id: content_hash_dlw is expected to be identical
-  # across pip_id splits of the same survey_id, but the join must not rely
-  # on that being true for row cardinality -- dedup first, and let
-  # relationship = "many-to-one" raise if it is ever violated.
+  # Deduplicate by survey_id + content_hash_dlw. A survey may have multiple
+  # historical DLW content hashes in the master; the join below matches the
+  # current DLW content hash so only the corresponding master row is used.
   dt_master_hash <- collapse::funique(dt_master[, .(survey_id, content_hash_dlw)])
 
-  # Join on survey_id to compare content hashes
+  # Rename the current DLW inventory's content_hash to content_hash_dlw so the
+  # join can match it against the master's stored content_hash_dlw.
+  inv_join <- data.table::copy(inv)
+  data.table::setnames(inv_join, "content_hash", "content_hash_dlw")
+
+  # Left-join on survey_id + content_hash_dlw. reportvar = TRUE adds the .joyn
+  # column: "matched" when the current DLW content hash matches the master's
+  # content_hash_dlw (survey already cleaned), "x" when the survey is new or
+  # its DLW content changed.
   inv_compare <- joyn::left_join(
-    inv,
+    inv_join,
     dt_master_hash,
-    by = "survey_id",
+    by = c("survey_id", "content_hash_dlw"),
     relationship = "many-to-one",
     verbose = FALSE,
-    reportvar = FALSE
+    reportvar = ".joyn"
   )
 
-  # Keep: new surveys (NA hash in master) or surveys whose DLW content changed
-  inv_changed <- inv_compare[
-    is.na(content_hash_dlw) | content_hash != content_hash_dlw
-  ]
-  inv_changed[, content_hash_dlw := NULL]
+  # Keep: new surveys or surveys whose DLW content changed (.joyn == "x").
+  inv_changed <- inv_compare[.joyn == "x"]
+  # Restore the original column name for the DLW content hash, then drop the
+  # .joyn report column.
+  data.table::setnames(inv_changed, "content_hash_dlw", "content_hash")
+  inv_changed[, .joyn := NULL]
 
   if (nrow(inv_changed) == 0) {
     if (verbose) {
@@ -450,6 +467,11 @@ inv_to_process <- function(
 #' `content_hash_dlw`. All rows in that group must have identical aux hashes;
 #' a conflict aborts loudly (this protects the invariant that split `pip_id`s
 #' for one survey/content version use the same aux versions).
+#'
+#' The current DLW inventory is joined to the master on both `survey_id` and
+#' the DLW content hash (`inv$content_hash` matched to `master$content_hash_dlw`),
+#' so a survey with multiple historical DLW versions is compared against the
+#' aux hashes of its current version only.
 #'
 #' @family pd_process_data pipeline
 #' @keywords internal
@@ -490,14 +512,20 @@ aux_hash_candidates <- function(
     )
   }
 
-  # Join the survey-level master hashes onto the DLW inventory.
+  # Rename the current DLW inventory's content_hash to content_hash_dlw so the
+  # join can match it against the master's stored content_hash_dlw. This
+  # ensures a survey with multiple historical DLW versions is compared against
+  # the aux hashes of its current version only.
+  inv_join <- data.table::copy(inv)
+  data.table::setnames(inv_join, "content_hash", "content_hash_dlw")
+
   inv_compare <- joyn::left_join(
-    inv,
+    inv_join,
     master_svy,
-    by = "survey_id",
+    by = c("survey_id", "content_hash_dlw"),
     relationship = "many-to-one",
     verbose = FALSE,
-    reportvar = FALSE
+    reportvar = ".joyn"
   )
 
   # Determine which measures changed for each survey.
@@ -522,8 +550,13 @@ aux_hash_candidates <- function(
   }
 
   candidates <- inv_compare[candidate_idx]
-  # Drop the joined aux hash columns from the result.
-  candidates[, (aux_cols) := NULL]
+  # Drop the joined aux hash columns and the .joyn report column.
+  drop_cols <- intersect(c(aux_cols, ".joyn"), names(candidates))
+  if (length(drop_cols) > 0L) {
+    candidates[, (drop_cols) := NULL]
+  }
+  # Restore the original column name for the DLW content hash.
+  data.table::setnames(candidates, "content_hash_dlw", "content_hash")
 
   if (nrow(candidates) == 0L) {
     return(NULL)

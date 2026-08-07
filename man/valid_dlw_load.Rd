@@ -9,8 +9,8 @@ valid_dlw_load(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
-  aux_hashes = NULL,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  aux_hashes = NULL
 )
 }
 \arguments{
@@ -25,13 +25,15 @@ Default: \code{c("ALL", "GROUP", "HIST", "GPWG", "BIN")}.}
 \item{force}{Logical. If \code{TRUE}, skip the comparison against the
 master inventory and process all surveys.}
 
-\item{aux_hashes}{A named character vector of current aux \code{content_hash}
-values, one per requested auxiliary measure. Resolved once per run by
-\code{\link[=get_aux_hashes]{get_aux_hashes()}} and used to gate aux-change detection. Default \code{NULL}
-(no aux hashes available — aux-change detection is skipped).}
-
 \item{verbose}{Logical. Print progress messages. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
+
+\item{aux_hashes}{A named character vector of current aux \code{content_hash}
+values, one per requested auxiliary measure. Resolved once per run by
+\code{\link[=get_aux_hashes]{get_aux_hashes()}} and used to gate aux-change detection. When \code{NULL}
+(the default) and \code{force = FALSE}, the hashes are resolved internally so
+that direct callers retain the previous behavior of always running
+aux-change detection.}
 }
 \value{
 A \code{data.table} of surveys to process. If no surveys require

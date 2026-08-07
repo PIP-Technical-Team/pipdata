@@ -93,12 +93,14 @@ test_that("valid_aux_load(verbose=FALSE, compare='all') passes verbose=FALSE to 
 test_that("valid_dlw_load(verbose=FALSE) propagates verbose=FALSE to valid_aux_load()", {
   aux_verbose <- logical(0)
 
-  # Minimal inventory — only columns needed by the module-filter and setorder steps.
+  # Minimal inventory — only columns needed by the module-filter, setorder,
+  # and aux-hash join steps.
   fake_inv <- data.table::data.table(
     survey_id = "ABC_2015_TST_INC_D1",
     country_id = "ABC",
     year = 2015L,
-    module = "ALL"
+    module = "ALL",
+    content_hash = "h_1"
   )
 
   # Master already has this survey with a DIFFERENT aux hash than current,

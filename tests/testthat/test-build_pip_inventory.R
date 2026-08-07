@@ -919,3 +919,151 @@ test_that("build_pip_inventory only adds columns for requested aux measures", {
   expect_false("aux_pfw_hash" %in% names(result))
   expect_false("aux_pop_hash" %in% names(result))
 })
+
+# ---------------------------------------------------------------------------
+# P1.2 regression: reprocessing a survey drops stale pip_id rows
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory drops stale pip_id rows when a survey is reprocessed", {
+  # Survey BOL_2022_EH previously had two pip_id rows (INC_ALL and INC_GPWG).
+  # This run reprocesses it with only INC_ALL. The stale INC_GPWG row must be
+  # dropped so the survey's pip_id set matches the current reprocess exactly.
+  new_pip_id <- "BOL_2022_EH_INC_ALL"
+  stale_pip_id <- "BOL_2022_EH_INC_GPWG"
+  survey <- "BOL_2022_EH"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  # Only INC_ALL is reprocessed this run.
+  pip_id_map <- make_pip_id_map(survey, list(new_pip_id))
+
+  # Old master has BOTH pip_id rows, with OLD aux hashes.
+  old_master <- data.table::data.table(
+    survey_id = c(survey, survey),
+    pip_id = c(new_pip_id, stale_pip_id),
+    version_id_data = c("old_v1", "old_v2"),
+    version_id_metadata = c("old_m1", "old_m2"),
+    welfare_type = c("INC", "INC"),
+    country_code = "BOL",
+    surveyid_year = 2022L,
+    survey_acronym = "EH",
+    aux_cpi_hash = c("old_cpi", "old_cpi"),
+    first_release_version_id = NA_character_,
+    latest_release_version_id = NA_character_
+  )
+
+  aux_hashes <- c(cpi = "new_cpi_hash")
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(new_pip_id),
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) old_master,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map, aux_hashes = aux_hashes)
+
+  # Only the reprocessed INC_ALL row remains; the stale INC_GPWG row is dropped.
+  expect_equal(nrow(result), 1L)
+  expect_equal(result$pip_id, new_pip_id)
+  expect_equal(result$aux_cpi_hash, "new_cpi_hash")
+})
+
+# ---------------------------------------------------------------------------
+# P1.5: stateful persistence round trip — written master is reloaded
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory persists aux hashes and retained rows through a write/reload round trip", {
+  new_pip_id <- "BRA_2019_PNAD_INC_ALL"
+  new_survey <- "BRA_2019_PNAD"
+  old_pip_id <- "CHN_2018_HIES_INC_ALL"
+  old_survey <- "CHN_2018_HIES"
+
+  inv_to_clean <- make_inv_to_clean(
+    new_survey,
+    country_codes = "BRA",
+    surveyid_years = 2019L,
+    survey_acronyms = "PNAD"
+  )
+  pip_id_map <- make_pip_id_map(new_survey, list(new_pip_id))
+
+  old_master <- data.table::data.table(
+    survey_id = old_survey,
+    pip_id = old_pip_id,
+    version_id_data = "old_vid_data",
+    version_id_metadata = "old_vid_meta",
+    welfare_type = "INC",
+    country_code = "CHN",
+    surveyid_year = 2018L,
+    survey_acronym = "HIES",
+    first_release_version_id = NA_character_,
+    latest_release_version_id = NA_character_
+  )
+
+  aux_hashes <- c(cpi = "hash_cpi", ppp = "hash_ppp")
+
+  # Stateful persistence: capture the master object written under
+  # "pip_master_inventory", then return it from the verification reload.
+  written_master <- NULL
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(new_pip_id),
+    st_latest = function(...) "vid_bra",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) {
+      # First call (Step 1) returns the old master; the verification reload
+      # (Step 12) returns the just-written master.
+      if (is.null(written_master)) old_master else written_master
+    },
+    load_aux_data = function(measure, ...) make_pfw("BRA", 2019L, "PNAD"),
+    pip_write = function(x, id, alias, pk = NULL, ...) {
+      if (identical(id, "pip_master_inventory")) {
+        written_master <<- data.table::copy(x)
+      }
+      list(version_id = paste0(id, "_vid"), skipped = FALSE)
+    },
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map, aux_hashes = aux_hashes)
+
+  # The written master must contain the new survey with aux hashes and the
+  # retained old survey.
+  expect_false(is.null(written_master))
+  expect_true(new_pip_id %in% written_master$pip_id)
+  expect_true(old_pip_id %in% written_master$pip_id)
+  expect_equal(
+    written_master[written_master$pip_id == new_pip_id, aux_cpi_hash],
+    "hash_cpi"
+  )
+  expect_equal(
+    written_master[written_master$pip_id == new_pip_id, aux_ppp_hash],
+    "hash_ppp"
+  )
+  # The returned result reflects the reloaded (persisted) master.
+  expect_equal(nrow(result), 2L)
+  expect_true(new_pip_id %in% result$pip_id)
+  expect_true(old_pip_id %in% result$pip_id)
+})

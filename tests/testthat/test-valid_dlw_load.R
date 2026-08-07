@@ -930,3 +930,56 @@ test_that("valid_dlw_load output has no .joyn column and no duplicate survey_ids
   expect_false(".joyn" %in% names(result))
   expect_equal(anyDuplicated(result$survey_id), 0L)
 })
+
+# ---------------------------------------------------------------------------
+# P1.1 regression: multiple historical content_hash_dlw rows for one survey
+# ---------------------------------------------------------------------------
+
+test_that("aux_hash_candidates matches the current DLW content version, not a historical one", {
+  # Survey has TWO historical DLW content hashes in the master. The current
+  # DLW inventory corresponds to content_hash "h_2". Only the master row with
+  # content_hash_dlw == "h_2" should be used for the aux comparison.
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+  # make_dlw_inv sets content_hash = "h_1" for the first row; override to h_2.
+  inv[, content_hash := "h_2"]
+
+  # Master has two historical rows: h_1 (old aux hash) and h_2 (current aux
+  # hash matching the current run). The current run's aux hash equals the
+  # h_2 row's stored hash, so the survey should NOT be a candidate.
+  master <- data.table::data.table(
+    survey_id = c("COL_2020_GEIH", "COL_2020_GEIH"),
+    content_hash_dlw = c("h_1", "h_2"),
+    aux_cpi_hash = c("old_cpi_hash", "hash_cpi")
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) {
+      stop("valid_aux_load must not be called: current aux hash is unchanged")
+    },
+    .package = "pipdata"
+  )
+
+  # inv_to_process returns NULL (survey already cleaned, same DLW hash h_2),
+  # and the current aux hash matches the h_2 master row → no candidate → abort.
+  suppressMessages(
+    expect_error(
+      valid_dlw_load(
+        inv = inv,
+        aux_measures = "cpi",
+        aux_hashes = c(cpi = "hash_cpi"),
+        force = FALSE,
+        verbose = FALSE
+      ),
+      class = "piperr"
+    )
+  )
+})

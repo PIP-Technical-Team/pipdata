@@ -4,11 +4,11 @@ depth: standard
 type: standard
 plan: .cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md
 findings:
-  P1.1: open
-  P1.2: open
-  P1.3: open
-  P1.4: open
-  P1.5: open
+  P1.1: fixed
+  P1.2: fixed
+  P1.3: fixed
+  P1.4: fixed
+  P1.5: fixed
   P2.1: open
   P2.2: open
   P2.3: open
@@ -39,7 +39,7 @@ findings:
 
 - **[P1.2]** `R/build_pip_inventory.R` — Partial successful `pip_id` replacement can leave conflicting aux hashes within one survey.
   **Why**: Upsert removes retained rows by reprocessed `pip_id`, then applies hashes only to `new_versions`. If a split survey has only a subset of `pip_id`s successfully persisted, remaining rows retain old hashes.
-  **Fix**: Require complete replacement for a survey or update all rows for a successfully reprocessed survey after validating its DLW content version. Add a partial-`pip_id` test.
+  **Fix**: When a survey is reprocessed, drop ALL of its old rows and replace them with the fresh catalog data for that survey (retention is now by `survey_id`, not `pip_id`). This ensures the survey's pip_id set matches the current reprocess exactly; stale pip_id rows (e.g. a welfare-type split that no longer exists) are removed and remain recoverable via stamp. Added a stale-pip_id-drop regression test.
   **Source**: `cg-data-quality`.
 
 - **[P1.3]** `valid_dlw_load()` silently disables auxiliary detection when direct callers omit `aux_hashes`.

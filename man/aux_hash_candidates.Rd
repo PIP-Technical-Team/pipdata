@@ -35,6 +35,11 @@ The master inventory is reduced to one row per \code{survey_id} for the same
 \code{content_hash_dlw}. All rows in that group must have identical aux hashes;
 a conflict aborts loudly (this protects the invariant that split \code{pip_id}s
 for one survey/content version use the same aux versions).
+
+The current DLW inventory is joined to the master on both \code{survey_id} and
+the DLW content hash (\code{inv$content_hash} matched to \code{master$content_hash_dlw}),
+so a survey with multiple historical DLW versions is compared against the
+aux hashes of its current version only.
 }
 \seealso{
 Other pd_process_data pipeline:

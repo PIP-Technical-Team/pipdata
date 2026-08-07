@@ -60,8 +60,8 @@
 build_pip_inventory <- function(
   inv_to_clean,
   pip_id_map,
-  aux_hashes = NULL,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  aux_hashes = NULL
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defensive assertions  ---------
@@ -357,12 +357,17 @@ build_pip_inventory <- function(
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Step 9: Upsert into old master  ---------
-  # Remove old rows for pip_ids reprocessed this run (replace with fresh
-  # catalog data). Retain all other surveys from old master unchanged.
+  # When a survey is reprocessed, ALL of its old rows are dropped and replaced
+  # by the fresh catalog data for that survey. This ensures the survey's pip_id
+  # set in the master exactly matches the current reprocess — stale pip_id rows
+  # from a previous content version (e.g. a welfare-type split that no longer
+  # exists) are removed. Historical versions remain recoverable via stamp.
+  # Surveys not reprocessed this run are retained unchanged.
   # Result: one row per pip_id.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (!is.null(old_inv)) {
-    old_retained <- old_inv[!old_inv$pip_id %in% new_versions$pip_id]
+    reprocessed_surveys <- unique(new_versions$survey_id)
+    old_retained <- old_inv[!old_inv$survey_id %in% reprocessed_surveys]
     run_inv <- collapse::rowbind(new_versions, old_retained, fill = TRUE)
   } else {
     run_inv <- new_versions
