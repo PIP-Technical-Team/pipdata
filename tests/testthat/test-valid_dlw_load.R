@@ -983,3 +983,106 @@ test_that("aux_hash_candidates matches the current DLW content version, not a hi
     )
   )
 })
+
+# ---------------------------------------------------------------------------
+# P2.1: failed master load must not trigger a second load
+# ---------------------------------------------------------------------------
+
+test_that("inv_to_process does not re-load the master when it was already unavailable", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  load_count <- 0L
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) {
+      load_count <<- load_count + 1L
+      stop("no master exists")
+    },
+    .package = "pipload"
+  )
+
+  # master_available = FALSE means the caller already attempted and failed to
+  # load the master; inv_to_process must return all surveys without re-loading.
+  result <- pipdata:::inv_to_process(
+    inv,
+    dt_master = NULL,
+    master_available = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(nrow(result), nrow(inv))
+  expect_equal(
+    load_count,
+    0L,
+    info = "inv_to_process must not re-load the master when it was already unavailable"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# P2.2: aux_hashes input validation
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load aborts on unnamed aux_hashes", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      aux_hashes = c("hash_cpi"),  # unnamed
+      force = FALSE,
+      verbose = FALSE
+    ),
+    class = "valid_dlw_load_bad_aux_hashes"
+  )
+})
+
+test_that("valid_dlw_load aborts on duplicate aux_hashes names", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      aux_hashes = c(cpi = "hash_a", cpi = "hash_b"),
+      force = FALSE,
+      verbose = FALSE
+    ),
+    class = "valid_dlw_load_bad_aux_hashes"
+  )
+})
+
+test_that("valid_dlw_load aborts on missing aux_hashes values", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      aux_hashes = c(cpi = NA_character_),
+      force = FALSE,
+      verbose = FALSE
+    ),
+    class = "valid_dlw_load_bad_aux_hashes"
+  )
+})

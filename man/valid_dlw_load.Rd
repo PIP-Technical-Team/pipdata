@@ -72,9 +72,12 @@ candidate set, so a globally changed aux table that only affects
 non-requested countries does not re-clean requested surveys.
 }
 
-The master inventory is loaded at most once and shared between the DLW
-comparison and the aux-hash comparison. When \code{force = TRUE}, no master or
-aux comparison runs and all filtered/latest surveys are processed.
+The master inventory is loaded at most once within this function and shared
+between the DLW comparison and the aux-hash comparison. This guarantee is
+scoped to \code{valid_dlw_load()}; downstream steps such as
+\code{\link[=build_pip_inventory]{build_pip_inventory()}} load the master again for their own assembly and
+verification. When \code{force = TRUE}, no master or aux comparison runs and all
+filtered/latest surveys are processed.
 
 \strong{Logging}: This function writes the following entries to the \code{"pipdata_log"}:
 \itemize{

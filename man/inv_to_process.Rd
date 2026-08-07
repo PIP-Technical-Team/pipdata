@@ -4,7 +4,7 @@
 \alias{inv_to_process}
 \title{Remove surveys already cleaned from the processing inventory}
 \usage{
-inv_to_process(inv, verbose = TRUE, dt_master = NULL)
+inv_to_process(inv, verbose = TRUE, dt_master = NULL, master_available = NULL)
 }
 \arguments{
 \item{inv}{A \code{data.table} of DLW surveys (latest versions).}
@@ -14,6 +14,12 @@ inv_to_process(inv, verbose = TRUE, dt_master = NULL)
 \item{dt_master}{A \code{data.table} of the PIP master inventory, already loaded
 by the caller (\code{\link[=valid_dlw_load]{valid_dlw_load()}}) and shared with the aux-hash
 comparison. Default \code{NULL}, in which case the master is loaded here.}
+
+\item{master_available}{Logical. Whether the caller already attempted to
+load the master. When \code{TRUE}, \code{dt_master} is used as-is. When \code{FALSE},
+the master was attempted but unavailable, so all surveys are returned
+without re-loading. Default \code{NULL} (unknown — load here if \code{dt_master}
+is \code{NULL}).}
 }
 \value{
 A \code{data.table} of surveys still needing processing, or

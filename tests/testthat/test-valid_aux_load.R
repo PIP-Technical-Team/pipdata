@@ -148,3 +148,79 @@ test_that("valid_dlw_load(verbose=FALSE) propagates verbose=FALSE to valid_aux_l
     info = "valid_aux_load should receive verbose=FALSE from valid_dlw_load"
   )
 })
+
+# ---------------------------------------------------------------------------
+# P3.2: valid_aux_load(compare = "all") merge semantics
+# ---------------------------------------------------------------------------
+
+# Helper: build a mock compare_aux_* output. compare_aux_* returns a list
+# keyed by measure, where each element is itself a named list of change
+# data.tables (plus an optional diff_cols element). The key_cols attribute is
+# set on the per-measure list (changes_release$cpi) so cln_changes()/
+# check_unique() can read it.
+make_aux_changes <- function(country_codes, surveyid_years) {
+  dt <- data.table::data.table(
+    country_code = country_codes,
+    surveyid_year = surveyid_years
+  )
+  inner <- stats::setNames(list(dt), "release")
+  attr(inner, "key_cols") <- c("country_code", "surveyid_year")
+  stats::setNames(list(inner), "cpi")
+}
+
+test_that("valid_aux_load(compare='all') returns both release and vintage changes", {
+  testthat::local_mocked_bindings(
+    compare_aux_releases = function(measure, owner, verbose = TRUE, ...) {
+      make_aux_changes("COL", 2020L)
+    },
+    compare_aux_vintages = function(measure, verbose = TRUE, ...) {
+      make_aux_changes("ARG", 2019L)
+    },
+    .package = "pipaux"
+  )
+
+  result <- valid_aux_load(measure = "cpi", compare = "all", verbose = FALSE)
+
+  expect_false(is.null(result))
+  expect_true("release" %in% names(result))
+  expect_true("vintage" %in% names(result))
+  # Release branch has the COL change.
+  expect_equal(result$release$cpi$country_code, "COL")
+  expect_equal(result$release$cpi$surveyid_year, 2020L)
+  # Vintage branch has the ARG change.
+  expect_equal(result$vintage$cpi$country_code, "ARG")
+  expect_equal(result$vintage$cpi$surveyid_year, 2019L)
+})
+
+test_that("valid_aux_load(compare='all') returns NULL for an empty branch", {
+  testthat::local_mocked_bindings(
+    compare_aux_releases = function(measure, owner, verbose = TRUE, ...) {
+      make_aux_changes("COL", 2020L)
+    },
+    compare_aux_vintages = function(measure, verbose = TRUE, ...) {
+      list()  # no vintage changes
+    },
+    .package = "pipaux"
+  )
+
+  result <- valid_aux_load(measure = "cpi", compare = "all", verbose = FALSE)
+
+  expect_false(is.null(result))
+  expect_true("release" %in% names(result))
+  expect_true("vintage" %in% names(result))
+  # Release has changes; vintage is NULL.
+  expect_equal(result$release$cpi$country_code, "COL")
+  expect_null(result$vintage)
+})
+
+test_that("valid_aux_load(compare='all') returns NULL when both branches are empty", {
+  testthat::local_mocked_bindings(
+    compare_aux_releases = function(measure, owner, verbose = TRUE, ...) list(),
+    compare_aux_vintages = function(measure, verbose = TRUE, ...) list(),
+    .package = "pipaux"
+  )
+
+  result <- valid_aux_load(measure = "cpi", compare = "all", verbose = FALSE)
+
+  expect_null(result)
+})

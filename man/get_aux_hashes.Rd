@@ -37,6 +37,12 @@ The function aborts loudly when the \code{"aux"} alias is unavailable, a
 requested artifact is missing, or multiple catalog rows match a measure.
 It never falls back to \code{stamp::st_latest()} or to hashing loaded aux
 tables.
+
+\strong{Precondition}: the \code{"aux"} catalog and \code{\link[pipload:load_aux_data]{pipload::load_aux_data()}} must
+resolve through the same configured working release and storage root. The
+hashes returned here are only meaningful if the aux data subsequently
+loaded for processing comes from the same artifacts. Callers must ensure
+the working release is set up consistently before calling this function.
 }
 \seealso{
 Other pd_process_data pipeline:

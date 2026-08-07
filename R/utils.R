@@ -427,6 +427,12 @@ unq_obs_dt <- function(dt, keyVar) {
 #' It never falls back to `stamp::st_latest()` or to hashing loaded aux
 #' tables.
 #'
+#' **Precondition**: the `"aux"` catalog and [pipload::load_aux_data()] must
+#' resolve through the same configured working release and storage root. The
+#' hashes returned here are only meaningful if the aux data subsequently
+#' loaded for processing comes from the same artifacts. Callers must ensure
+#' the working release is set up consistently before calling this function.
+#'
 #' @family pd_process_data pipeline
 #' @keywords internal
 get_aux_hashes <- function(

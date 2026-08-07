@@ -47,9 +47,12 @@
 #'   candidate set, so a globally changed aux table that only affects
 #'   non-requested countries does not re-clean requested surveys.
 #'
-#' The master inventory is loaded at most once and shared between the DLW
-#' comparison and the aux-hash comparison. When `force = TRUE`, no master or
-#' aux comparison runs and all filtered/latest surveys are processed.
+#' The master inventory is loaded at most once within this function and shared
+#' between the DLW comparison and the aux-hash comparison. This guarantee is
+#' scoped to `valid_dlw_load()`; downstream steps such as
+#' [build_pip_inventory()] load the master again for their own assembly and
+#' verification. When `force = TRUE`, no master or aux comparison runs and all
+#' filtered/latest surveys are processed.
 #'
 #' **Logging**: This function writes the following entries to the `"pipdata_log"`:
 #' - `aux_changes_inf` — changes were detected in any of the requested auxiliary
@@ -97,7 +100,12 @@ valid_dlw_load <- function(
   # Load the master inventory once and share it between the DLW comparison
   # and the aux-hash comparison. When force = TRUE, no master is loaded and
   # all filtered/latest surveys are processed.
+  #
+  # master_available distinguishes "master was not supplied" (NULL) from
+  # "master was supplied but could not be loaded" (FALSE). This prevents
+  # inv_to_process() from re-loading the master when the load already failed.
   dt_master <- NULL
+  master_available <- FALSE
   if (!force) {
     dt_master <- tryCatch(
       pipload::load_pip_master_inventory(verbose = verbose),
@@ -110,13 +118,19 @@ valid_dlw_load <- function(
         NULL
       }
     )
+    master_available <- !is.null(dt_master)
   }
 
   # Select valid surveys and compare to previous cleaning (DLW content hash).
   # inv_svy holds the DLW-new / DLW-content-changed surveys (may be NULL).
   inv_svy <- inv_svy_full
   if (!force) {
-    inv_svy <- inv_to_process(inv_svy_full, dt_master = dt_master, verbose = verbose)
+    inv_svy <- inv_to_process(
+      inv_svy_full,
+      dt_master = dt_master,
+      master_available = master_available,
+      verbose = verbose
+    )
   }
 
   # Resolve current aux hashes when the caller did not supply them, so that
@@ -124,6 +138,35 @@ valid_dlw_load <- function(
   # running aux-change detection (rather than silently skipping it).
   if (!force && is.null(aux_hashes)) {
     aux_hashes <- get_aux_hashes(aux_measures, verbose = verbose)
+  }
+
+  # Validate the aux_hashes input when supplied: it must be a non-empty named
+  # character vector with unique, non-missing names and non-missing values.
+  if (!force && !is.null(aux_hashes)) {
+    if (!is.character(aux_hashes) || length(aux_hashes) == 0L) {
+      cli::cli_abort(
+        "aux_hashes must be a non-empty named character vector.",
+        class = c("valid_dlw_load_bad_aux_hashes", "piperr")
+      )
+    }
+    if (is.null(names(aux_hashes)) || any(!nzchar(names(aux_hashes)))) {
+      cli::cli_abort(
+        "aux_hashes must have non-empty names (one per measure).",
+        class = c("valid_dlw_load_bad_aux_hashes", "piperr")
+      )
+    }
+    if (anyDuplicated(names(aux_hashes)) > 0L) {
+      cli::cli_abort(
+        "aux_hashes names must be unique.",
+        class = c("valid_dlw_load_bad_aux_hashes", "piperr")
+      )
+    }
+    if (any(is.na(aux_hashes)) || any(!nzchar(aux_hashes))) {
+      cli::cli_abort(
+        "aux_hashes values must be non-missing, non-empty content hashes.",
+        class = c("valid_dlw_load_bad_aux_hashes", "piperr")
+      )
+    }
   }
 
   # Stage 1: build the aux candidate set from the per-survey aux hash
@@ -151,14 +194,17 @@ valid_dlw_load <- function(
       )
     } else {
       # Stage 2: for the changed measures only, run valid_aux_load() and
-      # intersect the affected surveys with the candidate set.
+      # intersect the affected surveys with the candidate set. The inventory
+      # is pre-filtered to the candidate survey IDs before the detailed aux
+      # comparison, so only candidate rows are materialized.
       changed_measures <- attr(candidates, "changed_measures")
       all_changes_aux <- valid_aux_load(
         measure = changed_measures,
         compare = "all",
         verbose = verbose
       )
-      ls_inv_aux <- lapply(all_changes_aux, filter_aux_inv, inv = inv)
+      inv_candidates <- inv[survey_id %in% candidates$survey_id]
+      ls_inv_aux <- lapply(all_changes_aux, filter_aux_inv, inv = inv_candidates)
 
       if (all(vapply(ls_inv_aux, is.null, logical(1)))) {
         # Measures changed but no requested survey is actually affected.
@@ -371,6 +417,11 @@ fix_year_var <- function(dt) {
 #' @param dt_master A `data.table` of the PIP master inventory, already loaded
 #'   by the caller ([valid_dlw_load()]) and shared with the aux-hash
 #'   comparison. Default `NULL`, in which case the master is loaded here.
+#' @param master_available Logical. Whether the caller already attempted to
+#'   load the master. When `TRUE`, `dt_master` is used as-is. When `FALSE`,
+#'   the master was attempted but unavailable, so all surveys are returned
+#'   without re-loading. Default `NULL` (unknown — load here if `dt_master`
+#'   is `NULL`).
 #'
 #' @return A `data.table` of surveys still needing processing, or
 #'   `NULL` if all surveys have already been cleaned.
@@ -380,10 +431,17 @@ fix_year_var <- function(dt) {
 inv_to_process <- function(
   inv,
   verbose = TRUE,
-  dt_master = NULL
+  dt_master = NULL,
+  master_available = NULL
 ) {
   # Load master inventory to compare with previous cleaning, unless the
-  # caller already loaded it (shared single-load handoff).
+  # caller already loaded it (shared single-load handoff). When the caller
+  # explicitly reports the master is unavailable (master_available = FALSE),
+  # do not re-load — return all surveys instead.
+  if (isFALSE(master_available)) {
+    return(inv)
+  }
+
   if (is.null(dt_master)) {
     dt_master <- tryCatch(
       pipload::load_pip_master_inventory(verbose = verbose),
@@ -499,11 +557,13 @@ aux_hash_candidates <- function(
     return(candidates)
   }
 
-  # Build a survey-level master keyed by survey_id + content_hash_dlw.
+  # Build a survey-level master keyed by survey_id + content_hash_dlw, and
+  # detect conflicting aux hashes within a group in a single pass. A group
+  # with more than one distinct aux-hash combination for the same key is a
+  # conflict (split pip_id rows must share the same aux versions).
   key_cols <- c("survey_id", "content_hash_dlw")
   master_svy <- collapse::funique(dt_master[, c(key_cols, aux_cols), with = FALSE])
 
-  # Abort on conflicting aux hashes within a survey/content-hash group.
   n_groups <- nrow(collapse::funique(master_svy[, key_cols, with = FALSE]))
   if (n_groups != nrow(master_svy)) {
     cli::cli_abort(

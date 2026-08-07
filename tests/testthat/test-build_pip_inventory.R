@@ -1067,3 +1067,59 @@ test_that("build_pip_inventory persists aux hashes and retained rows through a w
   expect_true(new_pip_id %in% result$pip_id)
   expect_true(old_pip_id %in% result$pip_id)
 })
+
+# ---------------------------------------------------------------------------
+# P2.3: deterministic catalog dedup when created_at ties
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory resolves tied catalog timestamps deterministically by version_id", {
+  pip_id <- "BOL_2022_EH_INC_ALL"
+  survey <- "BOL_2022_EH"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  pip_id_map <- make_pip_id_map(survey, list(pip_id))
+
+  # Two catalog rows for the same pip_id with IDENTICAL created_at but
+  # different paths. The path tiebreaker must select deterministically,
+  # regardless of input row order.
+  cat_dup <- data.table::data.table(
+    path = c("/fake/a/bol_2022_eh_inc_all.qs2", "/fake/b/bol_2022_eh_inc_all.qs2"),
+    version_id = c("vid_a", "vid_b"),
+    content_hash = c("hash_a", "hash_b"),
+    code_hash = c("code_a", "code_b"),
+    size_bytes = c(1000, 1000),
+    created_at = c("2026-01-01T00:00:00", "2026-01-01T00:00:00")
+  )
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) {
+      if (identical(alias, "pip")) cat_dup else make_catalog(pip_id)
+    },
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) NULL,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map)
+
+  # The path tiebreaker (path "a" < path "b") must select deterministically.
+  expect_equal(nrow(result), 1L)
+  expect_equal(result$version_id_data, "vid_a")
+  expect_equal(result$content_hash_data, "hash_a")
+})

@@ -230,13 +230,15 @@ build_pip_inventory <- function(
     )
   }
 
-  # If same pip_id appears at multiple paths, keep the latest by created_at
+  # If same pip_id appears at multiple paths, keep the latest by created_at,
+  # with path as a deterministic secondary key so tied timestamps do not
+  # depend on catalog row order.
   if (anyDuplicated(cat_data$pip_id) != 0L) {
-    data.table::setorder(cat_data, pip_id, -created_at)
+    data.table::setorder(cat_data, pip_id, -created_at, path)
     cat_data <- cat_data[, .SD[1L], by = "pip_id"]
   }
   if (anyDuplicated(cat_meta$pip_id) != 0L) {
-    data.table::setorder(cat_meta, pip_id, -created_at)
+    data.table::setorder(cat_meta, pip_id, -created_at, path)
     cat_meta <- cat_meta[, .SD[1L], by = "pip_id"]
   }
 
