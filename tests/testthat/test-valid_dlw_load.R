@@ -704,10 +704,10 @@ test_that("valid_dlw_load re-cleans a requested survey affected by changed aux",
 })
 
 # ---------------------------------------------------------------------------
-# Two-stage aux gating: missing historical hash is a candidate
+# Two-stage aux gating: missing (NA) historical hash is ignored, not a candidate
 # ---------------------------------------------------------------------------
 
-test_that("valid_dlw_load treats a survey with missing historical aux hash as a candidate", {
+test_that("valid_dlw_load ignores a survey with missing historical aux hash", {
   inv <- make_dlw_inv(
     "COL_2020_GEIH",
     country_codes = "COL",
@@ -721,9 +721,57 @@ test_that("valid_dlw_load treats a survey with missing historical aux hash as a 
     content_hash_dlw = "h_1"
   )
 
-  # CPI changed for COL 2020 → the survey is affected.
-  cpi_changes <- list(
-    data.table::data.table(country_code = "COL", surveyid_year = 2020L)
+  aux_called <- FALSE
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) {
+      aux_called <<- TRUE
+      NULL
+    },
+    .package = "pipdata"
+  )
+
+  # The survey has no stored aux hash → ignored for aux-change detection.
+  # inv_to_process returns NULL (same DLW hash) and no aux candidate → abort.
+  suppressMessages(
+    expect_error(
+      valid_dlw_load(
+        inv = inv,
+        aux_measures = "cpi",
+        aux_hashes = c(cpi = "new_cpi_hash"),
+        force = FALSE,
+        verbose = FALSE
+      ),
+      class = "piperr"
+    )
+  )
+
+  expect_false(
+    aux_called,
+    info = "valid_aux_load must not be called when the only survey has no stored aux hash"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# Two-stage aux gating: NA-hash count is logged when some surveys lack hashes
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load logs the number of surveys with missing aux hash", {
+  # Two surveys: COL has a populated hash (unchanged), ARG has NA hash.
+  inv <- make_dlw_inv(
+    c("COL_2020_GEIH", "ARG_2019_EPH"),
+    country_codes = c("COL", "ARG"),
+    surveyid_years = c(2020L, 2019L),
+    survey_acronyms = c("GEIH", "EPH")
+  )
+
+  master <- data.table::data.table(
+    survey_id = c("COL_2020_GEIH", "ARG_2019_EPH"),
+    content_hash_dlw = c("h_1", "h_2"),
+    aux_cpi_hash = c("hash_cpi", NA_character_)
   )
 
   testthat::local_mocked_bindings(
@@ -731,22 +779,34 @@ test_that("valid_dlw_load treats a survey with missing historical aux hash as a 
     .package = "pipload"
   )
   testthat::local_mocked_bindings(
-    valid_aux_load = function(measure, compare, verbose = TRUE) {
-      stats::setNames(list(cpi_changes), measure)
-    },
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
     .package = "pipdata"
   )
 
-  result <- valid_dlw_load(
-    inv = inv,
-    aux_measures = "cpi",
-    aux_hashes = c(cpi = "new_cpi_hash"),
-    force = FALSE,
-    verbose = FALSE
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+  # COL hash unchanged → no candidate; ARG has NA hash → ignored. Nothing to
+  # process → abort.
+  suppressMessages(
+    expect_error(
+      valid_dlw_load(
+        inv = inv,
+        aux_measures = "cpi",
+        aux_hashes = c(cpi = "hash_cpi"),
+        force = FALSE,
+        verbose = FALSE
+      ),
+      class = "piperr"
+    )
   )
 
-  expect_false(is.null(result))
-  expect_equal(result$survey_id, "COL_2020_GEIH")
+  log <- pipfun::log_get("pipdata_log")
+  na_entries <- Filter(
+    function(x) !is.null(x) && identical(x$info, "aux_na_hash_inf"),
+    log$logmeta
+  )
+  expect_length(na_entries, 1L)
+  expect_equal(na_entries[[1]]$n_surveys_na_hash, 1L)
 })
 
 # ---------------------------------------------------------------------------

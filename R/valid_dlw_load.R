@@ -177,6 +177,28 @@ valid_dlw_load <- function(
   changed_measures <- character(0)
 
   if (!force && !is.null(aux_hashes) && length(aux_hashes) > 0L && !is.null(dt_master) && nrow(inv_svy_full) > 0L) {
+    # Count surveys with a missing (NA) stored aux hash. These were cleaned
+    # before this feature and are ignored for the change comparison. Logged
+    # regardless of whether any candidate is found.
+    aux_cols <- paste0("aux_", names(aux_hashes), "_hash")
+    aux_cols <- intersect(aux_cols, names(dt_master))
+    n_na_hash <- 0L
+    if (length(aux_cols) > 0L) {
+      n_na_hash <- sum(
+        Reduce(`|`, lapply(aux_cols, function(col) is.na(dt_master[[col]])))
+      )
+    }
+    if (n_na_hash > 0L) {
+      pipfun::log_info(
+        "Surveys with no stored aux hash (cleaned before this feature) are ignored for aux-change detection.",
+        name = "pipdata_log",
+        logmeta = list(
+          info = "aux_na_hash_inf",
+          n_surveys_na_hash = n_na_hash
+        )
+      )
+    }
+
     candidates <- aux_hash_candidates(
       inv = inv_svy_full,
       dt_master = dt_master,
@@ -198,6 +220,7 @@ valid_dlw_load <- function(
       # is pre-filtered to the candidate survey IDs before the detailed aux
       # comparison, so only candidate rows are materialized.
       changed_measures <- attr(candidates, "changed_measures")
+
       all_changes_aux <- valid_aux_load(
         measure = changed_measures,
         compare = "all",
@@ -550,11 +573,10 @@ aux_hash_candidates <- function(
   aux_cols <- intersect(aux_cols, names(dt_master))
 
   if (length(aux_cols) == 0L) {
-    # No stored aux hashes at all — every previously-cleaned survey is a
-    # candidate (migration case).
-    candidates <- inv
-    attr(candidates, "changed_measures") <- names(aux_hashes)
-    return(candidates)
+    # No stored aux hashes at all — every survey was cleaned before this
+    # feature. These are ignored for aux-change detection (no hash to compare),
+    # so there are no candidates.
+    return(NULL)
   }
 
   # Build a survey-level master keyed by survey_id + content_hash_dlw, and
@@ -588,21 +610,26 @@ aux_hash_candidates <- function(
     reportvar = ".joyn"
   )
 
-  # Determine which measures changed for each survey.
+  # Determine which measures changed for each survey. Surveys with a missing
+  # (NA) stored aux hash are ignored for the change comparison — they were
+  # cleaned before this feature and simply have no hash recorded yet. Only
+  # surveys with a populated stored hash are compared against the current
+  # hash.
   changed_measures <- character(0)
   candidate_idx <- rep(FALSE, nrow(inv_compare))
 
   for (m in names(aux_hashes)) {
     col <- paste0("aux_", m, "_hash")
     if (!col %in% names(inv_compare)) {
-      # Measure not stored for this survey — treat as changed.
-      candidate_idx <- candidate_idx | TRUE
-      changed_measures <- unique(c(changed_measures, m))
+      # Measure column not present at all — nothing to compare for this
+      # measure; skip it (do not treat as changed).
       next
     }
     stored <- inv_compare[[col]]
     current <- aux_hashes[[m]]
-    is_changed <- is.na(stored) | stored != current
+    is_na <- is.na(stored)
+    # Only compare surveys that have a populated stored hash.
+    is_changed <- !is_na & stored != current
     candidate_idx <- candidate_idx | is_changed
     if (any(is_changed, na.rm = TRUE)) {
       changed_measures <- unique(c(changed_measures, m))
