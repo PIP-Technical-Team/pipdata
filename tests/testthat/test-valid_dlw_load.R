@@ -852,6 +852,7 @@ test_that("valid_dlw_load force mode skips master and aux comparisons and proces
 
   master_loaded <- FALSE
   aux_called <- FALSE
+  candidates_called <- FALSE
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) {
       master_loaded <<- TRUE
@@ -862,6 +863,10 @@ test_that("valid_dlw_load force mode skips master and aux comparisons and proces
   testthat::local_mocked_bindings(
     valid_aux_load = function(measure, compare, verbose = TRUE) {
       aux_called <<- TRUE
+      NULL
+    },
+    aux_hash_candidates = function(...) {
+      candidates_called <<- TRUE
       NULL
     },
     .package = "pipdata"
@@ -879,6 +884,7 @@ test_that("valid_dlw_load force mode skips master and aux comparisons and proces
   expect_equal(result$survey_id, "COL_2020_GEIH")
   expect_false(master_loaded, info = "force mode must not load the master inventory")
   expect_false(aux_called, info = "force mode must not call valid_aux_load")
+  expect_false(candidates_called, info = "force mode must not call aux_hash_candidates")
 })
 
 # ---------------------------------------------------------------------------

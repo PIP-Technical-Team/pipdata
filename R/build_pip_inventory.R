@@ -396,8 +396,8 @@ build_pip_inventory <- function(
   }
 
   # Initialise aux hash columns so the master schema is always consistent.
-  # Old retained rows (not reprocessed this run) keep NA; current-run rows
-  # were populated in Step 7b.
+  # Old retained rows preserve any existing hashes; missing columns are
+  # initialised to NA. Current-run rows were populated in Step 7b.
   if (!is.null(aux_hashes) && length(aux_hashes) > 0L) {
     for (m in names(aux_hashes)) {
       col <- paste0("aux_", m, "_hash")

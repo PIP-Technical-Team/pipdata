@@ -28,9 +28,9 @@ failure, missing hash).
 
 Added `aux_hashes = NULL` parameter to `build_pip_inventory()`. In Step 7b,
 current-run rows receive one `aux_<measure>_hash` column per requested measure
-from the run-level map. In Step 10, aux hash columns are initialised to
-`NA_character_` on the assembled master so the schema is always consistent and
-old retained rows (not reprocessed) keep NA. `pd_process_data()` passes
+from the run-level map. In Step 10, missing aux hash columns are initialised to
+`NA_character_` on the assembled master so the schema is always consistent;
+old retained rows preserve any existing hash values. `pd_process_data()` passes
 `aux_hashes` to `build_pip_inventory()`.
 
 Tests: extended `tests/testthat/test-build_pip_inventory.R` (3 scenarios:

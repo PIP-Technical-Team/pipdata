@@ -27,16 +27,18 @@
 #' @param verbose Logical. Print progress messages. Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
-#' @return A `data.table` of surveys to process, or `NULL` if none.
+#' @return A `data.table` of surveys to process. If no surveys require
+#'   processing, the function aborts with class `piperr`.
 #'
 #' @details
 #' **Aux-change gating (two-stage)**: aux-change detection is gated on the
 #' current aux `content_hash` values passed via `aux_hashes`.
-#' - Stage 1 (cheap): for each previously-cleaned survey, compare its stored
+#' - Stage 1 (cheap): for each filtered/latest survey, compare its stored
 #'   per-survey aux hash (from the master inventory's `aux_<measure>_hash`
 #'   columns) against the current hash for that measure. A mismatch or a
 #'   missing historical hash makes the survey a candidate. New surveys and
-#'   DLW-content-changed surveys are always processed via [inv_to_process()].
+#'   DLW-content-changed surveys are also retained through
+#'   [inv_to_process()] and are deduplicated with the aux candidates.
 #' - Stage 2 (detailed): for the changed measures only, [valid_aux_load()] /
 #'   `compare_aux_*` identifies which requested surveys actually have changed
 #'   rows inside the aux file. The affected surveys are intersected with the

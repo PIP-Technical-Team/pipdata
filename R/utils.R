@@ -408,7 +408,8 @@ unq_obs_dt <- function(dt, keyVar) {
 #' `<measure>.qs2` (e.g. `cpi.qs2`, `ppp.qs2`, `pfw.qs2`).
 #'
 #' @param aux_measures Character vector of auxiliary measures to resolve.
-#' @param verbose Logical. Print progress messages. Default:
+#' @param verbose Logical. Retained for consistency with pipeline helpers;
+#'   catalog lookup itself emits no progress messages. Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
 #' @return A named character vector of `content_hash` values, one per

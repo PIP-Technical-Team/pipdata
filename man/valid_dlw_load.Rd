@@ -34,7 +34,8 @@ values, one per requested auxiliary measure. Resolved once per run by
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
-A \code{data.table} of surveys to process, or \code{NULL} if none.
+A \code{data.table} of surveys to process. If no surveys require
+processing, the function aborts with class \code{piperr}.
 }
 \description{
 Compares the current DLW inventory against previously cleaned data
@@ -56,11 +57,12 @@ master inventory via \code{inv_to_process()}.
 \strong{Aux-change gating (two-stage)}: aux-change detection is gated on the
 current aux \code{content_hash} values passed via \code{aux_hashes}.
 \itemize{
-\item Stage 1 (cheap): for each previously-cleaned survey, compare its stored
+\item Stage 1 (cheap): for each filtered/latest survey, compare its stored
 per-survey aux hash (from the master inventory's \verb{aux_<measure>_hash}
 columns) against the current hash for that measure. A mismatch or a
 missing historical hash makes the survey a candidate. New surveys and
-DLW-content-changed surveys are always processed via \code{\link[=inv_to_process]{inv_to_process()}}.
+DLW-content-changed surveys are also retained through
+\code{\link[=inv_to_process]{inv_to_process()}} and are deduplicated with the aux candidates.
 \item Stage 2 (detailed): for the changed measures only, \code{\link[=valid_aux_load]{valid_aux_load()}} /
 \verb{compare_aux_*} identifies which requested surveys actually have changed
 rows inside the aux file. The affected surveys are intersected with the

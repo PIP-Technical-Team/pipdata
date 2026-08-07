@@ -12,7 +12,8 @@ get_aux_hashes(
 \arguments{
 \item{aux_measures}{Character vector of auxiliary measures to resolve.}
 
-\item{verbose}{Logical. Print progress messages. Default:
+\item{verbose}{Logical. Retained for consistency with pipeline helpers;
+catalog lookup itself emits no progress messages. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
