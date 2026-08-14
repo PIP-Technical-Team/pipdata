@@ -19,7 +19,7 @@ jobs:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      PIP_ROOT_DIR: ${{ runner.temp }}/pip-root
+      PIP_ROOT_DIR: ${{ github.workspace }}/.ci/pip-root
     steps:
       - uses: actions/checkout@v4
 
