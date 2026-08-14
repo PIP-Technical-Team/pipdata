@@ -1,99 +1,123 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/404.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/articles/PIP-data-pipeline.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/articles/Processing-Data.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/authors.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/index.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/add_pip_vars.default.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/add_pip_vars.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/adjust_population.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/dlw_clean.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/dlw_clean.pipgd.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/dlw_clean.pipmd.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/get_country_pfw.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/get_welfare_ppp.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/pd_add_pip_vars.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/pd_split_alt_welfare.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/pd_wbpip_clean.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/pipdata.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/pipdata_int.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/ppp_to_wide.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/process_data.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/uniq_vars.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/uniq_vars_to_attr.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/uniq_vars_to_list.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/update_dlw_inventory.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.pipgd.html</loc>
-  </url>
-  <url>
-    <loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.pipmd.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://pip-technical-team.github.io/pipdata/404.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/LICENSE-text.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/LICENSE.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/articles/PIP-data-pipeline.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/articles/Processing-Data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/articles/Validating-Data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/articles/index.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/authors.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/compound-gpid.context.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/compound-gpid.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/index.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/news/index.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_area.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_area.pipgd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_area.pipmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_aux.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_cpi.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_dist_type.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_dist_type.pipgd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_dist_type.pipmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_dom_vars.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_log.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_main_att.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/add_ppp.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/apply_recode_spec.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/area_gd_clean.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/aux_hash_candidates.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_aux_changes.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_country_table.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_header.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_inventory_additions.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_null_surveys.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_pip_inventory.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_processing_summary.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_skipped_surveys.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_type_summary.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/cache_id.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/check_directory.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/check_unique.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/cln_changes.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/copy_dlw_metadata.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/cpfw_merge.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/cpi_ppp_years.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/create_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/data_to_dt.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/deflate_wlf.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/deflation.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/deflation.pipgd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/deflation.pipmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/diff_recode_spec.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_clean.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_clean.pipgd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_clean.pipmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_list.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_match.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_new.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_unvalidated.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_validation.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_var_check.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/export_recode_spec_yaml.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/filter_aux_data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/filter_aux_inv.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/finalize_deflation_output.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/fix_year_var.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/format_wgt.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/format_wlf.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_aux_hashes.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_country_pfw.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_data_status.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_gd_type.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_validation_ctry.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_validation_list.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/get_validation_report.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/gmd_to_validate.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/gmd_validated.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/index.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/inv_dlw_load.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/inv_to_process.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/list_recode_spec_versions.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/log_failure.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/log_report.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/num_vars_to_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/parse_log_meta.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_cpfw_merge.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_deflation.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_process_data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_split_alt_welfare.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_wbpip_clean.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pip_vars.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata-options.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata-package.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata_get_gmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata_int.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/piperr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/ppp_to_wide.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/process_data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/recode_age.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/recode_edu.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/recode_gndr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/report_lvl.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/save_pip_data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/shift_subnatid.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/survey_id_to_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/sync_recode_spec.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/uniq_vars_to_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/unq_obs_dt.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/valid_aux_load.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/validate_recode_spec.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/vars_to_attr.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/vars_to_list.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.pipgd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.pipmd.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/welfare_lcu.html</loc></url>
 </urlset>
+

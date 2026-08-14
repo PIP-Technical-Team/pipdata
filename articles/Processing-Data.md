@@ -1,0 +1,235 @@
+# Processing Data functions
+
+This article is a deep dive into the third pipeline wrapper,
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md),
+and the two functions that consume its output:
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)/[`deflation()`](https://pip-technical-team.github.io/pipdata/reference/deflation.md)
+and
+[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md).
+Code in this article is illustrative and does not execute when the
+article is built — running it requires a configured working release and
+write access to PIP storage.
+
+For the end-to-end orchestration and how this wrapper fits with the
+other two, see [PIP Data Pipeline: Orchestration
+Overview](https://pip-technical-team.github.io/pipdata/articles/PIP-data-pipeline.md).
+For the internal mechanics of DLW acquisition and validation (the step
+before this one), see [Validating
+Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md).
+
+**Important**:
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+cleans surveys and attaches metadata — it does **not** deflate welfare.
+Deflation is a separate, currently manual step; see [Deflation is a
+separate step](#deflation-is-a-separate-step) below.
+
+## `pd_process_data()`: clean surveys and build metadata
+
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+iterates a validated DLW inventory, merges auxiliary data with each
+survey, cleans it, attaches metadata, saves versioned outputs, and
+returns the updated PIP master inventory:
+
+``` r
+
+new_pip_inv <- pd_process_data(
+  inv          = NULL, # NULL loads pipload::load_gmd_valid_inv() internally
+  aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  force        = FALSE,
+  verbose      = TRUE
+)
+```
+
+- `inv` — the validated DLW inventory (as produced by [Validating
+  Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md)’s
+  [`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)).
+  When `NULL` (the default), it is loaded internally via
+  [`pipload::load_gmd_valid_inv()`](https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html).
+- `aux_measures` — which auxiliary datasets to load and merge/attach.
+- `force` — when `TRUE`, temporarily switches `stamp` versioning to
+  `"timestamp"` and bypasses the master-inventory comparison, forcing
+  every survey in `inv` to be reprocessed.
+
+### What happens inside
+
+1.  **Load auxiliary data** for each measure in `aux_measures` via
+    [`pipload::load_aux_data()`](https://pip-technical-team.github.io/pipload/reference/load_aux_data.html).
+2.  **Determine which surveys need (re-)processing** —
+    [`valid_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.md)
+    detects auxiliary-file changes (logging an `aux_changes_inf` entry
+    when found), filters `inv` to the relevant modules
+    (`ALL`/`GROUP`/`HIST`/`GPWG`/`BIN`), keeps the latest version of
+    each survey, and — unless `force = TRUE` — drops surveys already
+    present in the master inventory.
+3.  **Sync the recode spec once** via
+    [`sync_recode_spec()`](https://pip-technical-team.github.io/pipdata/reference/sync_recode_spec.md),
+    before the loop. This compares the package’s bundled recode spec
+    (see [What is the recode spec?](#what-is-the-recode-spec) below)
+    against the latest version saved in `stamp`: if there is no stamp
+    version yet, or the package version has changed (compared by hash),
+    it saves a new stamp version; otherwise it reuses the existing one.
+    Either way it returns the active spec once, which is then threaded
+    down to every survey’s
+    [`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md)
+    call — so the comparison/save only happens a single time per
+    [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+    run, instead of once per survey.
+4.  **Process each survey** with
+    [`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md),
+    one at a time:
+    [`inv_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/inv_dlw_load.md)
+    (load raw survey) -\>
+    [`pd_cpfw_merge()`](https://pip-technical-team.github.io/pipdata/reference/pd_cpfw_merge.md)
+    (merge Price Framework metadata) -\>
+    [`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md)
+    (S3-dispatched cleaning, using the shared recode spec) -\>
+    [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md)
+    (attach CPI/PPP/population/GDP/PCE metadata) -\>
+    `save_pip_data(alias = "pip")` / `save_pip_data(alias = "pip_meta")`
+    (write cleaned data and metadata to PIP storage). A per-survey
+    failure is caught (as a `piperr` or generic error), logged to
+    `"pipdata_log"` with the survey id and error class, and the survey
+    is skipped — it does not abort the rest of the run. No deflation
+    step is part of this chain.
+5.  **Log a processing summary** (`process_summary_inf`: totals,
+    successes, failures) and, if any surveys failed, a `null_svys_inf`
+    entry listing them.
+6.  **Rebuild the PIP master inventory** via
+    [`build_pip_inventory()`](https://pip-technical-team.github.io/pipdata/reference/build_pip_inventory.md)
+    from the successful surveys’ `stamp` catalog entries, and return it.
+
+### What is the recode spec?
+
+The **recode spec** is the set of recoding rules for the raw DLW
+variables that
+[`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md)
+cleans into PIP variables. It’s defined in
+`inst/extdata/recode_spec.yml`, bundled with the package: for each
+variable it declares a `type`, a `recode_type` (one of `range_clamp`,
+`binary_map`, `haven_labels`, `binned_from_continuous`,
+`quantile_from_continuous`, or `indicator`), and the type-specific
+parameters that rule needs (e.g. a `valid_range` for `range_clamp`, a
+`mapping` for `binary_map`/`haven_labels`).
+[`apply_recode_spec()`](https://pip-technical-team.github.io/pipdata/reference/apply_recode_spec.md)
+(called internally by
+[`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md))
+applies every rule that matches a column present in the survey.
+Replace-type rules (`range_clamp`, `binary_map`, `haven_labels`) recode
+the source column in place (renaming it to the target variable name when
+they differ, e.g. `urban` → `area`); derive-type rules
+(`binned_from_continuous`, `quantile_from_continuous`) keep the source
+column and add the derived variable alongside it (e.g. `age` stays,
+`age_group` is added).
+
+## Deflation is a separate step
+
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)/[`deflation()`](https://pip-technical-team.github.io/pipdata/reference/deflation.md)
+deflates a single cleaned survey’s welfare values using CPI, PPP, and
+population auxiliary data. It is **not** called automatically by
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+— it must be run afterwards, per survey, once cleaned data exists in PIP
+storage. There are two input modes:
+
+``` r
+
+# Mode A: pass a cleaned survey directly (aux auto-loaded from the master
+# inventory when cpi/ppp/pop are NULL)
+dt <- pipload::pip_read(id = "BOL_2022_EH_INC_ALL", alias = "pip")
+bol_deflated <- pd_deflation(dt)
+
+# Legacy Mode A: pass explicit aux tables instead of auto-loading them
+ppp <- pipload::pip_load_aux("ppp")
+cpi <- pipload::pip_load_aux("cpi")
+pop <- pipload::pip_load_aux("pop")
+bol_deflated <- pd_deflation(dt, cpi = cpi, ppp = ppp, pop = pop)
+
+# Mode B: load the survey by id and deflate in one call
+bol_deflated <- pd_deflation(pip_id = "BOL_2022_EH_INC_ALL")
+```
+
+In Mode A (`dt` supplied, `cpi`/`ppp`/`pop` left `NULL`),
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
+resolves the matching metadata version for the survey from the master
+inventory and loads CPI/PPP/population automatically. In Mode B
+(`pip_id` supplied instead of `dt`), the survey itself is also loaded
+from `stamp` before deflation.
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
+resolves the correct S3 method
+([`deflation.pipmd()`](https://pip-technical-team.github.io/pipdata/reference/deflation.pipmd.md)
+for micro data,
+[`deflation.pipgd()`](https://pip-technical-team.github.io/pipdata/reference/deflation.pipgd.md)
+for group data) based on the survey’s class and applies it; deflation
+failures are caught and logged, returning `NA` for that survey rather
+than aborting.
+
+{pipload} also provides `load_pip_deflated_data()`, a convenience
+wrapper around
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)’s
+Mode B: it locates a survey (by `id_name` or by filter arguments such as
+`country_code`/`surveyid_year`/`module`), loads it, and deflates it in
+one call — useful when you don’t already have the survey’s `pip_id` in
+hand:
+
+``` r
+
+bol_deflated <- pipload::load_pip_deflated_data(id_name = "BOL_2022_EH_INC_ALL")
+
+# Or filter by country/year/module instead of a known id_name
+bol_deflated <- pipload::load_pip_deflated_data(
+  country_code  = "BOL",
+  surveyid_year = 2022,
+  module        = "ALL"
+)
+```
+
+To deflate many surveys in a batch, note that there is currently no
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)-style
+wrapper that loops
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
+over an inventory — this is tracked on the roadmap as the future
+`pd_deflate_pipeline()` wrapper.
+
+## `log_report()`: summarize the `"pipdata_log"`
+
+[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
+parses a `piplog` object and writes (or returns) a structured markdown
+report:
+
+``` r
+
+# log defaults to pipfun::log_filter(name = "pipdata_log") when not supplied
+report <- log_report()
+
+# Or write directly to a file
+log_report(
+  path      = file.path("log_reports", "log_report.md"),
+  overwrite = TRUE
+)
+```
+
+The report includes, when the corresponding logmeta entry is present in
+the log: run metadata (time window, totals), the processing summary
+(`process_summary_inf`), auxiliary file changes (`aux_changes_inf`), a
+summary table by error/info type, a country-level breakdown of errors,
+inventory verification counts (`inv_update_inf`), skipped-survey details
+(`skipped_svys_data`/`skipped_svys_metadata`), and the list of surveys
+that failed processing (`null_svys_inf`). Sections are silently omitted
+when their logmeta entry is absent.
+
+**Scope**:
+[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
+only parses entries written under the `"pipdata_log"` name by
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)/[`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md)
+— it does **not** consume any log produced by
+[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
+(DLW acquisition/validation uses its own `log`/`save_log` arguments and
+does not currently feed into
+[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md);
+see [Validating
+Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.html#logging-scope)).
+Keep this scope in mind when reading a generated report — a clean report
+does not imply the DLW acquisition/validation step had no issues. The
+goal going forward is for
+[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
+to summarize a single, harmonized log covering all three wrappers
+(tracked on the roadmap as `unified-logging-report`).

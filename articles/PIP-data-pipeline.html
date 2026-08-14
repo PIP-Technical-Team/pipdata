@@ -5,55 +5,51 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="description" content="pipdata">
-<title>PIP data process • pipdata</title>
+<title>PIP Data Pipeline: Orchestration Overview • pipdata</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="PIP data process">
-<meta property="og:description" content="pipdata">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="PIP Data Pipeline: Orchestration Overview">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
-    
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
-    
+
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+
     <a class="navbar-brand me-2" href="../index.html">pipdata</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9017</small>
 
-    
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item">
-  <a class="nav-link" href="../reference/index.html">Reference</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
-  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
-  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
-    <a class="dropdown-item" href="../articles/PIP-data-pipeline.html">PIP data process</a>
-    <a class="dropdown-item" href="../articles/Processing-Data.html">Processing Data functions</a>
-  </div>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Pipeline</h6></li>
+    <li><a class="dropdown-item" href="../articles/PIP-data-pipeline.html">PIP Data Pipeline: Orchestration Overview</a></li>
+    <li><a class="dropdown-item" href="../articles/Validating-Data.html">Validating Data: DLW Acquisition and Validation Internals</a></li>
+    <li><a class="dropdown-item" href="../articles/Processing-Data.html">Processing Data functions</a></li>
+  </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<form class="form-inline my-2 my-lg-0" role="search">
-        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
-</form>
-
-      <ul class="navbar-nav"></ul>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+      </ul>
 </div>
 
-    
+
   </div>
 </nav><div class="container template-article">
 
@@ -62,39 +58,258 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>PIP data process</h1>
+
+      <h1>PIP Data Pipeline: Orchestration Overview</h1>
             
       
-      
+
       <div class="d-none name"><code>PIP-data-pipeline.Rmd</code></div>
     </div>
 
     
     
-<div class="figure">
-<img src="images/pipeline_flow.png" id="pip-data-pipeline" alt=""><p class="caption">PIP data pipeline flow</p>
+<p>This article explains how the PIP data pipeline is orchestrated end
+to end: which functions run in which order, which package owns each
+step, and how to run a full session. Code in this article is
+illustrative and does not execute when the article is built — running
+the pipeline requires a configured working release, network access to
+Datalibweb, and write access to PIP storage.</p>
+<p>For the internal mechanics of DLW acquisition and validation, see the
+companion article <a href="Validating-Data.html">Validating Data</a>;
+for survey cleaning, deflation, and logging, see <a href="Processing-Data.html">Processing Data functions</a>.</p>
+<div class="section level2">
+<h2 id="the-three-wrapper-functions">The three wrapper functions<a class="anchor" aria-label="anchor" href="#the-three-wrapper-functions"></a>
+</h2>
+<p>The pipeline runs as three sequential stages, each owned by a
+dedicated wrapper function in a separate package and (typically) a
+different developer:</p>
+<table class="table">
+<colgroup>
+<col width="13%">
+<col width="17%">
+<col width="17%">
+<col width="34%">
+<col width="17%">
+</colgroup>
+<thead><tr class="header">
+<th align="center">Order</th>
+<th>Wrapper</th>
+<th>Package</th>
+<th>Developer scope</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td><code>update_aux_measures()</code></td>
+<td><strong>pipaux</strong></td>
+<td>Auxiliary data engineer</td>
+<td>Refresh auxiliary data (CPI, PPP, population, GDP, PCE, PFW)</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td><code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code></td>
+<td><strong>pipdata</strong></td>
+<td>Survey ingestion engineer</td>
+<td>Download new Datalibweb (DLW) survey files, validate them, update
+the DLW inventory</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code></td>
+<td><strong>pipdata</strong></td>
+<td>Survey cleaning engineer</td>
+<td>Merge auxiliary data with each DLW survey, clean variables, attach
+metadata, save versioned outputs, update the PIP master inventory</td>
+</tr>
+</tbody>
+</table>
+<p><code>update_aux_measures()</code> lives in the {pipaux} package and
+is not detailed in this {pipdata} article beyond this table — it is a
+prerequisite step that should run before Step 2 so that the latest
+auxiliary data is available.</p>
+<p><strong>Important</strong>: <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> cleans and
+attaches metadata to survey data — it does <strong>not</strong> deflate
+welfare. Deflation is a separate, currently manual step; see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
+below.</p>
 </div>
-  </main>
+<div class="section level2">
+<h2 id="how-to-run-an-end-to-end-session">How to run: an end-to-end session<a class="anchor" aria-label="anchor" href="#how-to-run-an-end-to-end-session"></a>
+</h2>
+<div class="section level3">
+<h3 id="configure-the-working-release">0. Configure the working release<a class="anchor" aria-label="anchor" href="#configure-the-working-release"></a>
+</h3>
+<p>Start by checking for package updates, then configure the working
+release that all three wrappers, and the functions that consume their
+output, read from:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Check for updates to the PIP package ecosystem before running the pipeline</span></span>
+<span><span class="fu">metapip</span><span class="fu">::</span><span class="fu">update_pip_packages</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">release</span>  <span class="op">&lt;-</span> <span class="st">"20260401"</span></span>
+<span><span class="va">identity</span> <span class="op">&lt;-</span> <span class="st">"TEST"</span></span>
+<span></span>
+<span><span class="fu">pipfun</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipfun/reference/setup_working_release.html" class="external-link">setup_working_release</a></span><span class="op">(</span><span class="va">release</span>, <span class="va">identity</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="refresh-auxiliary-data-pipaux">1. Refresh auxiliary data (pipaux)<a class="anchor" aria-label="anchor" href="#refresh-auxiliary-data-pipaux"></a>
+</h3>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Owned by pipaux; see the pipaux package documentation for details.</span></span>
+<span><span class="fu">pipaux</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pipaux/man/update_aux_measures.html" class="external-link">update_aux_measures</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="acquire-and-validate-dlw-data-pipdata">2. Acquire and validate DLW data (pipdata)<a class="anchor" aria-label="anchor" href="#acquire-and-validate-dlw-data-pipdata"></a>
+</h3>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process</a></span><span class="op">(</span></span>
+<span>  inv_gmd_list      <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
+<span>  get_dlw_data      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  validate_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  log               <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  save_log          <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  check_missing     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  release           <span class="op">=</span> <span class="va">release</span>,</span>
+<span>  identity          <span class="op">=</span> <span class="va">identity</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>This downloads new/updated GMD survey files via
+<code><a href="https://worldbank.github.io/dlw/reference/dlw_get_gmd.html" class="external-link">dlw::dlw_get_gmd()</a></code> and validates them, producing an updated
+validated inventory (<code>gmd_valid_inv</code>) consumed by Step 3. See
+<a href="Validating-Data.html">Validating Data</a> for the internal
+mechanics.</p>
+</div>
+<div class="section level3">
+<h3 id="clean-surveys-and-build-metadata-pipdata">3. Clean surveys and build metadata (pipdata)<a class="anchor" aria-label="anchor" href="#clean-surveys-and-build-metadata-pipdata"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_process_data.html">pd_process_data</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> loads the validated inventory
+internally (via <code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>) when
+<code>inv</code> is not supplied, then iterates it, merges auxiliary
+measures, cleans each survey, attaches metadata, saves versioned
+outputs, and returns the updated PIP master inventory. See <a href="Processing-Data.html">Processing Data functions</a> for the
+internal mechanics.</p>
+</div>
+<div class="section level3">
+<h3 id="build-a-consolidated-log-report">4. Build a consolidated log report<a class="anchor" aria-label="anchor" href="#build-a-consolidated-log-report"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/log_report.html">log_report</a></span><span class="op">(</span></span>
+<span>  path      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"log_reports"</span>, <span class="st">"log_report.md"</span><span class="op">)</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/log_report.html">log_report()</a></code> loads the <code>"pipdata_log"</code>
+internally (via <code>pipfun::log_filter(name = "pipdata_log")</code>)
+when <code>log</code> is not supplied, and summarizes what
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> wrote to it — see <a href="#logging-and-reporting-scope">Logging and reporting scope</a>
+below for what it does and does not cover.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="architecture-why-three-wrappers">Architecture: why three wrappers?<a class="anchor" aria-label="anchor" href="#architecture-why-three-wrappers"></a>
+</h2>
+<p>Each stage is intentionally isolated because a different engineer
+developed it independently, with its own auxiliary data, error handling,
+and logging:</p>
+<ul>
+<li>
+<strong><code>update_aux_measures()</code></strong> (pipaux) manages
+the auxiliary-data lifecycle: dependency resolution, GitHub/Y-drive
+sync, and change detection.</li>
+<li>
+<strong><code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code></strong> (pipdata) is
+responsible only for getting raw survey data into a validated state — it
+does not clean or transform welfare data.</li>
+<li>
+<strong><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code></strong> (pipdata) consumes
+the validated inventory and the refreshed auxiliary data, and is
+responsible for the cleaning/metadata transformation. Internally, it
+iterates one survey at a time, so that a per-survey failure is caught,
+logged, and skipped without aborting the rest of the run.</li>
+</ul>
+<p>Each survey’s cleaning pass inside <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>
+follows: <code><a href="../reference/inv_dlw_load.html">inv_dlw_load()</a></code> (load raw survey) -&gt;
+<code><a href="../reference/pd_cpfw_merge.html">pd_cpfw_merge()</a></code> (merge Price Framework metadata) -&gt;
+<code><a href="../reference/pd_dlw_clean.html">pd_dlw_clean()</a></code> (S3-dispatched cleaning) -&gt;
+<code><a href="../reference/pd_aux_attr.html">pd_aux_attr()</a></code> (attach CPI/PPP/population/GDP/PCE metadata)
+-&gt; <code><a href="../reference/save_pip_data.html">save_pip_data()</a></code> (write cleaned data and metadata to
+PIP storage). No deflation step is part of this chain.</p>
+</div>
+<div class="section level2">
+<h2 id="deflation-is-a-separate-step">Deflation is a separate step<a class="anchor" aria-label="anchor" href="#deflation-is-a-separate-step"></a>
+</h2>
+<p><code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code> deflates a
+single cleaned survey’s welfare values using CPI, PPP, and population
+auxiliary data. It is <strong>not</strong> called automatically by
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> — it must be run afterwards, per survey,
+once cleaned data exists in PIP storage:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Mode A: pass a cleaned survey directly (aux auto-loaded from the master</span></span>
+<span><span class="co"># inventory when cpi/ppp/pop are NULL)</span></span>
+<span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_read.html" class="external-link">pip_read</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span>, alias <span class="op">=</span> <span class="st">"pip"</span><span class="op">)</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflation.html">pd_deflation</a></span><span class="op">(</span><span class="va">dt</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Mode B: load the survey by id and deflate in one call</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflation.html">pd_deflation</a></span><span class="op">(</span>pip_id <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span><span class="op">)</span></span></code></pre></div>
+<p>{pipload} also provides <code>load_pip_deflated_data()</code>, a
+convenience wrapper around <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>’s Mode B: it
+locates a survey (by <code>id_name</code> or by filter arguments such as
+<code>country_code</code>/<code>surveyid_year</code>/<code>module</code>),
+loads it, and deflates it in one call — useful when you don’t already
+have the survey’s <code>pip_id</code> in hand:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_deflated_data.html" class="external-link">load_pip_deflated_data</a></span><span class="op">(</span>id_name <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or filter by country/year/module instead of a known id_name</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_deflated_data.html" class="external-link">load_pip_deflated_data</a></span><span class="op">(</span></span>
+<span>  country_code  <span class="op">=</span> <span class="st">"BOL"</span>,</span>
+<span>  surveyid_year <span class="op">=</span> <span class="fl">2022</span>,</span>
+<span>  module        <span class="op">=</span> <span class="st">"ALL"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>See <a href="Processing-Data.html">Processing Data functions</a> for
+details on both modes.</p>
+</div>
+<div class="section level2">
+<h2 id="logging-and-reporting-scope">Logging and reporting scope<a class="anchor" aria-label="anchor" href="#logging-and-reporting-scope"></a>
+</h2>
+<p><code><a href="../reference/log_report.html">log_report()</a></code> only parses the <code>"pipdata_log"</code>
+entries written by
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>/<code><a href="../reference/process_data.html">process_data()</a></code> (processing
+summary, per-survey failures). It does <strong>not</strong> consume any
+log produced by <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> (DLW
+acquisition/validation uses its own <code>log</code>/
+<code>save_log</code> arguments and does not currently feed into
+<code><a href="../reference/log_report.html">log_report()</a></code>). Keep this scope in mind when reading a
+generated report — a clean report does not imply the DLW
+acquisition/validation step had no issues.</p>
+<p>The goal going forward is for <code><a href="../reference/log_report.html">log_report()</a></code> to summarize
+a single, harmonized log covering all three wrappers
+(<code>update_aux_measures()</code>, <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>,
+and <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>), so one report reflects the health
+of the entire pipeline run rather than just the cleaning step. This is
+tracked on the roadmap (see the <code>unified-logging-report</code>
+idea).</p>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p>
-<p>Developed by R.Andres Castaneda.</p>
+  <p>Developed by R.Andres Castaneda.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
 </div>
 
-  
 
-  
+
+
 
   </body>
 </html>

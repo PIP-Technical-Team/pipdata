@@ -1,11 +1,11 @@
-pandoc: 2.19.2
-pkgdown: 2.0.7
+pandoc: 3.8.3
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
-  PIP-data-pipeline: PIP-data-pipeline.html
-  Processing-Data: Processing-Data.html
-last_built: 2023-04-11T17:10Z
+  articles/PIP-data-pipeline: PIP-data-pipeline.html
+  articles/Processing-Data: Processing-Data.html
+  articles/Validating-Data: Validating-Data.html
+last_built: 2026-08-14T17:27Z
 urls:
   reference: https://pip-technical-team.github.io/pipdata/reference
   article: https://pip-technical-team.github.io/pipdata/articles
-

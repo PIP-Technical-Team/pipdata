@@ -5,55 +5,51 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="description" content="pipdata">
 <title>Processing Data functions • pipdata</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Processing Data functions">
-<meta property="og:description" content="pipdata">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Processing Data functions">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
-    
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
-    
+
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+
     <a class="navbar-brand me-2" href="../index.html">pipdata</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9017</small>
 
-    
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item">
-  <a class="nav-link" href="../reference/index.html">Reference</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
-  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
-  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
-    <a class="dropdown-item" href="../articles/PIP-data-pipeline.html">PIP data process</a>
-    <a class="dropdown-item" href="../articles/Processing-Data.html">Processing Data functions</a>
-  </div>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Pipeline</h6></li>
+    <li><a class="dropdown-item" href="../articles/PIP-data-pipeline.html">PIP Data Pipeline: Orchestration Overview</a></li>
+    <li><a class="dropdown-item" href="../articles/Validating-Data.html">Validating Data: DLW Acquisition and Validation Internals</a></li>
+    <li><a class="dropdown-item" href="../articles/Processing-Data.html">Processing Data functions</a></li>
+  </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<form class="form-inline my-2 my-lg-0" role="search">
-        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
-</form>
-
-      <ul class="navbar-nav"></ul>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+      </ul>
 </div>
 
-    
+
   </div>
 </nav><div class="container template-article">
 
@@ -62,123 +58,252 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>Processing Data functions</h1>
+
+      <h1>Processing Data functions</h1>
             
       
-      
+
       <div class="d-none name"><code>Processing-Data.Rmd</code></div>
     </div>
 
     
     
+<p>This article is a deep dive into the third pipeline wrapper,
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>, and the two functions that consume its
+output: <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code> and
+<code><a href="../reference/log_report.html">log_report()</a></code>. Code in this article is illustrative and does
+not execute when the article is built — running it requires a configured
+working release and write access to PIP storage.</p>
+<p>For the end-to-end orchestration and how this wrapper fits with the
+other two, see <a href="PIP-data-pipeline.html">PIP Data Pipeline:
+Orchestration Overview</a>. For the internal mechanics of DLW
+acquisition and validation (the step before this one), see <a href="Validating-Data.html">Validating Data</a>.</p>
+<p><strong>Important</strong>: <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> cleans
+surveys and attaches metadata — it does <strong>not</strong> deflate
+welfare. Deflation is a separate, currently manual step; see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
+below.</p>
+<div class="section level2">
+<h2 id="pd_process_data-clean-surveys-and-build-metadata">
+<code>pd_process_data()</code>: clean surveys and build
+metadata<a class="anchor" aria-label="anchor" href="#pd_process_data-clean-surveys-and-build-metadata"></a>
+</h2>
+<p><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> iterates a validated DLW inventory,
+merges auxiliary data with each survey, cleans it, attaches metadata,
+saves versioned outputs, and returns the updated PIP master
+inventory:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pip-technical-team.github.io/pipdata/">pipdata</a></span><span class="op">)</span></span></code></pre></div>
-<p>This article explains how the <code>pd_*</code> functions in
-{pipdata} work together. These are the functions used during the data
-processing pipeline and that are necessary to process both welfare data
-from datalibweb and auxiliary data from different sources into the files
-that will be used for calculations in the estimations pipeline. The
-process is summarized in the</p>
-<div class="figure">
-<img src="images/pd_functions.png" id="pd-flow" width="640" alt=""><p class="caption">Process Data function order</p>
+<code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_process_data.html">pd_process_data</a></span><span class="op">(</span></span>
+<span>  inv          <span class="op">=</span> <span class="cn">NULL</span>, <span class="co"># NULL loads pipload::load_gmd_valid_inv() internally</span></span>
+<span>  aux_measures <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pfw"</span>, <span class="st">"cpi"</span>, <span class="st">"ppp"</span>, <span class="st">"pop"</span>, <span class="st">"gdp"</span>, <span class="st">"pce"</span><span class="op">)</span>,</span>
+<span>  force        <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose      <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<ul>
+<li>
+<code>inv</code> — the validated DLW inventory (as produced by <a href="Validating-Data.html">Validating Data</a>’s
+<code><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code>). When <code>NULL</code> (the
+default), it is loaded internally via
+<code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>.</li>
+<li>
+<code>aux_measures</code> — which auxiliary datasets to load and
+merge/attach.</li>
+<li>
+<code>force</code> — when <code>TRUE</code>, temporarily switches
+<code>stamp</code> versioning to <code>"timestamp"</code> and bypasses
+the master-inventory comparison, forcing every survey in
+<code>inv</code> to be reprocessed.</li>
+</ul>
+<div class="section level3">
+<h3 id="what-happens-inside">What happens inside<a class="anchor" aria-label="anchor" href="#what-happens-inside"></a>
+</h3>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Load auxiliary data</strong> for each measure in
+<code>aux_measures</code> via
+<code><a href="https://pip-technical-team.github.io/pipload/reference/load_aux_data.html" class="external-link">pipload::load_aux_data()</a></code>.</li>
+<li>
+<strong>Determine which surveys need (re-)processing</strong> —
+<code><a href="../reference/valid_dlw_load.html">valid_dlw_load()</a></code> detects auxiliary-file changes (logging an
+<code>aux_changes_inf</code> entry when found), filters <code>inv</code>
+to the relevant modules
+(<code>ALL</code>/<code>GROUP</code>/<code>HIST</code>/<code>GPWG</code>/<code>BIN</code>),
+keeps the latest version of each survey, and — unless
+<code>force = TRUE</code> — drops surveys already present in the master
+inventory.</li>
+<li>
+<strong>Sync the recode spec once</strong> via
+<code><a href="../reference/sync_recode_spec.html">sync_recode_spec()</a></code>, before the loop. This compares the
+package’s bundled recode spec (see <a href="#what-is-the-recode-spec">What is the recode spec?</a> below)
+against the latest version saved in <code>stamp</code>: if there is no
+stamp version yet, or the package version has changed (compared by
+hash), it saves a new stamp version; otherwise it reuses the existing
+one. Either way it returns the active spec once, which is then threaded
+down to every survey’s <code><a href="../reference/pd_dlw_clean.html">pd_dlw_clean()</a></code> call — so the
+comparison/save only happens a single time per
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> run, instead of once per survey.</li>
+<li>
+<strong>Process each survey</strong> with
+<code><a href="../reference/process_data.html">process_data()</a></code>, one at a time: <code><a href="../reference/inv_dlw_load.html">inv_dlw_load()</a></code>
+(load raw survey) -&gt; <code><a href="../reference/pd_cpfw_merge.html">pd_cpfw_merge()</a></code> (merge Price
+Framework metadata) -&gt; <code><a href="../reference/pd_dlw_clean.html">pd_dlw_clean()</a></code> (S3-dispatched
+cleaning, using the shared recode spec) -&gt; <code><a href="../reference/pd_aux_attr.html">pd_aux_attr()</a></code>
+(attach CPI/PPP/population/GDP/PCE metadata) -&gt;
+<code>save_pip_data(alias = "pip")</code> /
+<code>save_pip_data(alias = "pip_meta")</code> (write cleaned data and
+metadata to PIP storage). A per-survey failure is caught (as a
+<code>piperr</code> or generic error), logged to
+<code>"pipdata_log"</code> with the survey id and error class, and the
+survey is skipped — it does not abort the rest of the run. No deflation
+step is part of this chain.</li>
+<li>
+<strong>Log a processing summary</strong>
+(<code>process_summary_inf</code>: totals, successes, failures) and, if
+any surveys failed, a <code>null_svys_inf</code> entry listing
+them.</li>
+<li>
+<strong>Rebuild the PIP master inventory</strong> via
+<code><a href="../reference/build_pip_inventory.html">build_pip_inventory()</a></code> from the successful surveys’
+<code>stamp</code> catalog entries, and return it.</li>
+</ol>
 </div>
 <div class="section level3">
-<h3 id="load-relevant-data">Load relevant data<a class="anchor" aria-label="anchor" href="#load-relevant-data"></a>
+<h3 id="what-is-the-recode-spec">What is the recode spec?<a class="anchor" aria-label="anchor" href="#what-is-the-recode-spec"></a>
 </h3>
-<p>All the data in the PIP process has to be loaded with the package
-{pipload}. function <code>pip_load_dlw()</code> loads any welfare data
-available in DatalibWeb. It does not use the datalibweb Stata command
-but reads directly into a flat folder provided by the Poverty GP.
-Function <code>pip_load_aux()</code> loads any auxiliary data available
-in the PIP project. Auxiliary data refers to any dataset that is not
-welfare data. The most important auxiliary data is the Price FrameWork
-(pfw) dataset, since it is data that contains all relevant metadata for
-data processing and estimations.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span>  <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_dlw.html" class="external-link">pip_load_dlw</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"PHL"</span>, year <span class="op">=</span> <span class="fl">2012</span><span class="op">)</span></span>
-<span><span class="va">pfw</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"pfw"</span><span class="op">)</span></span></code></pre></div>
+<p>The <strong>recode spec</strong> is the set of recoding rules for the
+raw DLW variables that <code><a href="../reference/pd_dlw_clean.html">pd_dlw_clean()</a></code> cleans into PIP
+variables. It’s defined in <code>inst/extdata/recode_spec.yml</code>,
+bundled with the package: for each variable it declares a
+<code>type</code>, a <code>recode_type</code> (one of
+<code>range_clamp</code>, <code>binary_map</code>,
+<code>haven_labels</code>, <code>binned_from_continuous</code>,
+<code>quantile_from_continuous</code>, or <code>indicator</code>), and
+the type-specific parameters that rule needs (e.g. a
+<code>valid_range</code> for <code>range_clamp</code>, a
+<code>mapping</code> for
+<code>binary_map</code>/<code>haven_labels</code>).
+<code><a href="../reference/apply_recode_spec.html">apply_recode_spec()</a></code> (called internally by
+<code><a href="../reference/pd_dlw_clean.html">pd_dlw_clean()</a></code>) applies every rule that matches a column
+present in the survey. Replace-type rules (<code>range_clamp</code>,
+<code>binary_map</code>, <code>haven_labels</code>) recode the source
+column in place (renaming it to the target variable name when they
+differ, e.g. <code>urban</code> → <code>area</code>); derive-type rules
+(<code>binned_from_continuous</code>,
+<code>quantile_from_continuous</code>) keep the source column and add
+the derived variable alongside it (e.g. <code>age</code> stays,
+<code>age_group</code> is added).</p>
 </div>
-<div class="section level3">
-<h3 id="country-price-framework-cpfw">Country Price FrameWork (cpfw)<a class="anchor" aria-label="anchor" href="#country-price-framework-cpfw"></a>
-</h3>
-<p>The country price framework is a subset of the pfw data. Yet, it is
-not simply filtered data. Sometimes you may find two welfare types in
-the same survey, so it is necessary to have to different sets of
-information regarding each welfare type. This is way, pfw must be
-filtered using the <code><a href="../reference/get_country_pfw.html">get_country_pfw()</a></code> function.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cpfw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_country_pfw.html">get_country_pfw</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">pfw</span><span class="op">)</span></span>
-<span><span class="co"># names(cpfw)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="pd_-functions">pd_* functions<a class="anchor" aria-label="anchor" href="#pd_-functions"></a>
+<h2 id="deflation-is-a-separate-step">Deflation is a separate step<a class="anchor" aria-label="anchor" href="#deflation-is-a-separate-step"></a>
 </h2>
-<p>All functions prefixed with <code>pd_</code> are for Processing Data.
-They are used only to convert data from datalibweb form to pip form. The
-results format of the data is what is known as input cache data. All the
-<code>pd_</code> functions are intended to be used at a high level, but
-they depend on lower level S3 methods that vary depending on the type of
-welfare data.</p>
-<div class="section level3">
-<h3 id="split-alternative-welfare">Split alternative welfare<a class="anchor" aria-label="anchor" href="#split-alternative-welfare"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_split_alt_welfare.html">pd_split_alt_welfare</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">cpfw</span><span class="op">)</span></span>
-<span><span class="co"># names(lf)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="clean-from-dlw-format">Clean from DLW format<a class="anchor" aria-label="anchor" href="#clean-from-dlw-format"></a>
-</h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lf_dlw</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_dlw_clean.html">pd_dlw_clean</a></span><span class="op">(</span><span class="va">lf</span>, <span class="va">cpfw</span><span class="op">)</span></span>
-<span><span class="co"># names(lf_dlw)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="clean-to-be-used-by-wbpip">Clean to be used by <code>wbpip</code><a class="anchor" aria-label="anchor" href="#clean-to-be-used-by-wbpip"></a>
-</h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lf_wbpip</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_wbpip_clean.html">pd_wbpip_clean</a></span><span class="op">(</span><span class="va">lf_dlw</span><span class="op">)</span></span>
-<span><span class="co"># names(lf_wbpip)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="add-variables-for-pip-process">Add variables for PIP process<a class="anchor" aria-label="anchor" href="#add-variables-for-pip-process"></a>
-</h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ppp</span>  <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"ppp"</span><span class="op">)</span></span>
-<span><span class="va">cpi</span>  <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"cpi"</span><span class="op">)</span></span>
-<span><span class="va">pop</span>  <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"pop"</span><span class="op">)</span></span>
+<p><code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code> deflates a
+single cleaned survey’s welfare values using CPI, PPP, and population
+auxiliary data. It is <strong>not</strong> called automatically by
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> — it must be run afterwards, per survey,
+once cleaned data exists in PIP storage. There are two input modes:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Mode A: pass a cleaned survey directly (aux auto-loaded from the master</span></span>
+<span><span class="co"># inventory when cpi/ppp/pop are NULL)</span></span>
+<span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_read.html" class="external-link">pip_read</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span>, alias <span class="op">=</span> <span class="st">"pip"</span><span class="op">)</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflation.html">pd_deflation</a></span><span class="op">(</span><span class="va">dt</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">lf_pip_vars</span> <span class="op">&lt;-</span> </span>
-<span>  <span class="fu"><a href="../reference/pd_add_pip_vars.html">pd_add_pip_vars</a></span><span class="op">(</span>lf <span class="op">=</span> <span class="va">lf_wbpip</span>, </span>
-<span>                  cpfw <span class="op">=</span> <span class="va">cpfw</span>, </span>
-<span>                  cpi <span class="op">=</span> <span class="va">cpi</span>, </span>
-<span>                  ppp <span class="op">=</span> <span class="va">ppp</span>, </span>
-<span>                  pop <span class="op">=</span> <span class="va">pop</span><span class="op">)</span></span>
-<span><span class="co"># names(lf_pip_vars[[1]])</span></span></code></pre></div>
+<span><span class="co"># Legacy Mode A: pass explicit aux tables instead of auto-loading them</span></span>
+<span><span class="va">ppp</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"ppp"</span><span class="op">)</span></span>
+<span><span class="va">cpi</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"cpi"</span><span class="op">)</span></span>
+<span><span class="va">pop</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_load_aux.html" class="external-link">pip_load_aux</a></span><span class="op">(</span><span class="st">"pop"</span><span class="op">)</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflation.html">pd_deflation</a></span><span class="op">(</span><span class="va">dt</span>, cpi <span class="op">=</span> <span class="va">cpi</span>, ppp <span class="op">=</span> <span class="va">ppp</span>, pop <span class="op">=</span> <span class="va">pop</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Mode B: load the survey by id and deflate in one call</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflation.html">pd_deflation</a></span><span class="op">(</span>pip_id <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span><span class="op">)</span></span></code></pre></div>
+<p>In Mode A (<code>dt</code> supplied,
+<code>cpi</code>/<code>ppp</code>/<code>pop</code> left
+<code>NULL</code>), <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> resolves the matching
+metadata version for the survey from the master inventory and loads
+CPI/PPP/population automatically. In Mode B (<code>pip_id</code>
+supplied instead of <code>dt</code>), the survey itself is also loaded
+from <code>stamp</code> before deflation. <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>
+resolves the correct S3 method (<code><a href="../reference/deflation.pipmd.html">deflation.pipmd()</a></code> for micro
+data, <code><a href="../reference/deflation.pipgd.html">deflation.pipgd()</a></code> for group data) based on the
+survey’s class and applies it; deflation failures are caught and logged,
+returning <code>NA</code> for that survey rather than aborting.</p>
+<p>{pipload} also provides <code>load_pip_deflated_data()</code>, a
+convenience wrapper around <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>’s Mode B: it
+locates a survey (by <code>id_name</code> or by filter arguments such as
+<code>country_code</code>/<code>surveyid_year</code>/<code>module</code>),
+loads it, and deflates it in one call — useful when you don’t already
+have the survey’s <code>pip_id</code> in hand:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_deflated_data.html" class="external-link">load_pip_deflated_data</a></span><span class="op">(</span>id_name <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or filter by country/year/module instead of a known id_name</span></span>
+<span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_deflated_data.html" class="external-link">load_pip_deflated_data</a></span><span class="op">(</span></span>
+<span>  country_code  <span class="op">=</span> <span class="st">"BOL"</span>,</span>
+<span>  surveyid_year <span class="op">=</span> <span class="fl">2022</span>,</span>
+<span>  module        <span class="op">=</span> <span class="st">"ALL"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>To deflate many surveys in a batch, note that there is currently no
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>-style wrapper that loops
+<code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> over an inventory — this is tracked on the
+roadmap as the future <code>pd_deflate_pipeline()</code> wrapper.</p>
 </div>
+<div class="section level2">
+<h2 id="log_report-summarize-the-pipdata_log">
+<code>log_report()</code>: summarize the
+<code>"pipdata_log"</code><a class="anchor" aria-label="anchor" href="#log_report-summarize-the-pipdata_log"></a>
+</h2>
+<p><code><a href="../reference/log_report.html">log_report()</a></code> parses a <code>piplog</code> object and
+writes (or returns) a structured markdown report:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># log defaults to pipfun::log_filter(name = "pipdata_log") when not supplied</span></span>
+<span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/log_report.html">log_report</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or write directly to a file</span></span>
+<span><span class="fu"><a href="../reference/log_report.html">log_report</a></span><span class="op">(</span></span>
+<span>  path      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"log_reports"</span>, <span class="st">"log_report.md"</span><span class="op">)</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The report includes, when the corresponding logmeta entry is present
+in the log: run metadata (time window, totals), the processing summary
+(<code>process_summary_inf</code>), auxiliary file changes
+(<code>aux_changes_inf</code>), a summary table by error/info type, a
+country-level breakdown of errors, inventory verification counts
+(<code>inv_update_inf</code>), skipped-survey details
+(<code>skipped_svys_data</code>/<code>skipped_svys_metadata</code>), and
+the list of surveys that failed processing (<code>null_svys_inf</code>).
+Sections are silently omitted when their logmeta entry is absent.</p>
+<p><strong>Scope</strong>: <code><a href="../reference/log_report.html">log_report()</a></code> only parses entries
+written under the <code>"pipdata_log"</code> name by
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>/<code><a href="../reference/process_data.html">process_data()</a></code> — it does
+<strong>not</strong> consume any log produced by
+<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> (DLW acquisition/validation uses its
+own <code>log</code>/<code>save_log</code> arguments and does not
+currently feed into <code><a href="../reference/log_report.html">log_report()</a></code>; see <a href="Validating-Data.html#logging-scope">Validating Data</a>). Keep
+this scope in mind when reading a generated report — a clean report does
+not imply the DLW acquisition/validation step had no issues. The goal
+going forward is for <code><a href="../reference/log_report.html">log_report()</a></code> to summarize a single,
+harmonized log covering all three wrappers (tracked on the roadmap as
+<code>unified-logging-report</code>).</p>
 </div>
-  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p>
-<p>Developed by R.Andres Castaneda.</p>
+  <p>Developed by R.Andres Castaneda.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
 </div>
 
-  
 
-  
+
+
 
   </body>
 </html>
