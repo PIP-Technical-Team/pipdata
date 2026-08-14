@@ -516,6 +516,78 @@
                     ]
                 }
             ]
+        },
+        {
+            "title": "Orchestration & Cache-Invalidation",
+            "description": "Architecture for intelligent pipeline orchestration: dependency tracking, smart caching/invalidation, and targeted re-processing.",
+            "ideas": [
+                {
+                    "id": "code-hash-invalidation",
+                    "title": "Add code-hash invalidation for pipeline function changes",
+                    "description": "Track content hashes of pipeline-critical R functions (pd_dlw_clean, pd_cpfw_merge, pd_aux_attr, deflation helpers, apply_recode_spec) in the master inventory. When pd_process_data() runs, compute a hash of the current function bodies and compare against the stored hash. If function logic changed since the last clean, flag previously-cleaned surveys as stale and re-process them. This closes the gap where only DLW data and aux file changes trigger re-processing — a code change that alters cleaning logic currently serves stale data silently. Implementation: (1) define a curated list of pipeline function names in aaa.R, (2) compute a digest of their body text at package load time, (3) add a `code_hash_pipeline` column to the master inventory, (4) compare in valid_dlw_load() alongside content_hash_dlw.",
+                    "status": "idea",
+                    "tags": [
+                        "invalidation",
+                        "cache",
+                        "pipeline",
+                        "orchestration",
+                        "correctness"
+                    ]
+                },
+                {
+                    "id": "targeted-force-surveys",
+                    "title": "Add targeted force_surveys parameter to pd_process_data()",
+                    "description": "Add a `force_surveys` parameter (character vector of survey_ids) to pd_process_data(). When supplied, only those surveys are re-processed regardless of inventory state, WITHOUT switching stamp to timestamp versioning (which is what force=TRUE does globally). This enables surgical re-runs for specific countries/years/measures without destroying version history for other surveys. Implementation: (1) add `force_surveys = NULL` parameter, (2) in valid_dlw_load(), when force_surveys is non-NULL, intersect it with inv_to_clean rather than bypassing all invalidation, (3) keep force=TRUE behavior unchanged for full re-runs.",
+                    "status": "idea",
+                    "tags": [
+                        "pipeline",
+                        "force",
+                        "re-processing",
+                        "orchestration",
+                        "usability"
+                    ]
+                },
+                {
+                    "id": "data-driven-validation-engine",
+                    "title": "Consolidate 7 DLW validation functions into data-driven validator",
+                    "description": "Replace the 7 near-identical validation functions in pipdata_dlw_validation.R (~1,105 lines, ~900 duplicated) with a single dlw_validation_engine(dlw_data, svy_id, module_spec) function. Each module type (GPWG, GROUP, BIN, HIST, ALL, ASPIRE, L) is defined by a declarative spec (YAML or named list) specifying: variable regexes (weight vars, welfare vars, numeric vars, character vars), optional checks (urban, gender, hhid/pid), and range constraints. The dispatch table in pipdata_validate_gmd.R maps module → spec instead of module → function. Benefits: (1) bug fixes applied once, (2) new module types are one-line config changes, (3) ~900 lines eliminated. Prerequisite: archive-legacy-dlw (done).",
+                    "status": "idea",
+                    "tags": [
+                        "validation",
+                        "refactoring",
+                        "DRY",
+                        "architecture",
+                        "dlw"
+                    ]
+                },
+                {
+                    "id": "step-level-invalidation-dag",
+                    "title": "Build dependency DAG for step-level cache invalidation",
+                    "description": "Define a formal dependency graph between pipeline steps (inv_dlw_load → pd_cpfw_merge → pd_dlw_clean → pd_aux_attr → save_pip_data → pd_deflation) with per-step input hashes tracked in the master inventory. When an upstream input changes (e.g., CPI data), only steps that depend on CPI (pd_aux_attr, pd_deflation) are invalidated — not the entire survey cleaning pipeline. Implementation: (1) define the DAG as a named list in aaa.R (step → depends_on), (2) compute per-step input hashes (e.g., pd_dlw_clean hashes the recode spec, pd_aux_attr hashes CPI/PPP/pop content), (3) store step-level hashes in a new inventory column or a separate step_hash artifact, (4) in pd_process_data(), skip steps whose inputs haven't changed. This is the core architecture for the user's vision: 'if Colombia 2018 CPI updates, recompute only downstream.' Prerequisites: code-hash-invalidation, targeted-force-surveys.",
+                    "status": "idea",
+                    "tags": [
+                        "invalidation",
+                        "DAG",
+                        "cache",
+                        "pipeline",
+                        "orchestration",
+                        "performance"
+                    ]
+                },
+                {
+                    "id": "pipeline-stage-interface",
+                    "title": "Formalize pipeline stage interface with typed result objects",
+                    "description": "Define a pipdata_stage_result S3 class (or structured list) with required fields: status (success/partial/failed), data (stage output), log_entries (structured logmeta list), errors (list of caught conditions). Each pipeline stage (acquisition, validation, cleaning, deflation) returns this contract. The orchestrator (pipdata_dlw_process / future top-level run_pipeline()) can inspect stage results, chain errors, and resume from a failed stage. Also define a shared pipeline_context object holding release, identity, folder paths, and aux data — passed to each stage instead of each calling pipfun::setup_working_release() independently. This turns the package from a collection of independent scripts into a true orchestration engine. Prerequisites: safe_pipeline_step wrapper (for consistent error handling). Blocks: parallel survey processing, DAG-based invalidation.",
+                    "status": "idea",
+                    "tags": [
+                        "architecture",
+                        "orchestration",
+                        "interface",
+                        "pipeline",
+                        "composability"
+                    ]
+                }
+            ]
         }
     ]
 }
