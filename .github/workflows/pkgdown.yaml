@@ -19,8 +19,14 @@ jobs:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      PIP_ROOT_DIR: ${{ runner.temp }}/pip-root
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      # pipaux initialises its globals while the package is installed. Give
+      # that startup code an isolated, non-network data root in CI.
+      - name: Prepare package build paths
+        run: mkdir -p "$PIP_ROOT_DIR/pip_ingestion_pipeline/pc_data/cache/clean_survey_data/ci-placeholder"
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -41,6 +47,6 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
-          clean: false
+          clean: true
           branch: gh-pages
           folder: docs
