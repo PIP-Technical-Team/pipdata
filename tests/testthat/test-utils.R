@@ -95,3 +95,15 @@ test_that("add_log() uses separate key for different class values", {
   expect_false(is.null(pd_env_get("log_unk_err")))
   expect_null(pd_env_get("log_piperr")[["e2"]])
 })
+
+test_that("unq_obs_dt() rejects duplicate key combinations", {
+  dt <- data.table::data.table(
+    country_code = c("AAA", "AAA", "BBB"),
+    survey_year = c(2020L, 2020L, 2021L)
+  )
+
+  expect_error(
+    unq_obs_dt(dt, c("country_code", "survey_year")),
+    class = "dup_pfw"
+  )
+})
