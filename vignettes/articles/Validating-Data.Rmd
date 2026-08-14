@@ -101,7 +101,7 @@ datasets that have not yet been validated:
 5. **Write the updated validated inventory** — the result becomes the new
    `gmd_valid_inv`, which `pd_process_data()` consumes as its starting
    inventory (see
-   [Processing Data functions](Processing-Data.html#load-relevant-data)).
+   [Processing Data functions](Processing-Data.html)).
 
 ```{r step2-validate-gmd}
 pipdata::pipdata_validate_gmd(

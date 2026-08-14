@@ -6,9 +6,9 @@ articles:
 - title: Pipeline
   navbar: Pipeline
   contents:
-  - PIP-data-pipeline
-  - Validating-Data
-  - Processing-Data
+  - articles/PIP-data-pipeline
+  - articles/Validating-Data
+  - articles/Processing-Data
 
 reference:
 - title: Pipeline wrappers
@@ -32,4 +32,14 @@ reference:
     Summarizes the `"pipdata_log"` written during `pd_process_data()`.
   contents:
   - log_report
+- title: Other functions
+  contents:
+  - 'starts_with("")'
+  - '-pipdata_dlw_process'
+  - '-pipdata_get_gmd'
+  - '-pipdata_validate_gmd'
+  - '-pd_process_data'
+  - '-pd_deflation'
+  - '-deflation'
+  - '-log_report'
 
