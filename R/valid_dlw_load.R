@@ -26,6 +26,12 @@
 #'   (the default) and `force = FALSE`, the hashes are resolved internally so
 #'   that direct callers retain the previous behavior of always running
 #'   aux-change detection.
+#' @param force_surveys Character vector of `survey_id` and/or `pip_id`
+#'   values to re-process surgically, alongside the normal invalidation
+#'   candidates. Forced surveys bypass [inv_to_process()] only and are unioned
+#'   into the candidate set, deduplicated via `unique()`. Mutually exclusive
+#'   with `force = TRUE`. Preserves content-based stamp versioning. Unknown
+#'   identifiers are warned about and skipped. Default `NULL`.
 #' @param verbose Logical. Print progress messages. Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
 #'
@@ -33,6 +39,14 @@
 #'   processing, the function aborts with class `piperr`.
 #'
 #' @details
+#' **Force-survey path (`force_surveys`)**: forced surveys are resolved via
+#' [resolve_force_surveys()] (lookup-first: `survey_id` membership, then
+#' `pip_id` reverse-map through the already-loaded master inventory) and
+#' unioned into the candidate set. They bypass [inv_to_process()] only;
+#' aux-change detection runs normally and overlaps are deduplicated via
+#' `unique()`. Emits `force_surveys_inf` / `force_surveys_unknown_inf`
+#' log entries.
+#'
 #' **Aux-change gating (two-stage)**: aux-change detection is gated on the
 #' current aux `content_hash` values passed via `aux_hashes`.
 #' - Stage 1 (cheap): for each filtered/latest survey, compare its stored
@@ -78,7 +92,8 @@ valid_dlw_load <- function(
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE),
-  aux_hashes = NULL
+  aux_hashes = NULL,
+  force_surveys = NULL
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Defenses   ---------
@@ -86,6 +101,16 @@ valid_dlw_load <- function(
 
   if (!is.data.table(inv)) {
     inv <- data.table::as.data.table(inv)
+  }
+
+  # force and force_surveys are mutually exclusive. valid_dlw_load() is
+  # exported and can be called directly, so it carries its own guard before
+  # any inventory/stamp work.
+  if (force && !is.null(force_surveys)) {
+    cli::cli_abort(
+      "force and force_surveys are mutually exclusive: force = TRUE switches stamp to timestamp versioning globally while force_surveys preserves content versioning. Specify only one.",
+      class = "piperr"
+    )
   }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,6 +192,55 @@ valid_dlw_load <- function(
         class = c("valid_dlw_load_bad_aux_hashes", "piperr")
       )
     }
+  }
+
+  # Resolve force_surveys: map each identifier to a survey_id present in the
+  # filtered/latest inventory (inv_svy_full). This uses inv_svy_full, which is
+  # already computed, and reuses dt_master (already loaded when !force) for
+  # the pip_id reverse-map; it never loads the master a second time.
+  force_res <- resolve_force_surveys(
+    force_surveys,
+    inv_svy_full = inv_svy_full,
+    dt_master = if (!force) dt_master else NULL,
+    verbose = verbose
+  )
+  forced_inv <- NULL
+  if (length(force_res$survey_ids) > 0L) {
+    forced_inv <- inv_svy_full[survey_id %in% force_res$survey_ids]
+  }
+
+  if (length(force_res$survey_ids) > 0L) {
+    pipfun::log_info(
+      "Surveys forced for reprocessing.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "force_surveys_inf",
+        n_forced = length(force_res$survey_ids),
+        surveys_forced = force_res$survey_ids,
+        n_from_survey_id = length(force_res$resolved_from_survey_id),
+        n_from_pip_id = length(force_res$resolved_from_pip_id)
+      )
+    )
+  }
+  if (length(force_res$unknown) > 0L) {
+    pipfun::log_info(
+      "Force_surveys identifiers matched no known survey.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = "force_surveys_unknown_inf",
+        unknown_identifiers = force_res$unknown
+      )
+    )
+  }
+  if (length(force_res$survey_ids) > 0L && verbose) {
+    cli::cli_alert_info(
+      "{length(force_res$survey_ids)} surve{?y/ies} forced for reprocessing."
+    )
+  }
+  if (length(force_res$unknown) > 0L && verbose) {
+    cli::cli_alert_info(
+      "{length(force_res$unknown)} force_surveys identifier{?s} did not match any known survey and {?was/were} skipped."
+    )
   }
 
   # Stage 1: build the aux candidate set from the per-survey aux hash
@@ -279,7 +353,8 @@ valid_dlw_load <- function(
 
   if (
     (is.null(inv_svy) || nrow(inv_svy) == 0) &&
-      (is.null(inv_aux) || nrow(inv_aux) == 0)
+      (is.null(inv_aux) || nrow(inv_aux) == 0) &&
+      (is.null(forced_inv) || nrow(forced_inv) == 0)
   ) {
     cli::cli_abort(
       "No surveys to process: all surveys are up to date and no auxiliary changes affect any survey.",
@@ -287,8 +362,9 @@ valid_dlw_load <- function(
     )
   }
 
-  # Bind with inventory from aux changes
-  inv_to_clean <- rbind(inv_svy, inv_aux, fill = TRUE)
+  # Bind with inventory from aux changes and the forced surveys, then choose
+  # only unique (overlaps between forced and normal candidates are deduplicated).
+  inv_to_clean <- rbind(inv_svy, inv_aux, forced_inv, fill = TRUE)
 
   # Choose only unique
   inv_to_clean <- unique(inv_to_clean)
@@ -301,6 +377,7 @@ valid_dlw_load <- function(
       info = "surveys_to_clean_inf",
       n_dlw_new      = if (is.null(inv_svy)) 0L else nrow(inv_svy),
       n_aux_changed  = if (is.null(inv_aux)) 0L else nrow(inv_aux),
+      n_forced       = if (is.null(forced_inv)) 0L else nrow(forced_inv),
       n_total_unique = nrow(inv_to_clean),
       aux_measures_triggered = changed_measures
     )
@@ -313,6 +390,138 @@ valid_dlw_load <- function(
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(inv_to_clean)
+}
+
+
+#' Resolve `force_surveys` identifiers to survey_id values
+#'
+#' Maps a character vector of `survey_id` and/or `pip_id` identifiers to the
+#' subset present in the module-filtered, latest-version inventory
+#' (`inv_svy_full`). Lookup is first-by-`survey_id` membership, then by
+#' `pip_id` reverse-map through the already-loaded master inventory. Unknown
+#' identifiers are collected, not aborted.
+#'
+#' @param force_surveys Character vector of `survey_id` and/or `pip_id`
+#'   identifiers, or `NULL`.
+#' @param inv_svy_full A `data.table` of the module-filtered, latest-version
+#'   DLW inventory (already computed by [valid_dlw_load()]).
+#' @param dt_master A `data.table` of the PIP master inventory, already loaded
+#'   by the caller, or `NULL` when unavailable.
+#' @param verbose Logical. Print progress messages.
+#'
+#' @return A named list with character vectors:
+#'   `survey_ids` (resolved survey_ids present in `inv_svy_full`),
+#'   `resolved_from_survey_id`, `resolved_from_pip_id`, and `unknown`.
+#'
+#' @family pd_process_data pipeline
+#' @keywords internal
+resolve_force_surveys <- function(
+  force_surveys,
+  inv_svy_full,
+  dt_master,
+  verbose = TRUE
+) {
+  empty <- list(
+    survey_ids = character(0),
+    resolved_from_survey_id = character(0),
+    resolved_from_pip_id = character(0),
+    unknown = character(0)
+  )
+
+  if (is.null(force_surveys) || length(force_surveys) == 0L) {
+    return(empty)
+  }
+
+  # Input must be a character vector; a numeric/factor silently matches
+  # nothing and no-ops, so abort loudly instead (mirrors aux_hashes pattern).
+  if (!is.character(force_surveys)) {
+    cli::cli_abort(
+      "force_surveys must be a character vector of survey_id and/or pip_id values.",
+      class = "piperr"
+    )
+  }
+
+  # Deduplicate before the resolution loop so log counts reflect the actual
+  # number of unique surveys, not redundant caller-supplied entries.
+  force_surveys <- unique(force_surveys)
+
+  inv_ids <- inv_svy_full$survey_id
+
+  # Defensive column-existence check: pip_id resolution needs the master and
+  # its pip_id column. Without it, pip_id inputs are treated as unknown.
+  master_has_pip_id <- !is.null(dt_master) && "pip_id" %in% names(dt_master)
+
+  master_pip_key <- if (master_has_pip_id) {
+    # Reduce the master to one row per (pip_id, survey_id). The master can
+    # retain multiple rows per survey (historical content_hash_dlw), so the
+    # same pip_id may legitimately repeat; dedup removes those. A pip_id that
+    # still maps to more than one DISTINCT survey_id is ambiguous and aborts.
+    pip_map <- collapse::funique(dt_master[, .(pip_id, survey_id)])
+    n_distinct <- collapse::fndistinct(pip_map$pip_id)
+    if (n_distinct != nrow(pip_map)) {
+      ambiguous <- pip_map[duplicated(pip_map$pip_id), pip_id][1L]
+      cli::cli_abort(
+        "pip_id '{ambiguous}' maps to multiple distinct survey_ids; cannot resolve force_surveys.",
+        class = "piperr"
+      )
+    }
+    # Name = uppercased pip_id, value = its survey_id (reverse-map).
+    stats::setNames(
+      pip_map$survey_id,
+      toupper(pip_map$pip_id)
+    )
+  } else {
+    character(0)
+  }
+
+  survey_ids <- character(0)
+  resolved_from_survey_id <- character(0)
+  resolved_from_pip_id <- character(0)
+  unknown <- character(0)
+
+  for (id in force_surveys) {
+    if (id %in% inv_ids) {
+      # Lookup-first: a direct survey_id match wins.
+      survey_ids <- c(survey_ids, id)
+      resolved_from_survey_id <- c(resolved_from_survey_id, id)
+    } else if (master_has_pip_id &&
+      toupper(id) %in% names(master_pip_key)) {
+      # pip_id reverse-map, case-insensitive (matches pip_id_map building).
+      # The survey_id for a pip_id is unique (one row per survey_id/pip_id).
+      svy <- master_pip_key[[toupper(id)]]
+      if (svy %in% inv_ids) {
+        survey_ids <- c(survey_ids, svy)
+        resolved_from_pip_id <- c(resolved_from_pip_id, id)
+      } else {
+        # Survey resolved via pip_id but outside module/latest filter (R9).
+        unknown <- c(unknown, id)
+      }
+    } else {
+      unknown <- c(unknown, id)
+    }
+  }
+
+  # Distinguish "your IDs are wrong" from "the master couldn't load".
+  if (verbose) {
+    if (!is.null(dt_master) && !master_has_pip_id && length(unknown) > 0L) {
+      cli::cli_alert_warning(
+        "Master inventory lacks pip_id column; pip_id resolution unavailable. All non-survey_id identifiers treated as unknown."
+      )
+    }
+    if (is.null(dt_master) &&
+      length(setdiff(force_surveys, inv_svy_full$survey_id)) > 0L) {
+      cli::cli_alert_warning(
+        "Master inventory unavailable; pip_id resolution skipped. All non-survey_id identifiers treated as unknown."
+      )
+    }
+  }
+
+  list(
+    survey_ids = unique(survey_ids),
+    resolved_from_survey_id = resolved_from_survey_id,
+    resolved_from_pip_id = resolved_from_pip_id,
+    unknown = unknown
+  )
 }
 
 

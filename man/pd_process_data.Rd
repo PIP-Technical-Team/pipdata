@@ -8,7 +8,8 @@ pd_process_data(
   inv = NULL,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  force_surveys = NULL
 )
 }
 \arguments{
@@ -21,10 +22,18 @@ with the DLW data. The default is \code{c("pfw", "cpi", "ppp", "pop", "gdp", "pc
 
 \item{force}{Logical. If \code{TRUE}, forces reprocessing of all surveys by
 switching stamp versioning to \code{"timestamp"} and bypassing the master
-inventory comparison. Default \code{FALSE}.}
+inventory comparison. Default \code{FALSE}. For surgical re-processing
+without the global versioning side effect, see \code{force_surveys}.}
 
 \item{verbose}{Logical. Print progress messages. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
+
+\item{force_surveys}{Character vector of \code{survey_id} and/or \code{pip_id}
+values to re-process surgically, alongside the normal invalidation
+candidates. Mutually exclusive with \code{force = TRUE}. Preserves content-based
+stamp versioning (unlike \code{force = TRUE}, which switches to timestamp
+versioning for the entire run). Unknown identifiers are warned about and
+skipped. Default \code{NULL}.}
 }
 \value{
 A data.frame: updated pip inventory (\code{new_pip_inv}) with new

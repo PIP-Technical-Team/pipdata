@@ -13,9 +13,16 @@
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
 #' @param force Logical. If `TRUE`, forces reprocessing of all surveys by
 #'   switching stamp versioning to `"timestamp"` and bypassing the master
-#'   inventory comparison. Default `FALSE`.
+#'   inventory comparison. Default `FALSE`. For surgical re-processing
+#'   without the global versioning side effect, see `force_surveys`.
 #' @param verbose Logical. Print progress messages. Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
+#' @param force_surveys Character vector of `survey_id` and/or `pip_id`
+#'   values to re-process surgically, alongside the normal invalidation
+#'   candidates. Mutually exclusive with `force = TRUE`. Preserves content-based
+#'   stamp versioning (unlike `force = TRUE`, which switches to timestamp
+#'   versioning for the entire run). Unknown identifiers are warned about and
+#'   skipped. Default `NULL`.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
 #'
@@ -53,8 +60,20 @@ pd_process_data <- function(
   inv = NULL,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  force_surveys = NULL
 ) {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Guard force + force_surveys are mutually exclusive, before any stamp
+  # versioning side effect runs.
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (force && !is.null(force_surveys)) {
+    cli::cli_abort(
+      "force and force_surveys are mutually exclusive: force = TRUE switches stamp to timestamp versioning globally while force_surveys preserves content versioning. Specify only one.",
+      class = "piperr"
+    )
+  }
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Temporarily switch stamp versioning to "timestamp" when force = TRUE
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,6 +105,7 @@ pd_process_data <- function(
     inv = inv,
     aux_measures = aux_measures,
     force = force,
+    force_surveys = force_surveys,
     aux_hashes = aux_hashes,
     verbose = verbose
   )
