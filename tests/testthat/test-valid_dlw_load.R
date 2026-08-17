@@ -1815,3 +1815,49 @@ test_that("valid_dlw_load resolves an identifier via survey_id before pip_id", {
   expect_equal(inf[[1]]$n_from_survey_id, 1L)
   expect_equal(inf[[1]]$n_from_pip_id, 0L)
 })
+
+# ---------------------------------------------------------------------------
+# WARNING fix: survey_id-only force_surveys must not build/abort on the pip_id
+# reverse-map, even when an unrelated ambiguous pip_id exists in the master
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load survey_id-only force ignores unrelated ambiguous pip_ids", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Master has an UNRELATED ambiguous pip_id ("DUP_PIP" -> two distinct
+  # survey_ids) plus the COL row. The caller forces only by survey_id, so the
+  # pip_id reverse-map must never be built/validated (no abort), and COL is
+  # already-cleaned so only the forced survey keeps the run alive.
+  master <- data.table::data.table(
+    survey_id = c("COL_2020_GEIH", "USA_2019_CPS", "GER_2020_SOEP"),
+    content_hash_dlw = c("h_1", "h_9", "h_9"),
+    pip_id = c("COL_INC_ALL", "DUP_PIP", "DUP_PIP")
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  # Survey_id-only force call must not abort despite the ambiguous DUP_PIP.
+  result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "COL_2020_GEIH",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+})

@@ -108,7 +108,7 @@ valid_dlw_load <- function(
   # any inventory/stamp work.
   if (force && !is.null(force_surveys)) {
     cli::cli_abort(
-      "force and force_surveys are mutually exclusive: force = TRUE switches stamp to timestamp versioning globally while force_surveys preserves content versioning. Specify only one.",
+      .force_exclusive_msg,
       class = "piperr"
     )
   }
@@ -393,6 +393,14 @@ valid_dlw_load <- function(
 }
 
 
+# Shared mutual-exclusivity message so both exported guard sites (pd_process_data
+# and valid_dlw_load) cannot drift apart in wording.
+.force_exclusive_msg <- paste0(
+  "force and force_surveys are mutually exclusive: force = TRUE switches ",
+  "stamp to timestamp versioning globally while force_surveys preserves ",
+  "content versioning. Specify only one."
+)
+
 #' Resolve `force_surveys` identifiers to survey_id values
 #'
 #' Maps a character vector of `survey_id` and/or `pip_id` identifiers to the
@@ -451,65 +459,72 @@ resolve_force_surveys <- function(
   # its pip_id column. Without it, pip_id inputs are treated as unknown.
   master_has_pip_id <- !is.null(dt_master) && "pip_id" %in% names(dt_master)
 
-  master_pip_key <- if (master_has_pip_id) {
-    # Reduce the master to one row per (pip_id, survey_id). The master can
-    # retain multiple rows per survey (historical content_hash_dlw), so the
-    # same pip_id may legitimately repeat; dedup removes those. A pip_id that
-    # still maps to more than one DISTINCT survey_id is ambiguous and aborts.
-    pip_map <- collapse::funique(dt_master[, .(pip_id, survey_id)])
-    n_distinct <- collapse::fndistinct(pip_map$pip_id)
-    if (n_distinct != nrow(pip_map)) {
-      ambiguous <- pip_map[duplicated(pip_map$pip_id), pip_id][1L]
-      cli::cli_abort(
-        "pip_id '{ambiguous}' maps to multiple distinct survey_ids; cannot resolve force_surveys.",
-        class = "piperr"
-      )
-    }
-    # Name = uppercased pip_id, value = its survey_id (reverse-map).
-    stats::setNames(
-      pip_map$survey_id,
-      toupper(pip_map$pip_id)
-    )
-  } else {
-    character(0)
-  }
-
   survey_ids <- character(0)
   resolved_from_survey_id <- character(0)
   resolved_from_pip_id <- character(0)
   unknown <- character(0)
 
-  for (id in force_surveys) {
-    if (id %in% inv_ids) {
-      # Lookup-first: a direct survey_id match wins.
-      survey_ids <- c(survey_ids, id)
-      resolved_from_survey_id <- c(resolved_from_survey_id, id)
-    } else if (master_has_pip_id &&
-      toupper(id) %in% names(master_pip_key)) {
-      # pip_id reverse-map, case-insensitive (matches pip_id_map building).
-      # The survey_id for a pip_id is unique (one row per survey_id/pip_id).
-      svy <- master_pip_key[[toupper(id)]]
-      if (svy %in% inv_ids) {
-        survey_ids <- c(survey_ids, svy)
-        resolved_from_pip_id <- c(resolved_from_pip_id, id)
-      } else {
-        # Survey resolved via pip_id but outside module/latest filter (R9).
-        unknown <- c(unknown, id)
+  # Pass 1: direct survey_id membership (lookup-first). Only identifiers that
+  # FAIL this check (neither a survey_id member) can ever need pip_id
+  # resolution, so the pip_id reverse-map is built lazily over just those.
+  is_survey_id <- force_surveys %in% inv_ids
+  survey_ids <- force_surveys[is_survey_id]
+  resolved_from_survey_id <- survey_ids
+  pip_candidates <- force_surveys[!is_survey_id]
+
+  if (length(pip_candidates) > 0L) {
+    if (master_has_pip_id) {
+      # Build the reverse-map ONLY over the identifiers we actually need to
+      # resolve (avoids a full-master scan and avoids aborting on unrelated
+      # ambiguous pip_ids elsewhere in the master). Subset the master to the
+      # requested pip_ids first.
+      up_candidates <- toupper(pip_candidates)
+      pip_map <- collapse::funique(
+        dt_master[toupper(pip_id) %in% up_candidates, .(pip_id, survey_id)]
+      )
+      # A pip_id that maps to more than one DISTINCT survey_id is ambiguous:
+      # abort on the requested identifier rather than silently picking one.
+      if (anyDuplicated(pip_map$pip_id) > 0L) {
+        ambiguous <- pip_map[duplicated(pip_map$pip_id), pip_id][1L]
+        cli::cli_abort(
+          "pip_id '{ambiguous}' maps to multiple distinct survey_ids; cannot resolve force_surveys.",
+          class = "piperr"
+        )
+      }
+      master_pip_key <- stats::setNames(
+        pip_map$survey_id,
+        toupper(pip_map$pip_id)
+      )
+
+      for (id in pip_candidates) {
+        id_upper <- toupper(id)
+        if (id_upper %in% names(master_pip_key)) {
+          # pip_id reverse-map, case-insensitive (matches pip_id_map building).
+          svy <- master_pip_key[[id_upper]]
+          if (svy %in% inv_ids) {
+            survey_ids <- c(survey_ids, svy)
+            resolved_from_pip_id <- c(resolved_from_pip_id, id)
+          } else {
+            # Survey resolved via pip_id but outside module/latest filter (R9).
+            unknown <- c(unknown, id)
+          }
+        } else {
+          unknown <- c(unknown, id)
+        }
       }
     } else {
-      unknown <- c(unknown, id)
+      unknown <- c(unknown, pip_candidates)
     }
   }
 
   # Distinguish "your IDs are wrong" from "the master couldn't load".
-  if (verbose) {
-    if (!is.null(dt_master) && !master_has_pip_id && length(unknown) > 0L) {
+  if (verbose && length(pip_candidates) > 0L) {
+    if (!is.null(dt_master) && !master_has_pip_id) {
       cli::cli_alert_warning(
         "Master inventory lacks pip_id column; pip_id resolution unavailable. All non-survey_id identifiers treated as unknown."
       )
     }
-    if (is.null(dt_master) &&
-      length(setdiff(force_surveys, inv_svy_full$survey_id)) > 0L) {
+    if (is.null(dt_master)) {
       cli::cli_alert_warning(
         "Master inventory unavailable; pip_id resolution skipped. All non-survey_id identifiers treated as unknown."
       )
@@ -518,7 +533,7 @@ resolve_force_surveys <- function(
 
   list(
     survey_ids = unique(survey_ids),
-    resolved_from_survey_id = resolved_from_survey_id,
+    resolved_from_survey_id = unique(resolved_from_survey_id),
     resolved_from_pip_id = resolved_from_pip_id,
     unknown = unknown
   )

@@ -69,7 +69,7 @@ pd_process_data <- function(
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (force && !is.null(force_surveys)) {
     cli::cli_abort(
-      "force and force_surveys are mutually exclusive: force = TRUE switches stamp to timestamp versioning globally while force_surveys preserves content versioning. Specify only one.",
+      .force_exclusive_msg,
       class = "piperr"
     )
   }
