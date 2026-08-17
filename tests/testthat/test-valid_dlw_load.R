@@ -65,6 +65,16 @@ make_master_hash <- function(survey_ids, content_hash_dlw) {
   )
 }
 
+# Master-inventory fragment that also carries pip_id (and optionally aux hashes)
+# for force_surveys pip_id reverse-map tests.
+make_master_hash_pip <- function(survey_ids, content_hash_dlw, pip_ids) {
+  data.table::data.table(
+    survey_id = survey_ids,
+    content_hash_dlw = content_hash_dlw,
+    pip_id = pip_ids
+  )
+}
+
 # ---------------------------------------------------------------------------
 # inv_to_process: .joyn column must not be present in result
 # ---------------------------------------------------------------------------
@@ -1145,4 +1155,663 @@ test_that("valid_dlw_load aborts on missing aux_hashes values", {
     ),
     class = "valid_dlw_load_bad_aux_hashes"
   )
+})
+
+
+# ---------------------------------------------------------------------------
+# force_surveys: forced already-cleaned survey is retained in the candidate set
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load retains a forced survey that is already cleaned", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Already cleaned: same content_hash_dlw and no aux hash columns -> no
+  # normal candidate, but force_surveys must add it back.
+  master <- make_master_hash("COL_2020_GEIH", "h_1")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "COL_2020_GEIH",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+  expect_equal(nrow(result), 1L)
+})
+
+test_that("valid_dlw_load unions forced surveys with normal candidates and dedups", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # DLW-content-changed so it is ALSO a normal candidate (kept by
+  # inv_to_process). Forcing it again must not duplicate the row.
+  master <- make_master_hash("COL_2020_GEIH", "h_0")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "COL_2020_GEIH",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(anyDuplicated(result$survey_id), 0L)
+  expect_equal(nrow(result), 1L)
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: pip_id input reverse-maps to survey_id via the master
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load reverse-maps a pip_id to its survey_id", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Master carries a pip_id column; the pip reverse-maps to COL_2020_GEIH.
+  master <- make_master_hash_pip("COL_2020_GEIH", "h_1", "COL_INC_ALL")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "col_inc_all",  # case-insensitive pip_id
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+
+  log <- pipfun::log_get("pipdata_log")
+  inf <- Filter(
+    function(x) !is.null(x) && identical(x$info, "force_surveys_inf"),
+    log$logmeta
+  )
+  expect_length(inf, 1L)
+  expect_equal(inf[[1]]$n_forced, 1L)
+  expect_equal(inf[[1]]$n_from_pip_id, 1L)
+  expect_equal(inf[[1]]$n_from_survey_id, 0L)
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: unknown identifier warns, logs, and skips (no abort)
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load warns, logs, and skips an unknown force_surveys identifier", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # A normal candidate (DLW-content-changed) ensures the run does not abort,
+  # isolating the unknown-id behavior.
+  master <- make_master_hash("COL_2020_GEIH", "h_0")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "NOPE_9999_FOO",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  # Run proceeds; the unknown identifier is skipped (appears in no candidate).
+  expect_false(is.null(result))
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+
+  log <- pipfun::log_get("pipdata_log")
+  unknown <- Filter(
+    function(x) !is.null(x) && identical(x$info, "force_surveys_unknown_inf"),
+    log$logmeta
+  )
+  expect_length(unknown, 1L)
+  expect_equal(unknown[[1]]$unknown_identifiers, "NOPE_9999_FOO")
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: forced-only run (empty normal candidates) does not abort
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load does not abort on a forced-only run", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Already cleaned and no aux columns -> no DLW/aux candidate. Only the
+  # forced survey keeps the run alive (P2 ordering: forced_inv computed BEFORE
+  # the nothing-to-clean abort).
+  master <- make_master_hash("COL_2020_GEIH", "h_1")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "COL_2020_GEIH",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: forced survey that is also an aux candidate is deduplicated
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load dedups a forced survey that is also an aux candidate", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Survey already cleaned (same DLW hash) but WITH a changed aux hash -> it is
+  # an aux candidate via aux_hash_candidates + valid_aux_load. Forcing it too
+  # must not create a duplicate.
+  master <- data.table::data.table(
+    survey_id = "COL_2020_GEIH",
+    content_hash_dlw = "h_1",
+    aux_cpi_hash = "old_cpi_hash"
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) {
+      stats::setNames(
+        list(list(data.table::data.table(country_code = "COL", surveyid_year = 2020L))),
+        measure
+      )
+    },
+    .package = "pipdata"
+  )
+
+  result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "new_cpi_hash"),
+    force_surveys = "COL_2020_GEIH",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(anyDuplicated(result$survey_id), 0L)
+  expect_equal(nrow(result), 1L)
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: duplicate inputs are deduplicated (n_forced = 1)
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load deduplicates duplicate force_surveys inputs", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  master <- make_master_hash("COL_2020_GEIH", "h_1")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = c("COL_2020_GEIH", "COL_2020_GEIH"),
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(anyDuplicated(result$survey_id), 0L)
+
+  log <- pipfun::log_get("pipdata_log")
+  inf <- Filter(
+    function(x) !is.null(x) && identical(x$info, "force_surveys_inf"),
+    log$logmeta
+  )
+  expect_length(inf, 1L)
+  expect_equal(inf[[1]]$n_forced, 1L)
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: non-character input aborts with class piperr
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load aborts with piperr for non-character force_surveys", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      force_surveys = 42L,  # numeric, not character
+      force = FALSE,
+      verbose = FALSE
+    ),
+    class = "piperr"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: master lacks pip_id column -> pip_id treated as unknown
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load warns when the master lacks a pip_id column", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Master WITHOUT a pip_id column (legacy fragment). A normal candidate keeps
+  # the run alive so the pip_id-only force input is isolated.
+  master <- make_master_hash("COL_2020_GEIH", "h_0")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  expect_message(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      aux_hashes = c(cpi = "hash_cpi"),
+      force_surveys = "SOME_PIP",
+      force = FALSE,
+      verbose = TRUE
+    ),
+    "lacks pip_id column"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: master unavailable + pip_id input -> pip_id resolution skipped
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load warns when the master is unavailable for pip_id resolution", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # Master load fails; a normal candidate keeps the run alive. The pip_id-like
+  # force input cannot be resolved because there is no master.
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) stop("no master"),
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  expect_message(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      aux_hashes = c(cpi = "hash_cpi"),
+      force_surveys = "SOME_PIP",
+      force = FALSE,
+      verbose = TRUE
+    ),
+    "Master inventory unavailable; pip_id resolution skipped"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: direct-call guard -- force=TRUE + force_surveys aborts
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load direct-call guard aborts when force and force_surveys are both set", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      force = TRUE,
+      force_surveys = "COL_2020_GEIH",
+      verbose = FALSE
+    ),
+    class = "piperr"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: load_pip_master_inventory is called exactly once (C5)
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load loads the master exactly once when forcing a pip_id", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  master <- make_master_hash_pip("COL_2020_GEIH", "h_1", "COL_INC_ALL")
+
+  load_count <- 0L
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) {
+      load_count <<- load_count + 1L
+      master
+    },
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "COL_INC_ALL",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(
+    load_count,
+    1L,
+    info = "the master must be loaded exactly once and reused for pip_id resolution"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: output has no duplicates and no .joyn columns
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load force_surveys output has no duplicates and no .joyn column", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  master <- make_master_hash_pip("COL_2020_GEIH", "h_1", "COL_INC_ALL")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = c("COL_2020_GEIH", "COL_INC_ALL"),
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_false(".joyn" %in% names(result))
+  expect_equal(anyDuplicated(result$survey_id), 0L)
+})
+
+# ---------------------------------------------------------------------------
+# P2.1 regression: ambiguous pip_id -> survey_id (multiple distinct survey_ids)
+# aborts with class piperr instead of silently picking the first
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load aborts when a pip_id maps to multiple distinct survey_ids", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # One pip_id assigned to two DISTINCT survey_ids in the master -> ambiguous.
+  master <- data.table::data.table(
+    survey_id = c("COL_2020_GEIH", "BRA_2019_PNADC"),
+    content_hash_dlw = c("h_1", "h_9"),
+    pip_id = c("COL_INC_ALL", "COL_INC_ALL")
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  expect_error(
+    valid_dlw_load(
+      inv = inv,
+      aux_measures = "cpi",
+      aux_hashes = c(cpi = "hash_cpi"),
+      force_surveys = "COL_INC_ALL",
+      force = FALSE,
+      verbose = FALSE
+    ),
+    class = "piperr"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: pip_id resolving to a survey outside the module/latest filter
+# (R9) is excluded and logged as unknown
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load logs a pip_id-resolved survey outside the filter as unknown", {
+  # inv only contains COL (module/latest-filtered inventory). The force_surveys
+  # pip_id maps to BRA, which is NOT in inv_svy_full -> the R9 exclusion route.
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # BRA is in the master (with a pip_id) but absent from inv. COL is a normal
+  # candidate (content_hash differs: inv h_1 vs master h_0) so the run stays
+  # alive while the out-of-filter forced pip_id is excluded.
+  master <- data.table::data.table(
+    survey_id = c("BRA_2019_PNADC", "COL_2020_GEIH"),
+    content_hash_dlw = c("h_9", "h_0"),
+    pip_id = c("BRA_INC_ALL", "COL_INC_ALL")
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+  result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "BRA_INC_ALL",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  # COL is the normal candidate; the forced BRA is excluded from the set.
+  expect_setequal(result$survey_id, "COL_2020_GEIH")
+
+  log <- pipfun::log_get("pipdata_log")
+  inf <- Filter(
+    function(x) !is.null(x) && identical(x$info, "force_surveys_unknown_inf"),
+    log$logmeta
+  )
+  expect_length(inf, 1L)
+  expect_equal(inf[[1]]$unknown_identifiers, "BRA_INC_ALL")
+})
+
+# ---------------------------------------------------------------------------
+# force_surveys: survey_id membership wins over pip_id reverse-map (lookup-first)
+# ---------------------------------------------------------------------------
+
+test_that("valid_dlw_load resolves an identifier via survey_id before pip_id", {
+  inv <- make_dlw_inv(
+    "COL_2020_GEIH",
+    country_codes = "COL",
+    surveyid_years = 2020L,
+    survey_acronyms = "GEIH"
+  )
+
+  # The pip_id column contains a value that literally equals the survey_id
+  # "COL_2020_GEIH". Because it is a survey_id, lookup-first resolves it as a
+  # survey_id, NOT as a pip_id (so n_from_pip_id must be 0).
+  master <- make_master_hash_pip("COL_2020_GEIH", "h_1", "COL_2020_GEIH")
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    valid_aux_load = function(measure, compare, verbose = TRUE) NULL,
+    .package = "pipdata"
+  )
+
+  pipfun::log_init("pipdata_log", overwrite = TRUE)
+
+  result <- valid_dlw_load(
+    inv = inv,
+    aux_measures = "cpi",
+    aux_hashes = c(cpi = "hash_cpi"),
+    force_surveys = "COL_2020_GEIH",
+    force = FALSE,
+    verbose = FALSE
+  )
+
+  expect_false(is.null(result))
+  expect_equal(result$survey_id, "COL_2020_GEIH")
+
+  log <- pipfun::log_get("pipdata_log")
+  inf <- Filter(
+    function(x) !is.null(x) && identical(x$info, "force_surveys_inf"),
+    log$logmeta
+  )
+  expect_length(inf, 1L)
+  expect_equal(inf[[1]]$n_from_survey_id, 1L)
+  expect_equal(inf[[1]]$n_from_pip_id, 0L)
 })
