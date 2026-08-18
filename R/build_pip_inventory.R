@@ -414,6 +414,22 @@ build_pip_inventory <- function(
     }
   }
 
+  # Initialise deflation columns so the master schema is always consistent.
+  # These are populated by pd_deflate_pipeline(); initialising here (and on
+  # legacy/retained rows) guarantees the columns exist for every inventory.
+  if (!"deflated" %in% names(run_inv)) {
+    run_inv[, deflated := NA]
+  }
+  if (!"content_hash_deflated" %in% names(run_inv)) {
+    run_inv[, content_hash_deflated := NA_character_]
+  }
+  for (col in c("aux_cpi_hash_at_deflation", "aux_ppp_hash_at_deflation",
+                "aux_pop_hash_at_deflation")) {
+    if (!col %in% names(run_inv)) {
+      run_inv[, (col) := NA_character_]
+    }
+  }
+
   pfw <- pipload::load_aux_data("pfw", verbose = verbose)
 
   pfw_release <- pfw |>
@@ -593,8 +609,18 @@ build_pip_inventory <- function(
   )
   release_cols <- c("first_release_version_id", "latest_release_version_id")
   spec_cols    <- c("version_id_recode_spec")
+  deflation_cols <- c(
+    "deflated",
+    "content_hash_deflated",
+    "aux_cpi_hash_at_deflation",
+    "aux_ppp_hash_at_deflation",
+    "aux_pop_hash_at_deflation"
+  )
 
-  ordered_cols <- c(id_cols, data_cols, meta_cols, dlw_cols, release_cols, spec_cols)
+  ordered_cols <- c(
+    id_cols, data_cols, meta_cols, dlw_cols,
+    release_cols, spec_cols, deflation_cols
+  )
   # Only reorder columns that actually exist (fill = TRUE may add extras)
   present_ordered <- intersect(ordered_cols, names(run_inv))
   remainder <- setdiff(names(run_inv), present_ordered)

@@ -25,6 +25,13 @@ pipfun::setup_working_release(
   verbose = FALSE
 )
 
+# Register the dedicated "pip_deflated" stamp alias so deflated outputs from
+# pd_deflate_pipeline() are versioned separately from the cleaned "pip" data.
+stamp::st_init(
+  root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_deflated"),
+  alias = "pip_deflated"
+)
+
 # First run pipaux::update_aux_data and pipdata::pipdata_dlw_process,
 # then continue with the rest of the script.
 
@@ -45,6 +52,9 @@ old_pip_release <- pipload::load_pip_release_inventory(verbose = FALSE)
 
 # new_pip_inv <- pd_process_data(inv = inv, force = TRUE, verbose = FALSE)
 new_pip_inv <- pd_process_data(force = TRUE, verbose = TRUE)
+
+# ----- Deflate surveys -----
+new_pip_inv <- pd_deflate_pipeline(force = TRUE, verbose = TRUE)
 
 # Compare inventories
 waldo::compare(old_pip_inv, new_pip_inv)

@@ -21,9 +21,11 @@
 #' @details
 #' The report contains:
 #' \itemize{
-#'   \item Run metadata (time window, total entries, success/fail counts).
+#'   \item Running metadata (time window, total entries, success/fail counts).
 #'   \item Processing summary: total, cleaned, and failed counts
 #'     (from `process_summary_inf` log entry).
+#'   \item Deflation summary: candidates, successes, failures, and failing
+#'     surveys (from `deflate_summary_inf` log entry).
 #'   \item Auxiliary file changes: which measures changed and how many
 #'     surveys were affected (from `aux_changes_inf` log entry).
 #'   \item Summary table by error / info type.
@@ -80,6 +82,7 @@ log_report <- function(
     list(
       build_header(dt, title),
       build_processing_summary(dt),
+      build_deflation_summary(dt),
       build_aux_changes(dt),
       build_type_summary(dt),
       build_country_table(dt),
@@ -381,6 +384,53 @@ build_processing_summary <- function(dt) {
     sprintf("| Successfully cleaned | %d |", ps$n_success),
     sprintf("| Failed | %d |", ps$n_failed)
   )
+}
+
+
+#' Build the deflation summary section
+#'
+#' Renders counts from the `deflate_summary_inf` log entry written by
+#' [pd_deflate_pipeline()]. Returns an empty character vector when the entry
+#' is absent.
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#'
+#' @return Character vector of markdown lines.
+#' @keywords internal
+build_deflation_summary <- function(dt) {
+  ds_idx <- which(vapply(
+    dt$logmeta,
+    \(x) identical(x$info, "deflate_summary_inf"),
+    logical(1)
+  ))
+
+  if (length(ds_idx) == 0L) {
+    return(character(0))
+  }
+
+  ds <- dt$logmeta[[ds_idx[1L]]]
+
+  lines <- c(
+    "## Deflation Summary",
+    "",
+    "| Metric | Count |",
+    "|--------|------:|",
+    sprintf("| Survey candidates | %d |", ds$n_total),
+    sprintf("| Successfully deflated | %d |", ds$n_success),
+    sprintf("| Failed | %d |", ds$n_failed)
+  )
+
+  if (!is.null(ds$surveys_failed) && length(ds$surveys_failed) > 0L) {
+    lines <- c(
+      lines,
+      "",
+      "**Surveys that failed deflation:**",
+      "",
+      vapply(ds$surveys_failed, \(s) sprintf("- `%s`", s), character(1))
+    )
+  }
+
+  lines
 }
 
 
