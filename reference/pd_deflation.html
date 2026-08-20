@@ -118,9 +118,9 @@ Returns <code>NA</code> when deflation fails (error logged via <code><a href="lo
 from stamp via the master inventory.</p></li>
 <li><p><strong>Mode B</strong> (<code>pip_id</code>): pass a survey identifier and optional stamp
 version. The survey and metadata are both loaded automatically.</p></li>
-</ul><p>To deflate many surveys in a batch, use the future <code>pd_deflate_pipeline()</code>
-wrapper (tracked in the roadmap as <code>deflate-pipeline-wrapper</code>), which
-calls <code>pd_deflation()</code> for each survey in an inventory.</p>
+</ul><p>To deflate many surveys in a batch, use the exported
+<code><a href="pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> wrapper, which iterates over the master inventory
+and calls <code>pd_deflation()</code> for each survey.</p>
     </div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>

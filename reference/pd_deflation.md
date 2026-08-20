@@ -84,10 +84,10 @@ The input survey `data.table` augmented with `welfare_lcu` and
 - **Mode B** (`pip_id`): pass a survey identifier and optional stamp
   version. The survey and metadata are both loaded automatically.
 
-To deflate many surveys in a batch, use the future
-`pd_deflate_pipeline()` wrapper (tracked in the roadmap as
-`deflate-pipeline-wrapper`), which calls `pd_deflation()` for each
-survey in an inventory.
+To deflate many surveys in a batch, use the exported
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+wrapper, which iterates over the master inventory and calls
+`pd_deflation()` for each survey.
 
 ## Note
 

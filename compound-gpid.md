@@ -26,9 +26,10 @@ canonical three-wrapper architecture. The subnational deflation fix
 ([`build_pip_inventory()`](https://pip-technical-team.github.io/pipdata/reference/build_pip_inventory.md)
 replacing `update_pip_inventory()`/`format_vrs()`) and the
 pipeline-wrapper documentation vignettes. Remaining open items in this
-milestone: `pd_deflate_pipeline()` batch orchestrator
-(deflate-pipeline-wrapper), making `*_data_level` attribute semantics
-explicit (explicit-data-level-semantics), auditing
+milestone:
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+batch orchestrator (deflate-pipeline-wrapper), making `*_data_level`
+attribute semantics explicit (explicit-data-level-semantics), auditing
 [`copy_dlw_metadata()`](https://pip-technical-team.github.io/pipdata/reference/copy_dlw_metadata.md)
 as a standalone admin utility (audit-copy-dlw-meta), auditing
 `\dontrun{}` examples (audit-dontrun-examples), a run-manifest logging

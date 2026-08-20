@@ -69,8 +69,9 @@
     
     
 <p>This article is a deep dive into the third pipeline wrapper,
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>, and the two functions that consume its
-output: <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code> and
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>, and the functions that consume its
+output: <code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> (the second, batch-deflation
+stage), <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code>, and
 <code><a href="../reference/log_report.html">log_report()</a></code>. Code in this article is illustrative and does
 not execute when the article is built — running it requires a configured
 working release and write access to PIP storage.</p>
@@ -80,8 +81,10 @@ Orchestration Overview</a>. For the internal mechanics of DLW
 acquisition and validation (the step before this one), see <a href="Validating-Data.html">Validating Data</a>.</p>
 <p><strong>Important</strong>: <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> cleans
 surveys and attaches metadata — it does <strong>not</strong> deflate
-welfare. Deflation is a separate, currently manual step; see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
-below.</p>
+welfare. Deflation is a separate pipeline stage: use
+<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> (below) to batch-deflate the whole
+inventory, or <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> (see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
+below) for a single survey.</p>
 <div class="section level2">
 <h2 id="pd_process_data-clean-surveys-and-build-metadata">
 <code>pd_process_data()</code>: clean surveys and build
@@ -241,10 +244,66 @@ have the survey’s <code>pip_id</code> in hand:</p>
 <span>  surveyid_year <span class="op">=</span> <span class="fl">2022</span>,</span>
 <span>  module        <span class="op">=</span> <span class="st">"ALL"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>To deflate many surveys in a batch, note that there is currently no
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>-style wrapper that loops
-<code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> over an inventory — this is tracked on the
-roadmap as the future <code>pd_deflate_pipeline()</code> wrapper.</p>
+<p>To deflate many surveys in a batch, use
+<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>, the second pipeline stage (see
+below), which loops <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> over the master
+inventory.</p>
+</div>
+<div class="section level2">
+<h2 id="pd_deflate_pipeline-batch-deflate-the-whole-inventory">
+<code>pd_deflate_pipeline()</code>: batch-deflate the whole
+inventory<a class="anchor" aria-label="anchor" href="#pd_deflate_pipeline-batch-deflate-the-whole-inventory"></a>
+</h2>
+<p><code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> is the batch orchestrator that
+iterates over the PIP master inventory of cleaned surveys, deflates each
+via <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> (simple Mode B, <code>pip_id</code>
+only), detects and skips failures (including <code>NA</code> returns),
+saves every deflated survey to the dedicated <code>"pip_deflated"</code>
+stamp alias, updates the master inventory with deflation columns, and
+logs a <code>deflate_summary_inf</code> summary entry:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline</a></span><span class="op">(</span></span>
+<span>  inv     <span class="op">=</span> <span class="cn">NULL</span>, <span class="co"># NULL loads the master inventory internally</span></span>
+<span>  force   <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<ul>
+<li>
+<code>inv</code> — the master inventory (as produced by
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> → <code><a href="../reference/build_pip_inventory.html">build_pip_inventory()</a></code>).
+When <code>NULL</code> (the default), it is loaded internally via
+<code><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_data.html" class="external-link">pipload::load_pip_master_inventory()</a></code>.</li>
+<li>
+<code>force</code> — when <code>TRUE</code>, every row is
+re-deflated regardless of the <code>deflated</code> column. When
+<code>FALSE</code> (the default), only surveys whose
+<code>deflated</code> is <code>NA</code> or <code>FALSE</code> are
+deflated.</li>
+<li>
+<code>verbose</code> — controls verbosity of downstream
+<code>pipload</code> I/O calls.</li>
+</ul>
+<p><strong>Relationship to <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code></strong>:
+deflation is an independent second stage. <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>
+cleans surveys and creates metadata; it does <strong>not</strong> call
+<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>. Run the pipeline wrapper explicitly
+after cleaning (e.g. in <code>Pipdata_script.R</code>). The
+<code>"pip_deflated"</code> stamp alias must be registered before the
+first run (e.g. via <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> or an explicit
+<code><a href="https://randrescastaneda.github.io/stamp/reference/st_init.html" class="external-link">stamp::st_init()</a></code> pointing at
+<code>pip_repository/pip_deflated/</code>).</p>
+<p>On success, the returned inventory has <code>deflated = TRUE</code>,
+<code>content_hash_deflated</code> (the hash of the saved
+<code>"pip_deflated"</code> artifact), and the
+<code>aux_cpi_hash_at_deflation</code>,
+<code>aux_ppp_hash_at_deflation</code>,
+<code>aux_pop_hash_at_deflation</code> snapshots for each deflated
+survey. The <code>"pipdata_log"</code> receives a
+<code>deflate_summary_inf</code> entry with <code>n_total</code>,
+<code>n_success</code>, <code>n_failed</code>,
+<code>surveys_success</code>, and <code>surveys_failed</code>, which
+<code><a href="../reference/log_report.html">log_report()</a></code> renders as a <em>Deflation Summary</em>
+section.</p>
 </div>
 <div class="section level2">
 <h2 id="log_report-summarize-the-pipdata_log">
@@ -253,7 +312,7 @@ roadmap as the future <code>pd_deflate_pipeline()</code> wrapper.</p>
 </h2>
 <p><code><a href="../reference/log_report.html">log_report()</a></code> parses a <code>piplog</code> object and
 writes (or returns) a structured markdown report:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># log defaults to pipfun::log_filter(name = "pipdata_log") when not supplied</span></span>
 <span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/log_report.html">log_report</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -264,17 +323,20 @@ writes (or returns) a structured markdown report:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The report includes, when the corresponding logmeta entry is present
 in the log: run metadata (time window, totals), the processing summary
-(<code>process_summary_inf</code>), auxiliary file changes
+(<code>process_summary_inf</code>), the deflation summary
+(<code>deflate_summary_inf</code>), auxiliary file changes
 (<code>aux_changes_inf</code>), a summary table by error/info type, a
 country-level breakdown of errors, inventory verification counts
 (<code>inv_update_inf</code>), skipped-survey details
 (<code>skipped_svys_data</code>/<code>skipped_svys_metadata</code>), and
 the list of surveys that failed processing (<code>null_svys_inf</code>).
 Sections are silently omitted when their logmeta entry is absent.</p>
-<p><strong>Scope</strong>: <code><a href="../reference/log_report.html">log_report()</a></code> only parses entries
+<p><strong>Scope</strong>: <code><a href="../reference/log_report.html">log_report()</a></code> parses entries
 written under the <code>"pipdata_log"</code> name by
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>/<code><a href="../reference/process_data.html">process_data()</a></code> — it does
-<strong>not</strong> consume any log produced by
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>/<code><a href="../reference/process_data.html">process_data()</a></code> and by
+<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>/<code>deflate_one()</code> (the
+<code>deflate_summary_inf</code> summary and per-survey deflation
+errors). It does <strong>not</strong> consume any log produced by
 <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> (DLW acquisition/validation uses its
 own <code>log</code>/<code>save_log</code> arguments and does not
 currently feed into <code><a href="../reference/log_report.html">log_report()</a></code>; see <a href="Validating-Data.html#logging-scope">Validating Data</a>). Keep

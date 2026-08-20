@@ -93,9 +93,11 @@ If <code>path</code> is non-<code>NULL</code>, the file is written as a side-eff
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The report contains:</p><ul><li><p>Run metadata (time window, total entries, success/fail counts).</p></li>
+    <p>The report contains:</p><ul><li><p>Running metadata (time window, total entries, success/fail counts).</p></li>
 <li><p>Processing summary: total, cleaned, and failed counts
 (from <code>process_summary_inf</code> log entry).</p></li>
+<li><p>Deflation summary: candidates, successes, failures, and failing
+surveys (from <code>deflate_summary_inf</code> log entry).</p></li>
 <li><p>Auxiliary file changes: which measures changed and how many
 surveys were affected (from <code>aux_changes_inf</code> log entry).</p></li>
 <li><p>Summary table by error / info type.</p></li>

@@ -146,6 +146,9 @@ Summarizes the `"pipdata_log"` written during
 - [`pd_cpfw_merge()`](https://pip-technical-team.github.io/pipdata/reference/pd_cpfw_merge.md)
   : Merge country/survey PFW info with dataliweb survey data
 
+- [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+  : Batch-deflate every survey in the PIP master inventory
+
 - [`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md)
   : Clean data from datalibweb structure (High level)
 

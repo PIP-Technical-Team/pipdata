@@ -2,8 +2,10 @@
 
 This article is a deep dive into the third pipeline wrapper,
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md),
-and the two functions that consume its output:
-[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)/[`deflation()`](https://pip-technical-team.github.io/pipdata/reference/deflation.md)
+and the functions that consume its output:
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+(the second, batch-deflation stage),
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)/[`deflation()`](https://pip-technical-team.github.io/pipdata/reference/deflation.md),
 and
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md).
 Code in this article is illustrative and does not execute when the
@@ -20,8 +22,12 @@ Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md).
 **Important**:
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
 cleans surveys and attaches metadata — it does **not** deflate welfare.
-Deflation is a separate, currently manual step; see [Deflation is a
-separate step](#deflation-is-a-separate-step) below.
+Deflation is a separate pipeline stage: use
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+(below) to batch-deflate the whole inventory, or
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
+(see [Deflation is a separate step](#deflation-is-a-separate-step)
+below) for a single survey.
 
 ## `pd_process_data()`: clean surveys and build metadata
 
@@ -182,12 +188,66 @@ bol_deflated <- pipload::load_pip_deflated_data(
 )
 ```
 
-To deflate many surveys in a batch, note that there is currently no
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)-style
-wrapper that loops
+To deflate many surveys in a batch, use
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md),
+the second pipeline stage (see below), which loops
 [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
-over an inventory — this is tracked on the roadmap as the future
-`pd_deflate_pipeline()` wrapper.
+over the master inventory.
+
+## `pd_deflate_pipeline()`: batch-deflate the whole inventory
+
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+is the batch orchestrator that iterates over the PIP master inventory of
+cleaned surveys, deflates each via
+[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
+(simple Mode B, `pip_id` only), detects and skips failures (including
+`NA` returns), saves every deflated survey to the dedicated
+`"pip_deflated"` stamp alias, updates the master inventory with
+deflation columns, and logs a `deflate_summary_inf` summary entry:
+
+``` r
+
+new_pip_inv <- pd_deflate_pipeline(
+  inv     = NULL, # NULL loads the master inventory internally
+  force   = FALSE,
+  verbose = TRUE
+)
+```
+
+- `inv` — the master inventory (as produced by
+  [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+  →
+  [`build_pip_inventory()`](https://pip-technical-team.github.io/pipdata/reference/build_pip_inventory.md)).
+  When `NULL` (the default), it is loaded internally via
+  [`pipload::load_pip_master_inventory()`](https://pip-technical-team.github.io/pipload/reference/load_pip_data.html).
+- `force` — when `TRUE`, every row is re-deflated regardless of the
+  `deflated` column. When `FALSE` (the default), only surveys whose
+  `deflated` is `NA` or `FALSE` are deflated.
+- `verbose` — controls verbosity of downstream `pipload` I/O calls.
+
+**Relationship to
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)**:
+deflation is an independent second stage.
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+cleans surveys and creates metadata; it does **not** call
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md).
+Run the pipeline wrapper explicitly after cleaning (e.g. in
+`Pipdata_script.R`). The `"pip_deflated"` stamp alias must be registered
+before the first run (e.g. via
+[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
+or an explicit
+[`stamp::st_init()`](https://randrescastaneda.github.io/stamp/reference/st_init.html)
+pointing at `pip_repository/pip_deflated/`).
+
+On success, the returned inventory has `deflated = TRUE`,
+`content_hash_deflated` (the hash of the saved `"pip_deflated"`
+artifact), and the `aux_cpi_hash_at_deflation`,
+`aux_ppp_hash_at_deflation`, `aux_pop_hash_at_deflation` snapshots for
+each deflated survey. The `"pipdata_log"` receives a
+`deflate_summary_inf` entry with `n_total`, `n_success`, `n_failed`,
+`surveys_success`, and `surveys_failed`, which
+[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
+renders as a *Deflation Summary* section.
 
 ## `log_report()`: summarize the `"pipdata_log"`
 
@@ -209,18 +269,22 @@ log_report(
 
 The report includes, when the corresponding logmeta entry is present in
 the log: run metadata (time window, totals), the processing summary
-(`process_summary_inf`), auxiliary file changes (`aux_changes_inf`), a
-summary table by error/info type, a country-level breakdown of errors,
-inventory verification counts (`inv_update_inf`), skipped-survey details
+(`process_summary_inf`), the deflation summary (`deflate_summary_inf`),
+auxiliary file changes (`aux_changes_inf`), a summary table by
+error/info type, a country-level breakdown of errors, inventory
+verification counts (`inv_update_inf`), skipped-survey details
 (`skipped_svys_data`/`skipped_svys_metadata`), and the list of surveys
 that failed processing (`null_svys_inf`). Sections are silently omitted
 when their logmeta entry is absent.
 
 **Scope**:
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-only parses entries written under the `"pipdata_log"` name by
+parses entries written under the `"pipdata_log"` name by
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)/[`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md)
-— it does **not** consume any log produced by
+and by
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)/`deflate_one()`
+(the `deflate_summary_inf` summary and per-survey deflation errors). It
+does **not** consume any log produced by
 [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
 (DLW acquisition/validation uses its own `log`/`save_log` arguments and
 does not currently feed into

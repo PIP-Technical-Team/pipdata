@@ -48,10 +48,13 @@ Invisibly, the report as a character vector (one element per line). If
 
 The report contains:
 
-- Run metadata (time window, total entries, success/fail counts).
+- Running metadata (time window, total entries, success/fail counts).
 
 - Processing summary: total, cleaned, and failed counts (from
   `process_summary_inf` log entry).
+
+- Deflation summary: candidates, successes, failures, and failing
+  surveys (from `deflate_summary_inf` log entry).
 
 - Auxiliary file changes: which measures changed and how many surveys
   were affected (from `aux_changes_inf` log entry).

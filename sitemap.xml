@@ -29,6 +29,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/aux_hash_candidates.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_aux_changes.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_country_table.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_deflation_summary.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_header.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_inventory_additions.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_null_surveys.html</loc></url>
@@ -89,6 +90,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/parse_log_meta.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_cpfw_merge.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_deflation.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_process_data.html</loc></url>
