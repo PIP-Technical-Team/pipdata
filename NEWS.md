@@ -1,5 +1,23 @@
 # pipdata (development version)
 
+# pipdata 0.0.0.9018
+
+## New features
+
+* Add `pd_deflate_pipeline()`: a batch orchestrator that iterates over the
+  master inventory, deflates each survey via `pd_deflation()`, saves results
+  to the `"pip_deflated"` stamp alias, updates the master inventory with
+  deflation provenance columns (`deflated`, `content_hash_deflated`,
+  `aux_*_hash_at_deflation`), and logs a structured summary. Supports
+  `force = TRUE` to re-deflate already processed surveys.
+
+* Add `force_surveys` parameter to `pd_process_data()`: enables surgical
+  re-processing of specific surveys by `survey_id` or `pip_id`, without
+  the global stamp versioning side effect of `force = TRUE`. Mutually
+  exclusive with `force`.
+
+## Refactoring
+
 * Introduce `dlw_validation_engine()`: a single data-driven validation engine
   that replaces the 7 near-identical per-module DLW validation functions
   (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validation_bin`,
@@ -12,7 +30,11 @@
   `tests/testthat/fixtures/`); `assertion.id`/`error_df` remain
   non-deterministic per data.validator.
 
-* Remove `lubridate` dependency 
+## Maintenance
+
+* Remove `lubridate` dependency.
+
+* Fix pkgdown CI configuration and article references.
 
 # pipdata 0.0.0.9015
 
