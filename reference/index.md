@@ -103,6 +103,9 @@ Summarizes the `"pipdata_log"` written during
 - [`dlw_gmd_unvalidated()`](https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_unvalidated.md)
   : Get un-validated datasets list
 
+- [`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+  : DLW Validation Engine
+
 - [`export_recode_spec_yaml()`](https://pip-technical-team.github.io/pipdata/reference/export_recode_spec_yaml.md)
   : Export recode spec from stamp to YAML
 

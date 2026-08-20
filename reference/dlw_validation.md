@@ -42,6 +42,40 @@ A data.frame containing validation results.
 
 An empty data.frame with minimal checks applied.
 
+## Details
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "gpwg"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "group"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "bin"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "hist"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "all"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "aspire"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "?"` instead.
+
+Deprecated: use
+[`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
+with `module = "skip"` instead.
+
 ## Functions
 
 - `dlw_validation_gpwg()`: Validate GPWG data

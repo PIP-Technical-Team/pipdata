@@ -58,6 +58,9 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_new.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_unvalidated.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_validation.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_validation_spec.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_validation_spec_reset.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/dlw_var_check.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/export_recode_spec_yaml.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/filter_aux_data.html</loc></url>
@@ -79,6 +82,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/inv_dlw_load.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/inv_to_process.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/list_recode_spec_versions.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/load_package_validation_spec.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/log_failure.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/log_report.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/num_vars_to_attr.html</loc></url>
@@ -113,6 +117,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/valid_aux_load.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/validate_recode_spec.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/validate_validation_spec.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/vars_to_attr.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/vars_to_list.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/wbpip_clean.html</loc></url>

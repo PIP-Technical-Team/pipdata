@@ -73,8 +73,6 @@ and confirming the availability of a variable within the dataset.</p>
 <span></span>
 <span><span class="fu">is_var_startwith_avail</span><span class="op">(</span><span class="va">val</span>, <span class="va">col_name</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">is_var_endwith_avail</span><span class="op">(</span><span class="va">val</span>, <span class="va">col_name</span><span class="op">)</span></span>
-<span></span>
 <span><span class="fu">is_valuebtwn0and110</span><span class="op">(</span><span class="va">val</span>, <span class="va">col_name</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -105,7 +103,6 @@ and confirming the availability of a variable within the dataset.</p>
 <li><p><code>is_greaterequale0()</code>: Check a numeric variable is greater than or equal to 0</p></li>
 <li><p><code>is_var_avail()</code>: Check a variable is available in a dataset with specified variable name</p></li>
 <li><p><code>is_var_startwith_avail()</code>: Check a variable is available in a dataset with variable name starting with a specified text</p></li>
-<li><p><code>is_var_endwith_avail()</code>: Check a variable is available in a dataset with variable name end with a specified text</p></li>
 <li><p><code>is_valuebtwn0and110()</code>: Check age is available in a dataset with value between 0 and 110</p></li>
 </ul></div>
 
@@ -155,12 +152,6 @@ and confirming the availability of a variable within the dataset.</p>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">is_var_startwith_avail</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  val <span class="op">=</span> <span class="va">data</span>,</span></span>
-<span class="r-in"><span>  col_name <span class="op">=</span> <span class="va">variable_name</span>,</span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="fu">is_var_endwith_avail</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  val <span class="op">=</span> <span class="va">data</span>,</span></span>
 <span class="r-in"><span>  col_name <span class="op">=</span> <span class="va">variable_name</span>,</span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>

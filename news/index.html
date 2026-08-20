@@ -41,7 +41,8 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="pipdata-development-version">pipdata (development version)<a class="anchor" aria-label="anchor" href="#pipdata-development-version"></a></h2>
-<ul><li>Remove <code>lubridate</code> dependency</li>
+<ul><li><p>Introduce <code><a href="../reference/dlw_validation_engine.html">dlw_validation_engine()</a></code>: a single data-driven validation engine that replaces the 7 near-identical per-module DLW validation functions (<code>dlw_validation_gpwg</code>, <code>dlw_validation_group</code>, <code>dlw_validation_bin</code>, <code>dlw_validation_hist</code>, <code>dlw_validation_all</code>, <code>dlw_validation_aspire</code>, <code>dlw_validation_l</code>) and <code>dlw_validation_skip</code>. Engine behavior is driven by <code>inst/extdata/validation_spec.yml</code> (corrected selection semantics, per-check severity, hhid/pid gating, skip <code>error_stop</code>). The legacy functions remain as deprecated wrappers calling the engine. Report output matches the legacy functions on the deterministic subset (golden fixture-tested via <code>tests/testthat/fixtures/</code>); <code>assertion.id</code>/<code>error_df</code> remain non-deterministic per data.validator.</p></li>
+<li><p>Remove <code>lubridate</code> dependency</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.0.9015" id="pipdata-0009015">pipdata 0.0.0.9015<a class="anchor" aria-label="anchor" href="#pipdata-0009015"></a></h2>
