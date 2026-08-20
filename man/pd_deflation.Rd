@@ -64,9 +64,9 @@ from stamp via the master inventory.
 version. The survey and metadata are both loaded automatically.
 }
 
-To deflate many surveys in a batch, use the future \code{pd_deflate_pipeline()}
-wrapper (tracked in the roadmap as \code{deflate-pipeline-wrapper}), which
-calls \code{pd_deflation()} for each survey in an inventory.
+To deflate many surveys in a batch, use the exported
+\code{pd_deflate_pipeline()} wrapper, which iterates over the master inventory
+and calls \code{pd_deflation()} for each survey.
 }
 \note{
 \code{pd_deflation()} is a single-survey deflation helper. When

@@ -57,6 +57,14 @@ pipdata_dlw_process <- function(
     verbose = FALSE
   )
 
+  # Register the dedicated "pip_deflated" stamp alias so deflated outputs
+  # from pd_deflate_pipeline() are versioned separately from the cleaned
+  # "pip" artifacts (same root pattern as the "piplog" alias).
+  stamp::st_init(
+    root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_deflated"),
+    alias = "pip_deflated"
+  )
+
   # Guard: assert a working release is configured. Downstream delegates
 
   # (pipdata_get_gmd, pipdata_validate_gmd, dlw_gmd_new, dlw_gmd_list) rely

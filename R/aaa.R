@@ -84,7 +84,8 @@ pd_env_append <- function(key, new_rows) {
   "null_svys_inf",
   "skipped_svys_data",
   "skipped_svys_metadata",
-  "release_write_err"
+  "release_write_err",
+  "deflate_summary_inf"
 )
 
 # Suppress R CMD check notes for unquoted data.table column names and other
@@ -114,6 +115,12 @@ utils::globalVariables(c(
   "created_at_metadata",
   "data_available",
   "data_status",
+  "aux_cpi_hash_at_deflation",
+  "aux_pop_hash_at_deflation",
+  "aux_ppp_hash_at_deflation",
+  "content_hash_deflated",
+  "i.content_hash_deflated",
+  "deflated",
   "description",
   "first_release_version_id",
   "latest_release_version_id",

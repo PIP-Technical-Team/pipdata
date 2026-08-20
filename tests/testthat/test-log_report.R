@@ -132,6 +132,59 @@ test_that("build_processing_summary returns empty when entry absent", {
   expect_length(build_processing_summary(parse_log_meta(log)), 0L)
 })
 
+# ── build_deflation_summary ─────────────────────────────────────────────────
+
+test_that("build_deflation_summary renders counts and failed surveys", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "Deflation pipeline complete.",
+      list(
+        info = "deflate_summary_inf",
+        n_total = 3L,
+        n_success = 2L,
+        n_failed = 1L,
+        surveys_success = c("A_2000", "B_2001"),
+        surveys_failed = "C_2002"
+      )
+    )
+  )
+  out <- build_deflation_summary(parse_log_meta(log))
+  expect_true(any(grepl("Deflation Summary", out)))
+  expect_true(any(grepl("3", out)))
+  expect_true(any(grepl("2", out)))
+  expect_true(any(grepl("C_2002", out)))
+})
+
+test_that("build_deflation_summary returns empty when entry absent", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "oops",
+      list(error = "unknown_error", survey = "X_2000")
+    )
+  )
+  expect_length(build_deflation_summary(parse_log_meta(log)), 0L)
+})
+
+test_that("build_type_summary excludes deflate_summary_inf", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "There is no gd_type variable",
+      list(error = "gd_type_miss", survey = "BOL_1990_EPF")
+    ),
+    make_entry(
+      "info",
+      "Deflation pipeline complete.",
+      list(info = "deflate_summary_inf", n_total = 3L, n_success = 2L, n_failed = 1L)
+    )
+  )
+  out <- build_type_summary(parse_log_meta(log))
+  expect_true(any(grepl("gd_type_miss", out)))   # real error shown
+  expect_false(any(grepl("deflate_summary", out))) # internal type excluded
+})
+
 # ── build_aux_changes ─────────────────────────────────────────────────────────
 
 test_that("build_aux_changes lists changed measures, survey count, and survey IDs", {

@@ -523,7 +523,8 @@
                     "id": "deflate-pipeline-wrapper",
                     "title": "Create pd_deflate_pipeline() batch orchestrator",
                     "description": "Build a pipeline wrapper that iterates over an entire inventory of cleaned surveys, applies pd_deflation() to each, saves deflated outputs to a stamp alias (e.g. pip_deflated), and logs a summary entry. Prerequisite: integrate-deflation must be completed first.",
-                    "status": "idea",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md",
                     "tags": [
                         "deflation",
                         "pipeline",

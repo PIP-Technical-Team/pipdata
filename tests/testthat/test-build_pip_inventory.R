@@ -1123,3 +1123,114 @@ test_that("build_pip_inventory resolves tied catalog timestamps deterministicall
   expect_equal(result$version_id_data, "vid_a")
   expect_equal(result$content_hash_data, "hash_a")
 })
+
+# ---------------------------------------------------------------------------
+# Deflation columns: build_pip_inventory() initialises the five deflation
+# columns (V5). `deflated` is logical NA; the other four are NA_character_.
+# ---------------------------------------------------------------------------
+
+test_that("build_pip_inventory initialises deflation columns to NA on a fresh run", {
+  pip_id <- "BOL_2022_EH_INC_ALL"
+  survey <- "BOL_2022_EH"
+
+  inv_to_clean <- make_inv_to_clean(
+    survey,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  pip_id_map <- make_pip_id_map(survey, list(pip_id))
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(pip_id),
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) NULL,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map)
+
+  expect_true("deflated" %in% names(result))
+  expect_true("content_hash_deflated" %in% names(result))
+  expect_true("aux_cpi_hash_at_deflation" %in% names(result))
+  expect_true("aux_ppp_hash_at_deflation" %in% names(result))
+  expect_true("aux_pop_hash_at_deflation" %in% names(result))
+
+  expect_true(is.logical(result$deflated))
+  expect_true(all(is.na(result$deflated)))
+  expect_true(all(is.na(result$content_hash_deflated)))
+  expect_true(all(is.na(result$aux_cpi_hash_at_deflation)))
+  expect_true(all(is.na(result$aux_ppp_hash_at_deflation)))
+  expect_true(all(is.na(result$aux_pop_hash_at_deflation)))
+})
+
+test_that("build_pip_inventory adds deflation columns to a legacy retained master", {
+  new_pip_id <- "BOL_2022_EH_INC_ALL"
+  old_pip_id <- "PER_2021_ENAHO_INC_ALL"
+  new_survey <- "BOL_2022_EH"
+  old_survey <- "PER_2021_ENAHO"
+
+  # Legacy master without any deflation columns (pre-bump schema).
+  old_master <- data.table::data.table(
+    survey_id = old_survey,
+    pip_id = old_pip_id,
+    country_code = "PER",
+    surveyid_year = 2021L,
+    survey_acronym = "ENAHO",
+    aux_cpi_hash = "old_cpi",
+    first_release_version_id = NA_character_,
+    latest_release_version_id = NA_character_
+  )
+
+  inv_to_clean <- make_inv_to_clean(
+    new_survey,
+    country_codes = "BOL",
+    surveyid_years = 2022L,
+    survey_acronyms = "EH"
+  )
+  pip_id_map <- make_pip_id_map(new_survey, list(new_pip_id))
+
+  local_mocked_bindings(
+    st_catalog_query = function(alias = NULL) make_catalog(new_pip_id),
+    st_latest = function(...) "vid_bol",
+    .package = "stamp"
+  )
+  local_mocked_bindings(
+    load_pip_master_inventory = function(...) old_master,
+    load_aux_data = function(measure, ...) make_pfw("BOL", 2022L, "EH"),
+    pip_write = function(x, id, alias, pk = NULL, ...) list(version_id = "v1"),
+    .package = "pipload"
+  )
+  local_mocked_bindings(
+    log_add = null_log,
+    log_info = null_log,
+    log_error = null_log,
+    .package = "pipfun"
+  )
+
+  result <- build_pip_inventory(inv_to_clean, pip_id_map)
+
+  for (col in c(
+    "deflated",
+    "content_hash_deflated",
+    "aux_cpi_hash_at_deflation",
+    "aux_ppp_hash_at_deflation",
+    "aux_pop_hash_at_deflation"
+  )) {
+    expect_true(col %in% names(result))
+  }
+  # Both retained and new rows are initialised to NA.
+  expect_true(all(is.na(result$deflated)))
+  expect_true(all(is.na(result$content_hash_deflated)))
+})

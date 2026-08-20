@@ -38,9 +38,11 @@ affected surveys.
 \details{
 The report contains:
 \itemize{
-\item Run metadata (time window, total entries, success/fail counts).
+\item Running metadata (time window, total entries, success/fail counts).
 \item Processing summary: total, cleaned, and failed counts
 (from \code{process_summary_inf} log entry).
+\item Deflation summary: candidates, successes, failures, and failing
+surveys (from \code{deflate_summary_inf} log entry).
 \item Auxiliary file changes: which measures changed and how many
 surveys were affected (from \code{aux_changes_inf} log entry).
 \item Summary table by error / info type.
