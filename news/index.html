@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pipdata</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9017</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,10 +40,22 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="pipdata-development-version">pipdata (development version)<a class="anchor" aria-label="anchor" href="#pipdata-development-version"></a></h2>
-<ul><li><p>Introduce <code><a href="../reference/dlw_validation_engine.html">dlw_validation_engine()</a></code>: a single data-driven validation engine that replaces the 7 near-identical per-module DLW validation functions (<code>dlw_validation_gpwg</code>, <code>dlw_validation_group</code>, <code>dlw_validation_bin</code>, <code>dlw_validation_hist</code>, <code>dlw_validation_all</code>, <code>dlw_validation_aspire</code>, <code>dlw_validation_l</code>) and <code>dlw_validation_skip</code>. Engine behavior is driven by <code>inst/extdata/validation_spec.yml</code> (corrected selection semantics, per-check severity, hhid/pid gating, skip <code>error_stop</code>). The legacy functions remain as deprecated wrappers calling the engine. Report output matches the legacy functions on the deterministic subset (golden fixture-tested via <code>tests/testthat/fixtures/</code>); <code>assertion.id</code>/<code>error_df</code> remain non-deterministic per data.validator.</p></li>
-<li><p>Remove <code>lubridate</code> dependency</p></li>
+<h2 class="pkg-version" data-toc-text="0.0.1" id="pipdata-001">pipdata 0.0.1<a class="anchor" aria-label="anchor" href="#pipdata-001"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-0-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-1"></a></h3>
+<ul><li><p>Add <code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>: a batch orchestrator that iterates over the master inventory, deflates each survey via <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>, saves results to the <code>"pip_deflated"</code> stamp alias, updates the master inventory with deflation provenance columns (<code>deflated</code>, <code>content_hash_deflated</code>, <code>aux_*_hash_at_deflation</code>), and logs a structured summary. Supports <code>force = TRUE</code> to re-deflate already processed surveys.</p></li>
+<li><p>Add <code>force_surveys</code> parameter to <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>: enables surgical re-processing of specific surveys by <code>survey_id</code> or <code>pip_id</code>, without the global stamp versioning side effect of <code>force = TRUE</code>. Mutually exclusive with <code>force</code>.</p></li>
 </ul></div>
+<div class="section level3">
+<h3 id="refactoring-0-0-1">Refactoring<a class="anchor" aria-label="anchor" href="#refactoring-0-0-1"></a></h3>
+<ul><li>Introduce <code><a href="../reference/dlw_validation_engine.html">dlw_validation_engine()</a></code>: a single data-driven validation engine that replaces the 7 near-identical per-module DLW validation functions (<code>dlw_validation_gpwg</code>, <code>dlw_validation_group</code>, <code>dlw_validation_bin</code>, <code>dlw_validation_hist</code>, <code>dlw_validation_all</code>, <code>dlw_validation_aspire</code>, <code>dlw_validation_l</code>) and <code>dlw_validation_skip</code>. Engine behavior is driven by <code>inst/extdata/validation_spec.yml</code> (corrected selection semantics, per-check severity, hhid/pid gating, skip <code>error_stop</code>). The legacy functions remain as deprecated wrappers calling the engine. Report output matches the legacy functions on the deterministic subset (golden fixture-tested via <code>tests/testthat/fixtures/</code>); <code>assertion.id</code>/<code>error_df</code> remain non-deterministic per data.validator.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="maintenance-0-0-1">Maintenance<a class="anchor" aria-label="anchor" href="#maintenance-0-0-1"></a></h3>
+<ul><li><p>Remove <code>lubridate</code> dependency.</p></li>
+<li><p>Fix pkgdown CI configuration and article references.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.0.9015" id="pipdata-0009015">pipdata 0.0.0.9015<a class="anchor" aria-label="anchor" href="#pipdata-0009015"></a></h2>
 <ul><li>Introduce new functions to modify <code>pipdata</code>
