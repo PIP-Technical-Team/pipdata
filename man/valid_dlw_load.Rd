@@ -10,7 +10,8 @@ valid_dlw_load(
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE),
-  aux_hashes = NULL
+  aux_hashes = NULL,
+  force_surveys = NULL
 )
 }
 \arguments{
@@ -34,6 +35,13 @@ values, one per requested auxiliary measure. Resolved once per run by
 (the default) and \code{force = FALSE}, the hashes are resolved internally so
 that direct callers retain the previous behavior of always running
 aux-change detection.}
+
+\item{force_surveys}{Character vector of \code{survey_id} and/or \code{pip_id}
+values to re-process surgically, alongside the normal invalidation
+candidates. Forced surveys bypass \code{\link[=inv_to_process]{inv_to_process()}} only and are unioned
+into the candidate set, deduplicated via \code{unique()}. Mutually exclusive
+with \code{force = TRUE}. Preserves content-based stamp versioning. Unknown
+identifiers are warned about and skipped. Default \code{NULL}.}
 }
 \value{
 A \code{data.table} of surveys to process. If no surveys require
@@ -55,6 +63,14 @@ identifies affected surveys.
 master inventory via \code{inv_to_process()}.
 \item Combines DLW-new and aux-changed surveys into a single inventory.
 }
+
+\strong{Force-survey path (\code{force_surveys})}: forced surveys are resolved via
+\code{\link[=resolve_force_surveys]{resolve_force_surveys()}} (lookup-first: \code{survey_id} membership, then
+\code{pip_id} reverse-map through the already-loaded master inventory) and
+unioned into the candidate set. They bypass \code{\link[=inv_to_process]{inv_to_process()}} only;
+aux-change detection runs normally and overlaps are deduplicated via
+\code{unique()}. Emits \code{force_surveys_inf} / \code{force_surveys_unknown_inf}
+log entries.
 
 \strong{Aux-change gating (two-stage)}: aux-change detection is gated on the
 current aux \code{content_hash} values passed via \code{aux_hashes}.
@@ -113,6 +129,7 @@ Other pd_process_data pipeline:
 \code{\link[=log_report]{log_report()}},
 \code{\link[=pd_aux_attr]{pd_aux_attr()}},
 \code{\link[=pd_deflation]{pd_deflation()}},
+\code{\link[=resolve_force_surveys]{resolve_force_surveys()}},
 \code{\link[=save_pip_data]{save_pip_data()}},
 \code{\link[=survey_id_to_attr]{survey_id_to_attr()}}
 }

@@ -580,7 +580,8 @@
                     "id": "targeted-force-surveys",
                     "title": "Add targeted force_surveys parameter to pd_process_data()",
                     "description": "Add a `force_surveys` parameter (character vector of survey_ids) to pd_process_data(). When supplied, only those surveys are re-processed regardless of inventory state, WITHOUT switching stamp to timestamp versioning (which is what force=TRUE does globally). This enables surgical re-runs for specific countries/years/measures without destroying version history for other surveys. Implementation: (1) add `force_surveys = NULL` parameter, (2) in valid_dlw_load(), when force_surveys is non-NULL, intersect it with inv_to_clean rather than bypassing all invalidation, (3) keep force=TRUE behavior unchanged for full re-runs.",
-                    "status": "idea",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
                     "tags": [
                         "pipeline",
                         "force",
