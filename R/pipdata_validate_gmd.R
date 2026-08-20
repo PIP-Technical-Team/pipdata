@@ -116,16 +116,16 @@ pipdata_validate_gmd <- function(
   cli::cli_progress_bar("Downloading .qs", total = nrow(gmd_new))
 
   ##############################################################################
-  # validation functions
-  validation_functions <- list(
-    GPWG = dlw_validation_gpwg,
-    GROUP = dlw_validation_group,
-    BIN = dlw_validation_bin,
-    HIST = dlw_validation_hist,
-    ALL = dlw_validation_all,
-    ASPIRE = dlw_validation_aspire,
-    L = dlw_validation_l,
-    DEFAULT = dlw_validation_skip
+  # validation module ids (data-driven engine)
+  validation_modules <- list(
+    GPWG = "gpwg",
+    GROUP = "group",
+    BIN = "bin",
+    HIST = "hist",
+    ALL = "all",
+    ASPIRE = "aspire",
+    L = "l",
+    DEFAULT = "skip"
   )
 
   # get the GMD data
@@ -179,11 +179,11 @@ pipdata_validate_gmd <- function(
         alias = "dlw"
       )
 
-      # Validate the data using the appropriate function
-      check <- if (md_type %in% names(validation_functions)) {
-        validation_functions[[md_type]](out, nm)
+      # Validate the data using the data-driven engine
+      check <- if (md_type %in% names(validation_modules)) {
+        dlw_validation_engine(out, nm, validation_modules[[md_type]])
       } else {
-        validation_functions[["DEFAULT"]](out, nm)
+        dlw_validation_engine(out, nm, validation_modules[["DEFAULT"]])
       }
 
       valid_status <- if (any(check[["type"]] == "error")) {

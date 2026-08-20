@@ -44,6 +44,23 @@ An empty data.frame with minimal checks applied.
 This is a generic validation interface for DLW datasets across different module types.
 Specific functions handle validation logic for GPWG, GROUP, BIN, HIST, ALL, ASPIRE, and L module types.
 }
+\details{
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "gpwg"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "group"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "bin"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "hist"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "all"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "aspire"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "?"} instead.
+
+Deprecated: use \code{dlw_validation_engine()} with \code{module = "skip"} instead.
+}
 \section{Functions}{
 \itemize{
 \item \code{dlw_validation_gpwg()}: Validate GPWG data

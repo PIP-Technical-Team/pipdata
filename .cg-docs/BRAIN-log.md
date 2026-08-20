@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-07 · 109 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-20 · 114 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -38,6 +38,22 @@ _Generated 2026-08-07 · 109 artifacts (newest first) + 0 roadmap features_
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
 - **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
   > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
+
+## 2026-08-17
+
+- **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md)** · `review` · _—_ · `2026-08-17`
+  > **Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-…
+- **[Replace 7 DLW validation functions with a single data-driven engine](.cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md)** · `plan` · _completed_ · `2026-08-17`
+  > Replace the 7 near-identical module validation functions in `R/pipdata_dlw_validation.R` (`dlw_validation_gpwg`, `dlw…
+- **[Replace N near-identical validation functions with a YAML-driven engine](.cg-docs/solutions/data-quality/2026-08-17-yaml-driven-validation-engine-pattern.md)** · `solution` · _—_ · `2026-08-17`
+  > `R/pipdata_dlw_validation.R` defined 8 module validators (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validat…
+
+## 2026-08-14
+
+- **[End-to-End Orchestration & Smart Cache-Invalidation Audit](.cg-docs/brainstorms/2026-08-14-orchestration-cache-invalidation-audit.md)** · `brainstorm` · _ideation_ · `2026-08-14`
+  > The `pipdata` package aims to serve as the end-to-end orchestration engine for PIP data production. The user's reques…
+- **[Replace 7 DLW validation functions with a single data-driven engine](.cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md)** · `brainstorm` · _decided_ · `2026-08-14`
+  > `R/pipdata_dlw_validation.R` (~1,105 lines) defines 7 near-identical module validation functions (`dlw_validation_gpw…
 
 ## 2026-08-07
 

@@ -10,7 +10,6 @@
 \alias{is_greaterequale0}
 \alias{is_var_avail}
 \alias{is_var_startwith_avail}
-\alias{is_var_endwith_avail}
 \alias{is_valuebtwn0and110}
 \title{Validating Specific Conditions of a Variable (Generic Documentation)}
 \usage{
@@ -31,8 +30,6 @@ is_greaterequale0(val, col_name)
 is_var_avail(val, col_name)
 
 is_var_startwith_avail(val, col_name)
-
-is_var_endwith_avail(val, col_name)
 
 is_valuebtwn0and110(val, col_name)
 }
@@ -67,8 +64,6 @@ and confirming the availability of a variable within the dataset.
 \item \code{is_var_avail()}: Check a variable is available in a dataset with specified variable name
 
 \item \code{is_var_startwith_avail()}: Check a variable is available in a dataset with variable name starting with a specified text
-
-\item \code{is_var_endwith_avail()}: Check a variable is available in a dataset with variable name end with a specified text
 
 \item \code{is_valuebtwn0and110()}: Check age is available in a dataset with value between 0 and 110
 
@@ -118,12 +113,6 @@ is_var_avail(
 }
 \dontrun{
 is_var_startwith_avail(
-  val = data,
-  col_name = variable_name,
-)
-}
-\dontrun{
-is_var_endwith_avail(
   val = data,
   col_name = variable_name,
 )

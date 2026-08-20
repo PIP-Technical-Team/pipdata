@@ -1,3 +1,576 @@
+# ── Validation Spec Loader & Schema Validator ──────────────────────────────────
+
+.known_validation_types <- c(
+  "variable_availability",
+  "numeric_validation",
+  "character_validation",
+  "validation_group",
+  "single_variable",
+  "categorical_check",
+  "not_missing",
+  "uniqueness",
+  "value_constraint",
+  "data_presence"
+)
+
+.helper_fixed_checks <- c(
+  "is_numeric",
+  "is_positive",
+  "is_positive_or_zero",
+  "is_character",
+  "is_greaterthanzero",
+  "is_greaterequale0",
+  "is_var_avail",
+  "is_var_startwith_avail",
+  "value_range",
+  "check_urban",
+  "check_gender",
+  "is_valuebtwn0and110"
+)
+
+.valid_severities <- c("critical", "warning", "helper")
+
+# Authoritative dispatch table for check names the engine can execute.
+# Any check name not in this table is silently inert — validate against it.
+.known_check_dispatch <- c(
+  "is_numeric",
+  "is_positive",
+  "is_positive_or_zero",
+  "is_character",
+  "is_greaterthanzero",
+  "is_greaterequale0",
+  "is_var_avail",
+  "is_var_startwith_avail",
+  "check_urban",
+  "check_gender",
+  "is_valuebtwn0and110",
+  "not_missing",
+  "na_threshold"
+)
+
+.known_secondary_checks <- c("is_valuebtwn0and110")
+
+#'.validation_spec_cache is stored in .pipdataenv to avoid locked-binding issues
+
+#' Load the package validation spec
+#'
+#' @return A parsed validation spec list.
+#' @keywords internal
+load_package_validation_spec <- function() {
+  spec_path <- system.file("extdata", "validation_spec.yml", package = "pipdata")
+  if (!file.exists(spec_path)) {
+    cli::cli_abort(
+      c(
+        "validation_spec.yml not found in inst/extdata/",
+        "i" = "Expected path: {.path {spec_path}}"
+      ),
+      class = c("validation_spec_missing", "piperr")
+    )
+  }
+  spec <- yaml::read_yaml(spec_path)
+  validate_validation_spec(spec)
+  spec
+}
+
+#' Validate validation spec schema
+#'
+#' @param spec A parsed validation spec list.
+#' @return `TRUE` if valid.
+#' @keywords internal
+validate_validation_spec <- function(spec) {
+  if (is.null(spec$schema_version)) {
+    cli::cli_abort(
+      "validation_spec missing {.field schema_version}",
+      class = c("validation_spec_invalid", "piperr")
+    )
+  }
+
+  for (module_name in names(spec$modules)) {
+    module <- spec$modules[[module_name]]
+
+    if (is.null(module$validations)) {
+      cli::cli_abort(
+        "Module {.field {module_name}} missing {.field validations}",
+        class = c("validation_spec_invalid", "piperr")
+      )
+    }
+
+    for (val_name in names(module$validations)) {
+      entry <- module$validations[[val_name]]
+
+      if (is.null(entry$type)) {
+        cli::cli_abort(
+          "Validation {.field {val_name}} in module {.field {module_name}} missing {.field type}",
+          class = c("validation_spec_invalid", "piperr")
+        )
+      }
+
+      if (!entry$type %in% .known_validation_types) {
+        cli::cli_abort(
+          c(
+            "Validation {.field {val_name}} in module {.field {module_name}} has unknown type {.val {entry$type}}",
+            "i" = "Known types: {.val {(.known_validation_types)}}"
+          ),
+          class = c("validation_spec_invalid", "piperr")
+        )
+      }
+
+      switch(entry$type,
+        variable_availability = {
+          if (is.null(entry$prefix)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (variable_availability) missing {.field prefix}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!is.null(entry$pattern)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (variable_availability) must not have {.field pattern}; use {.field prefix} instead",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        numeric_validation = , # empty cases fall through to validation_group handling
+        character_validation = ,
+        validation_group = {
+          if (is.null(entry$pattern)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} ({entry$type}) missing {.field pattern}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!is.null(entry$checks) && length(entry$checks) == 0) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} ({entry$type}) has empty {.field checks}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        single_variable = {
+          if (is.null(entry$variable)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (single_variable) missing {.field variable}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.null(entry$check)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (single_variable) missing {.field check}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!entry$check %in% .known_check_dispatch) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} (single_variable) unknown check {.val {entry$check}}",
+                "i" = "Known checks: {.val {(.known_check_dispatch)}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!is.null(entry$secondary_check) && !entry$secondary_check %in% .known_secondary_checks) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} (single_variable) unknown secondary_check {.val {entry$secondary_check}}",
+                "i" = "Known secondary checks: {.val {(.known_secondary_checks)}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        categorical_check = {
+          if (is.null(entry$variable)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (categorical_check) missing {.field variable}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.null(entry$check)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (categorical_check) missing {.field check}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!entry$check %in% .known_check_dispatch) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} (categorical_check) unknown check {.val {entry$check}}",
+                "i" = "Known checks: {.val {(.known_check_dispatch)}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        not_missing = {
+          if (is.null(entry$variable)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (not_missing) missing {.field variable}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.null(entry$severity)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (not_missing) missing {.field severity}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!is.null(entry$condition) && !entry$condition %in% c("hhid_present", "hhid_and_pid_present")) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} (not_missing) unknown condition {.val {entry$condition}}",
+                "i" = "Known conditions: {.val {c('hhid_present', 'hhid_and_pid_present')}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        value_constraint = {
+          if (is.null(entry$variable)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (value_constraint) missing {.field variable}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.null(entry$valid_values)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (value_constraint) missing {.field valid_values}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        uniqueness = {
+          if (is.null(entry$key_variables)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (uniqueness) missing {.field key_variables}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.null(entry$severity)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (uniqueness) missing {.field severity}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (!is.null(entry$condition) && !entry$condition %in% c("hhid_and_pid_present")) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} (uniqueness) unknown condition {.val {entry$condition}}",
+                "i" = "Known conditions: {.val {c('hhid_and_pid_present')}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        },
+        data_presence = {
+          if (is.null(entry$severity)) {
+            cli::cli_abort(
+              "Validation {.field {val_name}} in module {.field {module_name}} (data_presence) missing {.field severity}",
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        }
+      )
+
+      # Validate severity value if present on any entry type
+      if (!is.null(entry$severity) && !(entry$severity %in% .valid_severities)) {
+        cli::cli_abort(
+          c(
+            "Validation {.field {val_name}} in module {.field {module_name}} has invalid severity {.val {entry$severity}}",
+            "i" = "Valid severity values: {.val {(.valid_severities)}}"
+          ),
+          class = c("validation_spec_invalid", "piperr")
+        )
+      }
+
+      if (!is.null(entry$checks)) {
+        for (chk in entry$checks) {
+          chk_name <- if (is.list(chk)) chk$name else chk
+          if (!chk_name %in% .known_check_dispatch) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} has unknown check {.val {chk_name}}",
+                "i" = "Known checks: {.val {(.known_check_dispatch)}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.list(chk) && chk_name %in% .helper_fixed_checks &&
+              !is.null(chk$severity) && chk$severity != "helper") {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}}: severity on helper-fixed check {.field {chk_name}} is inert",
+                "i" = "Helper-fixed checks ignore spec severity; remove it or set severity to 'helper'"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+          if (is.list(chk) && !is.null(chk$severity) && !chk$severity %in% .valid_severities) {
+            cli::cli_abort(
+              c(
+                "Validation {.field {val_name}} in module {.field {module_name}} has invalid check severity {.val {chk$severity}}",
+                "i" = "Valid severity values: {.val {(.valid_severities)}}"
+              ),
+              class = c("validation_spec_invalid", "piperr")
+            )
+          }
+        }
+      }
+    }
+  }
+
+  TRUE
+}
+
+#' Memoized accessor for the validation spec
+#'
+#' @return A parsed validation spec list.
+#' @keywords internal
+dlw_validation_spec <- function() {
+  cached <- pd_env_get(".validation_spec_cache")
+  if (is.null(cached)) {
+    cached <- load_package_validation_spec()
+    pd_env_set(".validation_spec_cache", cached)
+  }
+  cached
+}
+
+#' Reset the validation spec cache (for testing)
+#' @keywords internal
+dlw_validation_spec_reset <- function() {
+  pd_env_rm(".validation_spec_cache")
+  invisible(NULL)
+}
+
+
+# ── Data-Driven Validation Engine ─────────────────────────────────────────────
+
+#' DLW Validation Engine
+#'
+#' A single data-driven engine that replaces the 7 per-module validation
+#' functions. Reads `inst/extdata/validation_spec.yml` and dispatches
+#' validation checks accordingly.
+#'
+#' @param dlw_data A DLW dataset (data.table).
+#' @param svy_id Survey identifier string.
+#' @param module Module id (one of: gpwg, group, bin, hist, all, aspire, l, skip).
+#' @return A data.table with columns `table_name`, `message`, `type` (invisibly).
+#'   Also appends the full validation record to `pd_env_get("validation_report")`.
+#'
+#' @export
+dlw_validation_engine <- function(dlw_data, svy_id, module) {
+
+  stopifnot("Data is not loaded" = !is.null(dlw_data))
+
+  df_var_list <- colnames(dlw_data)
+
+  spec <- dlw_validation_spec()
+  mod <- spec$modules[[module]]
+  if (is.null(mod)) {
+    mod <- spec$modules[["skip"]]
+  }
+
+  na_threshold <- round(nrow(dlw_data) * 0.10)
+  if (!is.null(mod$na_threshold_min) && na_threshold < mod$na_threshold_min) {
+    na_threshold <- mod$na_threshold_min
+  }
+
+  report <- data_validation_report()
+
+  .uniqueness_checks <- list()
+
+  for (val_name in names(mod$validations)) {
+    entry <- mod$validations[[val_name]]
+
+    switch(entry$type,
+      variable_availability = {
+        validate(dlw_data, name = svy_id) |>
+          is_var_startwith_avail(entry$prefix) |>
+          add_results(report)
+      },
+
+      numeric_validation = , # empty cases fall through to validation_group handling
+      character_validation = ,
+      validation_group = {
+        matched_vars <- df_var_list[grep(entry$pattern, df_var_list)]
+        if (length(matched_vars) == 0) next
+
+        for (var in matched_vars) {
+          chain <- validate(dlw_data, name = svy_id)
+
+          for (chk in entry$checks) {
+            chk_name <- if (is.list(chk)) chk$name else chk
+            chk_severity <- if (is.list(chk)) chk$severity else "helper"
+            chk_desc <- if (is.list(chk) && !is.null(chk$description)) {
+              gsub("\\{var\\}", var, chk$description)
+            } else NULL
+
+            chain <- switch(chk_name,
+              is_numeric = chain |> is_numeric(var),
+              is_positive = chain |> is_greaterthanzero(var),
+              is_positive_or_zero = chain |> is_greaterequale0(var),
+              is_character = chain |> is_character(var),
+              not_missing = {
+                error_fn <- if (chk_severity == "critical") error_append else warning_append
+                validate_cols(
+                  d = chain,
+                  description = chk_desc %||% glue::glue("{var} should not be missing"),
+                  skip_chain_opts = TRUE,
+                  error_fun = error_fn,
+                  not_na, var
+                )
+              },
+              na_threshold = {
+                error_fn <- if (chk_severity == "critical") error_append else warning_append
+                validate_rows(
+                  d = chain,
+                  description = chk_desc %||% glue::glue("{var} NAs within %10"),
+                  skip_chain_opts = TRUE,
+                  error_fun = error_fn,
+                  num_row_NAs, within_bounds(0, na_threshold), var
+                )
+              },
+              chain
+            )
+          }
+
+          if (!is.null(entry$labelled_clear) && entry$labelled_clear) {
+            labelled::var_label(dlw_data[[var]]) <- NULL
+          }
+
+          chain |> add_results(report)
+        }
+      },
+
+      single_variable = {
+        var <- entry$variable
+        if (!(var %in% df_var_list)) next
+        chain <- validate(dlw_data, name = svy_id)
+        chain <- switch(entry$check,
+          is_character = chain |> is_character(var),
+          is_greaterequale0 = chain |> is_greaterequale0(var),
+          chain
+        )
+        if (!is.null(entry$secondary_check)) {
+          chain <- switch(entry$secondary_check,
+            is_valuebtwn0and110 = chain |> is_valuebtwn0and110(var),
+            chain
+          )
+        }
+        chain |> add_results(report)
+      },
+
+      categorical_check = {
+        var <- entry$variable
+        if (!(var %in% df_var_list)) next
+        chain <- validate(dlw_data, name = svy_id)
+        chain <- switch(entry$check,
+          check_urban = chain |> check_urban(var),
+          check_gender = chain |> check_gender(var),
+          chain
+        )
+        chain |> add_results(report)
+      },
+
+      not_missing = {
+        var <- entry$variable
+        if (is.null(entry$condition) || entry$condition == "hhid_present") {
+          if (!(var %in% df_var_list)) next
+        } else if (entry$condition == "hhid_and_pid_present") {
+          if (!("hhid" %in% df_var_list) || !(var %in% df_var_list)) next
+        }
+        error_fn <- if (entry$severity == "critical") error_append else warning_append
+        desc <- if (!is.null(entry$description)) {
+          gsub("\\{var\\}", var, entry$description)
+        } else {
+          glue::glue("{var} should not be missing")
+        }
+        validate(dlw_data, name = svy_id) |>
+          validate_cols(
+            description = desc,
+            skip_chain_opts = TRUE,
+            error_fun = error_fn,
+            not_na, var
+          ) |>
+          add_results(report)
+      },
+
+      uniqueness = {
+        vars <- entry$key_variables
+        all_present <- all(vars %in% df_var_list)
+        if (!all_present) next
+        error_fn <- if (entry$severity == "critical") error_append else warning_append
+        .uniqueness_checks <- c(.uniqueness_checks, list(list(
+          vars = vars,
+          severity = entry$severity,
+          description = entry$description %||% "No duplicate records in key variables"
+        )))
+      },
+
+      value_constraint = {
+        var <- entry$variable
+        if (!(var %in% df_var_list)) next
+        inset_expr <- bquote(in_set(.(entry$valid_values)))
+        vc_expr <- bquote(validate_cols(
+          d = validate(dlw_data, name = svy_id),
+          description = .(glue::glue("{var} should not contain out of range values")),
+          skip_chain_opts = TRUE,
+          error_fun = warning_append,
+          .(inset_expr), .(var)
+        ))
+        eval(vc_expr) |>
+          add_results(report)
+      },
+
+      data_presence = {
+        error_fn <- if (entry$severity == "critical") error_append else warning_append
+        validate(dlw_data, name = svy_id) |>
+          verify(
+            nrow(dlw_data) > 0,
+            description = entry$description %||% "Data should not blank",
+            error_fun = error_fn
+          ) |>
+          add_results(report)
+      }
+    )
+  }
+
+  validation_record <- get_results(report, unnest = FALSE) |>
+    setDT()
+
+  for (uc in .uniqueness_checks) {
+    has_dup <- any(duplicated(dlw_data[, uc$vars, with = FALSE]))
+    dup_msg <- uc$description
+    dup_type <- if (has_dup) {
+      if (uc$severity == "critical") "error" else "warning"
+    } else {
+      "success"
+    }
+    dup_display <- if (has_dup) {
+      paste0("verification [is_uniq(", paste(uc$vars, collapse = ", "), ")] failed! (1 failure)")
+    } else {
+      paste0("verification [is_uniq(", paste(uc$vars, collapse = ", "), ")] passed!")
+    }
+    dup_row <- data.table::data.table(
+      table_name = svy_id,
+      assertion.id = NA_character_,
+      description = dup_msg,
+      num.violations = if (has_dup) 1L else NA_integer_,
+      call = paste0("is_uniq(", paste(uc$vars, collapse = ", "), ")"),
+      message = dup_display,
+      type = dup_type,
+      error_df = list(NULL)
+    )
+    validation_record <- data.table::rbindlist(list(validation_record, dup_row), fill = TRUE, ignore.attr = TRUE)
+  }
+
+  err_t <- validation_record[, .(table_name, message, type)]
+
+  pd_env_append("validation_report", validation_record)
+
+  return(invisible(err_t))
+}
+
+
 #' Validate DLW data (Generic Documentation)
 #'
 #' This is a generic validation interface for DLW datasets across different module types.
@@ -20,6 +593,9 @@ dlw_validation <- function(dlw_data, svy_id) {
 #' non-missingness, valid value ranges, and duplication checks.
 #'
 #' @import data.validator assertr
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "gpwg"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -29,118 +605,9 @@ dlw_validation <- function(dlw_data, svy_id) {
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_gpwg <- function(dlw_data, svy_id){
-
-  stopifnot("Data data is not loaded" = !is.null(dlw_data))
-
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset numeric variables (not included weight and welfare variables)
-  num_var_list <- df_var_list[grep("^year$|hsize$|welfshprosperity$",
-                                   df_var_list)]
-
-  # subset weight and welfare variable names
-  # wgt_welfare <- df_var_list[grep("welfare$|weight$", df_var_list)]
-  wgt_welfare <- df_var_list[grep("^welfare|^weight", df_var_list)]
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  core_var <- c("countrycode", "year", "hhid", "pid", "welfare",
-                "welfshprosperity", "weight", "hsize")
-
-  report   <- data_validation_report()
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("weight") |>
-    is_var_startwith_avail("welfare") |>
-    add_results(report)
-
-  if ("countrycode" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-      is_character("countrycode") |>
-      add_results(report)
-  }
-
-  if ("urban" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-      check_urban("urban") |>
-      add_results(report)
-  }
-
-  if ("hhid" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-      # validate_cols(not_na, hhid,
-      #               description = "hhid should not be missing") |>
-      validate_cols(description = "hhid should not be missing",
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, hhid) |>
-      add_results(report)
-
-    if ("pid" %in% df_var_list){
-
-      validate(dlw_data, name = svy_id) |>
-        validate_cols(description = "pid should not be missing",
-                      skip_chain_opts = TRUE,
-                      error_fun = warning_append, not_na, pid) |>
-        # validate_if(description = "No duplicate records in key variables hhid, pid",
-        #             is_uniq(hhid, pid)) |>
-        validate_if(description = "No duplicate records in key variables hhid, pid",
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, is_uniq(hhid, pid)) |>
-        add_results(report)
-    }
-
-  }
-
-  # validate numeric variables
-  for (i in seq_along(num_var_list)) {
-
-    labelled::var_label(dlw_data[[num_var_list[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(num_var_list[i]) |>
-      is_greaterthanzero(num_var_list[i]) |>
-      validate_cols(description = glue::glue("{num_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, num_var_list[i]) |>
-      validate_rows(description = glue::glue("{num_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), num_var_list[i]) |>
-      add_results(report)
-
-  }
-
-  # validate weight and welfare variables
-  for (i in seq_along(wgt_welfare)) {
-
-    # labelled::var_label(dlw_data[[wgt_welfare[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(wgt_welfare[i]) |>
-      is_greaterthanzero(wgt_welfare[i]) |>
-      validate_cols(description = glue::glue("{wgt_welfare[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, wgt_welfare[i]) |>
-      validate_rows(description = glue::glue("{wgt_welfare[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), wgt_welfare[i]) |>
-      add_results(report)
-
-  }
-
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_gpwg <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "gpwg")
 }
 
 
@@ -149,6 +616,9 @@ dlw_validation_gpwg <- function(dlw_data, svy_id){
 #' Checks for missing values, type mismatches, and invalid entries in GROUP datasets.
 #'
 #' @import data.validator assertr
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "group"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -158,111 +628,9 @@ dlw_validation_gpwg <- function(dlw_data, svy_id){
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_group <- function(dlw_data, svy_id){
-
-  stopifnot("Data is not loaded" = !is.null(dlw_data))
-
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset numeric variables
-  num_var_list <- df_var_list[grepl("urban", df_var_list)]
-
-  # subset weight and welfare variable names
-  wgt_welfare <- df_var_list[grep("^welfare|^weight", df_var_list)]
-
-  # subset character variables
-  chr_var_list <- df_var_list[grep("code|type$", df_var_list)]
-
-  report   <- data_validation_report()
-  core_var <- c("weight", "welfare", "urban", "gd_type", "welfare_type", "code")
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  if (na_threshold == 0) { na_threshold <- 1}
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("weight") |>
-    is_var_startwith_avail("welfare") |>
-    # is_var_avail("gd_type") |>
-    add_results(report)
-
-  # validate weight and welfare variables
-  for (i in seq_along(wgt_welfare)) {
-
-    # labelled::var_label(dlw_data[[wgt_welfare[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(wgt_welfare[i]) |>
-      is_greaterthanzero(wgt_welfare[i]) |>
-      validate_cols(description = glue::glue("{wgt_welfare[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, wgt_welfare[i]) |>
-      validate_rows(description = glue::glue("{wgt_welfare[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), wgt_welfare[i]) |>
-      add_results(report)
-
-  }
-
-  # validate numeric variables
-  for (i in seq_along(num_var_list)) {
-
-    labelled::var_label(dlw_data[[num_var_list[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(num_var_list[i]) |>
-      is_greaterthanzero(num_var_list[i]) |>
-      validate_cols(description = glue::glue("{num_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, num_var_list[i]) |>
-      validate_rows(description = glue::glue("{num_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), num_var_list[i]) |>
-      add_results(report)
-
-    if (num_var_list[i] == "urban") {
-
-      validate(dlw_data, name = svy_id) |>
-        check_urban("urban") |>
-        add_results(report)
-
-    }
-
-  }
-
-  # validate character variables
-  for (i in seq_along(chr_var_list)) {
-
-    validate(dlw_data, name = svy_id) |>
-      is_character(chr_var_list[i]) |>
-      validate_cols(description = glue::glue("{chr_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, chr_var_list[i]) |>
-      validate_rows(description = glue::glue("{chr_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), chr_var_list[i]) |>
-      add_results(report)
-
-    if (chr_var_list[i] == "welfare_type") {
-      validate(dlw_data, name = svy_id) |>
-        validate_cols(description = glue::glue("{chr_var_list[i]} should not contain out of range values"),
-                      skip_chain_opts = TRUE,
-                      error_fun = warning_append,
-                      in_set(c("C", "I", "income", "consumption")), chr_var_list[i]) |>
-        add_results(report)
-    }
-
-  }
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_group <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "group")
 }
 
 
@@ -273,6 +641,9 @@ dlw_validation_group <- function(dlw_data, svy_id){
 #'
 #' @import data.validator
 #' @importFrom assertr in_set not_na is_uniq has_all_names has_only_names verify warning_append within_bounds
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "bin"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -282,97 +653,9 @@ dlw_validation_group <- function(dlw_data, svy_id){
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_bin <- function(dlw_data, svy_id){
-
-  stopifnot("Data is not loaded" = !is.null(dlw_data))
-
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset numeric variables
-  # num_var_list <- df_var_list[grep("^year$|welfare$|weight$|share$", df_var_list)]
-  num_var_list <- df_var_list[grep("^year$|share$", df_var_list)]
-
-  # subset weight and welfare variable names
-  # wgt_welfare <- df_var_list[grep("welfare$|weight$", df_var_list)]
-  wgt_welfare <- df_var_list[grep("^welfare|^weight", df_var_list)]
-
-  # subset character variables
-  chr_var_list <- df_var_list[grep("code$|verm$|vera$|^region|^country", df_var_list)]
-
-  report   <- data_validation_report()
-  core_var <- c("code", "year", "bins", "weight", "welfare", "verm",
-                "vera", "region", "countryname")
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  if (na_threshold == 0) { na_threshold <- 1}
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("weight") |>
-    is_var_startwith_avail("welfare") |>
-    is_var_startwith_avail("bins") |>
-    add_results(report)
-
-  # validate weight and welfare variables
-  for (i in seq_along(wgt_welfare)) {
-
-    # labelled::var_label(dlw_data[[wgt_welfare[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(wgt_welfare[i]) |>
-      is_greaterthanzero(wgt_welfare[i]) |>
-      validate_cols(description = glue::glue("{wgt_welfare[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, wgt_welfare[i]) |>
-      validate_rows(description = glue::glue("{wgt_welfare[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), wgt_welfare[i]) |>
-      add_results(report)
-
-  }
-
-  # validate numeric variables
-  for (i in seq_along(num_var_list)) {
-
-    labelled::var_label(dlw_data[[num_var_list[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(num_var_list[i]) |>
-      is_greaterthanzero(num_var_list[i]) |>
-      validate_cols(description = glue::glue("{num_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, num_var_list[i]) |>
-      validate_rows(description = glue::glue("{num_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), num_var_list[i]) |>
-      add_results(report)
-
-  }
-
-  # validate character variables
-  for (i in seq_along(chr_var_list)) {
-
-    validate(dlw_data, name = svy_id) |>
-      is_character(chr_var_list[i]) |>
-      validate_cols(description = glue::glue("{chr_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, chr_var_list[i]) |>
-      validate_rows(description = glue::glue("{chr_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), chr_var_list[i]) |>
-      add_results(report)
-
-  }
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_bin <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "bin")
 }
 
 
@@ -382,6 +665,9 @@ dlw_validation_bin <- function(dlw_data, svy_id){
 #' `urban`, `weight`, and `welfare`, as well as common structural validations.
 #'
 #' @import data.validator assertr
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "hist"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -391,106 +677,9 @@ dlw_validation_bin <- function(dlw_data, svy_id){
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_hist <- function(dlw_data, svy_id){
-
-  stopifnot("Data data is not loaded" = !is.null(dlw_data))
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset numeric variables
-  # num_var_list <- df_var_list[grep("urban$|^year$|welfare$|weight$|
-  #                                  hsize$|datayear$|type$", df_var_list)]
-  num_var_list <- df_var_list[grep("urban$|^year$|hsize$|datayear$|type$",
-                                   df_var_list)]
-
-  # subset weight and welfare variable names
-  # wgt_welfare <- df_var_list[grep("welfare$|weight$", df_var_list)]
-  wgt_welfare <- df_var_list[grep("^welfare|^weight", df_var_list)]
-
-  # subset character variables
-  chr_var_list <- df_var_list[grep("code$|survname$", df_var_list)]
-
-  report   <- data_validation_report()
-  core_var <- c("regioncode", "countrycode", "year", "datayear", "survname",
-                "hhid", "hsize", "weight", "urban", "welfare", "coveragetype",
-                "datatype", "code")
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  if (na_threshold == 0) { na_threshold <- 1}
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("weight") |>
-    is_var_startwith_avail("welfare") |>
-    add_results(report)
-
-  # validate weight and welfare variables
-  for (i in seq_along(wgt_welfare)) {
-
-    # labelled::var_label(dlw_data[[wgt_welfare[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(wgt_welfare[i]) |>
-      is_greaterthanzero(wgt_welfare[i]) |>
-      validate_cols(description = glue::glue("{wgt_welfare[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, wgt_welfare[i]) |>
-      validate_rows(description = glue::glue("{wgt_welfare[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), wgt_welfare[i]) |>
-      add_results(report)
-
-  }
-
-  # validate numeric variables
-  for (i in seq_along(num_var_list)) {
-
-    labelled::var_label(dlw_data[[num_var_list[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(num_var_list[i]) |>
-      is_greaterthanzero(num_var_list[i]) |>
-      validate_cols(description = glue::glue("{num_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, num_var_list[i]) |>
-      validate_rows(description = glue::glue("{num_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), num_var_list[i]) |>
-      add_results(report)
-
-    if (num_var_list[i] == "urban") {
-
-      validate(dlw_data, name = svy_id) |>
-        check_urban("urban") |>
-        add_results(report)
-
-    }
-
-  }
-
-  # validate character variables
-  for (i in seq_along(chr_var_list)) {
-
-    validate(dlw_data, name = svy_id) |>
-      is_character(chr_var_list[i]) |>
-      validate_cols(description = glue::glue("{chr_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, chr_var_list[i]) |>
-      validate_rows(description = glue::glue("{chr_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), chr_var_list[i]) |>
-      add_results(report)
-
-  }
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_hist <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "hist")
 }
 
 #' @describeIn dlw_validation Validate ALL data
@@ -499,6 +688,9 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 #' Ensures basic structure and NA thresholds.
 #'
 #' @import data.validator assertr
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "all"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -508,91 +700,9 @@ dlw_validation_hist <- function(dlw_data, svy_id){
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_all <- function(dlw_data, svy_id){
-
-  stopifnot("Data data is not loaded" = !is.null(dlw_data))
-
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset weight and welfare variable names
-  wgt_welfare <- df_var_list[grep("^welfare|^weight", df_var_list)]
-  
-  # gender, age, and education variables
-  demog_vars <- df_var_list[grep("^male|^educat|^school", df_var_list)]
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  report   <- data_validation_report()
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("weight") |>
-    is_var_startwith_avail("welfare") |>
-    is_var_startwith_avail("age") |>
-    # is_var_avail("age") |>
-    add_results(report)
-
-  if ("urban" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-      check_urban("urban") |>
-      add_results(report)
-  }
-
-  if ("age" %in% df_var_list) {
-    validate(dlw_data, name = svy_id) |>
-      is_greaterequale0("age") |>
-      is_valuebtwn0and110("age") |>
-      add_results(report)
-  }
-  
-  if ("male" %in% df_var_list) {
-    validate(dlw_data, name = svy_id) |>
-      check_gender("male") |>
-      add_results(report)
-  }
-  
-  # validate weight and welfare variables
-  for (i in seq_along(wgt_welfare)) {
-
-    # labelled::var_label(dlw_data[[wgt_welfare[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(wgt_welfare[i]) |>
-      is_greaterthanzero(wgt_welfare[i]) |>
-      validate_cols(description = glue::glue("{wgt_welfare[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, wgt_welfare[i]) |>
-      validate_rows(description = glue::glue("{wgt_welfare[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), wgt_welfare[i]) |>
-      add_results(report)
-
-  }
-
-  # validate gender and education variables
-  for (i in seq_along(demog_vars)) {
-
-    validate(dlw_data, name = svy_id) |>
-      validate_cols(description = glue::glue("{demog_vars[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, demog_vars[i]) |>
-      validate_rows(description = glue::glue("{demog_vars[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), demog_vars[i]) |>
-      add_results(report)
-
-  }
- 
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_all <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "all")
 }
 
 
@@ -602,6 +712,9 @@ dlw_validation_all <- function(dlw_data, svy_id){
 #' Special attention is paid to `hhweight`, `urban`, and household size.
 #'
 #' @import data.validator assertr
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "aspire"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -611,79 +724,9 @@ dlw_validation_all <- function(dlw_data, svy_id){
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_aspire <- function(dlw_data, svy_id){
-
-  stopifnot("Data data is not loaded" = !is.null(dlw_data))
-
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset numeric variables
-  num_var_list <- df_var_list[grep("^year$|hsize$",
-                                   df_var_list)]
-
-  # subset hhweight variable name
-  wgt_welfare <- df_var_list[grep("hhweight$", df_var_list)]
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  report   <- data_validation_report()
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("hhweight") |>
-    add_results(report)
-
-  if ("urban" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-      check_urban("urban") |>
-      add_results(report)
-  }
-
-  for (i in seq_along(num_var_list)) {
-
-    labelled::var_label(dlw_data[[num_var_list[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(num_var_list[i]) |>
-      is_greaterthanzero(num_var_list[i]) |>
-      validate_cols(description = glue::glue("{num_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, num_var_list[i]) |>
-      validate_rows(description = glue::glue("{num_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), num_var_list[i]) |>
-      add_results(report)
-
-  }
-
-  # validate weight variables
-  for (i in seq_along(wgt_welfare)) {
-
-    # labelled::var_label(dlw_data[[wgt_welfare[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(wgt_welfare[i]) |>
-      is_greaterthanzero(wgt_welfare[i]) |>
-      validate_cols(description = glue::glue("{wgt_welfare[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, wgt_welfare[i]) |>
-      validate_rows(description = glue::glue("{wgt_welfare[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), wgt_welfare[i]) |>
-      add_results(report)
-
-  }
-
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_aspire <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "aspire")
 }
 
 #' @describeIn dlw_validation Validate Labor (L) DLW data
@@ -692,6 +735,9 @@ dlw_validation_aspire <- function(dlw_data, svy_id){
 #' person-level identifiers (`hhid`, `pid`), and working hours (`whours`).
 #'
 #' @import data.validator assertr
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "?"` instead.
+#' @keywords internal
 #' @export
 #'
 #' @examples
@@ -701,109 +747,18 @@ dlw_validation_aspire <- function(dlw_data, svy_id){
 #'   svy_id = "survey_id",
 #' )
 #' }
-dlw_validation_l <- function(dlw_data, svy_id){
-
-  stopifnot("Data data is not loaded" = !is.null(dlw_data))
-
-  # get variable names
-  df_var_list <- colnames(dlw_data)
-
-  # subset numeric variables (not included weight and welfare variables)
-  num_var_list <- df_var_list[grep("^year$|whours$",
-                                   df_var_list)]
-
-  # subset weight and welfare variable names
-  emp_status <- df_var_list[grep("^lstatus|^empstat", df_var_list)]
-
-  # threshold to validate availability of data/variable
-  na_threshold <- round(nrow(dlw_data) * .10 )
-
-  report   <- data_validation_report()
-
-  validate(dlw_data, name = svy_id) |>
-    is_var_startwith_avail("lstatus") |>
-    is_var_startwith_avail("empstat") |>
-    add_results(report)
-
-  if ("countrycode" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-      is_character("countrycode") |>
-      add_results(report)
-  }
-
-  if ("hhid" %in% df_var_list){
-
-    validate(dlw_data, name = svy_id) |>
-
-      validate_cols(description = "hhid should not be missing",
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, hhid) |>
-      add_results(report)
-
-    if ("pid" %in% df_var_list){
-
-      validate(dlw_data, name = svy_id) |>
-        validate_cols(description = "pid should not be missing",
-                      skip_chain_opts = TRUE,
-                      error_fun = warning_append, not_na, pid) |>
-        validate_if(description = "No duplicate records in key variables hhid, pid",
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, is_uniq(hhid, pid)) |>
-        add_results(report)
-    }
-
-  }
-
-  # validate numeric variables
-  for (i in seq_along(num_var_list)) {
-
-    labelled::var_label(dlw_data[[num_var_list[i]]]) <- NULL
-    validate(dlw_data, name = svy_id) |>
-      is_numeric(num_var_list[i]) |>
-      is_greaterthanzero(num_var_list[i]) |>
-      validate_cols(description = glue::glue("{num_var_list[i]} should not be missing"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, not_na, num_var_list[i]) |>
-      validate_rows(description = glue::glue("{num_var_list[i]} NAs within %10"),
-                    skip_chain_opts = TRUE,
-                    error_fun = warning_append, num_row_NAs, within_bounds(0, na_threshold), num_var_list[i]) |>
-      add_results(report)
-
-  }
-
-  # validate lstatus and empstat variables
-  # for (i in seq_along(emp_status)) {
-  #
-  #   validate(dlw_data, name = svy_id) |>
-  #     is_numeric(emp_status[i]) |>
-  #     is_greaterthanzero(emp_status[i]) |>
-  #     validate_cols(description = glue::glue("{emp_status[i]} should not be missing"),
-  #                   skip_chain_opts = TRUE,
-  #                   error_fun = warning_append, not_na, emp_status[i]) |>
-  #     validate_rows(description = glue::glue("{emp_status[i]} NAs within %10"),
-  #                   skip_chain_opts = TRUE,
-  #                   error_fun = error_append, num_row_NAs, within_bounds(0, na_threshold), emp_status[i]) |>
-  #     add_results(report)
-  #
-  # }
-
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_l <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "l")
 }
 
 #' @describeIn dlw_validation Skip Validation
 #'
 #' Used for DLW modules that require no validation. Ensures only that the dataset is not blank.
 #'
+#' @details
+#' Deprecated: use `dlw_validation_engine()` with `module = "skip"` instead.
+#' @keywords internal
 #' @return An empty data.frame with minimal checks applied.
 #' @export
 #'
@@ -814,27 +769,9 @@ dlw_validation_l <- function(dlw_data, svy_id){
 #'   svy_id = survey_id
 #' )
 #' }
-dlw_validation_skip <- function(dlw_data, svy_id){
-
-  stopifnot("Data data is not loaded" = !is.null(dlw_data))
-
-  df_var_list <- colnames(dlw_data)
-  report   <- data_validation_report()
-
-  validate(dlw_data, name = svy_id)  |>
-    verify(nrow(dlw_data) > 0, description = "Data should not blank") |>
-    # verify(num_row_NAs, df_var_list, description = "Rows shouldn't be missing") |>
-    add_results(report)
-
-  validation_record <- get_results(report, unnest = FALSE) |>
-    setDT()
-
-  err_t <- validation_record[, .(table_name, message, type)]
-
-  pd_env_append("validation_report", validation_record)
-
-  return(invisible(err_t))
-
+dlw_validation_skip <- function(dlw_data, svy_id) {
+  # Deprecated wrapper: the data-driven engine is the canonical implementation.
+  dlw_validation_engine(dlw_data, svy_id, "skip")
 }
 
 
@@ -858,7 +795,7 @@ dlw_var_check <- function(val, col_name) {
   stop(
     "This is a documentation anchor. Use a method like is_character(), is_numeric(), 
     check_urban(), check_gender(), is_greaterthanzero(), is_var_avail(), is_var_startwith_avail(), 
-    is_var_endwith_avail(), is_valuebtwn0and120() or is_greaterequale0."
+    is_valuebtwn0and120() or is_greaterequale0."
   )
 }
 
@@ -1043,30 +980,6 @@ is_var_startwith_avail <- function(val, col_name){
 
   # Logical vector
   expr = bquote(any(startsWith(names(val), col_name)))
-
-  # Validate
-  validate_if(
-    val,
-    eval(expr),
-    description = glue::glue("{col_name} variable should be in the data"),
-    skip_chain_opts = TRUE,
-    error_fun = error_append
-  )
-}
-
-#' @describeIn dlw_var_check Check a variable is available in a dataset with variable name end with a specified text
-#'
-#' @examples
-#' \dontrun{
-#' is_var_endwith_avail(
-#'   val = data,
-#'   col_name = variable_name,
-#' )
-#' }
-is_var_endwith_avail <- function(val, col_name){
-
-  # Logical vector
-  expr = bquote(any(endsWith(names(val), col_name)))
 
   # Validate
   validate_if(
