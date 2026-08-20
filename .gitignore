@@ -47,3 +47,6 @@ compound-gpid.local.md
 .opencode/opencode.json
 .opencode/shared
 .opencode/skills
+
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds

@@ -37,7 +37,7 @@ Suggests:
     withr
 Config/testthat/edition: 3
 Depends: 
-    R (>= 2.10)
+    R (>= 4.4)
 Remotes: 
     github::pip-technical-team/wbpip@DEV_v2,
     github::PIP-Technical-Team/pipload@PROD,
