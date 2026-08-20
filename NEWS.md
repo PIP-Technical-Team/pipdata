@@ -1,6 +1,4 @@
-# pipdata (development version)
-
-# pipdata 0.0.0.9018
+# pipdata 0.0.1
 
 ## New features
 
