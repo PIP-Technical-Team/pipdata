@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Part 1
 
-_Generated 2026-08-07_
+_Generated 2026-08-20_
 
 ## Reporting_Level / Aaa.R / Valid_Dlw_Load\(\)
 
@@ -185,3 +185,16 @@ _Keywords: `old_files/` · `archive` · `devtools::document()`_ · 4 entities
   > Add `@note` to the `pd_deflation()` roxygen block explaining this function is not yet integrated into the active pipe…
 - **[Relocate mock_funs.R to tests/](.cg-docs/plans/2026-04-30-relocate-mock-funs.md)** · `plan` · _completed_ · `2026-04-30`
   > Move `R/mock_funs.R` to `tests/testthat/helper-mock_funs.R` so test helpers live alongside tests, not in the package …
+
+## Severity / Pipdata_Validate_Gmd.R / Validation_Spec.Yml
+
+_Keywords: `severity` · `pipdata_validate_gmd.r` · `validation_spec.yml`_ · 4 entities
+
+- **[Replace 7 DLW validation functions with a single data-driven engine](.cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md)** · `brainstorm` · _decided_ · `2026-08-14`
+  > `R/pipdata_dlw_validation.R` (~1,105 lines) defines 7 near-identical module validation functions (`dlw_validation_gpw…
+- **[Replace 7 DLW validation functions with a single data-driven engine](.cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md)** · `plan` · _completed_ · `2026-08-17`
+  > Replace the 7 near-identical module validation functions in `R/pipdata_dlw_validation.R` (`dlw_validation_gpwg`, `dlw…
+- **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md)** · `review` · _—_ · `2026-08-17`
+  > **Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-…
+- **[Replace N near-identical validation functions with a YAML-driven engine](.cg-docs/solutions/data-quality/2026-08-17-yaml-driven-validation-engine-pattern.md)** · `solution` · _—_ · `2026-08-17`
+  > `R/pipdata_dlw_validation.R` defined 8 module validators (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validat…

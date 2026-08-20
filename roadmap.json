@@ -144,6 +144,48 @@
                     ]
                 },
                 {
+                    "id": "dlw-validation-engine-refactor",
+                    "title": "Replace 7 DLW validation functions with a single data-driven engine",
+                    "description": "Replace the 7 near-identical dlw_validation_*() functions (gpwg/group/bin/hist/all/aspire/l) plus dlw_validation_skip in R/pipdata_dlw_validation.R (~1,105 lines) with a single data-driven dlw_validation_engine() driven by inst/extdata/validation_spec.yml. Mirrors the yaml-recode-dictionary pattern. Output byte-identical to legacy functions (golden test), report format unchanged, dead code removed. Completed 2026-08-17; plan .cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md, work report .cg-docs/work-reports/2026-08-17-dlw-validation-engine-refactor.md.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
+                    "tags": [
+                        "validation",
+                        "dlw",
+                        "refactor",
+                        "data-driven",
+                        "yaml",
+                        "data.validator"
+                    ]
+                },
+                {
+                    "id": "validation-report-table-name-parsing",
+                    "title": "Harden get_validation_report()/get_validation_list() table_name regex parsing",
+                    "description": "get_validation_report() derives module_type, vermast, veralt, country_code, and rf_year entirely from regex extraction on the table_name string (R/pipdata_validation_report.R lines 22-51). This is fragile: any change to the survey_id naming convention silently breaks the derived columns, and a malformed table_name produces wrong module_type='OTHER'/NA silently. The 2026-08-17 dlw-validation-engine-refactor plan confirmed `description` and `table_name` are downstream-consumed columns that must stay stable. This feature: (1) add guardrails/validation for the table_name format, (2) consider failing loudly instead of silently coercing to 'OTHER'/NA, (3) add tests that pin the expected naming convention. Out of scope of the engine refactor; tracked separately.",
+                    "status": "idea",
+                    "tags": [
+                        "validation",
+                        "reporting",
+                        "fragility",
+                        "regex",
+                        "dlw"
+                    ]
+                },
+                {
+                    "id": "typed-validation-report",
+                    "title": "Replace regex-parsed table_name with typed/stamped validation report fields",
+                    "description": "Long-term: stop overloading table_name as a parsing key. Instead of regex-extracting module_type/vermast/veralt/country_code/rf_year from table_name at read time, store them as explicit typed columns when the validation record is appended (in dlw_validation_engine / pipdata_validate_gmd), so the report is self-describing and stamp-versionable. Removes the fragility tracked in validation-report-table-name-parsing and aligns the validation report with the stamp-based vintage tracking used elsewhere (remove-date-valid-filter). Prerequisite: dlw-validation-engine-refactor (done) so the engine is the single append point. Deliverable: typed columns written at validation time; get_validation_report()/get_validation_list()/get_validation_ctry() read typed fields instead of regex.",
+                    "status": "idea",
+                    "tags": [
+                        "validation",
+                        "reporting",
+                        "architecture",
+                        "stamp",
+                        "typed-fields",
+                        "dlw"
+                    ]
+                },
+                {
                     "id": "dlw-wrapper-rewrite",
                     "title": "Rewrite DLW wrapper to mirror pipeline architecture",
                     "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",

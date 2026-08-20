@@ -1,5 +1,5 @@
 {
-  "edge_count": 32,
+  "edge_count": 34,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -53,6 +53,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
       "target": ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
+      "target": ".cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md",
       "target_missing": false
     },
     {
@@ -161,6 +167,12 @@
       "edge_type": "reviews",
       "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
       "target": ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
+      "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
       "target_missing": false
     },
     {
@@ -452,6 +464,62 @@
         "st_catalog_query",
         "approach",
         "valid_dlw_load"
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md",
+      "slug": "2026-08-14-dlw-validation-engine-refactor",
+      "status": "decided",
+      "summary": "`R/pipdata_dlw_validation.R` (~1,105 lines) defines 7 near-identical module validation functions (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validation_bin`, `dlw_validation_hist`, `dlw_validation_all`, `dlw_validation_aspire`, `dlw_validation_l`) plus a simpler 8th (`dlw_validation_skip`, the DEFAULT fallback). Each follows the same 8-step skeleton and differs only in (a) which variable-name regexes select the numeric / character / welfare / weight columns and (b) which optional checks run (urban, gender, hhid/pid uniqueness, `welfare_type` in-set, age range). The invariant per-variable chain is: `is_numeric → is_greaterthanzero → validate_cols(not_na) → validate_rows(num_row_NAs, within_bounds)` with `error_append` for weight/welfare and `warning_append` elsewhere.",
+      "tags": [
+        "validation",
+        "dlw",
+        "refactor",
+        "data-driven",
+        "yaml",
+        "data.validator"
+      ],
+      "title": "Replace 7 DLW validation functions with a single data-driven engine",
+      "top_keywords": [
+        "pipdata_validate_gmd.r",
+        "validation_spec.yml",
+        "pattern",
+        "get_validation_report()",
+        "get_data_status()",
+        "validate_validation_spec()",
+        "yaml",
+        "data.validator",
+        "validation",
+        "dlw"
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-14-orchestration-cache-invalidation-audit.md",
+      "slug": "2026-08-14-orchestration-cache-invalidation-audit",
+      "status": "ideation",
+      "summary": "The `pipdata` package aims to serve as the end-to-end orchestration engine for PIP data production. The user's request centers on: (1) intelligent pipeline management that tracks dependencies, (2) smart caching/invalidation so that a single upstream component change (e.g., 2018 Colombia CPI) triggers recomputation of only directly downstream data, and (3) a production-ready architecture for full pipeline orchestration.",
+      "tags": [
+        "orchestration",
+        "cache-invalidation",
+        "pipeline",
+        "architecture"
+      ],
+      "title": "End-to-End Orchestration & Smart Cache-Invalidation Audit",
+      "top_keywords": [
+        "_pkgdown.yml",
+        "pd_process_data.r",
+        "pd_deflation.r",
+        ".pipdataenv",
+        "cat()",
+        "pain points",
+        "recode_spec.r",
+        "orchestration",
+        "ideas",
+        "force_surveys"
       ]
     },
     {
@@ -1423,6 +1491,35 @@
       ]
     },
     {
+      "date": "2026-08-17",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
+      "slug": "2026-08-17-dlw-validation-engine-refactor",
+      "status": "completed",
+      "summary": "Replace the 7 near-identical module validation functions in `R/pipdata_dlw_validation.R` (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validation_bin`, `dlw_validation_hist`, `dlw_validation_all`, `dlw_validation_aspire`, `dlw_validation_l`) plus `dlw_validation_skip` with a single data-driven `dlw_validation_engine()` driven by a corrected `inst/extdata/validation_spec.yml`. Output must be byte-identical to the legacy functions (golden-test enforced via committed `.rds` fixtures), the report format must stay compatible with `get_validation_report()`/`get_data_status()`, and dead code must be removed.",
+      "tags": [
+        "validation",
+        "dlw",
+        "refactor",
+        "data-driven",
+        "yaml",
+        "data.validator"
+      ],
+      "title": "Replace 7 DLW validation functions with a single data-driven engine",
+      "top_keywords": [
+        "severity",
+        "validation_spec.yml",
+        "na_threshold",
+        "not_missing",
+        "warning_append",
+        "pattern:",
+        "pipdata_validate_gmd.r",
+        "critical",
+        "variable_availability",
+        "test scenarios"
+      ]
+    },
+    {
       "date": "",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
@@ -1882,6 +1979,28 @@
         "cg-reproducibility",
         "cg-architecture",
         "verbose"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
+      "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2",
+      "status": "",
+      "summary": "**Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md` **Verification scope**: uncommitted DLW validation engine refactor changes in working tree **Date**: 2026-08-17",
+      "tags": [],
+      "title": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2",
+      "top_keywords": [
+        "pipdata_dlw_validation.r",
+        "severity",
+        "not_missing",
+        "test-dlw_validation_engine.r",
+        "pipdata_validate_gmd.r",
+        "uniqueness",
+        "verification",
+        "dlw_validation_engine",
+        "variable",
+        "dup_type"
       ]
     },
     {
@@ -2752,6 +2871,38 @@
       ]
     },
     {
+      "date": "2026-08-17",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-08-17-yaml-driven-validation-engine-pattern.md",
+      "slug": "2026-08-17-yaml-driven-validation-engine-pattern",
+      "status": "",
+      "summary": "`R/pipdata_dlw_validation.R` defined 8 module validators (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validation_bin`, `dlw_validation_hist`, `dlw_validation_all`, `dlw_validation_aspire`, `dlw_validation_l`, `dlw_validation_skip`) that shared an identical 8-step skeleton. The only differences were (a) which variable-name regexes selected numeric/character/ welfare/weight columns and (b) which optional checks ran (urban, gender, hhid/pid uniqueness, welfare_type in-set, age range). Any change to validation logic required editing all 8 functions, and a 483-line `validation_spec.yml` existed but was **not consumed by any code** and did not faithfully mirror the R semantics.",
+      "tags": [
+        "validation",
+        "dlw",
+        "refactor",
+        "data-driven",
+        "yaml",
+        "data.validator",
+        "assertr",
+        "engine",
+        "schema"
+      ],
+      "title": "Replace N near-identical validation functions with a YAML-driven engine",
+      "top_keywords": [
+        "severity",
+        "recode_spec.r",
+        "engine",
+        "validation",
+        "validation_spec.yml",
+        "hhid",
+        "r/recode_spec.r",
+        "functions",
+        "replace",
+        "near-identical"
+      ]
+    },
+    {
       "date": "2026-04-30",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
@@ -3197,10 +3348,10 @@
       ]
     }
   ],
-  "entity_count": 109,
-  "generated": "2026-08-07",
+  "entity_count": 114,
+  "generated": "2026-08-20",
   "schema_version": "0.2.0",
-  "topic_count": 2,
+  "topic_count": 3,
   "topics": [
     {
       "entity_count": 83,
@@ -3312,6 +3463,22 @@
       ],
       "label": "Old_Files/ / Archive / Devtools::Document()",
       "slug": "old-files-archive-devtools-document"
+    },
+    {
+      "entity_count": 4,
+      "entity_paths": [
+        ".cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md",
+        ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
+        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
+        ".cg-docs/solutions/data-quality/2026-08-17-yaml-driven-validation-engine-pattern.md"
+      ],
+      "keywords": [
+        "severity",
+        "pipdata_validate_gmd.r",
+        "validation_spec.yml"
+      ],
+      "label": "Severity / Pipdata_Validate_Gmd.R / Validation_Spec.Yml",
+      "slug": "severity-pipdata-validate-gmd-r-validation-spec-yml"
     }
   ]
 }
