@@ -1,31 +1,44 @@
-# Filter DLW inventory by auxiliary-data changes
+# Resolve `force_surveys` identifiers to survey_id values
 
-For each auxiliary dataset that has changed, normalises the year
-variable and merges the changes against the DLW inventory to identify
-surveys affected by those changes.
+Maps a character vector of `survey_id` and/or `pip_id` identifiers to
+the subset present in the module-filtered, latest-version inventory
+(`inv_svy_full`). Lookup is first-by-`survey_id` membership, then by
+`pip_id` reverse-map through the already-loaded master inventory.
+Unknown identifiers are collected, not aborted.
 
 ## Usage
 
 ``` r
-filter_aux_inv(inv, changes_aux)
+resolve_force_surveys(force_surveys, inv_svy_full, dt_master, verbose = TRUE)
 ```
 
 ## Arguments
 
-- inv:
+- force_surveys:
 
-  A `data.table` of the DLW inventory.
+  Character vector of `survey_id` and/or `pip_id` identifiers, or
+  `NULL`.
 
-- changes_aux:
+- inv_svy_full:
 
-  A list of `data.table` objects representing changed rows in an
-  auxiliary dataset, as returned by
-  [`valid_aux_load()`](https://pip-technical-team.github.io/pipdata/reference/valid_aux_load.md).
+  A `data.table` of the module-filtered, latest-version DLW inventory
+  (already computed by
+  [`valid_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.md)).
+
+- dt_master:
+
+  A `data.table` of the PIP master inventory, already loaded by the
+  caller, or `NULL` when unavailable.
+
+- verbose:
+
+  Logical. Print progress messages.
 
 ## Value
 
-A `data.table` of affected surveys (latest version only), or `NULL` if
-no changes apply.
+A named list with character vectors: `survey_ids` (resolved survey_ids
+present in `inv_svy_full`), `resolved_from_survey_id`,
+`resolved_from_pip_id`, and `unknown`.
 
 ## See also
 
@@ -36,6 +49,7 @@ Other pd_process_data pipeline:
 [`create_attr()`](https://pip-technical-team.github.io/pipdata/reference/create_attr.md),
 [`data_to_dt()`](https://pip-technical-team.github.io/pipdata/reference/data_to_dt.md),
 [`filter_aux_data()`](https://pip-technical-team.github.io/pipdata/reference/filter_aux_data.md),
+[`filter_aux_inv()`](https://pip-technical-team.github.io/pipdata/reference/filter_aux_inv.md),
 [`fix_year_var()`](https://pip-technical-team.github.io/pipdata/reference/fix_year_var.md),
 [`get_aux_hashes()`](https://pip-technical-team.github.io/pipdata/reference/get_aux_hashes.md),
 [`inv_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/inv_dlw_load.md),
@@ -43,7 +57,6 @@ Other pd_process_data pipeline:
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md),
 [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md),
 [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md),
-[`resolve_force_surveys()`](https://pip-technical-team.github.io/pipdata/reference/resolve_force_surveys.md),
 [`save_pip_data()`](https://pip-technical-team.github.io/pipdata/reference/save_pip_data.md),
 [`survey_id_to_attr()`](https://pip-technical-team.github.io/pipdata/reference/survey_id_to_attr.md),
 [`valid_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.md)

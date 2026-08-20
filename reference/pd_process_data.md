@@ -13,7 +13,8 @@ pd_process_data(
   inv = NULL,
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  force_surveys = NULL
 )
 ```
 
@@ -35,12 +36,22 @@ pd_process_data(
 
   Logical. If `TRUE`, forces reprocessing of all surveys by switching
   stamp versioning to `"timestamp"` and bypassing the master inventory
-  comparison. Default `FALSE`.
+  comparison. Default `FALSE`. For surgical re-processing without the
+  global versioning side effect, see `force_surveys`.
 
 - verbose:
 
   Logical. Print progress messages. Default:
   `getOption("pipdata.verbose", default = TRUE)`.
+
+- force_surveys:
+
+  Character vector of `survey_id` and/or `pip_id` values to re-process
+  surgically, alongside the normal invalidation candidates. Mutually
+  exclusive with `force = TRUE`. Preserves content-based stamp
+  versioning (unlike `force = TRUE`, which switches to timestamp
+  versioning for the entire run). Unknown identifiers are warned about
+  and skipped. Default `NULL`.
 
 ## Value
 

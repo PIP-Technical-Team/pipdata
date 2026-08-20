@@ -62,7 +62,8 @@ pip inventory with the new versions recorded.</p>
 <span>  inv <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  aux_measures <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pfw"</span>, <span class="st">"cpi"</span>, <span class="st">"ppp"</span>, <span class="st">"pop"</span>, <span class="st">"gdp"</span>, <span class="st">"pce"</span><span class="op">)</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"pipdata.verbose"</span>, default <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"pipdata.verbose"</span>, default <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  force_surveys <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -84,12 +85,22 @@ with the DLW data. The default is <code>c("pfw", "cpi", "ppp", "pop", "gdp", "pc
 <dt id="arg-force">force<a class="anchor" aria-label="anchor" href="#arg-force"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, forces reprocessing of all surveys by
 switching stamp versioning to <code>"timestamp"</code> and bypassing the master
-inventory comparison. Default <code>FALSE</code>.</p></dd>
+inventory comparison. Default <code>FALSE</code>. For surgical re-processing
+without the global versioning side effect, see <code>force_surveys</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Logical. Print progress messages. Default:
 <code>getOption("pipdata.verbose", default = TRUE)</code>.</p></dd>
+
+
+<dt id="arg-force-surveys">force_surveys<a class="anchor" aria-label="anchor" href="#arg-force-surveys"></a></dt>
+<dd><p>Character vector of <code>survey_id</code> and/or <code>pip_id</code>
+values to re-process surgically, alongside the normal invalidation
+candidates. Mutually exclusive with <code>force = TRUE</code>. Preserves content-based
+stamp versioning (unlike <code>force = TRUE</code>, which switches to timestamp
+versioning for the entire run). Unknown identifiers are warned about and
+skipped. Default <code>NULL</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -13,7 +13,8 @@ valid_dlw_load(
   modules = c("ALL", "GROUP", "HIST", "GPWG", "BIN"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE),
-  aux_hashes = NULL
+  aux_hashes = NULL,
+  force_surveys = NULL
 )
 ```
 
@@ -53,6 +54,17 @@ valid_dlw_load(
   callers retain the previous behavior of always running aux-change
   detection.
 
+- force_surveys:
+
+  Character vector of `survey_id` and/or `pip_id` values to re-process
+  surgically, alongside the normal invalidation candidates. Forced
+  surveys bypass
+  [`inv_to_process()`](https://pip-technical-team.github.io/pipdata/reference/inv_to_process.md)
+  only and are unioned into the candidate set, deduplicated via
+  [`unique()`](https://rdrr.io/r/base/unique.html). Mutually exclusive
+  with `force = TRUE`. Preserves content-based stamp versioning. Unknown
+  identifiers are warned about and skipped. Default `NULL`.
+
 ## Value
 
 A `data.table` of surveys to process. If no surveys require processing,
@@ -74,6 +86,16 @@ The function:
     [`inv_to_process()`](https://pip-technical-team.github.io/pipdata/reference/inv_to_process.md).
 
 5.  Combines DLW-new and aux-changed surveys into a single inventory.
+
+**Force-survey path (`force_surveys`)**: forced surveys are resolved via
+[`resolve_force_surveys()`](https://pip-technical-team.github.io/pipdata/reference/resolve_force_surveys.md)
+(lookup-first: `survey_id` membership, then `pip_id` reverse-map through
+the already-loaded master inventory) and unioned into the candidate set.
+They bypass
+[`inv_to_process()`](https://pip-technical-team.github.io/pipdata/reference/inv_to_process.md)
+only; aux-change detection runs normally and overlaps are deduplicated
+via [`unique()`](https://rdrr.io/r/base/unique.html). Emits
+`force_surveys_inf` / `force_surveys_unknown_inf` log entries.
 
 **Aux-change gating (two-stage)**: aux-change detection is gated on the
 current aux `content_hash` values passed via `aux_hashes`.
@@ -139,5 +161,6 @@ Other pd_process_data pipeline:
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md),
 [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md),
 [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md),
+[`resolve_force_surveys()`](https://pip-technical-team.github.io/pipdata/reference/resolve_force_surveys.md),
 [`save_pip_data()`](https://pip-technical-team.github.io/pipdata/reference/save_pip_data.md),
 [`survey_id_to_attr()`](https://pip-technical-team.github.io/pipdata/reference/survey_id_to_attr.md)
