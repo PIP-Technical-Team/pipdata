@@ -114,6 +114,38 @@ pd_env_append <- function(key, new_rows) {
   invisible(result)
 }
 
+# Column-pointer sentinel registry for *_data_level attributes.
+# Keys are sentinel strings stored in the attribute; values are the
+# column names they point to. Anything not in this registry is treated
+# as a literal level value (e.g. "national") and broadcast as a scalar.
+# This registry governs dispatch only: adjust_population() and
+# finalize_deflation_output() still intentionally hard-code "area".
+# Update those consumers before registering another sentinel.
+.data_level_columns <- list(area = "area")
+
+#' Resolve a data_level attribute to a column name
+#'
+#' Returns the column name when `lvl` is a registered column-pointer
+#' sentinel, or `NA_character_` when `lvl` is a literal level value
+#' (e.g. `"national"`) that should be broadcast as a scalar. Also
+#' returns `NA_character_` for degenerate inputs (`NULL`,
+#' `character(0)`, `NA_character_`, multi-element vectors, or
+#' non-character scalars) so that a missing or empty `*_data_level`
+#' attribute safely falls through to the scalar-broadcast branch rather
+#' than crashing.
+#'
+#' @param lvl Character scalar (or `NULL`/`character(0)`/`NA`/other
+#'   degenerate shape). Value of a `*_data_level` attribute.
+#' @return Character scalar column name, or `NA_character_`.
+#' @noRd
+data_level_column <- function(lvl) {
+  if (is.null(lvl) || !is.character(lvl) || length(lvl) != 1L || is.na(lvl)) {
+    return(NA_character_)
+  }
+  col <- .data_level_columns[[lvl]]
+  if (is.null(col)) NA_character_ else col
+}
+
 # Suppress R CMD check notes for unquoted data.table column names and other
 # symbols used in non-standard evaluation throughout the package.
 utils::globalVariables(c(
