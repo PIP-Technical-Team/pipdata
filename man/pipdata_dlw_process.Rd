@@ -8,8 +8,6 @@ pipdata_dlw_process(
   inv_gmd_list = "dlw_gmd_inv",
   get_dlw_data = TRUE,
   validate_dlw_data = TRUE,
-  log = TRUE,
-  save_log = TRUE,
   check_missing = TRUE,
   release = NULL,
   identity = NULL,
@@ -22,10 +20,6 @@ pipdata_dlw_process(
 \item{get_dlw_data}{Logical. Whether to check for and download new DLW data. Default is \code{TRUE}.}
 
 \item{validate_dlw_data}{Logical. Whether to validate newly downloaded datasets. Default is \code{TRUE}.}
-
-\item{log}{Logical. Whether to keep logging information. Default is \code{TRUE}.}
-
-\item{save_log}{Logical. Whether to save logging information to a file. Default is \code{TRUE}.}
 
 \item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
 
@@ -48,6 +42,8 @@ This wrapper function automates key steps in processing DLW data by performing t
 and save them to the local directory.
 \item Validates the downloaded datasets using \code{pipdata::pipdata_validate_gmd}
 and updates the validation inventory (\code{"gmd_valid_inv"}).
+\item Writes a \code{dlw_summary_inf} stage marker and persists a DLW logging
+checkpoint after the delegates complete.
 }
 }
 \examples{
@@ -55,8 +51,6 @@ and updates the validation inventory (\code{"gmd_valid_inv"}).
 pipdata_dlw_process(inv_gmd_list = "dlw_gmd_inv",
             get_dlw_data = TRUE,
             validate_dlw_data = TRUE,
-            log             = TRUE,
-            save_log        = TRUE,
             check_missing   = TRUE,
             release         = "20260206",
             identity        = "TEST"

@@ -1,5 +1,5 @@
 {
-  "edge_count": 34,
+  "edge_count": 38,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -57,8 +57,20 @@
     },
     {
       "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md",
+      "target": ".cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
       "target": ".cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
+      "target": ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
       "target_missing": false
     },
     {
@@ -177,6 +189,12 @@
     },
     {
       "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md",
+      "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
       "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
       "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
       "target_missing": false
@@ -203,6 +221,12 @@
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
       "target": ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md",
+      "target": ".cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md",
       "target_missing": false
     }
   ],
@@ -254,15 +278,15 @@
       "title": "Unified logging and reporting across pipdata",
       "top_keywords": [
         "log_report()",
+        "logging-refactor",
         "pipfun",
+        "save_log",
         "piplog",
         "approach",
         "pipdata_dlw_process",
-        "save_log",
         "archive-legacy-dlw",
-        "log = true",
-        "logging",
-        "reporting"
+        "dlw_acquisition_inf",
+        "dlw_summary_inf"
       ]
     },
     {
@@ -520,6 +544,63 @@
         "orchestration",
         "ideas",
         "force_surveys"
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
+      "slug": "2026-08-15-force-surveys-surgical-reprocessing",
+      "status": "decided",
+      "summary": "`force = TRUE` in `pd_process_data()` (`R/pd_process_data.R:61-64`) does two things at once:",
+      "tags": [
+        "pd_process_data",
+        "valid_dlw_load",
+        "force",
+        "stamp",
+        "versioning",
+        "master-inventory",
+        "pipeline"
+      ],
+      "title": "Add force_surveys parameter for surgical survey re-processing",
+      "top_keywords": [
+        "force_surveys",
+        "valid_dlw_load()",
+        "pd_process_data()",
+        "inv_svy_full",
+        "pip_id",
+        "survey_id",
+        "force = true",
+        "force",
+        "inv_to_process()",
+        "valid_dlw_load"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md",
+      "slug": "2026-08-17-deflate-pipeline-wrapper",
+      "status": "decided",
+      "summary": "`pd_deflation()` works for single surveys (Mode A: pass `dt`, Mode B: pass `pip_id`). The `integrate-deflation` roadmap item is done. What's missing is the batch wrapper (`deflate-pipeline-wrapper` in roadmap.json, status: `idea`) that mirrors `pd_process_data()`'s iteration pattern: split inventory → lapply with tryCatch → log summary → build result.",
+      "tags": [
+        "deflation",
+        "pipeline",
+        "orchestration",
+        "batch-processing"
+      ],
+      "title": "pd_deflate_pipeline() — Batch Deflation Orchestrator Design",
+      "top_keywords": [
+        "pd_deflation()",
+        "pd_process_data()",
+        "\"pip_deflated\"",
+        "pd_deflate_pipeline()",
+        "version",
+        "pipdata_script.r",
+        "pip_id",
+        "approach",
+        "pipfun::setup_working_release()",
+        "r/pd_deflate_pipeline.r"
       ]
     },
     {
@@ -791,7 +872,7 @@
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-04-28-unified-logging.md",
       "slug": "2026-04-28-unified-logging",
-      "status": "active",
+      "status": "completed",
       "summary": "Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to the same `piplog` format, use canonical logmeta types, and produce a single consolidated report via `log_report()`. Eliminate the `log`/`save_log` arguments and replace with unconditional logging and automatic checkpoint saves.",
       "tags": [
         "logging",
@@ -806,13 +887,13 @@
         "save_log",
         "log_report()",
         "piplog",
-        "log_info()",
-        "test scenarios",
-        "logmeta",
         "args",
-        "dlw_download_inf",
+        "logmeta",
+        "dlw_summary_inf",
+        "test scenarios",
+        "dlw_acquisition_inf",
         "log_save()",
-        "log_report.r"
+        "log_info()"
       ]
     },
     {
@@ -1493,6 +1574,34 @@
     {
       "date": "2026-08-17",
       "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md",
+      "slug": "2026-08-17-deflate-pipeline-wrapper",
+      "status": "completed",
+      "summary": "Create `pd_deflate_pipeline()`, a batch orchestrator that iterates over a master inventory of cleaned surveys, deflates each via `pd_deflation()` (simple Mode B), correctly detects and skips failures (including `NA` returns), saves results to a new `\"pip_deflated\"` stamp alias, updates the master inventory with deflation columns, and logs a structured summary. The function operates as an independent pipeline stage — not called by `pd_process_data()`.",
+      "tags": [
+        "deflation",
+        "pipeline",
+        "orchestration",
+        "batch-processing",
+        "stamp"
+      ],
+      "title": "pd_deflate_pipeline() — Batch Deflation Orchestrator",
+      "top_keywords": [
+        "pd_deflation()",
+        "\"pip_deflated\"",
+        "na",
+        "pipdata_script.r",
+        "pd_deflate_pipeline()",
+        "save_pip_data()",
+        "test-pd-deflate-pipeline.r",
+        "deflated",
+        "inv",
+        "version"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "entity_type": "plan",
       "path": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
       "slug": "2026-08-17-dlw-validation-engine-refactor",
       "status": "completed",
@@ -1517,6 +1626,38 @@
         "critical",
         "variable_availability",
         "test scenarios"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
+      "slug": "2026-08-17-force-surveys-surgical-reprocessing",
+      "status": "completed",
+      "summary": "Add a `force_surveys` parameter (character vector of `survey_id` and/or `pip_id`) to `pd_process_data()` and `valid_dlw_load()` that re-processes the named surveys alongside the normal invalidation candidates, **without** the destructive global side effects of `force = TRUE` (which switches stamp versioning to `\"timestamp\"` for the entire run and bypasses all invalidation logic).",
+      "tags": [
+        "pd_process_data",
+        "valid_dlw_load",
+        "force",
+        "force_surveys",
+        "stamp",
+        "versioning",
+        "master-inventory",
+        "pipeline",
+        "surgical-reprocessing"
+      ],
+      "title": "Add force_surveys parameter for surgical survey re-processing",
+      "top_keywords": [
+        "force_surveys",
+        "pip_id",
+        "valid_dlw_load()",
+        "survey_id",
+        "tests/testthat/test-valid_dlw_load.r",
+        "force = true",
+        "pd_process_data()",
+        "test-valid_dlw_load.r",
+        "dt_master",
+        "forced_inv"
       ]
     },
     {
@@ -1987,20 +2128,42 @@
       "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
       "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2",
       "status": "",
-      "summary": "**Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md` **Verification scope**: uncommitted DLW validation engine refactor changes in working tree **Date**: 2026-08-17",
+      "summary": "**Review mode**: light (verify) **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md` **Findings**: 6 (P0: 0, P1: 1, P2: 2, P3: 3)",
       "tags": [],
       "title": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2",
       "top_keywords": [
-        "pipdata_dlw_validation.r",
-        "severity",
-        "not_missing",
-        "test-dlw_validation_engine.r",
+        "verbose",
+        "force_surveys",
+        "pip_id",
+        "pd_process_data()",
+        "review",
+        "force",
+        "fix",
+        "content_hash_dlw",
+        "force_surveys = null",
+        "valid_dlw_load()"
+      ]
+    },
+    {
+      "date": "2026-08-21",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md",
+      "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3",
+      "status": "",
+      "summary": "**Review mode**: light (verify) **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md` **Files reviewed**: current unified-logging implementation, tests, package metadata, generated documentation, and vignettes **Findings**: 12 (P0: 0, P1: 6, P2: 4, P3: 2)",
+      "tags": [],
+      "title": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3",
+      "top_keywords": [
+        "null",
+        "review",
+        "log_report.r",
         "pipdata_validate_gmd.r",
-        "uniqueness",
-        "verification",
-        "dlw_validation_engine",
-        "variable",
-        "dup_type"
+        "test-dlw-unified-logging.r",
+        "2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+        "pipdata_get_gmd.r",
+        "passed",
+        "report",
+        "verify"
       ]
     },
     {
@@ -2657,6 +2820,34 @@
       ]
     },
     {
+      "date": "2026-08-21",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
+      "slug": "2026-08-21-authors-at-r-description-validation",
+      "status": "",
+      "summary": "The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles, but running `R CMD check` directly on the source directory reported missing `Author` and `Maintainer` fields.",
+      "tags": [
+        "DESCRIPTION",
+        "Authors@R",
+        "R-CMD-check",
+        "R-CMD-build",
+        "package-metadata"
+      ],
+      "title": "Validate Authors@R through a built R package",
+      "top_keywords": [
+        "authors@r",
+        "author",
+        "maintainer",
+        "aut",
+        "cre",
+        "r cmd check",
+        "program files",
+        "andres castaneda",
+        "authors",
+        "package"
+      ]
+    },
+    {
       "date": "2026-04-27",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md",
@@ -2868,6 +3059,37 @@
         "hashes",
         "current",
         "aux"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-08-17-pip-id-reverse-map-dedup-uniqueness.md",
+      "slug": "2026-08-17-pip-id-reverse-map-dedup-uniqueness",
+      "status": "",
+      "summary": "When resolving a user-supplied `pip_id` back to its `survey_id` (e.g. the `force_surveys` surgical re-processing feature), building a reverse-map from the raw master inventory and indexing it picks one row per duplicate silently: A `pip_id` can legitimately repeat across historical `content_hash_dlw` rows of the *same* survey. Without dedup, the reverse-map can resolve to a stale/old-row `survey_id` — silently misclassifying a valid current `pip_id` as unknown (R9 out-of-filter) or forcing the wrong survey.",
+      "tags": [
+        "data-quality",
+        "pip_id",
+        "survey_id",
+        "reverse-map",
+        "dedup",
+        "master-inventory",
+        "force_surveys",
+        "build_pip_inventory"
+      ],
+      "title": "pip_id to survey_id reverse-map requires dedup and uniqueness assertion",
+      "top_keywords": [
+        "pip_id",
+        "survey_id",
+        "reverse-map",
+        "dedup",
+        "content_hash_dlw",
+        "(pip_id, survey_id)",
+        "force_surveys",
+        "requires",
+        "uniqueness",
+        "assertion"
       ]
     },
     {
@@ -3326,6 +3548,35 @@
       ]
     },
     {
+      "date": "2026-08-21",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md",
+      "slug": "2026-08-21-built-package-and-checkpoint-verification",
+      "status": "",
+      "summary": "Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: - `R CMD check` resolved the global `pipfun` 1.0.0 instead of the local 1.0.1 checkpoint build. - A checkpoint call could pass a source-order test while using an unregistered `stamp` alias. - A mocked checkpoint did not prove that the persisted object contained the correct stage metadata.",
+      "tags": [
+        "R-CMD-check",
+        "package-build",
+        "piplog",
+        "stamp",
+        "checkpoint",
+        "testthat"
+      ],
+      "title": "Verify R package dependencies and stage checkpoints from built artifacts",
+      "top_keywords": [
+        "r cmd check",
+        "stamp",
+        "stage",
+        "verify",
+        "built",
+        "checkpoints",
+        "2026-08-21-authors-at-r-description-validation.md",
+        "2026-04-27-contract-testing-for-logging-side-effects.md",
+        "root",
+        "pipfun"
+      ]
+    },
+    {
       "date": "2026-04-27",
       "entity_type": "strategy",
       "path": ".cg-docs/strategy/2026-04-27-code-quality-focus.md",
@@ -3348,13 +3599,13 @@
       ]
     }
   ],
-  "entity_count": 114,
-  "generated": "2026-08-20",
+  "entity_count": 122,
+  "generated": "2026-08-21",
   "schema_version": "0.2.0",
-  "topic_count": 3,
+  "topic_count": 5,
   "topics": [
     {
-      "entity_count": 83,
+      "entity_count": 88,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -3364,6 +3615,7 @@
         ".cg-docs/brainstorms/2026-05-27-inventory-delta-strategy.md",
         ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md",
         ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
+        ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
         ".cg-docs/plans/2026-04-06-enrich-log-report.md",
         ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
         ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
@@ -3388,6 +3640,7 @@
         ".cg-docs/plans/2026-06-28-pd-process-data-ram-regression.md",
         ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
         ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
+        ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
         ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
         ".cg-docs/reviews/2026-04-16-review.md",
         ".cg-docs/reviews/2026-04-27-branch-review.md",
@@ -3409,6 +3662,8 @@
         ".cg-docs/reviews/2026-05-19-fix-reporting-level-duplication-review.md",
         ".cg-docs/reviews/2026-05-20-inventory-architecture-refactor-review.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
+        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
@@ -3433,6 +3688,7 @@
         ".cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md",
         ".cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md",
         ".cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md",
+        ".cg-docs/solutions/data-quality/2026-08-17-pip-id-reverse-map-dedup-uniqueness.md",
         ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
         ".cg-docs/solutions/git-workflows/2026-04-23-guard-at-entry-point-pattern.md",
         ".cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md",
@@ -3441,12 +3697,12 @@
         ".cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md"
       ],
       "keywords": [
+        "valid_dlw_load()",
         "reporting_level",
-        "aaa.r",
-        "valid_dlw_load()"
+        "aaa.r"
       ],
-      "label": "Reporting_Level / Aaa.R / Valid_Dlw_Load()",
-      "slug": "reporting-level-aaa-r-valid-dlw-load"
+      "label": "Valid_Dlw_Load() / Reporting_Level / Aaa.R",
+      "slug": "valid-dlw-load-reporting-level-aaa-r"
     },
     {
       "entity_count": 4,
@@ -3467,18 +3723,48 @@
     {
       "entity_count": 4,
       "entity_paths": [
+        ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
+        ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
+        ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
+        ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md"
+      ],
+      "keywords": [
+        "%||%",
+        "r cmd check",
+        "authors@r"
+      ],
+      "label": "%||% / R Cmd Check / Authors@R",
+      "slug": "r-cmd-check-authors-r"
+    },
+    {
+      "entity_count": 3,
+      "entity_paths": [
+        ".cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md",
+        ".cg-docs/plans/2026-05-04-integrate-deflation.md",
+        ".cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md"
+      ],
+      "keywords": [
+        "pd_deflation()",
+        "pip_id",
+        "\"pip_deflated\""
+      ],
+      "label": "Pd_Deflation() / Pip_Id / \"Pip_Deflated\"",
+      "slug": "pd-deflation-pip-id-pip-deflated"
+    },
+    {
+      "entity_count": 3,
+      "entity_paths": [
         ".cg-docs/brainstorms/2026-08-14-dlw-validation-engine-refactor.md",
         ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
-        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
         ".cg-docs/solutions/data-quality/2026-08-17-yaml-driven-validation-engine-pattern.md"
       ],
       "keywords": [
+        "validation_spec.yml",
         "severity",
-        "pipdata_validate_gmd.r",
-        "validation_spec.yml"
+        "pipdata_validate_gmd.r"
       ],
-      "label": "Severity / Pipdata_Validate_Gmd.R / Validation_Spec.Yml",
-      "slug": "severity-pipdata-validate-gmd-r-validation-spec-yml"
+      "label": "Validation_Spec.Yml / Severity / Pipdata_Validate_Gmd.R",
+      "slug": "validation-spec-yml-severity-pipdata-validate-gmd-r"
     }
   ]
 }

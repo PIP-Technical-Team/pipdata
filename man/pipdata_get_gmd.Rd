@@ -6,18 +6,12 @@
 \usage{
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
-  log = TRUE,
-  save_log = TRUE,
   check_missing = TRUE,
   verbose = getOption("pipdata.verbose", default = TRUE)
 )
 }
 \arguments{
 \item{inv_gmd_list}{Character. The name of the inventory file containing the list of GMD datasets.}
-
-\item{log}{Logical. Whether to keep logging information. Default is \code{TRUE}.}
-
-\item{save_log}{Logical. Whether to save logging information to a file. Default is \code{TRUE}.}
 
 \item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
 
@@ -26,7 +20,8 @@ pipdata_get_gmd(
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
-A \code{data.table} object saved in the local folder.
+Invisibly returns \code{NULL}; the acquisition inventory is persisted as a
+side effect.
 }
 \description{
 This wrapper function automates the process of managing GMD catalog
@@ -40,6 +35,11 @@ using \code{dlw::dlw_get_gmd} and save them to the local directory.
 \item Updates the inventory file (\code{dlw_gmd_inv}) with information about
 the newly downloaded datasets.
 }
+
+Logging is unconditional. The function writes \code{dlw_acquisition_inf} entries
+for start, no-new-data, per-survey download failures, and completion. Error
+conditions are represented by \code{condition_msg} in \code{logmeta}; the discriminator
+in \code{logmeta$error} is always a string.
 }
 \note{
 This function expects a working release to be configured via
@@ -51,8 +51,7 @@ standalone, ensure \code{setup_working_release()} has been invoked first.
 \dontrun{
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
-  log = FALSE,
-  save_log = FLASE
+  check_missing = TRUE
 )
 }
 }

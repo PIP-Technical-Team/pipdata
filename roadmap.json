@@ -20,8 +20,8 @@
                 {
                     "id": "logging-refactor",
                     "title": "Standardize logging approach",
-                    "description": "Review and standardize log = TRUE argument vs. if statement pattern across functions. Enforce consistent logging style. Also include the pipaux update log (accessible via pipfun::log_load(id = \"pipaux_update_log\", alias = \"aux_meta\")) in the unified logging surface so pipaux update events are captured alongside pipeline logs.",
-                    "status": "planned",
+                    "description": "Standardize log = TRUE argument vs. if statement pattern across functions and enforce consistent logging style. The DLW surface portion (eliminating log/save_log from pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd) is implemented as part of unified-logging-report (shared plan file). The pipaux portion — including the pipaux update log (accessible via pipfun::log_load(id = \"pipaux_update_log\", alias = \"aux_meta\")) in the unified logging surface so pipaux update events are captured alongside pipeline logs — remains a follow-on after B2, since pipaux uses a separate log name and incompatible logmeta schema.",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
                     "tags": [
                         "logging",
@@ -33,7 +33,7 @@
                     "id": "unified-logging-report",
                     "title": "Harmonize logging and reporting across pipdata",
                     "description": "Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to the same piplog format and produce a single consolidated report via log_report(). Currently DLW functions (pipdata_dlw_process, pipdata_get_gmd, pipdata_validate_gmd) use a separate logging setup from the pipeline functions (pd_process_data, valid_dlw_load, update_pip_inventory) that feed log_report(). Goal: one log, one report, one set of logmeta conventions for the entire package.",
-                    "status": "planned",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
                     "tags": [
                         "logging",
@@ -262,6 +262,17 @@
                         "oom",
                         "reliability",
                         "pipeline"
+                    ]
+                },
+                {
+                    "id": "logmeta-type-leakage-cleanup",
+                    "title": "Register missing logmeta discriminator types in .log_internal_types",
+                    "description": "Several logmeta discriminator types emitted by current code are not registered in .log_internal_types (R/aaa.R:80-89), causing them to leak into the log_report() type-summary table. Missing types: aux_no_changes_inf, aux_changes_no_surveys_inf, surveys_to_clean_inf, force_surveys_inf, force_surveys_unknown_inf, aux_na_hash_inf, deflate_provenance_missing, missing_metadata_err. Audit all emitted discriminator types across the codebase against .log_internal_types and register the missing ones. Discovered during unified-logging-report plan review (P3.2) — deferred from B2 scope but should be done alongside or shortly after.",
+                    "status": "idea",
+                    "tags": [
+                        "logging",
+                        "code-quality",
+                        "log-report"
                     ]
                 }
             ]

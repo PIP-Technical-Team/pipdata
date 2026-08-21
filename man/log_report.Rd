@@ -2,7 +2,7 @@
 % Please edit documentation in R/log_report.R
 \name{log_report}
 \alias{log_report}
-\title{Generate a markdown report from a pipeline log}
+\title{Generate a markdown report from a pipeline log.}
 \usage{
 log_report(
   log = NULL,
@@ -39,6 +39,12 @@ affected surveys.
 The report contains:
 \itemize{
 \item Running metadata (time window, total entries, success/fail counts).
+\item Stage-aware warnings for DLW-only, pipeline-only, no-op, and
+incomplete runs.
+\item DLW acquisition summary, including attempted, successful, and
+failed survey counts and failure details.
+\item DLW validation summary, including workflow phase counts and
+validation or loading failures.
 \item Processing summary: total, cleaned, and failed counts
 (from \code{process_summary_inf} log entry).
 \item Deflation summary: candidates, successes, failures, and failing

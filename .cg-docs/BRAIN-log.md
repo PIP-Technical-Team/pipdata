@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-20 · 114 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-21 · 122 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -39,14 +39,36 @@ _Generated 2026-08-20 · 114 artifacts (newest first) + 0 roadmap features_
 - **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
   > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
 
+## 2026-08-21
+
+- **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md)** · `review` · _—_ · `2026-08-21`
+  > **Review mode**: light (verify) **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revise…
+- **[Validate Authors@R through a built R package](.cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md)** · `solution` · _—_ · `2026-08-21`
+  > The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles,…
+- **[Verify R package dependencies and stage checkpoints from built artifacts](.cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md)** · `solution` · _—_ · `2026-08-21`
+  > Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: …
+
 ## 2026-08-17
 
 - **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md)** · `review` · _—_ · `2026-08-17`
-  > **Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-…
+  > **Review mode**: light (verify) **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revise…
+- **[Add force_surveys parameter for surgical survey re-processing](.cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md)** · `plan` · _completed_ · `2026-08-17`
+  > Add a `force_surveys` parameter (character vector of `survey_id` and/or `pip_id`) to `pd_process_data()` and `valid_d…
+- **[pd_deflate_pipeline\(\) — Batch Deflation Orchestrator](.cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md)** · `plan` · _completed_ · `2026-08-17`
+  > Create `pd_deflate_pipeline()`, a batch orchestrator that iterates over a master inventory of cleaned surveys, deflat…
+- **[pd_deflate_pipeline\(\) — Batch Deflation Orchestrator Design](.cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md)** · `brainstorm` · _decided_ · `2026-08-17`
+  > `pd_deflation()` works for single surveys (Mode A: pass `dt`, Mode B: pass `pip_id`). The `integrate-deflation` roadm…
+- **[pip_id to survey_id reverse-map requires dedup and uniqueness assertion](.cg-docs/solutions/data-quality/2026-08-17-pip-id-reverse-map-dedup-uniqueness.md)** · `solution` · _—_ · `2026-08-17`
+  > When resolving a user-supplied `pip_id` back to its `survey_id` (e.g. the `force_surveys` surgical re-processing feat…
 - **[Replace 7 DLW validation functions with a single data-driven engine](.cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md)** · `plan` · _completed_ · `2026-08-17`
   > Replace the 7 near-identical module validation functions in `R/pipdata_dlw_validation.R` (`dlw_validation_gpwg`, `dlw…
 - **[Replace N near-identical validation functions with a YAML-driven engine](.cg-docs/solutions/data-quality/2026-08-17-yaml-driven-validation-engine-pattern.md)** · `solution` · _—_ · `2026-08-17`
   > `R/pipdata_dlw_validation.R` defined 8 module validators (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validat…
+
+## 2026-08-15
+
+- **[Add force_surveys parameter for surgical survey re-processing](.cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md)** · `brainstorm` · _decided_ · `2026-08-15`
+  > `force = TRUE` in `pd_process_data()` (`R/pd_process_data.R:61-64`) does two things at once:
 
 ## 2026-08-14
 
@@ -277,7 +299,7 @@ _Generated 2026-08-20 · 114 artifacts (newest first) + 0 roadmap features_
   > Merge the two pipeline-active environments (`.pipdata`, `.pipdataenv`) into a single `.pipdataenv` environment with n…
 - **[Unified logging and reporting across pipdata](.cg-docs/brainstorms/2026-04-28-unified-logging.md)** · `brainstorm` · _decided_ · `2026-04-28`
   > <!-- Valid status values: decided, in-progress, abandoned -->
-- **[Unified logging and reporting across pipdata](.cg-docs/plans/2026-04-28-unified-logging.md)** · `plan` · _active_ · `2026-04-28`
+- **[Unified logging and reporting across pipdata](.cg-docs/plans/2026-04-28-unified-logging.md)** · `plan` · _completed_ · `2026-04-28`
   > Unify the logging infrastructure so all pipdata functions (DLW acquisition, validation, and survey cleaning) write to…
 
 ## 2026-04-27
