@@ -1,5 +1,5 @@
 {
-  "edge_count": 38,
+  "edge_count": 42,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -71,6 +71,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
       "target": ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
+      "target": ".cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md",
       "target_missing": false
     },
     {
@@ -197,6 +203,24 @@
       "edge_type": "verifies",
       "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
       "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
+      "target": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
+      "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
+      "target": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
       "target_missing": false
     },
     {
@@ -601,6 +625,36 @@
         "approach",
         "pipfun::setup_working_release()",
         "r/pd_deflate_pipeline.r"
+      ]
+    },
+    {
+      "date": "2026-08-20",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md",
+      "slug": "2026-08-20-data-level-sentinel-semantics",
+      "status": "decided",
+      "summary": "The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes currently carry **dual semantics** in a single string:",
+      "tags": [
+        "deflation",
+        "data-level",
+        "attribute-semantics",
+        "subnational",
+        "ppp",
+        "cpi",
+        "population"
+      ],
+      "title": "Explicit data_level sentinel semantics (column-lookup registry)",
+      "top_keywords": [
+        "\"area\"",
+        "add_dom_vars()",
+        "pd_aux_attr()",
+        "area",
+        "approach",
+        "add_ppp()",
+        "add_cpi()",
+        "adjust_population()",
+        "data_level_column()",
+        "pd_deflation.r"
       ]
     },
     {
@@ -1661,6 +1715,37 @@
       ]
     },
     {
+      "date": "2026-08-20",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
+      "slug": "2026-08-20-explicit-data-level-sentinel-semantics",
+      "status": "completed",
+      "summary": "Replace the implicit `\"area\"` column-pointer sentinel with an explicit, code-enforced column-lookup registry so the pointer-vs-literal distinction is declared in one place and applied through one resolver, centralizing the 3 `identical(*, \"area\")` dispatch branches in `R/pd_deflation.R`. `adjust_population()` remains a separate hardcoded consumer of the `\"area\"` column name (see Out of Scope); the registry centralizes the *dispatch* but does not yet govern `adjust_population()`'s internal column references.",
+      "tags": [
+        "deflation",
+        "data-level",
+        "attribute-semantics",
+        "subnational",
+        "ppp",
+        "cpi",
+        "population",
+        "refactor"
+      ],
+      "title": "Explicit data_level sentinel semantics (column-lookup registry)",
+      "top_keywords": [
+        "\"area\"",
+        "na",
+        "test-pd-deflation.r",
+        "adjust_population()",
+        "null",
+        "na_character_",
+        "character(0)",
+        "aaa.r",
+        "pd_deflation.r",
+        "*_data_level"
+      ]
+    },
+    {
       "date": "",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
@@ -2189,6 +2274,28 @@
       ]
     },
     {
+      "date": "2026-08-21",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
+      "slug": "2026-08-20-explicit-data-level-sentinel-semantics-verify-review",
+      "status": "",
+      "summary": "**Review mode**: verify **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md` **Confirmations**: No prior fixed-finding scope applied to the deflation files.",
+      "tags": [],
+      "title": "2026-08-20-explicit-data-level-sentinel-semantics-verify-review",
+      "top_keywords": [
+        "r/pd_deflation.r",
+        "test-pd-deflation.r",
+        "review",
+        "r/aaa.r",
+        "pd_deflation.r",
+        "test-adjust-population.r",
+        "2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+        "2026-08-20-explicit-data-level-sentinel-semantics.md",
+        "aaa.r",
+        "data-level"
+      ]
+    },
+    {
       "date": "2026-04-07",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
@@ -2701,6 +2808,34 @@
         "filter_aux_inv()",
         "inv_to_clean",
         "reportvar"
+      ]
+    },
+    {
+      "date": "2026-08-21",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
+      "slug": "2026-08-21-explicit-data-level-sentinel-registry",
+      "status": "",
+      "summary": "The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes are scalar attributes on `pipmd`/`pipgd` objects. The value `\"national\"` is a literal level to broadcast, while `\"area\"` means that each row must look up its level in the `area` column. The same character value therefore had two meanings. The distinction was implemented as repeated `identical(..., \"area\")` checks in deflation code. Treating `\"area\"` as a named-vector key instead of a column pointer produced `NA` PPP/CPI values for rural and urban surveys. A shared `reporting_level` discriminator was also unsafe because PPP, CPI, and population domains can differ for one survey.",
+      "tags": [
+        "deflation",
+        "data-level",
+        "sentinel",
+        "subnational",
+        "mixed-domain"
+      ],
+      "title": "Make data-level column sentinels explicit with a resolver registry",
+      "top_keywords": [
+        "\"area\"",
+        "na",
+        "data-level",
+        "reporting_level",
+        "adjust_population()",
+        "*_data_level",
+        "column",
+        "resolver",
+        "registry",
+        "sentinels"
       ]
     },
     {
@@ -3599,13 +3734,13 @@
       ]
     }
   ],
-  "entity_count": 122,
-  "generated": "2026-08-21",
+  "entity_count": 126,
+  "generated": "2026-08-24",
   "schema_version": "0.2.0",
   "topic_count": 5,
   "topics": [
     {
-      "entity_count": 88,
+      "entity_count": 93,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -3616,6 +3751,7 @@
         ".cg-docs/brainstorms/2026-06-05-valid-dlw-load-review.md",
         ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
         ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
+        ".cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md",
         ".cg-docs/plans/2026-04-06-enrich-log-report.md",
         ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
         ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
@@ -3641,6 +3777,7 @@
         ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
         ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
         ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
+        ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
         ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
         ".cg-docs/reviews/2026-04-16-review.md",
         ".cg-docs/reviews/2026-04-27-branch-review.md",
@@ -3665,6 +3802,7 @@
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
+        ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
         ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
@@ -3680,10 +3818,12 @@
         ".cg-docs/solutions/bugs/2026-05-22-adjust-population-year-column-missing.md",
         ".cg-docs/solutions/bugs/2026-05-27-fs-bytes-class-collapse-rowbind-abort.md",
         ".cg-docs/solutions/bugs/2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id.md",
+        ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
         ".cg-docs/solutions/build-errors/2026-04-16-non-ascii-characters-in-r-code.md",
         ".cg-docs/solutions/build-errors/2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md",
         ".cg-docs/solutions/build-errors/2026-04-29-roxygen-link-to-unexported-function.md",
         ".cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md",
+        ".cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md",
         ".cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md",
         ".cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md",
         ".cg-docs/solutions/data-quality/2026-06-05-joyn-diagnostic-column-discipline.md",
