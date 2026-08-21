@@ -1,6 +1,7 @@
 # Tests for pd_deflation.R
 #
 # Covers:
+#   data_level_column()          — sentinel registry contract
 #   .validate_deflation_input()  — input validation helper
 #   .load_deflation_aux()        — inventory-based metadata loading (mocked)
 #   safe_deflation()             — tryCatch scaffold; error → NA
@@ -97,6 +98,34 @@ make_pop_vec_subnational <- function(year = "2015") {
     stats::setNames(1.3e9, paste0(year, "_national"))
   )
 }
+
+# ---------------------------------------------------------------------------
+# data_level_column() — column-lookup registry contract
+# ---------------------------------------------------------------------------
+
+test_that("data_level_column() resolves the area sentinel and maps literals to NA", {
+  expect_equal(pipdata:::data_level_column("area"), "area")
+  expect_true(is.na(pipdata:::data_level_column("national")))
+  expect_true(is.na(pipdata:::data_level_column("region")))
+  # Degenerate inputs from missing/empty/malformed *_data_level attrs.
+  expect_true(is.na(pipdata:::data_level_column(NULL)))
+  expect_true(is.na(pipdata:::data_level_column(character(0))))
+  expect_true(is.na(pipdata:::data_level_column(NA_character_)))
+  expect_true(is.na(pipdata:::data_level_column(c("area", "area"))))
+  expect_true(is.na(pipdata:::data_level_column(c("national", "rural"))))
+  expect_true(is.na(pipdata:::data_level_column(1)))
+  expect_true(is.na(pipdata:::data_level_column(TRUE)))
+})
+
+test_that("add_ppp() safely broadcasts when its data-level attribute is NA", {
+  dt <- make_pipmd()
+  data.table::setattr(dt, "ppp_data_level", NA_character_)
+
+  result <- pipdata:::add_ppp(dt, make_ppp_vec())
+
+  expect_true("ppp_2017_01_01" %in% names(result))
+  expect_true(all(is.na(result$ppp_2017_01_01)))
+})
 
 # ---------------------------------------------------------------------------
 # .validate_deflation_input()
@@ -434,6 +463,23 @@ test_that("add_cpi aborts when cpi_data_level is 'area' but area column is absen
   expect_error(pipdata:::add_cpi(dt, cpi), class = "add_cpi")
 })
 
+test_that("add_ppp() and add_cpi() resolve mixed data-level attributes independently", {
+  dt <- make_pipmd(
+    welfare = c(5, 10),
+    weight = c(100, 200),
+    ppp_data_level = "area",
+    cpi_data_level = "national",
+    reporting_level = 2L,
+    area = c("rural", "urban")
+  )
+
+  result <- pipdata:::add_ppp(dt, make_ppp_vec_subnational())
+  result <- pipdata:::add_cpi(result, make_cpi_vec())
+
+  expect_equal(result$ppp_2017_01_01, c(3.0, 3.9))
+  expect_equal(result$cpi2017, rep(100, 2L))
+})
+
 # ---------------------------------------------------------------------------
 # adjust_population() — named-vector path
 # ---------------------------------------------------------------------------
@@ -721,6 +767,28 @@ test_that("deflation output includes adj_pop = FALSE when population adjustment 
 
   expect_true("adj_pop" %in% names(attributes(result)))
   expect_false(attr(result, "adj_pop"))
+})
+
+test_that("deflation keeps population adjustment off for mixed subnational attributes", {
+  dt <- make_pipmd(
+    welfare = c(5, 10),
+    weight = c(100, 200),
+    area = c("rural", "urban"),
+    reporting_level = 2L,
+    ppp_data_level = "area",
+    cpi_data_level = "area",
+    pop_data_level = "national"
+  )
+  cpi <- make_cpi_vec_subnational()
+  ppp <- make_ppp_vec_subnational()
+  pop <- make_pop_vec(level = "national")
+
+  result <- suppressMessages(
+    pipdata:::deflation.pipmd(dt, cpi, ppp, pop)
+  )
+
+  expect_false(attr(result, "adj_pop"))
+  expect_equal(result$weight, dt$weight)
 })
 
 test_that("pipgd deflation output includes adj_pop = FALSE always", {
