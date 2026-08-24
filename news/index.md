@@ -2,6 +2,19 @@
 
 ## pipdata 0.0.1
 
+### Breaking changes
+
+- [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md),
+  [`pipdata_get_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_get_gmd.md),
+  and
+  [`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)
+  no longer accept `log` or `save_log` arguments. Logging is
+  unconditional and writes typed entries to `"pipdata_log"`. Checkpoints
+  are saved automatically at DLW and pipeline stage boundaries, and
+  [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
+  now covers DLW acquisition and validation alongside survey cleaning
+  and deflation.
+
 ### New features
 
 - Add

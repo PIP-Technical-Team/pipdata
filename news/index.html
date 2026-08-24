@@ -42,6 +42,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1" id="pipdata-001">pipdata 0.0.1<a class="anchor" aria-label="anchor" href="#pipdata-001"></a></h2>
 <div class="section level3">
+<h3 id="breaking-changes-0-0-1">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-0-1"></a></h3>
+<ul><li>
+<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>, <code><a href="../reference/pipdata_get_gmd.html">pipdata_get_gmd()</a></code>, and <code><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code> no longer accept <code>log</code> or <code>save_log</code> arguments. Logging is unconditional and writes typed entries to <code>"pipdata_log"</code>. Checkpoints are saved automatically at DLW and pipeline stage boundaries, and <code><a href="../reference/log_report.html">log_report()</a></code> now covers DLW acquisition and validation alongside survey cleaning and deflation.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="new-features-0-0-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-1"></a></h3>
 <ul><li><p>Add <code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>: a batch orchestrator that iterates over the master inventory, deflates each survey via <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>, saves results to the <code>"pip_deflated"</code> stamp alias, updates the master inventory with deflation provenance columns (<code>deflated</code>, <code>content_hash_deflated</code>, <code>aux_*_hash_at_deflation</code>), and logs a structured summary. Supports <code>force = TRUE</code> to re-deflate already processed surveys.</p></li>
 <li><p>Add <code>force_surveys</code> parameter to <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>: enables surgical re-processing of specific surveys by <code>survey_id</code> or <code>pip_id</code>, without the global stamp versioning side effect of <code>force = TRUE</code>. Mutually exclusive with <code>force</code>.</p></li>

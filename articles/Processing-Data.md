@@ -268,7 +268,8 @@ log_report(
 ```
 
 The report includes, when the corresponding logmeta entry is present in
-the log: run metadata (time window, totals), the processing summary
+the log: DLW acquisition and validation summaries, stage-aware run
+warnings, run metadata (time window, totals), the processing summary
 (`process_summary_inf`), the deflation summary (`deflate_summary_inf`),
 auxiliary file changes (`aux_changes_inf`), a summary table by
 error/info type, a country-level breakdown of errors, inventory
@@ -280,20 +281,10 @@ when their logmeta entry is absent.
 **Scope**:
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
 parses entries written under the `"pipdata_log"` name by
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)/[`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md)
-and by
-[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)/`deflate_one()`
-(the `deflate_summary_inf` summary and per-survey deflation errors). It
-does **not** consume any log produced by
-[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
-(DLW acquisition/validation uses its own `log`/`save_log` arguments and
-does not currently feed into
-[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md);
-see [Validating
-Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.html#logging-scope)).
-Keep this scope in mind when reading a generated report — a clean report
-does not imply the DLW acquisition/validation step had no issues. The
-goal going forward is for
-[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-to summarize a single, harmonized log covering all three wrappers
-(tracked on the roadmap as `unified-logging-report`).
+[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md),
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)/[`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md),
+and
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)/`deflate_one()`.
+The report is stage-aware and shows DLW acquisition/validation outcomes
+together with cleaning and deflation results. Auxiliary refresh logging
+from `pipaux` remains outside this report.

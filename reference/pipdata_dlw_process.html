@@ -5,6 +5,8 @@ Checks for new datasets in the GMD catalog, downloads them using dlw::dlw_get_gm
 and save them to the local directory.
 Validates the downloaded datasets using pipdata::pipdata_validate_gmd
 and updates the validation inventory ("gmd_valid_inv").
+Writes a dlw_summary_inf stage marker and persists a DLW logging
+checkpoint after the delegates complete.
 
 '><meta property="og:description" content='This wrapper function automates key steps in processing DLW data by performing the following tasks:
 Checks if the list of GMD DLW datasets is available, if not, get the list
@@ -12,6 +14,8 @@ Checks for new datasets in the GMD catalog, downloads them using dlw::dlw_get_gm
 and save them to the local directory.
 Validates the downloaded datasets using pipdata::pipdata_validate_gmd
 and updates the validation inventory ("gmd_valid_inv").
+Writes a dlw_summary_inf stage marker and persists a DLW logging
+checkpoint after the delegates complete.
 
 '></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -60,6 +64,8 @@ and updates the validation inventory ("gmd_valid_inv").
 and save them to the local directory.</p></li>
 <li><p>Validates the downloaded datasets using <code><a href="pipdata_validate_gmd.html">pipdata::pipdata_validate_gmd</a></code>
 and updates the validation inventory (<code>"gmd_valid_inv"</code>).</p></li>
+<li><p>Writes a <code>dlw_summary_inf</code> stage marker and persists a DLW logging
+checkpoint after the delegates complete.</p></li>
 </ol></div>
 
     <div class="section level2">
@@ -68,8 +74,6 @@ and updates the validation inventory (<code>"gmd_valid_inv"</code>).</p></li>
 <span>  inv_gmd_list <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
 <span>  get_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  validate_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save_log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  check_missing <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  release <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  identity <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -91,14 +95,6 @@ and updates the validation inventory (<code>"gmd_valid_inv"</code>).</p></li>
 
 <dt id="arg-validate-dlw-data">validate_dlw_data<a class="anchor" aria-label="anchor" href="#arg-validate-dlw-data"></a></dt>
 <dd><p>Logical. Whether to validate newly downloaded datasets. Default is <code>TRUE</code>.</p></dd>
-
-
-<dt id="arg-log">log<a class="anchor" aria-label="anchor" href="#arg-log"></a></dt>
-<dd><p>Logical. Whether to keep logging information. Default is <code>TRUE</code>.</p></dd>
-
-
-<dt id="arg-save-log">save_log<a class="anchor" aria-label="anchor" href="#arg-save-log"></a></dt>
-<dd><p>Logical. Whether to save logging information to a file. Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-check-missing">check_missing<a class="anchor" aria-label="anchor" href="#arg-check-missing"></a></dt>
@@ -130,8 +126,6 @@ and updates the validation inventory (<code>"gmd_valid_inv"</code>).</p></li>
 <span class="r-in"><span><span class="fu">pipdata_dlw_process</span><span class="op">(</span>inv_gmd_list <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span></span>
 <span class="r-in"><span>            get_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>            validate_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>            log             <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>            save_log        <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>            check_missing   <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>            release         <span class="op">=</span> <span class="st">"20260206"</span>,</span></span>
 <span class="r-in"><span>            identity        <span class="op">=</span> <span class="st">"TEST"</span></span></span>

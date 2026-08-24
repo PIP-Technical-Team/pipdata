@@ -38,8 +38,6 @@ pipdata::pipdata_dlw_process(
   inv_gmd_list      = "dlw_gmd_inv",
   get_dlw_data      = TRUE,
   validate_dlw_data = TRUE,
-  log               = TRUE,
-  save_log          = TRUE,
   check_missing     = TRUE,
   release           = "20260401",
   identity          = "TEST"
@@ -59,8 +57,8 @@ downloads them:
 1.  **Identify new datasets** —
     `dlw_gmd_new(check_missing, update_inventory = TRUE)` compares the
     local inventory against the GMD catalog and returns the rows that
-    need downloading. If nothing is new, the function aborts with an
-    informative message.
+    need downloading. If nothing is new, the function records a typed
+    no-new-data entry and returns invisibly.
 2.  **Filter by module** — only `"ALL"`, `"GROUP"`, `"HIST"`, `"GPWG"`,
     and `"BIN"` modules are downloaded.
 3.  **Download per survey** — for each row,
@@ -68,8 +66,8 @@ downloads them:
     downloads the file (identified by country, year, survey acronym,
     module, and `vermast`/`veralt` version markers) to the local DLW
     data folder. Each download is wrapped in
-    [`tryCatch()`](https://rdrr.io/r/base/conditions.html): a failure is
-    logged (if `log = TRUE`) and the row is marked
+    [`tryCatch()`](https://rdrr.io/r/base/conditions.html): failures are
+    logged automatically with typed `logmeta` and the row is marked
     `data_available = "No"` rather than aborting the whole run; a
     success is marked `"Yes"`.
 
@@ -77,8 +75,6 @@ downloads them:
 
 pipdata::pipdata_get_gmd(
   inv_gmd_list  = "dlw_gmd_inv",
-  log           = TRUE,
-  save_log      = TRUE,
   check_missing = TRUE
 )
 ```
@@ -121,27 +117,17 @@ yet been validated:
 
 ``` r
 
-pipdata::pipdata_validate_gmd(
-  log      = TRUE,
-  save_log = TRUE
-)
+pipdata::pipdata_validate_gmd()
 ```
 
 ## Logging scope
 
-Both delegates accept `log`/`save_log` arguments and write to the
-`"pipdata_log"` log name via
-[`pipfun::log_add()`](https://pip-technical-team.github.io/pipfun/reference/log_add.html)
-— the same log name used by
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md).
-However, this DLW acquisition/validation logging uses an ad-hoc pattern
-(individual `log_add()` calls at each step) rather than the structured
-`logmeta` summary entries (`process_summary_inf`, `null_svys_inf`) that
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
-emits. As a result,
+Both delegates write unconditional typed entries to the shared
+`"pipdata_log"` log. Acquisition uses `dlw_acquisition_inf`; validation
+uses `dlw_validation_inf`. The enclosing
+[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
+wrapper writes a `dlw_summary_inf` stage marker and saves a DLW
+checkpoint automatically.
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-— which parses those structured `logmeta` entries — does **not**
-currently summarize DLW acquisition/validation activity, even though
-both wrappers write to the same log name. Keep this in mind when
-interpreting a generated report: it reflects survey cleaning only, not
-DLW acquisition or validation outcomes.
+consumes these entries and presents DLW acquisition failures, validation
+phases, and stage-aware warnings alongside the survey-cleaning sections.

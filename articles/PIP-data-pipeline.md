@@ -71,8 +71,6 @@ pipdata::pipdata_dlw_process(
   inv_gmd_list      = "dlw_gmd_inv",
   get_dlw_data      = TRUE,
   validate_dlw_data = TRUE,
-  log               = TRUE,
-  save_log          = TRUE,
   check_missing     = TRUE,
   release           = release,
   identity          = identity
@@ -114,12 +112,9 @@ log_report(
 
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
 loads the `"pipdata_log"` internally (via
-`pipfun::log_filter(name = "pipdata_log")`) when `log` is not supplied,
-and summarizes what
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
-wrote to it — see [Logging and reporting
-scope](#logging-and-reporting-scope) below for what it does and does not
-cover.
+`pipfun::log_filter(name = "pipdata_log")`) and summarizes DLW
+acquisition, DLW validation, survey cleaning, deflation, and their
+structured failures.
 
 ## Architecture: why three wrappers?
 
@@ -202,24 +197,10 @@ for details on both modes.
 ## Logging and reporting scope
 
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-only parses the `"pipdata_log"` entries written by
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)/[`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md)
-(processing summary, per-survey failures). It does **not** consume any
-log produced by
+summarizes the shared `"pipdata_log"` entries from
 [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
-(DLW acquisition/validation uses its own `log`/ `save_log` arguments and
-does not currently feed into
-[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)).
-Keep this scope in mind when reading a generated report — a clean report
-does not imply the DLW acquisition/validation step had no issues.
-
-The goal going forward is for
-[`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-to summarize a single, harmonized log covering all three wrappers
-(`update_aux_measures()`,
-[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md),
 and
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)),
-so one report reflects the health of the entire pipeline run rather than
-just the cleaning step. This is tracked on the roadmap (see the
-`unified-logging-report` idea).
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md).
+It adds stage-aware warnings for DLW-only, pipeline-only, incomplete,
+and DLW no-op runs. Auxiliary refresh logging from `pipaux` remains a
+separate follow-on scope.

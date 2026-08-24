@@ -322,7 +322,8 @@ writes (or returns) a structured markdown report:</p>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The report includes, when the corresponding logmeta entry is present
-in the log: run metadata (time window, totals), the processing summary
+in the log: DLW acquisition and validation summaries, stage-aware run
+warnings, run metadata (time window, totals), the processing summary
 (<code>process_summary_inf</code>), the deflation summary
 (<code>deflate_summary_inf</code>), auxiliary file changes
 (<code>aux_changes_inf</code>), a summary table by error/info type, a
@@ -333,18 +334,12 @@ the list of surveys that failed processing (<code>null_svys_inf</code>).
 Sections are silently omitted when their logmeta entry is absent.</p>
 <p><strong>Scope</strong>: <code><a href="../reference/log_report.html">log_report()</a></code> parses entries
 written under the <code>"pipdata_log"</code> name by
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>/<code><a href="../reference/process_data.html">process_data()</a></code> and by
-<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>/<code>deflate_one()</code> (the
-<code>deflate_summary_inf</code> summary and per-survey deflation
-errors). It does <strong>not</strong> consume any log produced by
-<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> (DLW acquisition/validation uses its
-own <code>log</code>/<code>save_log</code> arguments and does not
-currently feed into <code><a href="../reference/log_report.html">log_report()</a></code>; see <a href="Validating-Data.html#logging-scope">Validating Data</a>). Keep
-this scope in mind when reading a generated report — a clean report does
-not imply the DLW acquisition/validation step had no issues. The goal
-going forward is for <code><a href="../reference/log_report.html">log_report()</a></code> to summarize a single,
-harmonized log covering all three wrappers (tracked on the roadmap as
-<code>unified-logging-report</code>).</p>
+<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>,
+<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>/<code><a href="../reference/process_data.html">process_data()</a></code>, and
+<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>/<code>deflate_one()</code>. The
+report is stage-aware and shows DLW acquisition/validation outcomes
+together with cleaning and deflation results. Auxiliary refresh logging
+from <code>pipaux</code> remains outside this report.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

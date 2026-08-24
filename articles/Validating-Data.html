@@ -118,8 +118,6 @@ list exists (downloading it interactively via
 <span>  inv_gmd_list      <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
 <span>  get_dlw_data      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  validate_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  log               <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save_log          <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  check_missing     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  release           <span class="op">=</span> <span class="st">"20260401"</span>,</span>
 <span>  identity          <span class="op">=</span> <span class="st">"TEST"</span></span>
@@ -138,8 +136,8 @@ changed in the GMD catalog and downloads them:</p>
 <strong>Identify new datasets</strong> —
 <code>dlw_gmd_new(check_missing, update_inventory = TRUE)</code>
 compares the local inventory against the GMD catalog and returns the
-rows that need downloading. If nothing is new, the function aborts with
-an informative message.</li>
+rows that need downloading. If nothing is new, the function records a
+typed no-new-data entry and returns invisibly.</li>
 <li>
 <strong>Filter by module</strong> — only <code>"ALL"</code>,
 <code>"GROUP"</code>, <code>"HIST"</code>, <code>"GPWG"</code>, and
@@ -149,16 +147,14 @@ an informative message.</li>
 <code><a href="https://worldbank.github.io/dlw/reference/dlw_get_gmd.html" class="external-link">dlw::dlw_get_gmd()</a></code> downloads the file (identified by
 country, year, survey acronym, module, and
 <code>vermast</code>/<code>veralt</code> version markers) to the local
-DLW data folder. Each download is wrapped in <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>: a
-failure is logged (if <code>log = TRUE</code>) and the row is marked
-<code>data_available = "No"</code> rather than aborting the whole run; a
-success is marked <code>"Yes"</code>.</li>
+DLW data folder. Each download is wrapped in <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>:
+failures are logged automatically with typed <code>logmeta</code> and
+the row is marked <code>data_available = "No"</code> rather than
+aborting the whole run; a success is marked <code>"Yes"</code>.</li>
 </ol>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_get_gmd.html">pipdata_get_gmd</a></span><span class="op">(</span></span>
 <span>  inv_gmd_list  <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
-<span>  log           <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save_log      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  check_missing <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -197,28 +193,20 @@ becomes the new <code>gmd_valid_inv</code>, which
 <a href="Processing-Data.html">Processing Data functions</a>).</li>
 </ol>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd</a></span><span class="op">(</span></span>
-<span>  log      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save_log <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="logging-scope">Logging scope<a class="anchor" aria-label="anchor" href="#logging-scope"></a>
 </h2>
-<p>Both delegates accept <code>log</code>/<code>save_log</code>
-arguments and write to the <code>"pipdata_log"</code> log name via
-<code><a href="https://pip-technical-team.github.io/pipfun/reference/log_add.html" class="external-link">pipfun::log_add()</a></code> — the same log name used by
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>. However, this DLW acquisition/validation
-logging uses an ad-hoc pattern (individual <code>log_add()</code> calls
-at each step) rather than the structured <code>logmeta</code> summary
-entries (<code>process_summary_inf</code>, <code>null_svys_inf</code>)
-that <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> emits. As a result,
-<code><a href="../reference/log_report.html">log_report()</a></code> — which parses those structured
-<code>logmeta</code> entries — does <strong>not</strong> currently
-summarize DLW acquisition/validation activity, even though both wrappers
-write to the same log name. Keep this in mind when interpreting a
-generated report: it reflects survey cleaning only, not DLW acquisition
-or validation outcomes.</p>
+<p>Both delegates write unconditional typed entries to the shared
+<code>"pipdata_log"</code> log. Acquisition uses
+<code>dlw_acquisition_inf</code>; validation uses
+<code>dlw_validation_inf</code>. The enclosing
+<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> wrapper writes a
+<code>dlw_summary_inf</code> stage marker and saves a DLW checkpoint
+automatically. <code><a href="../reference/log_report.html">log_report()</a></code> consumes these entries and
+presents DLW acquisition failures, validation phases, and stage-aware
+warnings alongside the survey-cleaning sections.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -43,11 +43,12 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   pipeline runs
 - Auxiliary data refresh must complete before survey cleaning begins
   (strict ordering)
-- All pipeline steps are logged via
-  [`pipfun::log_add()`](https://pip-technical-team.github.io/pipfun/reference/log_add.html)
-  and
+- All pipeline steps are logged via typed
   [`pipfun::log_info()`](https://pip-technical-team.github.io/pipfun/reference/log_info.html)
-  into a unified `piplog` object
+  and
+  [`pipfun::log_error()`](https://pip-technical-team.github.io/pipfun/reference/log_info.html)
+  entries into the unified `piplog` object. The active DLW wrappers no
+  longer accept `log`/`save_log`; logging is unconditional.
 - Error handling uses custom `piperr` conditions for graceful recovery
   without silencing failures
 - `dplyr`, `tidyr`, and `tibble` are **not** in `DESCRIPTION Imports` —
@@ -63,7 +64,7 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   [`collapse::fmutate()`](https://fastverse.org/collapse/reference/ftransform.html).
   This makes the dependency surface explicit and avoids ambiguity with
   similarly-named collapse functions.
-- The pipeline emits nine canonical logmeta entry types, parsed by
+- The pipeline emits 12 canonical logmeta entry types, parsed by
   [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
   to build report sections. Their `info`/`error` field values are:
   - `"process_summary_inf"` — emitted by
@@ -92,11 +93,21 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   - `"missing_metadata_err"` — emitted by `update_pip_inventory()` when
     pip_ids have no corresponding metadata entry after the version join;
     those pip_ids are excluded from the inventory (error-level; includes
-    `pip_ids` and `surveys` arrays) These strings are used as string
-    literals across multiple files; any typo silently breaks the
-    corresponding report section. (Once `unified-logging-report` is
-    implemented, three additional DLW types will be added:
-    `"dlw_download_inf"`, `"dlw_validation_inf"`, `"dlw_summary_inf"`.)
+    `pip_ids` and `surveys` arrays)
+  - `"dlw_acquisition_inf"` - emitted by
+    [`pipdata_get_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_get_gmd.md)
+    for acquisition start, completion, no-op, and per-survey download
+    failures
+  - `"dlw_validation_inf"` - emitted by
+    [`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)
+    for validation start, workflow phases, and per-survey failures
+  - `"dlw_summary_inf"` - emitted by
+    [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
+    at stage completion and used as the DLW stage marker These strings
+    are used as string literals across multiple files; any typo silently
+    breaks the corresponding report section. The report suppresses the
+    11 internal summary/marker types in `.log_internal_types`; genuine
+    error types remain in the type-summary table.
 - **`logmeta$error` and `logmeta$info` are always string type
   discriminators** — never R condition objects. Caught condition
   messages go in `logmeta$condition_msg = conditionMessage(e)`. The old

@@ -69,12 +69,12 @@
 <ul><li>All processing is versioned via release dates (e.g., “20260401”)</li>
 <li>Survey identity types (e.g., “TEST”) control folder isolation during pipeline runs</li>
 <li>Auxiliary data refresh must complete before survey cleaning begins (strict ordering)</li>
-<li>All pipeline steps are logged via <code><a href="https://pip-technical-team.github.io/pipfun/reference/log_add.html" class="external-link">pipfun::log_add()</a></code> and <code><a href="https://pip-technical-team.github.io/pipfun/reference/log_info.html" class="external-link">pipfun::log_info()</a></code> into a unified <code>piplog</code> object</li>
+<li>All pipeline steps are logged via typed <code><a href="https://pip-technical-team.github.io/pipfun/reference/log_info.html" class="external-link">pipfun::log_info()</a></code> and <code><a href="https://pip-technical-team.github.io/pipfun/reference/log_info.html" class="external-link">pipfun::log_error()</a></code> entries into the unified <code>piplog</code> object. The active DLW wrappers no longer accept <code>log</code>/<code>save_log</code>; logging is unconditional.</li>
 <li>Error handling uses custom <code>piperr</code> conditions for graceful recovery without silencing failures</li>
 <li>
 <code>dplyr</code>, <code>tidyr</code>, and <code>tibble</code> are <strong>not</strong> in <code>DESCRIPTION Imports</code> — use <code>data.table</code> (<code>:=</code>, <code>rbindlist</code>, <code>[, .N, by]</code>) and <code>collapse</code> (<code>fcase</code>, <code>ftransform</code>, <code>fmutate</code>) instead. Do not add new dplyr/tidyr/tibble calls anywhere. <code>dlw_scan_and_validate.R</code> still has ~19 legacy dplyr calls (Phase 2 migration, tracked in roadmap as <code>dplyr-to-collapse-phase2</code>).</li>
 <li>Always qualify <code>fcase()</code> and <code>fifelse()</code> with <code>data.table::</code> (i.e. <code>data.table::fcase(...)</code>) even when called inside <code><a href="https://fastverse.org/collapse/reference/ftransform.html" class="external-link">collapse::ftransform()</a></code> or <code><a href="https://fastverse.org/collapse/reference/ftransform.html" class="external-link">collapse::fmutate()</a></code>. This makes the dependency surface explicit and avoids ambiguity with similarly-named collapse functions.</li>
-<li>The pipeline emits nine canonical logmeta entry types, parsed by <code><a href="reference/log_report.html">log_report()</a></code> to build report sections. Their <code>info</code>/<code>error</code> field values are:
+<li>The pipeline emits 12 canonical logmeta entry types, parsed by <code><a href="reference/log_report.html">log_report()</a></code> to build report sections. Their <code>info</code>/<code>error</code> field values are:
 <ul><li>
 <code>"process_summary_inf"</code> — emitted by <code><a href="reference/pd_process_data.html">pd_process_data()</a></code>
 </li>
@@ -93,7 +93,13 @@
 <li>
 <code>"release_write_err"</code> — emitted by <code>update_pip_inventory()</code> when the release inventory write fails (error-level; includes <code>condition_msg</code>)</li>
 <li>
-<code>"missing_metadata_err"</code> — emitted by <code>update_pip_inventory()</code> when pip_ids have no corresponding metadata entry after the version join; those pip_ids are excluded from the inventory (error-level; includes <code>pip_ids</code> and <code>surveys</code> arrays) These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section. (Once <code>unified-logging-report</code> is implemented, three additional DLW types will be added: <code>"dlw_download_inf"</code>, <code>"dlw_validation_inf"</code>, <code>"dlw_summary_inf"</code>.)</li>
+<code>"missing_metadata_err"</code> — emitted by <code>update_pip_inventory()</code> when pip_ids have no corresponding metadata entry after the version join; those pip_ids are excluded from the inventory (error-level; includes <code>pip_ids</code> and <code>surveys</code> arrays)</li>
+<li>
+<code>"dlw_acquisition_inf"</code> - emitted by <code><a href="reference/pipdata_get_gmd.html">pipdata_get_gmd()</a></code> for acquisition start, completion, no-op, and per-survey download failures</li>
+<li>
+<code>"dlw_validation_inf"</code> - emitted by <code><a href="reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code> for validation start, workflow phases, and per-survey failures</li>
+<li>
+<code>"dlw_summary_inf"</code> - emitted by <code><a href="reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> at stage completion and used as the DLW stage marker These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section. The report suppresses the 11 internal summary/marker types in <code>.log_internal_types</code>; genuine error types remain in the type-summary table.</li>
 </ul></li>
 <li>
 <strong><code>logmeta$error</code> and <code>logmeta$info</code> are always string type discriminators</strong> — never R condition objects. Caught condition messages go in <code>logmeta$condition_msg = conditionMessage(e)</code>. The old pattern <code>logmeta = list(error = e)</code> (passing the condition object directly) is incorrect and will break <code><a href="reference/parse_log_meta.html">parse_log_meta()</a></code> which uses <code>vapply(..., character(1))</code>.</li>

@@ -66,11 +66,11 @@ step after
 
 ## Logging
 
-Summarizes the `"pipdata_log"` written during
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md).
+Summarizes the unified `"pipdata_log"` across DLW acquisition,
+validation, survey cleaning, and deflation with stage-aware warnings.
 
 - [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-  : Generate a markdown report from a pipeline log
+  : Generate a markdown report from a pipeline log.
 
 ## Other functions
 

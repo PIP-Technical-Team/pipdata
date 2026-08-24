@@ -16,13 +16,16 @@ datasets by performing the following tasks:
 3.  Updates the inventory file (`dlw_gmd_inv`) with information about
     the newly downloaded datasets.
 
+Logging is unconditional. The function writes `dlw_acquisition_inf`
+entries for start, no-new-data, per-survey download failures, and
+completion. Error conditions are represented by `condition_msg` in
+`logmeta`; the discriminator in `logmeta$error` is always a string.
+
 ## Usage
 
 ``` r
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
-  log = TRUE,
-  save_log = TRUE,
   check_missing = TRUE,
   verbose = getOption("pipdata.verbose", default = TRUE)
 )
@@ -34,15 +37,6 @@ pipdata_get_gmd(
 
   Character. The name of the inventory file containing the list of GMD
   datasets.
-
-- log:
-
-  Logical. Whether to keep logging information. Default is `TRUE`.
-
-- save_log:
-
-  Logical. Whether to save logging information to a file. Default is
-  `TRUE`.
 
 - check_missing:
 
@@ -57,7 +51,8 @@ pipdata_get_gmd(
 
 ## Value
 
-A `data.table` object saved in the local folder.
+Invisibly returns `NULL`; the acquisition inventory is persisted as a
+side effect.
 
 ## Note
 
@@ -74,8 +69,7 @@ the release is already set. When called standalone, ensure
 if (FALSE) { # \dontrun{
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
-  log = FALSE,
-  save_log = FLASE
+  check_missing = TRUE
 )
 } # }
 ```

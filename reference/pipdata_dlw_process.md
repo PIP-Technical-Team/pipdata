@@ -14,6 +14,9 @@ performing the following tasks:
     [`pipdata::pipdata_validate_gmd`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)
     and updates the validation inventory (`"gmd_valid_inv"`).
 
+4.  Writes a `dlw_summary_inf` stage marker and persists a DLW logging
+    checkpoint after the delegates complete.
+
 ## Usage
 
 ``` r
@@ -21,8 +24,6 @@ pipdata_dlw_process(
   inv_gmd_list = "dlw_gmd_inv",
   get_dlw_data = TRUE,
   validate_dlw_data = TRUE,
-  log = TRUE,
-  save_log = TRUE,
   check_missing = TRUE,
   release = NULL,
   identity = NULL,
@@ -45,15 +46,6 @@ pipdata_dlw_process(
 - validate_dlw_data:
 
   Logical. Whether to validate newly downloaded datasets. Default is
-  `TRUE`.
-
-- log:
-
-  Logical. Whether to keep logging information. Default is `TRUE`.
-
-- save_log:
-
-  Logical. Whether to save logging information to a file. Default is
   `TRUE`.
 
 - check_missing:
@@ -87,8 +79,6 @@ if (FALSE) { # \dontrun{
 pipdata_dlw_process(inv_gmd_list = "dlw_gmd_inv",
             get_dlw_data = TRUE,
             validate_dlw_data = TRUE,
-            log             = TRUE,
-            save_log        = TRUE,
             check_missing   = TRUE,
             release         = "20260206",
             identity        = "TEST"

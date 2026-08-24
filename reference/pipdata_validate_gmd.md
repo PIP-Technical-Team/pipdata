@@ -1,26 +1,18 @@
 # Validate GMD data and generate inventory report data
 
-Validate GMD data and generate inventory report data
+Logging is unconditional. The function writes `dlw_validation_inf`
+entries for validation start, no-new-data, load/validation failures,
+inventory and report workflow phases. Error conditions are stored as
+`condition_msg` and the discriminator in `logmeta$error` is always a
+string.
 
 ## Usage
 
 ``` r
-pipdata_validate_gmd(
-  log = TRUE,
-  save_log = TRUE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
-)
+pipdata_validate_gmd(verbose = getOption("pipdata.verbose", default = TRUE))
 ```
 
 ## Arguments
-
-- log:
-
-  Logical. Keep logging file, TRUE/FALSE default value is `TRUE`
-
-- save_log:
-
-  Logical. Save logging file, TRUE/FALSE default value is `TRUE`
 
 - verbose:
 
@@ -30,7 +22,8 @@ pipdata_validate_gmd(
 
 ## Value
 
-data.table, inventory report
+Invisibly returns `NULL`; validation inventory and report artifacts are
+persisted as side effects.
 
 ## Note
 
@@ -45,9 +38,6 @@ the release is already set. When called standalone, ensure
 
 ``` r
 if (FALSE) { # \dontrun{
-pipdata_validate_gmd(
-  log = FALSE,
-  save_log = FLASE
-)
+pipdata_validate_gmd()
 } # }
 ```

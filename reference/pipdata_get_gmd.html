@@ -9,7 +9,11 @@ using dlw::dlw_get_gmd and save them to the local directory.
 Updates the inventory file (dlw_gmd_inv) with information about
 the newly downloaded datasets.
 
-'><meta property="og:description" content='This wrapper function automates the process of managing GMD catalog
+
+Logging is unconditional. The function writes dlw_acquisition_inf entries
+for start, no-new-data, per-survey download failures, and completion. Error
+conditions are represented by condition_msg in logmeta; the discriminator
+in logmeta$error is always a string.'><meta property="og:description" content='This wrapper function automates the process of managing GMD catalog
 datasets by performing the following tasks:
 Checks for new datasets in the GMD catalog using the inventory
 file (dlw_gmd_inv), which contains the current list of available GMD datasets.
@@ -19,7 +23,11 @@ using dlw::dlw_get_gmd and save them to the local directory.
 Updates the inventory file (dlw_gmd_inv) with information about
 the newly downloaded datasets.
 
-'></head><body>
+
+Logging is unconditional. The function writes dlw_acquisition_inf entries
+for start, no-new-data, per-survey download failures, and completion. Error
+conditions are represented by condition_msg in logmeta; the discriminator
+in logmeta$error is always a string.'></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -69,14 +77,16 @@ file (<code>dlw_gmd_inv</code>), which contains the current list of available GM
 using <code><a href="https://worldbank.github.io/dlw/reference/dlw_get_gmd.html" class="external-link">dlw::dlw_get_gmd</a></code> and save them to the local directory.</p></li>
 <li><p>Updates the inventory file (<code>dlw_gmd_inv</code>) with information about
 the newly downloaded datasets.</p></li>
-</ol></div>
+</ol><p>Logging is unconditional. The function writes <code>dlw_acquisition_inf</code> entries
+for start, no-new-data, per-survey download failures, and completion. Error
+conditions are represented by <code>condition_msg</code> in <code>logmeta</code>; the discriminator
+in <code>logmeta$error</code> is always a string.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pipdata_get_gmd</span><span class="op">(</span></span>
 <span>  inv_gmd_list <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
-<span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save_log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  check_missing <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"pipdata.verbose"</span>, default <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -88,14 +98,6 @@ the newly downloaded datasets.</p></li>
 
 <dl><dt id="arg-inv-gmd-list">inv_gmd_list<a class="anchor" aria-label="anchor" href="#arg-inv-gmd-list"></a></dt>
 <dd><p>Character. The name of the inventory file containing the list of GMD datasets.</p></dd>
-
-
-<dt id="arg-log">log<a class="anchor" aria-label="anchor" href="#arg-log"></a></dt>
-<dd><p>Logical. Whether to keep logging information. Default is <code>TRUE</code>.</p></dd>
-
-
-<dt id="arg-save-log">save_log<a class="anchor" aria-label="anchor" href="#arg-save-log"></a></dt>
-<dd><p>Logical. Whether to save logging information to a file. Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-check-missing">check_missing<a class="anchor" aria-label="anchor" href="#arg-check-missing"></a></dt>
@@ -110,7 +112,8 @@ the newly downloaded datasets.</p></li>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>data.table</code> object saved in the local folder.</p>
+    <p>Invisibly returns <code>NULL</code>; the acquisition inventory is persisted as a
+side effect.</p>
     </div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
@@ -125,8 +128,7 @@ standalone, ensure <code>setup_working_release()</code> has been invoked first.<
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">pipdata_get_gmd</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  inv_gmd_list <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span></span>
-<span class="r-in"><span>  log <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
-<span class="r-in"><span>  save_log <span class="op">=</span> <span class="va">FLASE</span></span></span>
+<span class="r-in"><span>  check_missing <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

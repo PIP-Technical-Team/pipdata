@@ -1,4 +1,4 @@
-# Generate a markdown report from a pipeline log
+# Generate a markdown report from a pipeline log.
 
 Parses a `piplog` object produced by
 [`pipfun::log_filter()`](https://pip-technical-team.github.io/pipfun/reference/log_filter.html)
@@ -49,6 +49,15 @@ Invisibly, the report as a character vector (one element per line). If
 The report contains:
 
 - Running metadata (time window, total entries, success/fail counts).
+
+- Stage-aware warnings for DLW-only, pipeline-only, no-op, and
+  incomplete runs.
+
+- DLW acquisition summary, including attempted, successful, and failed
+  survey counts and failure details.
+
+- DLW validation summary, including workflow phase counts and validation
+  or loading failures.
 
 - Processing summary: total, cleaned, and failed counts (from
   `process_summary_inf` log entry).
