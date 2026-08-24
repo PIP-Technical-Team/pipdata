@@ -1,10 +1,10 @@
 # 🧠 Project Brain — Part 1
 
-_Generated 2026-08-21_
+_Generated 2026-08-24_
 
 ## Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R
 
-_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 88 entities
+_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 93 entities
 
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`
   > dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phant…
@@ -24,6 +24,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 88 entities
   > `valid_dlw_load()` always calls `valid_aux_load()`, which invokes `pipaux::compare_aux_releases()` and `pipaux::compa…
 - **[Add force_surveys parameter for surgical survey re-processing](.cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md)** · `brainstorm` · _decided_ · `2026-08-15`
   > `force = TRUE` in `pd_process_data()` (`R/pd_process_data.R:61-64`) does two things at once:
+- **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md)** · `brainstorm` · _decided_ · `2026-08-20`
+  > The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes currently carry **dual semantics** in a singl…
 - **[Enrich log report with success metrics and aux changes](.cg-docs/plans/2026-04-06-enrich-log-report.md)** · `plan` · _completed_ · `2026-04-06`
   > Extend the pipeline logging and `log_report()` so the markdown report includes: (a) the number of surveys successfull…
 - **[Remove redundant get_wrk_release\(\) guards from DLW call chains](.cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md)** · `plan` · _completed_ · `2026-04-23`
@@ -74,6 +76,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 88 entities
   > Prevent unnecessary survey re-cleaning by comparing the current content hash of each requested auxiliary artifact wit…
 - **[Add force_surveys parameter for surgical survey re-processing](.cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md)** · `plan` · _completed_ · `2026-08-17`
   > Add a `force_surveys` parameter (character vector of `survey_id` and/or `pip_id`) to `pd_process_data()` and `valid_d…
+- **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md)** · `plan` · _completed_ · `2026-08-20`
+  > Replace the implicit `"area"` column-pointer sentinel with an explicit, code-enforced column-lookup registry so the p…
 - **[2026-04-06-enrich-log-report-review](.cg-docs/reviews/2026-04-06-enrich-log-report-review.md)** · `review` · _—_ · `—`
   > **Review depth**: standard **Plan**: `.cg-docs/plans/2026-04-06-enrich-log-report.md` **Files reviewed**: 5 **Finding…
 - **[2026-04-16-review](.cg-docs/reviews/2026-04-16-review.md)** · `review` · _—_ · `—`
@@ -122,6 +126,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 88 entities
   > **Review mode**: light (verify) **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revise…
 - **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md)** · `review` · _—_ · `2026-08-07`
   > **Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-…
+- **[2026-08-20-explicit-data-level-sentinel-semantics-verify-review](.cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md)** · `review` · _—_ · `2026-08-21`
+  > **Review mode**: verify **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review…
 - **[Internal logmeta type markers polluting build_type_summary\(\) table](.cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md)** · `solution` · _—_ · `2026-04-07`
   > `log_report()` renders a "Summary by Type" table via `build_type_summary()`. The table was supposed to show only genu…
 - **[Conditional column initialization produces inconsistent data.table schema](.cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md)** · `solution` · _—_ · `2026-04-29`
@@ -152,6 +158,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 88 entities
   > `pd_process_data()` aborts with:
 - **[joyn::anti_join missing reportvar=FALSE leaks .joyn column causing duplicate survey_id in inv_to_clean](.cg-docs/solutions/bugs/2026-06-05-joyn-anti-join-reportvar-duplicate-survey-id.md)** · `solution` · _—_ · `2026-06-05`
   > `pd_process_data()` aborted with:
+- **[Make data-level column sentinels explicit with a resolver registry](.cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md)** · `solution` · _—_ · `2026-08-21`
+  > The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes are scalar attributes on `pipmd`/`pipgd` obje…
 - **[R CMD check WARNING: non-ASCII characters in R source files](.cg-docs/solutions/build-errors/2026-04-16-non-ascii-characters-in-r-code.md)** · `solution` · _—_ · `2026-04-16`
   > `devtools::check()` emits: The file passes `devtools::test()` without any failures.
 - **[R CMD check 'no visible binding' notes from data.table NSE column names](.cg-docs/solutions/build-errors/2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md)** · `solution` · _—_ · `2026-04-16`
@@ -160,6 +168,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 88 entities
   > Running `devtools::check()` produces a WARNING: The offending line in the roxygen block:
 - **[dplyr/tidyr/tibble → data.table/collapse migration patterns](.cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md)** · `solution` · _—_ · `2026-04-27`
   > Functions used `dplyr::`, `tidyr::`, and `tibble::` without declaring these packages in `DESCRIPTION Imports`. This c…
+- **[Deflation output contract: welfare_lcu, welfare_vars, adj_pop](.cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md)** · `solution` · _—_ · `2026-05-07`
+  > `pd_deflation()` returned both a `welfare` column and a `welfare_lcu` column, where `welfare_lcu` was created as a di…
 - **[Guard before join: dropping reentrant columns in load-then-recompute functions](.cg-docs/solutions/data-quality/2026-05-19-guard-before-join-reentrant-column.md)** · `solution` · _—_ · `2026-05-19`
   > A pipeline function that: 1. loads an existing artifact from disk (`old_x <- load_...()`) 2. row-binds it with freshl…
 - **[Legacy columns persist in on-disk master inventory across rebuilds](.cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md)** · `solution` · _—_ · `2026-05-27`

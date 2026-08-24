@@ -391,8 +391,10 @@ safe_deflation <- function(dt, cpi, ppp, pop, deflation_fn) {
   dt_c <- welfare_lcu(dt_c)
   dt_c <- deflate_wlf(dt_c)
 
-  # Track whether population adjustment was applied
-  adj_pop <- identical(attr(dt_c, "pop_data_level"), "area")
+  # Track whether population adjustment was applied. adj_pop is TRUE iff
+  # pop_data_level is a registered column-pointer sentinel resolved by
+  # data_level_column() (currently only "area").
+  adj_pop <- !is.na(data_level_column(attr(dt_c, "pop_data_level")))
 
   # Branch on the survey's own pop_data_level attr — handles the mixed-domain
   # case where reporting_level == 2 but pop_data_level == "national" correctly.
@@ -592,7 +594,7 @@ add_aux <- function(dt, ppp ,cpi) {
 #' e.g. `"ppp_2017_01_01_national"`. Each unique version becomes a column in
 #' `dt` with the matching value looked up via `ppp_data_level`.
 #'
-#' @param dt A cleaned survey `data.table` with a `ppp_data_level` column.
+#' @param dt A cleaned survey `data.table` with a `ppp_data_level` attribute.
 #' @param ppp Named numeric vector or wide `data.table`.
 #' @return `dt` augmented with one column per PPP version and a `ppp_versions`
 #'   attribute listing the version names.
@@ -631,24 +633,25 @@ add_ppp <- function(dt, ppp) {
   )
 
   ppp_lvl <- attr(dt, "ppp_data_level")
+  ppp_col <- data_level_column(ppp_lvl)
   unique_versions <- unique(ppp_versions)
   for (v in unique_versions) {
     idx <- ppp_versions == v
     lev_map <- stats::setNames(ppp[idx], report_levels[idx])
-    # Branch on this function's own ppp_data_level attr — handles the
-    # mixed-domain case (e.g. ppp_data_level=="national" but cpi=="area").
-    if (identical(ppp_lvl, "area")) {
-      # Subnational: per-row lookup using the area column values.
-      if (!"area" %in% names(dt)) {
+    # Branch on this function's ppp_data_level attribute via
+    # data_level_column() — handles mixed domains independently of cpi.
+    if (is.na(ppp_col)) {
+      # National (or other literal level): scalar broadcast to all rows.
+      dt[, (v) := lev_map[ppp_lvl]]
+    } else {
+      # Subnational: per-row lookup using the resolved column values.
+      if (!ppp_col %in% names(dt)) {
         cli::cli_abort(
-          "ppp_data_level is \"area\" but {.arg dt} has no {.field area} column.",
+          "ppp_data_level is {.val {ppp_lvl}} but {.arg dt} has no {.field {ppp_col}} column.",
           class = c("add_ppp", "piperr")
         )
       }
-      dt[, (v) := lev_map[as.character(area)]]
-    } else {
-      # National (or other literal level): scalar broadcast to all rows.
-      dt[, (v) := lev_map[ppp_lvl]]
+      dt[, (v) := lev_map[as.character(dt[[ppp_col]])]]
     }
   }
 
@@ -665,7 +668,7 @@ add_ppp <- function(dt, ppp) {
 #' e.g. `"2017_national"`. Each unique year becomes a `cpiYYYY` column in `dt`
 #' with the matching value looked up via `cpi_data_level`.
 #'
-#' @param dt A cleaned survey `data.table` with a `cpi_data_level` column.
+#' @param dt A cleaned survey `data.table` with a `cpi_data_level` attribute.
 #' @param cpi Named numeric vector or `data.table`.
 #' @return `dt` augmented with one `cpiYYYY` column per base year and a
 #'   `cpi_years` attribute listing the year strings.
@@ -704,6 +707,7 @@ add_cpi <- function(dt, cpi) {
   report_levels <- sub("^[0-9]+_(.+)$", "\\1", nm)
 
   cpi_lvl <- attr(dt, "cpi_data_level")
+  cpi_col <- data_level_column(cpi_lvl)
   unique_years <- unique(cpi_years)
   data.table::setattr(dt, "cpi_years", unique_years)
 
@@ -711,20 +715,20 @@ add_cpi <- function(dt, cpi) {
     col <- paste0("cpi", yr)
     idx <- cpi_years == yr
     lev_map <- stats::setNames(cpi[idx], report_levels[idx])
-    # Branch on this function's own cpi_data_level attr — handles the
-    # mixed-domain case (e.g. cpi_data_level=="area" but ppp=="national").
-    if (identical(cpi_lvl, "area")) {
-      # Subnational: per-row lookup using the area column values.
-      if (!"area" %in% names(dt)) {
+    # Branch on this function's cpi_data_level attribute via
+    # data_level_column() — handles mixed domains independently of ppp.
+    if (is.na(cpi_col)) {
+      # National (or other literal level): scalar broadcast to all rows.
+      dt[, (col) := lev_map[cpi_lvl]]
+    } else {
+      # Subnational: per-row lookup using the resolved column values.
+      if (!cpi_col %in% names(dt)) {
         cli::cli_abort(
-          "cpi_data_level is \"area\" but {.arg dt} has no {.field area} column.",
+          "cpi_data_level is {.val {cpi_lvl}} but {.arg dt} has no {.field {cpi_col}} column.",
           class = c("add_cpi", "piperr")
         )
       }
-      dt[, (col) := lev_map[as.character(area)]]
-    } else {
-      # National (or other literal level): scalar broadcast to all rows.
-      dt[, (col) := lev_map[cpi_lvl]]
+      dt[, (col) := lev_map[as.character(dt[[cpi_col]])]]
     }
   }
 
@@ -965,7 +969,8 @@ adjust_population <- function(df, pop) {
   # Use the area column as the grouping key. For subnational surveys the area
   # column holds per-row values ("rural", "urban") that match the pop vector
   # keys (e.g. "2015_rural"). adjust_population() is only called when
-  # pop_data_level == "area" (guard in .deflation_pipmd_core).
+  # pop_data_level resolves through data_level_column() (currently only
+  # "area") in .deflation_pipmd_core; this consumer remains area-specific.
   if (!"area" %in% names(df)) {
     cli::cli_abort(
       "{.fn adjust_population} requires an {.field area} column in {.arg df}.",

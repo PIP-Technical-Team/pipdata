@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-21 · 122 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-24 · 126 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -43,10 +43,21 @@ _Generated 2026-08-21 · 122 artifacts (newest first) + 0 roadmap features_
 
 - **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md)** · `review` · _—_ · `2026-08-21`
   > **Review mode**: light (verify) **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revise…
+- **[2026-08-20-explicit-data-level-sentinel-semantics-verify-review](.cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md)** · `review` · _—_ · `2026-08-21`
+  > **Review mode**: verify **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review…
+- **[Make data-level column sentinels explicit with a resolver registry](.cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md)** · `solution` · _—_ · `2026-08-21`
+  > The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes are scalar attributes on `pipmd`/`pipgd` obje…
 - **[Validate Authors@R through a built R package](.cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md)** · `solution` · _—_ · `2026-08-21`
   > The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles,…
 - **[Verify R package dependencies and stage checkpoints from built artifacts](.cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md)** · `solution` · _—_ · `2026-08-21`
   > Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: …
+
+## 2026-08-20
+
+- **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md)** · `brainstorm` · _decided_ · `2026-08-20`
+  > The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes currently carry **dual semantics** in a singl…
+- **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md)** · `plan` · _completed_ · `2026-08-20`
+  > Replace the implicit `"area"` column-pointer sentinel with an explicit, code-enforced column-lookup registry so the p…
 
 ## 2026-08-17
 

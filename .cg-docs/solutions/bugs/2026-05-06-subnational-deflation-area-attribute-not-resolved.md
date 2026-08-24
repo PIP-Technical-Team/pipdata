@@ -169,6 +169,9 @@ incorrectly merged into a single discriminator.~~
   — earlier related fix that introduced the attribute-only approach. The fix
   there introduced `add_rep_lvl()` attribute fallback but did not handle the
   `"area"` pointer case or the mixed-domain problem.
+- `.cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md`
+  — follow-up that centralizes the pointer mapping in a resolver registry and
+  hardens malformed attribute handling.
 - `.cg-docs/brainstorms/2026-05-06-subnational-deflation-area-resolution.md`
   — brainstorm that diagnosed the issue and chose the hybrid approach.
 - `.cg-docs/plans/2026-05-06-subnational-deflation-fast-fix.md` — full
