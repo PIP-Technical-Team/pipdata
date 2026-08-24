@@ -75,6 +75,11 @@ pd_env_append <- function(key, new_rows) {
   }
 }
 
+# Canonical DLW logmeta discriminators.
+.logtype_dlw_acquisition <- "dlw_acquisition_inf"
+.logtype_dlw_validation <- "dlw_validation_inf"
+.logtype_dlw_summary <- "dlw_summary_inf"
+
 # Internal logmeta type markers -- excluded from the summary-by-type table
 # in log_report() so it only shows genuine pipeline errors/warnings.
 .log_internal_types <- c(
@@ -85,8 +90,29 @@ pd_env_append <- function(key, new_rows) {
   "skipped_svys_data",
   "skipped_svys_metadata",
   "release_write_err",
-  "deflate_summary_inf"
+  "deflate_summary_inf",
+  .logtype_dlw_acquisition,
+  .logtype_dlw_validation,
+  .logtype_dlw_summary
 )
+
+.validate_pip_write_result <- function(result, artifact) {
+  has_version <- is.list(result) &&
+    !is.null(result$version_id) &&
+    length(result$version_id) == 1L &&
+    !is.na(result$version_id) &&
+    nzchar(as.character(result$version_id))
+  was_skipped <- is.list(result) && isTRUE(result$skipped)
+
+  if (!has_version && !was_skipped) {
+    rlang::abort(
+      paste0("Persistence did not return a version for `", artifact, "`."),
+      class = c("pipdata_persistence_error", "piperr")
+    )
+  }
+
+  invisible(result)
+}
 
 # Suppress R CMD check notes for unquoted data.table column names and other
 # symbols used in non-standard evaluation throughout the package.

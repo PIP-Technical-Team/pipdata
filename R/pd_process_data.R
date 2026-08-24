@@ -192,6 +192,19 @@ pd_process_data <- function(
     verbose = verbose
   )
 
+  log_root <- fs::path(
+    getOption("pipfun.main_dir"),
+    "pip_repository",
+    "pip_logs"
+  )
+  fs::dir_create(log_root, recurse = TRUE)
+  stamp::st_init(root = log_root, alias = "piplog")
+  pipfun::log_save_checkpoint(
+    name = "pipdata_log",
+    stage = "pipeline",
+    alias = "piplog"
+  )
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

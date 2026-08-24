@@ -214,7 +214,8 @@ log_report(
 ```
 
 The report includes, when the corresponding logmeta entry is present in the
-log: run metadata (time window, totals), the processing summary
+log: DLW acquisition and validation summaries, stage-aware run warnings, run
+metadata (time window, totals), the processing summary
 (`process_summary_inf`), the deflation summary (`deflate_summary_inf`),
 auxiliary file changes (`aux_changes_inf`), a summary table by error/info
 type, a country-level breakdown of errors, inventory verification counts
@@ -224,14 +225,8 @@ failed processing (`null_svys_inf`). Sections are silently omitted when
 their logmeta entry is absent.
 
 **Scope**: `log_report()` parses entries written under the `"pipdata_log"`
-name by `pd_process_data()`/`process_data()` and by
-`pd_deflate_pipeline()`/`deflate_one()` (the `deflate_summary_inf` summary
-and per-survey deflation errors). It does **not** consume any log produced
-by `pipdata_dlw_process()` (DLW acquisition/validation uses its own
-`log`/`save_log` arguments and does not currently feed into `log_report()`;
-see [Validating Data](Validating-Data.html#logging-scope)). Keep this scope
-in mind when reading a generated report — a clean report does not imply the
-DLW acquisition/validation step had no issues. The goal going forward is
-for `log_report()` to summarize a single, harmonized log covering all three
-wrappers (tracked on the roadmap as `unified-logging-report`).
+name by `pipdata_dlw_process()`, `pd_process_data()`/`process_data()`, and
+`pd_deflate_pipeline()`/`deflate_one()`. The report is stage-aware and shows
+DLW acquisition/validation outcomes together with cleaning and deflation
+results. Auxiliary refresh logging from `pipaux` remains outside this report.
 

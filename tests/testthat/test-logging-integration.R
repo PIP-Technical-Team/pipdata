@@ -3,6 +3,42 @@
 # Focuses on structure and format rather than full pipeline execution.
 # See roadmap item: logging-integration-tests (P2.4 from 2026-04-06-enrich-log-report-review.md)
 
+test_that("canonical DLW logmeta types are registered", {
+  expect_equal(.logtype_dlw_acquisition, "dlw_acquisition_inf")
+  expect_equal(.logtype_dlw_validation, "dlw_validation_inf")
+  expect_equal(.logtype_dlw_summary, "dlw_summary_inf")
+  expect_length(.log_internal_types, 11L)
+  expect_false(anyDuplicated(.log_internal_types) > 0L)
+  expect_true(all(c(
+    "dlw_acquisition_inf",
+    "dlw_validation_inf",
+    "dlw_summary_inf",
+    "release_write_err",
+    "deflate_summary_inf"
+  ) %in% .log_internal_types))
+})
+
+test_that("production log entries remain parseable with string discriminators", {
+  pipfun::log_init("logging_contract_test", overwrite = TRUE)
+  pipfun::log_info(
+    "Acquisition complete.",
+    name = "logging_contract_test",
+    logmeta = list(
+      info = "dlw_acquisition_inf",
+      phase = "complete",
+      n_surveys = 1L,
+      n_success = 1L,
+      n_failed = 0L
+    )
+  )
+
+  log <- pipfun::log_get("logging_contract_test")
+  parsed <- parse_log_meta(log)
+
+  expect_type(parsed$error_type, "character")
+  expect_equal(parsed$error_type, "dlw_acquisition_inf")
+})
+
 test_that("null_svys_inf logmeta structure is consistent", {
   # Contract test: verify expected structure of null_svys_inf entries
   # Emitted by update_pip_inventory when some surveys fail (NULL in proc_dta)

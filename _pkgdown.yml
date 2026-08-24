@@ -29,7 +29,8 @@ reference:
   - deflation
 - title: Logging
   desc: >
-    Summarizes the `"pipdata_log"` written during `pd_process_data()`.
+    Summarizes the unified `"pipdata_log"` across DLW acquisition, validation,
+    survey cleaning, and deflation with stage-aware warnings.
   contents:
   - log_report
 - title: Other functions

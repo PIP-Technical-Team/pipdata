@@ -4,26 +4,22 @@
 \alias{pipdata_validate_gmd}
 \title{Validate GMD data and generate inventory report data}
 \usage{
-pipdata_validate_gmd(
-  log = TRUE,
-  save_log = TRUE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
-)
+pipdata_validate_gmd(verbose = getOption("pipdata.verbose", default = TRUE))
 }
 \arguments{
-\item{log}{Logical. Keep logging file, TRUE/FALSE default value is \code{TRUE}}
-
-\item{save_log}{Logical. Save logging file, TRUE/FALSE default value is \code{TRUE}}
-
 \item{verbose}{Logical. Controls verbosity of downstream I/O calls
 (including \code{\link[pipload:pip_write]{pipload::pip_write()}}). Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
-data.table, inventory report
+Invisibly returns \code{NULL}; validation inventory and report artifacts
+are persisted as side effects.
 }
 \description{
-Validate GMD data and generate inventory report data
+Logging is unconditional. The function writes \code{dlw_validation_inf} entries
+for validation start, no-new-data, load/validation failures, inventory and
+report workflow phases. Error conditions are stored as \code{condition_msg} and
+the discriminator in \code{logmeta$error} is always a string.
 }
 \note{
 This function expects a working release to be configured via
@@ -33,9 +29,6 @@ standalone, ensure \code{setup_working_release()} has been invoked first.
 }
 \examples{
 \dontrun{
-pipdata_validate_gmd(
-  log = FALSE,
-  save_log = FLASE
-)
+pipdata_validate_gmd()
 }
 }

@@ -1,6 +1,6 @@
 # 🧠 Project Brain
 
-_Generated 2026-08-20 · 114 entities · 3 topics · 34 edges_
+_Generated 2026-08-21 · 122 entities · 5 topics · 38 edges_
 
 ## How to Use
 
@@ -13,27 +13,29 @@ _Generated 2026-08-20 · 114 entities · 3 topics · 34 edges_
 
 | # | Topic | Entities | File |
 |---|-------|----------|------|
-| 1 | [Reporting_Level / Aaa.R / Valid_Dlw_Load\(\)](BRAIN-01.md#reporting-level-aaa-r-valid-dlw-load) | 83 | BRAIN-01.md |
+| 1 | [Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R](BRAIN-01.md#valid-dlw-load-reporting-level-aaa-r) | 88 | BRAIN-01.md |
 | 2 | [Old_Files/ / Archive / Devtools::Document\(\)](BRAIN-01.md#old-files-archive-devtools-document) | 4 | BRAIN-01.md |
-| 3 | [Severity / Pipdata_Validate_Gmd.R / Validation_Spec.Yml](BRAIN-01.md#severity-pipdata-validate-gmd-r-validation-spec-yml) | 4 | BRAIN-01.md |
+| 3 | [%||% / R Cmd Check / Authors@R](BRAIN-01.md#r-cmd-check-authors-r) | 4 | BRAIN-01.md |
+| 4 | [Pd_Deflation\(\) / Pip_Id / "Pip_Deflated"](BRAIN-01.md#pd-deflation-pip-id-pip-deflated) | 3 | BRAIN-01.md |
+| 5 | [Validation_Spec.Yml / Severity / Pipdata_Validate_Gmd.R](BRAIN-01.md#validation-spec-yml-severity-pipdata-validate-gmd-r) | 3 | BRAIN-01.md |
 
 ## Entity Summary
 
 | Type | Count |
 |------|-------|
-| brainstorm | 11 |
-| plan | 36 |
-| review | 23 |
-| solution | 43 |
+| brainstorm | 13 |
+| plan | 38 |
+| review | 24 |
+| solution | 46 |
 | strategy | 1 |
 
-_23 entities not assigned to any topic_
+_20 entities not assigned to any topic_
 
 ## Relationship Summary
 
 | Edge Type | Count |
 |-----------|-------|
-| decided_from | 10 |
-| references | 4 |
+| decided_from | 12 |
+| references | 5 |
 | reviews | 16 |
-| verifies | 4 |
+| verifies | 5 |

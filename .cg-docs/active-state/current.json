@@ -1,31 +1,29 @@
 {
   "schemaVersion": "compound-gpid-active-state-v1",
-  "updatedAt": "2026-08-17T21:10:00Z",
+  "updatedAt": "2026-08-21T21:32:00Z",
   "workflow": "/cg-work",
   "status": "completed",
-  "branch": "stream-b-validation-refactor",
-  "plan": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md",
-  "executionReport": ".cg-docs/work-reports/2026-08-17-dlw-validation-engine-refactor.md",
-  "currentPhase": null,
+  "branch": "stream-b-task-b2-unified-logging-report",
+  "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
+  "executionReport": ".cg-docs/work-reports/2026-08-21-unified-logging.md",
+  "currentPhase": 4,
   "evidenceStatus": [
-    {"id": "V1", "status": "passed", "artifact": "tests/testthat/test-dlw_validation_spec.R (12)"},
-    {"id": "V2", "status": "passed", "artifact": "tests/testthat/test-dlw_validation_engine.R (162)"},
-    {"id": "V3", "status": "passed", "artifact": "devtools::test(filter='dlw_validation') 174 pass"},
-    {"id": "V4", "status": "passed", "artifact": "R/pipdata_validate_gmd.R dispatch rewired"},
-    {"id": "V5", "status": "passed", "artifact": "grep: dead code removed, var_label retained"},
-    {"id": "V6", "status": "passed", "artifact": "fixture comparison all 8 + errors"},
-    {"id": "V7", "status": "passed", "artifact": "full suite 689 pass 0 fail 2 skip"},
-    {"id": "V8", "status": "passed", "artifact": "document() regenerated man/NAMESPACE"}
+    {"id": "V1", "status": "passed", "artifact": "pipfun checkpoint/capture tests; full suite"},
+    {"id": "V2", "status": "passed", "artifact": "DLW contract tests: 44 assertions"},
+    {"id": "V3", "status": "passed", "artifact": "report tests: 126 assertions; integration: 49 assertions"},
+    {"id": "V4", "status": "passed", "artifact": "roxygen/man, grep, vignettes, NEWS, context"},
+    {"id": "V5", "status": "passed", "artifact": "full suite and built tarball check: 0 errors"}
   ],
-  "unresolvedDecisions": [],
+  "unresolvedDecisions": [
+    {
+      "id": "D1",
+      "summary": "pipfun and pipdata vignettes require Pandoc; checks used --no-build-vignettes",
+      "blocking": false
+    }
+  ],
   "artifactRefs": [
-    {"kind": "plan", "path": ".cg-docs/plans/2026-08-17-dlw-validation-engine-refactor.md", "status": "completed"},
-    {"kind": "execution-report", "path": ".cg-docs/work-reports/2026-08-17-dlw-validation-engine-refactor.md", "status": "completed"},
-    {"kind": "spec", "path": "inst/extdata/validation_spec.yml", "status": "modified"},
-    {"kind": "engine", "path": "R/pipdata_dlw_validation.R", "status": "modified"},
-    {"kind": "tests", "path": "tests/testthat/fixtures/", "status": "new"},
-    {"kind": "tests", "path": "tests/testthat/test-dlw_validation_engine.R", "status": "new"},
-    {"kind": "tests", "path": "tests/testthat/test-dlw_validation_spec.R", "status": "new"}
+    {"kind": "plan", "path": ".cg-docs/plans/2026-04-28-unified-logging.md", "status": "completed"},
+    {"kind": "execution-report", "path": ".cg-docs/work-reports/2026-08-21-unified-logging.md", "status": "completed"}
   ],
-  "nextCommand": "/cg-review mode:verify"
+  "nextCommand": "/cg-work"
 }

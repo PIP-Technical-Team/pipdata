@@ -109,12 +109,53 @@ over-engineering the DLW wrapper architecture.
 must complete first to reduce surface area and avoid wasted work on files
 being removed.
 
+## Refinements (2026-08-20)
+
+Re-examined during B2 scoping (`/cg-brainstorm`):
+
+1. **Type naming**: Renamed `dlw_download_inf` → `dlw_acquisition_inf` to
+   match the domain language ("DLW Data Acquisition" in
+   `compound-gpid.context.md`). The three-type scheme (per-survey
+   `dlw_acquisition_inf` + `dlw_validation_inf`, aggregate `dlw_summary_inf`)
+   is retained over a two-summary-type alternative — it mirrors the existing
+   `process_summary_inf` + per-survey error pattern and gives `log_report()`
+   both per-survey detail (for the country table) and aggregate counts (for
+   the section header).
+
+2. **`log_report()` parsing**: Confirmed against a hybrid alternative —
+   extending `log_report()` to parse both structured and ad-hoc entries. The
+   ad-hoc DLW entries are too inconsistent to parse reliably: three error
+   handlers use `logmeta = list(error = e)` (the condition-object
+   anti-pattern that breaks `parse_log_meta()`), and the remaining entries
+   use free-form keys with no `info`/`error` string discriminator.
+   Approach 1 (structured entries) remains the right call.
+
+3. **`logging-refactor` merge**: `logging-refactor` and `unified-logging-report`
+   share the same plan file and are treated as one effort. B2 implements
+   `logging-refactor` for the pipdata DLW surface (eliminating `log`/`save_log`
+   arguments). The pipaux-inclusion portion of `logging-refactor` remains a
+   follow-on — pipaux uses a separate log name, incompatible logmeta schema,
+   and a separate package.
+
+4. **Section ordering**: Report sections follow execution order for in-scope
+   stages: DLW acquisition → DLW validation → Processing summary → Aux file
+   changes → Deflation summary → diagnostic tables. `build_deflation_summary`
+   was missing from the plan's Step 11 section list — added back. No aux
+   refresh section until pipaux integration lands as a follow-on.
+
+5. **pipaux scope**: Confirmed out of scope. pipaux's `"pipaux_update_log"`
+   uses `list(step = <STEP>, measure = <measure>)` logmeta with events
+   `"update"`/`"success"` — incompatible with `parse_log_meta()` which reads
+   `x$info`/`x$error` string discriminators. A future task will add
+   `aux_refresh_summary_inf` and a second `log_filter()` source to
+   `log_report()`.
+
 ## pipfun Requirements Spec
 
 Changes needed in `pipfun` before or alongside this work:
 
 1. **New canonical logmeta types** (strings used in `info`/`error` fields):
-   - `dlw_download_inf` — per-survey download outcome (success/failure)
+   - `dlw_acquisition_inf` — per-survey acquisition/download outcome (success/failure)
    - `dlw_validation_inf` — per-survey validation outcome (pass/fail + reason)
    - `dlw_summary_inf` — aggregate DLW step summary (total/success/fail counts)
 2. **`log_save_checkpoint(stage)`** — helper that persists current `piplog`
@@ -131,9 +172,11 @@ Changes needed in `pipfun` before or alongside this work:
 ## Next Steps
 
 1. Complete `archive-legacy-dlw` (Pipeline Alignment Audit milestone)
-2. Create implementation plan via `/cg-plan` covering:
+2. Implementation plan (`.cg-docs/plans/2026-04-28-unified-logging.md`):
    - pipfun changes (new logmeta types, checkpoint helper)
    - pipdata DLW function refactoring (remove `log`/`save_log`, add typed logmeta)
-   - `log_report()` extension (DLW sections, stage-aware header/warning)
+   - `log_report()` extension (DLW sections, stage-aware header/warning, deflation section)
    - Test updates (DLW logging contracts, report section tests)
 3. Coordinate branch strategy: pipfun changes merged first, then pipdata
+4. After B2 completes: update `logging-refactor` roadmap status (DLW portion
+   done; pipaux portion remains as a follow-on)

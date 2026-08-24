@@ -7,6 +7,8 @@
 #'    and save them to the local directory.
 #' 3. Validates the downloaded datasets using `pipdata::pipdata_validate_gmd`
 #'    and updates the validation inventory (`"gmd_valid_inv"`).
+#' 4. Writes a `dlw_summary_inf` stage marker and persists a DLW logging
+#'    checkpoint after the delegates complete.
 #'
 #' @inheritParams pipdata_get_gmd
 #' @param get_dlw_data Logical. Whether to check for and download new DLW data. Default is `TRUE`.
@@ -22,8 +24,6 @@
 #' pipdata_dlw_process(inv_gmd_list = "dlw_gmd_inv",
 #'             get_dlw_data = TRUE,
 #'             validate_dlw_data = TRUE,
-#'             log             = TRUE,
-#'             save_log        = TRUE,
 #'             check_missing   = TRUE,
 #'             release         = "20260206",
 #'             identity        = "TEST"
@@ -33,8 +33,6 @@ pipdata_dlw_process <- function(
     inv_gmd_list = "dlw_gmd_inv",
     get_dlw_data = TRUE,
     validate_dlw_data = TRUE,
-    log  = TRUE,
-    save_log = TRUE,
     check_missing = TRUE,
     release = NULL,
     identity = NULL,
@@ -64,6 +62,10 @@ pipdata_dlw_process <- function(
     root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_deflated"),
     alias = "pip_deflated"
   )
+  stamp::st_init(
+    root = fs::path(getOption("pipfun.main_dir"), "pip_repository", "pip_logs"),
+    alias = "piplog"
+  )
 
   # Guard: assert a working release is configured. Downstream delegates
 
@@ -77,13 +79,17 @@ pipdata_dlw_process <- function(
   check_directory(pip_folders$dlw_inventory)
 
   # 1) Checks if the list of GMD DLW datasets is available ---------------------
-  gmd_list <- fs::path(
-    pip_folders$dlw_inventory,
-    "dlw_gmd_inv.qs2",
-    "dlw_gmd_inv.qs2"
-  )
+  # A disabled DLW stage is a valid no-op and must not enter this interactive
+  # catalog-discovery branch.
+  if (get_dlw_data || validate_dlw_data) {
+    gmd_list <- fs::path(
+      pip_folders$dlw_inventory,
+      "dlw_gmd_inv.qs2",
+      "dlw_gmd_inv.qs2"
+    )
+  }
 
-  if (!fs::is_file(gmd_list)) {
+  if ((get_dlw_data || validate_dlw_data) && !fs::is_file(gmd_list)) {
 
     cli::cli_text(
       "Local GMD list is not available.\n",
@@ -120,19 +126,37 @@ pipdata_dlw_process <- function(
   # 2) Checks for new datasets -------------------------------------------------
   if (get_dlw_data){
 
-    pipdata_get_gmd(inv_gmd_list = inv_gmd_list,
-                        log  = log,
-                        save_log = save_log,
-                        check_missing = check_missing,
-                        verbose = verbose)
+    pipdata_get_gmd(
+      inv_gmd_list = inv_gmd_list,
+      check_missing = check_missing,
+      verbose = verbose
+    )
 
   }
 
   # 3) Validate the datasets and update the inventory
   if (validate_dlw_data){
 
-    pipdata_validate_gmd(log = log, save_log = save_log, verbose = verbose)
+    pipdata_validate_gmd(verbose = verbose)
   }
+
+  pipfun::log_info(
+    "DLW processing complete.",
+    name = "pipdata_log",
+    logmeta = list(
+      info = .logtype_dlw_summary,
+      phase = "complete",
+      get_dlw_data = get_dlw_data,
+      validate_dlw_data = validate_dlw_data
+    )
+  )
+  pipfun::log_save_checkpoint(
+    name = "pipdata_log",
+    stage = "dlw",
+    alias = "dlw_meta"
+  )
+
+  invisible(NULL)
 
 }
 

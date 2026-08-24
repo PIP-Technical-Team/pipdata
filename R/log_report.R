@@ -1,4 +1,4 @@
-﻿#' Generate a markdown report from a pipeline log
+#' Generate a markdown report from a pipeline log.
 #'
 #' Parses a `piplog` object produced by `pipfun::log_filter()` and writes a
 #' structured markdown document summarising errors, informational messages, and
@@ -22,6 +22,12 @@
 #' The report contains:
 #' \itemize{
 #'   \item Running metadata (time window, total entries, success/fail counts).
+#'   \item Stage-aware warnings for DLW-only, pipeline-only, no-op, and
+#'     incomplete runs.
+#'   \item DLW acquisition summary, including attempted, successful, and
+#'     failed survey counts and failure details.
+#'   \item DLW validation summary, including workflow phase counts and
+#'     validation or loading failures.
 #'   \item Processing summary: total, cleaned, and failed counts
 #'     (from `process_summary_inf` log entry).
 #'   \item Deflation summary: candidates, successes, failures, and failing
@@ -81,6 +87,9 @@ log_report <- function(
     length,
     list(
       build_header(dt, title),
+      build_stage_warning(dt),
+      build_dlw_acquisition_summary(dt),
+      build_dlw_validation_summary(dt),
       build_processing_summary(dt),
       build_deflation_summary(dt),
       build_aux_changes(dt),
@@ -100,6 +109,341 @@ log_report <- function(
   }
 
   return(invisible(lines))
+}
+
+
+#' Build a stage-awareness warning for a parsed pipeline log
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#' @return Character vector of markdown lines, or an empty vector.
+#' @keywords internal
+build_stage_warning <- function(dt) {
+  dlw_idx <- which(dt$error_type == .logtype_dlw_summary)
+  pipeline_ran <- any(
+    dt$error_type == "process_summary_inf",
+    na.rm = TRUE
+  )
+
+  if (length(dlw_idx) > 0L) {
+    summary <- dt$logmeta[[dlw_idx[length(dlw_idx)]]]
+    no_op <- identical(summary$get_dlw_data, FALSE) &&
+      identical(summary$validate_dlw_data, FALSE)
+    if (no_op) {
+      return(c(
+        "> **DLW no-op:** DLW stage ran but neither acquisition nor",
+        "> validation was performed (both `get_dlw_data` and",
+        "> `validate_dlw_data` were FALSE)."
+      ))
+    }
+  }
+
+  dlw_ran <- length(dlw_idx) > 0L
+  if (dlw_ran && !pipeline_ran) {
+    return(c(
+      "> **Partial run:** Only DLW acquisition/validation completed.",
+      "> Survey cleaning (`pd_process_data`) was not executed."
+    ))
+  }
+
+  if (!dlw_ran && pipeline_ran) {
+    return(c(
+      "> **Note:** DLW acquisition was not part of this run."
+    ))
+  }
+
+  if (!dlw_ran && !pipeline_ran) {
+    return(c(
+      "> **Warning:** This log does not contain a completed DLW or pipeline",
+      "> stage marker; the run may be incomplete."
+    ))
+  }
+
+  character(0)
+}
+
+
+#' Build the DLW acquisition summary section
+#'
+#' Successful acquisitions are inferred from the start-entry denominator
+#' minus per-survey download failures. Phase markers are not outcomes.
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#' @return Character vector of markdown lines, or an empty vector.
+#' @keywords internal
+build_dlw_acquisition_summary <- function(dt) {
+  idx <- which(dt$error_type == .logtype_dlw_acquisition)
+  if (length(idx) == 0L) {
+    return(character(0))
+  }
+
+  metas <- dt$logmeta[idx]
+  start_idx <- which(vapply(
+    metas,
+    function(x) identical(x$phase, "start"),
+    logical(1)
+  ))
+  no_work <- any(vapply(
+    metas,
+    function(x) identical(x$phase, "no_new_data"),
+    logical(1)
+  ))
+  workflow_failure_idx <- idx[
+    dt$event[idx] == "error" &
+      !vapply(
+        metas,
+        function(x) !is.null(x$survey),
+        logical(1)
+      )
+  ]
+
+  if (length(start_idx) == 0L && no_work &&
+      length(workflow_failure_idx) == 0L) {
+    return(c(
+      "## DLW Acquisition Summary",
+      "",
+      "**Surveys:** 0 attempted, 0 succeeded, 0 failed.",
+      "",
+      "No new GMD data was available for acquisition."
+    ))
+  }
+  if (length(start_idx) == 0L) {
+    n_surveys <- NA_integer_
+  } else {
+    n_surveys <- vapply(
+      metas[start_idx],
+      function(x) {
+        value <- x$n_surveys
+        if (length(value) != 1L || !is.numeric(value) || is.na(value)) {
+          return(NA_integer_)
+        }
+        as.integer(value)
+      },
+      integer(1)
+    )
+    if (anyNA(n_surveys)) {
+      n_surveys <- NA_integer_
+    } else {
+      n_surveys <- sum(n_surveys)
+    }
+  }
+
+  if (is.na(n_surveys) && length(workflow_failure_idx) == 0L) {
+    return(character(0))
+  }
+
+  failure_idx <- idx[
+    dt$event[idx] == "error" & !is.na(dt$survey[idx])
+  ]
+  n_failed <- length(failure_idx)
+  attempted_line <- if (is.na(n_surveys)) {
+    "**Surveys:** no valid start-entry denominator was recorded."
+  } else {
+    sprintf(
+      "**Surveys:** %d attempted, %d succeeded, %d failed.",
+      n_surveys,
+      n_surveys - n_failed,
+      n_failed
+    )
+  }
+  lines <- c("## DLW Acquisition Summary", "", attempted_line)
+
+  if (length(failure_idx) == 0L && length(workflow_failure_idx) == 0L) {
+    return(lines)
+  }
+
+  failure_lines <- vapply(
+    failure_idx,
+    function(i) {
+      meta <- dt$logmeta[[i]]
+      survey <- if (is.null(meta$survey)) "unknown" else meta$survey
+      country <- if (is.null(meta$country)) dt$country[i] else meta$country
+      year <- if (is.null(meta$year)) "unknown" else meta$year
+      module <- if (is.null(meta$module)) "unknown" else meta$module
+      condition_msg <- if (is.null(meta$condition_msg)) {
+        dt$message[i]
+      } else {
+        meta$condition_msg
+      }
+      sprintf(
+        "- `%s` (%s, %s, %s) - %s",
+        survey,
+        country,
+        year,
+        module,
+        condition_msg
+      )
+    },
+    character(1)
+  )
+
+  workflow_lines <- vapply(
+    workflow_failure_idx,
+    function(i) {
+      meta <- dt$logmeta[[i]]
+      phase <- if (is.null(meta$phase)) "unknown" else meta$phase
+      detail <- if (is.null(meta$condition_msg)) {
+        dt$message[i]
+      } else {
+        meta$condition_msg
+      }
+      sprintf("- Workflow phase `%s` - %s", phase, detail)
+    },
+    character(1)
+  )
+
+  c(
+    lines,
+    if (length(failure_lines) > 0L) {
+      c("", "**Failed acquisitions:**", "", failure_lines)
+    } else {
+      character(0)
+    },
+    if (length(workflow_lines) > 0L) {
+      c("", "**Acquisition workflow failures:**", "", workflow_lines)
+    } else {
+      character(0)
+    }
+  )
+}
+
+
+#' Build the DLW validation summary section
+#'
+#' Workflow phase markers are reported separately from per-survey failures so
+#' inventory and report persistence are not counted as survey validations.
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#' @return Character vector of markdown lines, or an empty vector.
+#' @keywords internal
+build_dlw_validation_summary <- function(dt) {
+  idx <- which(dt$error_type == .logtype_dlw_validation)
+  if (length(idx) == 0L) {
+    return(character(0))
+  }
+
+  metas <- dt$logmeta[idx]
+  start_idx <- which(vapply(
+    metas,
+    function(x) identical(x$phase, "start"),
+    logical(1)
+  ))
+  no_work <- any(vapply(
+    metas,
+    function(x) identical(x$phase, "no_new_data"),
+    logical(1)
+  ))
+  start_counts <- vapply(
+    metas[start_idx],
+    function(x) {
+      candidate <- x$n_surveys
+      if (length(candidate) == 1L && is.numeric(candidate) && !is.na(candidate)) {
+        return(as.integer(candidate))
+      }
+      NA_integer_
+    },
+    integer(1)
+  )
+  if (length(start_counts) == 0L && no_work) {
+    n_surveys <- 0L
+  } else if (length(start_counts) == 0L || anyNA(start_counts)) {
+    n_surveys <- NA_integer_
+  } else {
+    n_surveys <- sum(start_counts)
+  }
+
+  failure_idx <- idx[
+    dt$event[idx] == "error" & !is.na(dt$survey[idx]) &
+      vapply(
+        metas,
+        function(x) identical(x$phase, "load") ||
+          identical(x$phase, "validation"),
+        logical(1)
+      )
+  ]
+  workflow_failure_idx <- idx[
+    dt$event[idx] == "error" & !(idx %in% failure_idx)
+  ]
+  n_failed <- length(failure_idx)
+  attempted_line <- if (is.na(n_surveys)) {
+    "**Surveys:** no valid start-entry denominator was recorded."
+  } else {
+    sprintf(
+      "**Surveys:** %d attempted, %d succeeded, %d failed.",
+      n_surveys,
+      n_surveys - n_failed,
+      n_failed
+    )
+  }
+
+  phases <- vapply(
+    metas,
+    function(x) if (is.null(x$phase)) "unknown" else as.character(x$phase),
+    character(1)
+  )
+  phase_counts <- table(phases)
+  phase_lines <- c(
+    "### Workflow Phases",
+    "",
+    "| Phase | Entries |",
+    "|-------|--------:|",
+    vapply(
+      names(phase_counts),
+      function(phase) sprintf("| `%s` | %d |", phase, phase_counts[[phase]]),
+      character(1)
+    )
+  )
+
+  lines <- c("## DLW Validation Summary", "", attempted_line, "", phase_lines)
+  if (length(failure_idx) == 0L && length(workflow_failure_idx) == 0L) {
+    return(lines)
+  }
+
+  failure_lines <- vapply(
+    failure_idx,
+    function(i) {
+      meta <- dt$logmeta[[i]]
+      survey <- if (is.null(meta$survey)) "unknown" else meta$survey
+      phase <- if (is.null(meta$phase)) "unknown" else meta$phase
+      detail <- if (!is.null(meta$condition_msg)) {
+        meta$condition_msg
+      } else if (!is.null(meta$validation_messages)) {
+        paste(meta$validation_messages, collapse = "; ")
+      } else {
+        dt$message[i]
+      }
+      sprintf("- `%s` (`%s`) - %s", survey, phase, detail)
+    },
+    character(1)
+  )
+
+  workflow_lines <- vapply(
+    workflow_failure_idx,
+    function(i) {
+      meta <- dt$logmeta[[i]]
+      phase <- if (is.null(meta$phase)) "unknown" else meta$phase
+      detail <- if (!is.null(meta$condition_msg)) {
+        meta$condition_msg
+      } else {
+        dt$message[i]
+      }
+      sprintf("- Workflow phase `%s` - %s", phase, detail)
+    },
+    character(1)
+  )
+
+  c(
+    lines,
+    if (length(failure_lines) > 0L) {
+      c("", "**Validation failures:**", "", failure_lines)
+    } else {
+      character(0)
+    },
+    if (length(workflow_lines) > 0L) {
+      c("", "**Workflow failures:**", "", workflow_lines)
+    } else {
+      character(0)
+    }
+  )
 }
 
 
@@ -123,13 +467,20 @@ parse_log_meta <- function(log) {
     error_type := vapply(
       logmeta,
       \(x) {
-        if (!is.null(x$error)) {
-          return(x$error)
+        discriminator <- if (!is.null(x$error)) x$error else x$info
+        if (is.null(discriminator) || length(discriminator) == 0L) {
+          return(NA_character_)
         }
-        if (!is.null(x$info)) {
-          return(x$info)
+        if (inherits(discriminator, "condition")) {
+          return(paste0("legacy_", class(discriminator)[1L]))
         }
-        return(NA_character_)
+        if (!is.character(discriminator)) {
+          discriminator <- as.character(discriminator)
+        }
+        if (length(discriminator) != 1L) {
+          return(discriminator[1L])
+        }
+        return(discriminator)
       },
       character(1)
     )

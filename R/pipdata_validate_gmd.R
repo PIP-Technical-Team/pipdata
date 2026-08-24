@@ -1,8 +1,9 @@
 #' Validate GMD data and generate inventory report data
 #'
-#'
-#' @param log Logical. Keep logging file, TRUE/FALSE default value is `TRUE`
-#' @param save_log Logical. Save logging file, TRUE/FALSE default value is `TRUE`
+#' Logging is unconditional. The function writes `dlw_validation_inf` entries
+#' for validation start, no-new-data, load/validation failures, inventory and
+#' report workflow phases. Error conditions are stored as `condition_msg` and
+#' the discriminator in `logmeta$error` is always a string.
 #'
 #' @note This function expects a working release to be configured via
 #'   [pipfun::setup_working_release()]. When called from
@@ -12,31 +13,17 @@
 #' @param verbose Logical. Controls verbosity of downstream I/O calls
 #'   (including [pipload::pip_write()]). Default:
 #'   `getOption("pipdata.verbose", default = TRUE)`.
-#' @return data.table, inventory report
+#' @return Invisibly returns `NULL`; validation inventory and report artifacts
+#'   are persisted as side effects.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' pipdata_validate_gmd(
-#'   log = FALSE,
-#'   save_log = FLASE
-#' )
+#' pipdata_validate_gmd()
 #' }
 pipdata_validate_gmd <- function(
-  log = TRUE,
-  save_log = TRUE,
   verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
-  #### logging -----------------------------------------------------------------
-  if (log) {
-    pipfun::log_add(
-      "info",
-      "Start validation workflow",
-      name = "pipdata_log",
-      args = list(log = log, save_log = save_log)
-    )
-  }
-
   ### --------------------------------------------------------------------------
 
   # 0) set-up release and dlw data, inventory, and  metadata working folders
@@ -49,12 +36,33 @@ pipdata_validate_gmd <- function(
 
   ### -------------------------------------------------------------------------
   # 1) get list of local gmd datasets that are not yet validated
-  gmd_new <- dlw_gmd_unvalidated()
+  gmd_new <- tryCatch(
+    dlw_gmd_unvalidated(),
+    error = function(e) {
+      pipfun::log_error(
+        "Failed to load unvalidated GMD data.",
+        name = "pipdata_log",
+        logmeta = list(
+          error = .logtype_dlw_validation,
+          phase = "catalog_load",
+          condition_msg = conditionMessage(e)
+        )
+      )
+      rlang::abort("Failed to load unvalidated GMD data.", parent = e)
+    }
+  )
 
   if (is.null(gmd_new) || nrow(gmd_new) == 0) {
-    cli::cli_abort(
-      "There is no new GMD local datasets to validate"
+    pipfun::log_info(
+      "No new GMD data was available for validation.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = .logtype_dlw_validation,
+        phase = "no_new_data",
+        n_surveys = 0L
+      )
     )
+    return(invisible(NULL))
   }
 
   # 2) Load validated gmd inventory file ---------------------------------------
@@ -77,16 +85,18 @@ pipdata_validate_gmd <- function(
       error = function(e) {
         msg <- glue::glue('Failed to read inventory file.')
 
-        if (log) {
-          pipfun::log_add(
-            "error",
-            msg,
-            name = "pipdata_log",
-            logmeta = list(error = e)
+        pipfun::log_error(
+          msg,
+          name = "pipdata_log",
+          logmeta = list(
+            error = .logtype_dlw_validation,
+            phase = "inv_load_fail",
+            artifact = "gmd_valid_inv",
+            path = valid_inv_file,
+            condition_msg = conditionMessage(e)
           )
-        }
+        )
 
-        NULL
         cli::cli_abort(msg)
       }
     )
@@ -109,6 +119,46 @@ pipdata_validate_gmd <- function(
   cli::cli_alert_info("Location of GMD data: {.dir {pip_folders$dlw_data}}")
 
   gmd_new <- gmd_new[data_available == "Yes", ]
+
+  if (nrow(gmd_new) == 0L) {
+    pipfun::log_info(
+      "No available GMD data was found for validation.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = .logtype_dlw_validation,
+        phase = "no_new_data",
+        n_surveys = 0L
+      )
+    )
+    return(invisible(NULL))
+  }
+
+  # The validation inventory is keyed by survey_id. If the local acquisition
+  # inventory contains multiple checksums for one file, validate only the
+  # deterministically newest version rather than creating duplicate keys.
+  sort_cols <- intersect(
+    c("FileName", "Vermast", "Veralt", "Checksum"),
+    names(gmd_new)
+  )
+  if (length(sort_cols) > 1L) {
+    data.table::setorderv(
+      gmd_new,
+      cols = sort_cols,
+      order = c(1L, rep(-1L, length(sort_cols) - 1L))
+    )
+  }
+  gmd_new <- gmd_new[!duplicated(FileName)]
+
+  n_surveys <- nrow(gmd_new)
+  pipfun::log_info(
+    "DLW validation started.",
+    name = "pipdata_log",
+    logmeta = list(
+      info = .logtype_dlw_validation,
+      phase = "start",
+      n_surveys = n_surveys
+    )
+  )
 
   all_names <- unique(gmd_new$FileName)
   new_inv <- vector("list", length(all_names))
@@ -156,15 +206,19 @@ pipdata_validate_gmd <- function(
       error = function(e) {
         msg <- glue::glue('Could not load data from GMD data folder.')
 
-        if (log) {
-          pipfun::log_add(
-            "error",
-            msg,
-            name = "pipdata_log",
-            args = list(file_path = pip_folders$dlw_data, file_name = file_id),
-            logmeta = list(error = e)
+        pipfun::log_error(
+          msg,
+          name = "pipdata_log",
+          logmeta = list(
+            error = .logtype_dlw_validation,
+            phase = "load",
+            survey = fs::path_ext_remove(file_name),
+            file_name = file_name,
+            module = md_type,
+            path = pip_folders$dlw_data,
+            condition_msg = conditionMessage(e)
           )
-        }
+        )
         cli::cli_inform(msg)
         NULL
       }
@@ -174,9 +228,23 @@ pipdata_validate_gmd <- function(
       file_id <- file_id |>
         fs::path_ext_set("qs2")
 
-      version_info <- stamp::st_info(
-        file_id,
-        alias = "dlw"
+      version_info <- tryCatch(
+        stamp::st_info(file_id, alias = "dlw"),
+        error = function(e) {
+          pipfun::log_error(
+            "Failed to read GMD artifact metadata.",
+            name = "pipdata_log",
+            logmeta = list(
+              error = .logtype_dlw_validation,
+              phase = "artifact_info_fail",
+              survey = nm,
+              file_name = file_name,
+              module = md_type,
+              condition_msg = conditionMessage(e)
+            )
+          )
+          rlang::abort("Failed to read GMD artifact metadata.", parent = e)
+        }
       )
 
       # Validate the data using the data-driven engine
@@ -187,8 +255,21 @@ pipdata_validate_gmd <- function(
       }
 
       valid_status <- if (any(check[["type"]] == "error")) {
-        check <- check[type == "error", .(message)]
-        cli::cli_alert_danger("Validation failed for {nm} : {check$message}")
+        validation_messages <- check[type == "error", message]
+        pipfun::log_error(
+          "GMD validation failed.",
+          name = "pipdata_log",
+          logmeta = list(
+            error = .logtype_dlw_validation,
+            phase = "validation",
+            survey = nm,
+            module = md_type,
+            validation_messages = as.character(validation_messages)
+          )
+        )
+        cli::cli_alert_danger(
+          "Validation failed for {nm} : {validation_messages}"
+        )
         "invalid"
       } else {
         "valid"
@@ -275,49 +356,96 @@ pipdata_validate_gmd <- function(
   if (is.null(final_inv)) {
     cli::cli_alert_danger("Inventory file is not generated")
 
-    if (log) {
-      pipfun::log_add(
-        "error",
-        "Inventory file is not generated",
-        name = "pipdata_log",
-        logmeta = list(dataset = "inventory")
+    pipfun::log_error(
+      "Inventory file is not generated",
+      name = "pipdata_log",
+      logmeta = list(
+        error = .logtype_dlw_validation,
+        phase = "inventory_fail",
+        artifact = "gmd_valid_inv"
       )
-    }
+    )
   } else {
-    pipload::pip_write(
-      x = final_inv,
-      id = "gmd_valid_inv",
-      pk = "survey_id",
-      alias = "dlw_meta",
-      verbose = verbose
+    tryCatch(
+      {
+        write_result <- pipload::pip_write(
+          x = final_inv,
+          id = "gmd_valid_inv",
+          pk = "survey_id",
+          alias = "dlw_meta",
+          verbose = verbose
+        )
+        .validate_pip_write_result(write_result, "gmd_valid_inv")
+      },
+      error = function(e) {
+        pipfun::log_error(
+          "Failed to save the validation inventory.",
+          name = "pipdata_log",
+          logmeta = list(
+            error = .logtype_dlw_validation,
+            phase = "inventory_save",
+            artifact = "gmd_valid_inv",
+            path = pip_folders$dlw_metadata,
+            condition_msg = conditionMessage(e)
+          )
+        )
+        rlang::abort("Failed to save the validation inventory.", parent = e)
+      }
     )
 
     cli::cli_alert_success(
       "Inventory file is saved at: {.dir {pip_folders$dlw_metadata}}"
     )
 
-    if (log) {
-      pipfun::log_add(
-        "info",
-        "Inventory file is saved",
-        name = "pipdata_log",
-        logmeta = list(saved_at = pip_folders$dlw_metadata)
+    pipfun::log_info(
+      "Validation inventory saved.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = .logtype_dlw_validation,
+        phase = "inventory_save",
+        artifact = "gmd_valid_inv",
+        saved_at = pip_folders$dlw_metadata,
+        n_surveys = n_surveys,
+        n_valid = sum(final_inv$status == "valid", na.rm = TRUE),
+        n_invalid = sum(final_inv$status == "invalid", na.rm = TRUE),
+        n_load_failed = sum(final_inv$data_available == "No", na.rm = TRUE)
       )
-    }
+    )
   }
 
   # 6. save validation report file in DLW inventory folder ---------------------
   # generate validation report
-  valid_report <- get_validation_report()
+  report_error_logged <- FALSE
+  valid_report <- tryCatch(
+    get_validation_report(),
+    error = function(e) {
+      report_error_logged <<- TRUE
+      pipfun::log_error(
+        "Validation report is not available to save",
+        name = "pipdata_log",
+        logmeta = list(
+          error = .logtype_dlw_validation,
+          phase = "report_unavailable",
+          artifact = "validation_report",
+          condition_msg = conditionMessage(e)
+        )
+      )
+      NULL
+    }
+  )
 
   if (is.null(valid_report)) {
     cli::cli_alert_danger("Validation report data is not compiled")
 
-    if (log) {
-      pipfun::log_add(
-        "error",
+    if (!report_error_logged) {
+      pipfun::log_error(
         "Validation report is not available to save",
-        name = "pipdata_log"
+        name = "pipdata_log",
+        logmeta = list(
+          error = .logtype_dlw_validation,
+          phase = "report_unavailable",
+          artifact = "validation_report"
+        )
       )
     }
   } else {
@@ -328,14 +456,16 @@ pipdata_validate_gmd <- function(
       error = function(e) {
         msg <- "Failed to read validation report file."
 
-        if (log) {
-          pipfun::log_add(
-            "error",
-            msg,
-            name = "pipdata_log",
-            logmeta = list(error = e)
+        pipfun::log_error(
+          msg,
+          name = "pipdata_log",
+          logmeta = list(
+            error = .logtype_dlw_validation,
+            phase = "report_load_fail",
+            artifact = "validation_report",
+            condition_msg = conditionMessage(e)
           )
-        }
+        )
 
         cli::cli_inform(msg)
         NULL
@@ -365,41 +495,45 @@ pipdata_validate_gmd <- function(
       )
     }
 
-    pipload::pip_write(
-      x = valid_report,
-      id = "validation_report",
-      alias = "dlw_meta",
-      verbose = verbose
+    tryCatch(
+      {
+        write_result <- pipload::pip_write(
+          x = valid_report,
+          id = "validation_report",
+          alias = "dlw_meta",
+          verbose = verbose
+        )
+        .validate_pip_write_result(write_result, "validation_report")
+      },
+      error = function(e) {
+        pipfun::log_error(
+          "Failed to save the validation report.",
+          name = "pipdata_log",
+          logmeta = list(
+            error = .logtype_dlw_validation,
+            phase = "report_save",
+            artifact = "validation_report",
+            path = pip_folders$dlw_metadata,
+            condition_msg = conditionMessage(e)
+          )
+        )
+        rlang::abort("Failed to save the validation report.", parent = e)
+      }
     )
 
     cli::cli_alert_success("Validation report is saved")
 
-    if (log) {
-      pipfun::log_add(
-        "info",
-        "Validation report is saved",
-        name = "pipdata_log",
-        logmeta = list(saved_as = "validation_report")
+    pipfun::log_info(
+      "Validation report saved.",
+      name = "pipdata_log",
+      logmeta = list(
+        info = .logtype_dlw_validation,
+        phase = "report_save",
+        artifact = "validation_report",
+        saved_as = "validation_report",
+        saved_at = pip_folders$dlw_metadata
       )
-    }
-  }
-
-  # 7. save logging file in DLW metadaa folder---------------------------------
-  if (save_log && log) {
-    pipfun::log_save(
-      name = "pipdata_log",
-      id = "dlw_validation_log",
-      alias = "dlw_meta"
     )
-
-    pipfun::log_add(
-      "info",
-      "logging file is saved",
-      name = "pipdata_log",
-      logmeta = list(log_info_name = "dlw_validation_log")
-    )
-
-    cli::cli_alert_success("GMD logging file is saved")
   }
 
   invisible(NULL)

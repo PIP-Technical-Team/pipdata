@@ -21,7 +21,7 @@ Imports:
     joyn,
     kit,
     pipaux,
-    pipfun (>= 0.2.0),
+    pipfun (>= 1.0.1),
     pipload (>= 0.2.0.9005),
     purrr,
     rlang,

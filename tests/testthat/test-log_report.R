@@ -50,6 +50,287 @@ test_that("parse_log_meta extracts error_type from info entry", {
   expect_true(is.na(dt$country))
 })
 
+test_that("parse_log_meta normalizes legacy condition discriminators", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "legacy failure",
+      list(error = simpleError("legacy boom"))
+    )
+  )
+
+  dt <- parse_log_meta(log)
+
+  expect_type(dt$error_type, "character")
+  expect_equal(dt$error_type, "legacy_simpleError")
+})
+
+test_that("DLW logmeta discriminators are registered and report-suppressed", {
+  expect_equal(.logtype_dlw_acquisition, "dlw_acquisition_inf")
+  expect_equal(.logtype_dlw_validation, "dlw_validation_inf")
+  expect_equal(.logtype_dlw_summary, "dlw_summary_inf")
+  expect_length(.log_internal_types, 11L)
+  expect_false(anyDuplicated(.log_internal_types) > 0L)
+  expect_true(all(c(
+    .logtype_dlw_acquisition,
+    .logtype_dlw_validation,
+    .logtype_dlw_summary
+  ) %in% .log_internal_types))
+  expect_true(all(c("release_write_err", "deflate_summary_inf") %in% .log_internal_types))
+})
+
+test_that("build_dlw_acquisition_summary uses denominator and failure rows", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "DLW acquisition started.",
+      list(
+        info = "dlw_acquisition_inf",
+        phase = "start",
+        n_surveys = 3L
+      )
+    ),
+    make_entry(
+      "error",
+      "download failed",
+      list(
+        error = "dlw_acquisition_inf",
+        phase = "download",
+        survey = "BOL_2020_EH",
+        country = "BOL",
+        year = 2020L,
+        module = "ALL",
+        condition_msg = "timeout"
+      )
+    ),
+    make_entry(
+      "info",
+      "DLW acquisition complete.",
+      list(
+        info = "dlw_acquisition_inf",
+        phase = "complete",
+        n_surveys = 3L,
+        n_success = 2L,
+        n_failed = 1L
+      )
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("DLW Acquisition Summary", out)))
+  expect_true(any(grepl("3 attempted, 2 succeeded, 1 failed", out)))
+  expect_true(any(grepl("BOL_2020_EH", out)))
+  expect_true(any(grepl("timeout", out)))
+})
+
+test_that("build_dlw_acquisition_summary omits malformed and absent input", {
+  empty <- make_piplog(
+    make_entry("error", "other", list(error = "other_error"))
+  )
+  malformed <- make_piplog(
+    make_entry(
+      "info",
+      "missing denominator",
+      list(info = "dlw_acquisition_inf", phase = "start")
+    )
+  )
+
+  expect_length(build_dlw_acquisition_summary(parse_log_meta(empty)), 0L)
+  expect_length(build_dlw_acquisition_summary(parse_log_meta(malformed)), 0L)
+})
+
+test_that("build_dlw_acquisition_summary reports no-work runs", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "No new GMD data was found.",
+      list(info = "dlw_acquisition_inf", phase = "no_new_data")
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("0 attempted, 0 succeeded, 0 failed", out)))
+})
+
+test_that("build_dlw_acquisition_summary renders fatal workflow failures", {
+  log <- make_piplog(
+    make_entry(
+      "error",
+      "catalog failed",
+      list(
+        error = "dlw_acquisition_inf",
+        phase = "catalog_load",
+        condition_msg = "catalog unavailable"
+      )
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("Acquisition workflow failures", out)))
+  expect_true(any(grepl("catalog unavailable", out)))
+})
+
+test_that("build_dlw_acquisition_summary aggregates repeated run starts", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "run one",
+      list(info = "dlw_acquisition_inf", phase = "start", n_surveys = 2L)
+    ),
+    make_entry(
+      "info",
+      "run two",
+      list(info = "dlw_acquisition_inf", phase = "start", n_surveys = 3L)
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("5 attempted, 5 succeeded, 0 failed", out)))
+})
+
+test_that("build_dlw_validation_summary groups workflow phases", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "DLW validation started.",
+      list(info = "dlw_validation_inf", phase = "start", n_surveys = 2L)
+    ),
+    make_entry(
+      "error",
+      "load failed",
+      list(
+        error = "dlw_validation_inf",
+        phase = "load",
+        survey = "BOL_2020_EH",
+        condition_msg = "bad qs2"
+      )
+    ),
+    make_entry(
+      "info",
+      "inventory saved",
+      list(
+        info = "dlw_validation_inf",
+        phase = "inventory_save",
+        artifact = "gmd_valid_inv"
+      )
+    ),
+    make_entry(
+      "error",
+      "report failed",
+      list(
+        error = "dlw_validation_inf",
+        phase = "report_load_fail",
+        condition_msg = "missing report"
+      )
+    )
+  )
+
+  out <- build_dlw_validation_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("DLW Validation Summary", out)))
+  expect_true(any(grepl("2 attempted", out)))
+  expect_true(any(grepl("load", out)))
+  expect_true(any(grepl("inventory_save", out)))
+  expect_true(any(grepl("report_load_fail", out)))
+  expect_true(any(grepl("BOL_2020_EH", out)))
+  expect_true(any(grepl("missing report", out)))
+})
+
+test_that("build_stage_warning distinguishes stage combinations", {
+  dlw_only <- make_piplog(
+    make_entry(
+      "info",
+      "DLW complete",
+      list(
+        info = "dlw_summary_inf",
+        get_dlw_data = TRUE,
+        validate_dlw_data = TRUE
+      )
+    )
+  )
+  pipeline_only <- make_piplog(
+    make_entry(
+      "info",
+      "Pipeline complete",
+      list(info = "process_summary_inf", n_total = 1L, n_success = 1L, n_failed = 0L)
+    )
+  )
+  no_op <- make_piplog(
+    make_entry(
+      "info",
+      "DLW complete",
+      list(
+        info = "dlw_summary_inf",
+        get_dlw_data = FALSE,
+        validate_dlw_data = FALSE
+      )
+    )
+  )
+  neither <- make_piplog(
+    make_entry("error", "unknown", list(error = "unknown_error"))
+  )
+
+  expect_true(any(grepl("Only DLW", build_stage_warning(parse_log_meta(dlw_only)))))
+  expect_true(any(grepl("DLW acquisition was not", build_stage_warning(parse_log_meta(pipeline_only)))))
+  expect_true(any(grepl("DLW no-op", build_stage_warning(parse_log_meta(no_op)))))
+  expect_true(any(grepl("incomplete", build_stage_warning(parse_log_meta(neither)), ignore.case = TRUE)))
+})
+
+test_that("build_stage_warning handles mixed typed and untyped entries", {
+  log <- make_piplog(
+    make_entry("info", "untyped", list(stage = "unknown")),
+    make_entry(
+      "info",
+      "pipeline",
+      list(info = "process_summary_inf", n_total = 1L, n_success = 1L, n_failed = 0L)
+    )
+  )
+
+  expect_no_error(build_stage_warning(parse_log_meta(log)))
+})
+
+test_that("log_report orders DLW sections before pipeline sections", {
+  log <- make_piplog(
+    make_entry(
+      "info",
+      "DLW acquisition started.",
+      list(info = "dlw_acquisition_inf", phase = "start", n_surveys = 1L)
+    ),
+    make_entry(
+      "info",
+      "DLW validation started.",
+      list(info = "dlw_validation_inf", phase = "start", n_surveys = 1L)
+    ),
+    make_entry(
+      "info",
+      "DLW complete",
+      list(info = "dlw_summary_inf", get_dlw_data = TRUE, validate_dlw_data = TRUE)
+    ),
+    make_entry(
+      "info",
+      "Pipeline complete",
+      list(info = "process_summary_inf", n_total = 1L, n_success = 1L, n_failed = 0L)
+    )
+  )
+
+  report <- log_report(log)
+  positions <- vapply(
+    c(
+      "## DLW Acquisition Summary",
+      "## DLW Validation Summary",
+      "## Processing Summary"
+    ),
+    function(section) match(section, report),
+    integer(1)
+  )
+
+  expect_true(all(diff(positions) > 0L))
+})
+
 # ── build_type_summary ───────────────────────────────────────────────────────
 
 test_that("build_type_summary excludes internal logmeta types", {
@@ -610,6 +891,30 @@ test_that("log_report writes file when path is provided", {
   expect_true(file.exists(tmp))
   content <- readLines(tmp)
   expect_true(any(grepl("Pipeline Log Report", content)))
+})
+
+test_that("log_report loads pipdata_log by default", {
+  log <- make_piplog(
+    make_entry("info", "pipeline", list(
+      info = "process_summary_inf",
+      n_total = 1L,
+      n_success = 1L,
+      n_failed = 0L
+    ))
+  )
+  requested_name <- NULL
+  testthat::local_mocked_bindings(
+    log_filter = function(name, ...) {
+      requested_name <<- name
+      log
+    },
+    .package = "pipfun"
+  )
+
+  report <- log_report()
+
+  expect_equal(requested_name, "pipdata_log")
+  expect_true(any(grepl("Processing Summary", report)))
 })
 
 test_that("log_report errors on non-piplog input", {

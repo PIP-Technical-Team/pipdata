@@ -25,11 +25,15 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 - All processing is versioned via release dates (e.g., "20260401")
 - Survey identity types (e.g., "TEST") control folder isolation during pipeline runs
 - Auxiliary data refresh must complete before survey cleaning begins (strict ordering)
-- All pipeline steps are logged via `pipfun::log_add()` and `pipfun::log_info()` into a unified `piplog` object
+- All pipeline steps are logged via typed `pipfun::log_info()` and
+  `pipfun::log_error()` entries into the unified `piplog` object. The active
+  DLW wrappers no longer accept `log`/`save_log`; logging is unconditional.
 - Error handling uses custom `piperr` conditions for graceful recovery without silencing failures
 - `dplyr`, `tidyr`, and `tibble` are **not** in `DESCRIPTION Imports` — use `data.table` (`:=`, `rbindlist`, `[, .N, by]`) and `collapse` (`fcase`, `ftransform`, `fmutate`) instead. Do not add new dplyr/tidyr/tibble calls anywhere. `dlw_scan_and_validate.R` still has ~19 legacy dplyr calls (Phase 2 migration, tracked in roadmap as `dplyr-to-collapse-phase2`).
 - Always qualify `fcase()` and `fifelse()` with `data.table::` (i.e. `data.table::fcase(...)`) even when called inside `collapse::ftransform()` or `collapse::fmutate()`. This makes the dependency surface explicit and avoids ambiguity with similarly-named collapse functions.
-- The pipeline emits nine canonical logmeta entry types, parsed by `log_report()` to build report sections. Their `info`/`error` field values are:
+- The pipeline emits 12 canonical logmeta entry types, parsed by
+  `log_report()` to build report sections. Their `info`/`error` field values
+  are:
   - `"process_summary_inf"` — emitted by `pd_process_data()`
   - `"aux_changes_inf"` — emitted by `valid_dlw_load()` when auxiliary files change and at least one survey is affected
   - `"aux_no_changes_inf"` — emitted by `valid_dlw_load()` when no auxiliary file changes were detected at all
@@ -39,7 +43,13 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   - `"inv_update_inf"` — emitted by `update_pip_inventory()` for inventory verification (info if all confirmed, error if any missing)
   - `"release_write_err"` — emitted by `update_pip_inventory()` when the release inventory write fails (error-level; includes `condition_msg`)
   - `"missing_metadata_err"` — emitted by `update_pip_inventory()` when pip_ids have no corresponding metadata entry after the version join; those pip_ids are excluded from the inventory (error-level; includes `pip_ids` and `surveys` arrays)
-  These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section. (Once `unified-logging-report` is implemented, three additional DLW types will be added: `"dlw_download_inf"`, `"dlw_validation_inf"`, `"dlw_summary_inf"`.)
+  - `"dlw_acquisition_inf"` - emitted by `pipdata_get_gmd()` for acquisition
+    start, completion, no-op, and per-survey download failures
+  - `"dlw_validation_inf"` - emitted by `pipdata_validate_gmd()` for
+    validation start, workflow phases, and per-survey failures
+  - `"dlw_summary_inf"` - emitted by `pipdata_dlw_process()` at stage
+    completion and used as the DLW stage marker
+  These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section. The report suppresses the 11 internal summary/marker types in `.log_internal_types`; genuine error types remain in the type-summary table.
 - **`logmeta$error` and `logmeta$info` are always string type discriminators** — never R condition objects. Caught condition messages go in `logmeta$condition_msg = conditionMessage(e)`. The old pattern `logmeta = list(error = e)` (passing the condition object directly) is incorrect and will break `parse_log_meta()` which uses `vapply(..., character(1))`.
 - **Logging inside `tryCatch` error handlers and `lapply` callbacks**: `capture_log_args()` in pipfun resolves to the anonymous handler's frame (`function(e)`), so `args` will contain `list(e = <condition>)` rather than the enclosing function's context. This is expected and harmless — put all structured context in `logmeta` instead of relying on `args` auto-capture. See `.cg-docs/solutions/testing-patterns/2026-04-29-logging-in-trycatch-handlers.md`.
 - **Avoid typed logging in hot per-survey functions whose formals include large objects**: `pipfun::log_info()` / `log_warn()` / `log_error()` capture the caller's formals into persistent log state (`.piplogenv`) via `capture_log_args()`. In functions like `apply_recode_spec(dt, ...)`, a per-survey typed log call can retain the full cleaned survey `dt` by reference across the run, defeating `rm()` / `gc()` and causing runaway RAM growth. Keep typed logging at orchestration boundaries; for per-survey provenance prefer compact attributes or inventory columns (for example `recode_spec_version_id`, `version_id_recode_spec`). See `.cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md`.

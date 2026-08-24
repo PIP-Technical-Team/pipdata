@@ -1,5 +1,14 @@
 # pipdata 0.0.1
 
+## Breaking changes
+
+* `pipdata_dlw_process()`, `pipdata_get_gmd()`, and
+  `pipdata_validate_gmd()` no longer accept `log` or `save_log` arguments.
+  Logging is unconditional and writes typed entries to `"pipdata_log"`.
+  Checkpoints are saved automatically at DLW and pipeline stage boundaries,
+  and `log_report()` now covers DLW acquisition and validation alongside
+  survey cleaning and deflation.
+
 ## New features
 
 * Add `pd_deflate_pipeline()`: a batch orchestrator that iterates over the
