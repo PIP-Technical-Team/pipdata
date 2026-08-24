@@ -183,30 +183,32 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   `ppp_data_level`, `cpi_data_level`, and `pop_data_level` are scalar
   attributes on `pipmd`/`pipgd` objects. They are never materialised as
   columns in the data.table.
-  [`add_ppp()`](https://pip-technical-team.github.io/pipdata/reference/add_ppp.md),
-  [`add_cpi()`](https://pip-technical-team.github.io/pipdata/reference/add_cpi.md),
-  and `add_rep_lvl()` all read them via `attr(dt, "ppp_data_level")`
-  etc. — do not add these as columns to `dt` before calling deflation
-  functions. `restore_data_level_cols()` has been removed. All survey
-  attributes (`survey_id`, `country_code`, etc.) are always plain
+  [`add_ppp()`](https://pip-technical-team.github.io/pipdata/reference/add_ppp.md)
+  and
+  [`add_cpi()`](https://pip-technical-team.github.io/pipdata/reference/add_cpi.md)
+  read them via `attr(dt, "ppp_data_level")` etc. — do not add these as
+  columns to `dt` before calling deflation functions.
+  `restore_data_level_cols()` and `add_rep_lvl()` have been removed. All
+  survey attributes (`survey_id`, `country_code`, etc.) are always plain
   scalars — never wrapped as `list(values=X)`. See
   `.cg-docs/solutions/bugs/2026-05-06-attribute-list-values-wrapper-pipeline-vs-stamp-path.md`.
-- **`*_data_level = "area"` is a column pointer, not a level name**:
-  When `ppp_data_level`, `cpi_data_level`, or any `*_data_level`
-  attribute equals `"area"`, it means “resolve to the per-row values of
-  the `area` column in the data.table.” It is **not** a literal level
-  name. Deflation helpers
-  ([`add_ppp()`](https://pip-technical-team.github.io/pipdata/reference/add_ppp.md),
-  [`add_cpi()`](https://pip-technical-team.github.io/pipdata/reference/add_cpi.md),
-  `adjust_population()`) must check for this case
-  (`if (identical(lvl, "area"))`) and use `dt$area` as per-row lookup
-  keys into named CPI/PPP/pop vectors (whose keys are `"rural"`,
-  `"urban"`, `"national"`). `"national"` is the only literal level value
-  stored directly. Surveys with subnational PFW domains (reporting_level
-  == 2, cpi_domain_var == “urban”) always receive
-  `*_data_level = "area"` from
-  [`add_dom_vars()`](https://pip-technical-team.github.io/pipdata/reference/add_dom_vars.md).
-  See
+- **`*_data_level = "area"` is a column pointer, not a level name**: The
+  internal `.data_level_columns` registry and `data_level_column()`
+  resolver map registered sentinel strings to column names. `"area"`
+  currently resolves to the per-row `area` column; it is not a literal
+  level name. Unregistered literals such as `"national"` use scalar
+  broadcast, while missing, empty, multi-element, and non-character
+  inputs safely return `NA_character_`.
+  [`add_ppp()`](https://pip-technical-team.github.io/pipdata/reference/add_ppp.md)
+  and
+  [`add_cpi()`](https://pip-technical-team.github.io/pipdata/reference/add_cpi.md)
+  use the resolved column for per-row named-vector lookup, and
+  [`add_dom_vars()`](https://pip-technical-team.github.io/pipdata/reference/add_dom_vars.md)
+  continues to emit the unchanged string `"area"`. `adjust_population()`
+  and output ordering remain area-specific consumers and must be updated
+  before any new sentinel is enabled. See
+  `.cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md`
+  and
   `.cg-docs/solutions/bugs/2026-05-06-subnational-deflation-area-attribute-not-resolved.md`.
 - **Each deflation function branches on its own `*_data_level` attr —
   never use the integer `reporting_level` attribute as a shared branch
@@ -214,17 +216,15 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   `pop_data_level` are set independently by
   [`add_dom_vars()`](https://pip-technical-team.github.io/pipdata/reference/add_dom_vars.md).
   The mixed-domain case (`reporting_level == 2` for a subnational survey
-  but e.g. `ppp_domain == 1` → `ppp_data_level = "national"`) means the
-  same survey can have `ppp_data_level = "national"` and
+  but e.g. `ppp_domain == 1` -\> `ppp_data_level = "national"`) means
+  the same survey can have `ppp_data_level = "national"` and
   `cpi_data_level = "area"` simultaneously.
   [`add_ppp()`](https://pip-technical-team.github.io/pipdata/reference/add_ppp.md)
-  must branch on `ppp_data_level`,
+  must resolve `ppp_data_level`,
   [`add_cpi()`](https://pip-technical-team.github.io/pipdata/reference/add_cpi.md)
-  on `cpi_data_level`, and `adjust_population()` guard must check
-  `pop_data_level == "area"`. `add_rep_lvl()` was removed because it
-  incorrectly conflated all `*_data_level` attrs into a single
-  intermediary `reporting_level` column, which broadcast the literal
-  `"area"` string causing NA lookups.
+  must resolve `cpi_data_level`, and the `adj_pop` guard must resolve
+  `pop_data_level`. The resolver centralizes dispatch without changing
+  the producer or attribute type.
 - **[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
   output contract**: The deflated survey `data.table` always has
   `welfare_lcu` (LCU value) and `weight` as the first two columns,
