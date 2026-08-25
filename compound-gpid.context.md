@@ -297,6 +297,16 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   stale welfare-type `pip_id` rows are removed. Stamp retains prior
   master snapshots for recovery. See
   `.cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md`.
+- **Retiring an exported R API requires installed-surface evidence**:
+  Before deletion, confirm there are no active callers and capture a
+  built-package baseline using the same library, isolated environment,
+  and safety flags as the final check. Delete orphaned `.Rd` files
+  explicitly, regenerate once, require the complete ordered `NAMESPACE`
+  to differ only by the intended export, and query the independently
+  installed final namespace and help database to prove only the target
+  disappeared. Compare complete normalized baseline/final diagnostics
+  rather than counts. See
+  `.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md`.
 
 ## Work in Progress
 

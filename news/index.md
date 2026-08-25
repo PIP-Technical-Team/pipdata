@@ -4,6 +4,10 @@
 
 ### Breaking changes
 
+- Remove `copy_dlw_metadata()` because its cross-release artifact and
+  state-safety contracts were obsolete. No supported replacement
+  metadata copier is introduced.
+
 - [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md),
   [`pipdata_get_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_get_gmd.md),
   and

@@ -65,9 +65,6 @@ validation, survey cleaning, and deflation with stage-aware warnings.
 - [`cln_changes()`](https://pip-technical-team.github.io/pipdata/reference/cln_changes.md)
   : Clean output from compare_aux_releases and compare_aux_vintages
 
-- [`copy_dlw_metadata()`](https://pip-technical-team.github.io/pipdata/reference/copy_dlw_metadata.md)
-  : Copy DLW Metadata Between Release Folders
-
 - [`cpfw_merge()`](https://pip-technical-team.github.io/pipdata/reference/cpfw_merge.md)
   : Merge country/survey PFW with dataliweb survey data
 

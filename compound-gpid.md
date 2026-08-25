@@ -30,8 +30,8 @@ milestone:
 [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
 batch orchestrator (deflate-pipeline-wrapper), making `*_data_level`
 attribute semantics explicit (explicit-data-level-semantics), auditing
-[`copy_dlw_metadata()`](https://pip-technical-team.github.io/pipdata/reference/copy_dlw_metadata.md)
-as a standalone admin utility (audit-copy-dlw-meta), auditing
-`\dontrun{}` examples (audit-dontrun-examples), a run-manifest logging
-evaluation (run-manifest-audit), and a content-hash-based re-clean
-trigger (content-hash-reclean-trigger).
+`copy_dlw_metadata()` as a standalone admin utility
+(audit-copy-dlw-meta), auditing `\dontrun{}` examples
+(audit-dontrun-examples), a run-manifest logging evaluation
+(run-manifest-audit), and a content-hash-based re-clean trigger
+(content-hash-reclean-trigger).
