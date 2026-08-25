@@ -9,7 +9,10 @@ pd_process_data(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE),
-  force_surveys = NULL
+  force_surveys = NULL,
+  bootstrap = FALSE,
+  bootstrap_entities = NULL,
+  dependency_plan = NULL
 )
 }
 \arguments{
@@ -34,6 +37,15 @@ candidates. Mutually exclusive with \code{force = TRUE}. Preserves content-based
 stamp versioning (unlike \code{force = TRUE}, which switches to timestamp
 versioning for the entire run). Unknown identifiers are warned about and
 skipped. Default \code{NULL}.}
+
+\item{bootstrap}{Logical. Explicitly permit rebuilding unknown legacy
+provenance. Default \code{FALSE}.}
+
+\item{bootstrap_entities}{Optional restrictive survey/pip identifiers for a
+bootstrap canary. Unlike \code{force_surveys}, this never expands selection.}
+
+\item{dependency_plan}{Optional precomputed advisory plan. Execution validates
+and restricts it again before any processing side effect.}
 }
 \value{
 A data.frame: updated pip inventory (\code{new_pip_inv}) with new

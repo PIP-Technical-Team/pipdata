@@ -7,7 +7,10 @@
 pd_deflate_pipeline(
   inv = NULL,
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  bootstrap = FALSE,
+  bootstrap_entities = NULL,
+  dependency_plan = NULL
 )
 }
 \arguments{
@@ -21,6 +24,12 @@ master inventory is loaded internally.}
 \item{verbose}{Logical. Controls verbosity of downstream
 \code{\link[pipload:load_pip_master_inventory]{pipload::load_pip_master_inventory()}} and \code{\link[pipload:pip_write]{pipload::pip_write()}} calls.
 Default: \code{getOption("pipdata.verbose", default = TRUE)}.}
+
+\item{bootstrap}{Logical. Explicitly permit unknown-provenance work.}
+
+\item{bootstrap_entities}{Optional restrictive bootstrap identifiers.}
+
+\item{dependency_plan}{Optional advisory plan, revalidated before writes.}
 }
 \value{
 The updated master inventory \code{data.table} (rows deflated in this run
