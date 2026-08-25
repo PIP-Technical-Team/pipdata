@@ -1,6 +1,10 @@
 
 pipdata_default_options <- list(
-  pipdata.verbose  = TRUE
+  pipdata.verbose = TRUE,
+  pipdata.dependency_manifest_path = tools::R_user_dir("pipdata", "cache"),
+  pipdata.dependency_scope = NULL,
+  pipdata.manifest_checkpoint_n = 25L,
+  pipdata.manifest_checkpoint_seconds = 60
 )
 
 .onLoad <- function(libname, pkgname) {

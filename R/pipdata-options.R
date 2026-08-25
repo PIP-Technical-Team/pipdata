@@ -40,6 +40,15 @@
 #' `pipfun::log_add()` / `pipfun::log_info()` into `pipdata_log`. Structured
 #' log entries are always emitted regardless of this option.
 #'
+#' **`pipdata.dependency_manifest_path`** defaults to the package user cache.
+#' Production must override it with a durable shared path scoped to the release
+#' repository. **`pipdata.dependency_scope`** is an optional additional
+#' namespace; it never replaces release, identity, and alias-root isolation.
+#' **`pipdata.manifest_checkpoint_n`** (25) and
+#' **`pipdata.manifest_checkpoint_seconds`** (60) bound verified checkpoint
+#' batches. Stamp remains the artifact version store; this manifest stores
+#' rebuildable dependency provenance.
+#'
 #' @name pipdata-options
 #' @keywords internal
 NULL

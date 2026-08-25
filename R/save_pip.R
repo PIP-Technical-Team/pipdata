@@ -88,3 +88,62 @@ save_pip_data <- function(
   return(versions)
 }
 
+pd_save_receipt <- function(x, id, alias, verbose = FALSE, lease = NULL) {
+  if (!is.null(lease)) pd_lease_assert(lease)
+  attempted_hash <- stamp::st_hash_obj(x)
+  result <- tryCatch(
+    pipload::pip_write(x = x, id = id, alias = alias, verbose = verbose),
+    error = function(e) e
+  )
+  if (inherits(result, "error")) {
+    return(list(alias = alias, artifact = id, path = NA_character_,
+                version_id = NA_character_, content_hash = NA_character_,
+                skipped = FALSE, success = FALSE, error = conditionMessage(result)))
+  }
+  path <- result$path %||% NA_character_
+  version_id <- result$version_id %||% NA_character_
+  content_hash <- result$metadata$content_hash %||% NA_character_
+  skipped <- !nzchar(version_id) || is.na(version_id)
+  versions <- if (!is.na(path) && nzchar(path)) {
+    tryCatch(stamp::st_versions(path, alias = alias), error = function(e) NULL)
+  } else NULL
+  if (skipped && !is.null(versions)) {
+    match <- versions[content_hash == attempted_hash]
+    if (nrow(match) == 1L) {
+      version_id <- match$version_id[[1L]]
+      content_hash <- match$content_hash[[1L]]
+    }
+  }
+  exact <- !is.null(versions) && sum(versions$version_id == version_id &
+    versions$content_hash == content_hash) == 1L
+  success <- is.character(path) && length(path) == 1L && nzchar(path) &&
+    is.character(version_id) && length(version_id) == 1L && nzchar(version_id) &&
+    identical(content_hash, attempted_hash) && exact
+  list(alias = alias, artifact = id, path = path, version_id = version_id,
+       content_hash = content_hash, skipped = skipped, success = success,
+       error = if (success) NULL else "Stamp receipt verification failed.")
+}
+
+pd_revalidate_receipt <- function(receipt) {
+  required <- c("alias", "artifact", "path", "version_id", "content_hash",
+                "success")
+  if (!is.list(receipt) || !all(required %in% names(receipt)) ||
+      !isTRUE(receipt$success)) {
+    rlang::abort("Artifact receipt is not a verified success.",
+                 class = "pipdata_receipt_invalid")
+  }
+  versions <- tryCatch(
+    stamp::st_versions(receipt$path, alias = receipt$alias),
+    error = function(e) NULL
+  )
+  exact <- !is.null(versions) && sum(
+    versions$version_id == receipt$version_id &
+      versions$content_hash == receipt$content_hash
+  ) == 1L
+  if (!exact) {
+    rlang::abort("Artifact receipt no longer resolves exactly.",
+                 class = "pipdata_receipt_stale")
+  }
+  invisible(receipt)
+}
+

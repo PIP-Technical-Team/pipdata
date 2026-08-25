@@ -31,10 +31,11 @@ Imports:
     labelled,
     DT,
     dlw,
-    stamp (>= 0.0.5)
+    stamp (>= 0.0.11)
 Suggests: 
     testthat (>= 3.0.0),
-    withr
+    withr,
+    codetools
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.4)
