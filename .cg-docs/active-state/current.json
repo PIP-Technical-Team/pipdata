@@ -1,29 +1,24 @@
 {
   "schemaVersion": "compound-gpid-active-state-v1",
-  "updatedAt": "2026-08-21T21:32:00Z",
+  "updatedAt": "2026-08-25T14:32:00Z",
   "workflow": "/cg-work",
   "status": "completed",
-  "branch": "stream-b-task-b2-unified-logging-report",
-  "plan": ".cg-docs/plans/2026-04-28-unified-logging.md",
-  "executionReport": ".cg-docs/work-reports/2026-08-21-unified-logging.md",
-  "currentPhase": 4,
+  "branch": "stream-a-worktree-a3-audit-copy-dlw-meta-audi",
+  "plan": ".cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md",
+  "executionReport": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md",
+  "currentPhase": null,
   "evidenceStatus": [
-    {"id": "V1", "status": "passed", "artifact": "pipfun checkpoint/capture tests; full suite"},
-    {"id": "V2", "status": "passed", "artifact": "DLW contract tests: 44 assertions"},
-    {"id": "V3", "status": "passed", "artifact": "report tests: 126 assertions; integration: 49 assertions"},
-    {"id": "V4", "status": "passed", "artifact": "roxygen/man, grep, vignettes, NEWS, context"},
-    {"id": "V5", "status": "passed", "artifact": "full suite and built tarball check: 0 errors"}
+    {"id": "V1", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md"},
+    {"id": "V2", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md"},
+    {"id": "V3", "status": "passed", "artifact": "NEWS.md"},
+    {"id": "V4", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md"},
+    {"id": "V5", "status": "passed", "artifact": "_pkgdown.yml"},
+    {"id": "V6", "status": "passed", "artifact": "roadmap.json"}
   ],
-  "unresolvedDecisions": [
-    {
-      "id": "D1",
-      "summary": "pipfun and pipdata vignettes require Pandoc; checks used --no-build-vignettes",
-      "blocking": false
-    }
-  ],
+  "unresolvedDecisions": [],
   "artifactRefs": [
-    {"kind": "plan", "path": ".cg-docs/plans/2026-04-28-unified-logging.md", "status": "completed"},
-    {"kind": "execution-report", "path": ".cg-docs/work-reports/2026-08-21-unified-logging.md", "status": "completed"}
+    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md", "status": "completed"},
+    {"kind": "review", "path": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md", "status": "completed"}
   ],
-  "nextCommand": "/cg-work"
+  "nextCommand": "/cg-compound"
 }

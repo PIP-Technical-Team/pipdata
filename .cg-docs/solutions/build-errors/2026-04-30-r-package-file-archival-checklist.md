@@ -109,3 +109,4 @@ Before archiving any `R/*.R` file run this mental checklist:
 
 - [2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md](../build-errors/2026-04-16-r-cmd-check-no-visible-binding-datatable-nse.md) — other R CMD check pitfalls
 - [2026-04-16-mocking-external-package-calls-at-function-startup.md](../testing-patterns/2026-04-16-mocking-external-package-calls-at-function-startup.md) — test file patterns for functions with external dependencies
+- [Verify exported R API retirement from built package surfaces](../testing-patterns/2026-08-25-verify-exported-r-api-retirement.md) - extends the checklist with baseline/final installed-package evidence for intentional API deletion
