@@ -78,6 +78,14 @@ scope of this option.</p>
 does <strong>not</strong> affect the structured pipeline logging written via
 <code><a href="https://pip-technical-team.github.io/pipfun/reference/log_add.html" class="external-link">pipfun::log_add()</a></code> / <code><a href="https://pip-technical-team.github.io/pipfun/reference/log_info.html" class="external-link">pipfun::log_info()</a></code> into <code>pipdata_log</code>. Structured
 log entries are always emitted regardless of this option.</p>
+<p><strong><code>pipdata.dependency_manifest_path</code></strong> defaults to the package user cache.
+Production must override it with a durable shared path scoped to the release
+repository. <strong><code>pipdata.dependency_scope</code></strong> is an optional additional
+namespace; it never replaces release, identity, and alias-root isolation.
+<strong><code>pipdata.manifest_checkpoint_n</code></strong> (25) and
+<strong><code>pipdata.manifest_checkpoint_seconds</code></strong> (60) bound verified checkpoint
+batches. Stamp remains the artifact version store; this manifest stores
+rebuildable dependency provenance.</p>
     </div>
 
   </main></div>

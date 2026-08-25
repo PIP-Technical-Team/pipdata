@@ -14,7 +14,10 @@ pd_process_data(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE),
-  force_surveys = NULL
+  force_surveys = NULL,
+  bootstrap = FALSE,
+  bootstrap_entities = NULL,
+  dependency_plan = NULL
 )
 ```
 
@@ -52,6 +55,21 @@ pd_process_data(
   versioning (unlike `force = TRUE`, which switches to timestamp
   versioning for the entire run). Unknown identifiers are warned about
   and skipped. Default `NULL`.
+
+- bootstrap:
+
+  Logical. Explicitly permit rebuilding unknown legacy provenance.
+  Default `FALSE`.
+
+- bootstrap_entities:
+
+  Optional restrictive survey/pip identifiers for a bootstrap canary.
+  Unlike `force_surveys`, this never expands selection.
+
+- dependency_plan:
+
+  Optional precomputed advisory plan. Execution validates and restricts
+  it again before any processing side effect.
 
 ## Value
 

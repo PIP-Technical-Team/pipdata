@@ -108,8 +108,18 @@
 <td><code><a href="reference/pd_aux_attr.html">pd_aux_attr()</a></code></td>
 <td>Attach auxiliary metadata (CPI, PPP, population, GDP, PCE) as attributes</td>
 </tr>
+<tr>
+<td><code><a href="reference/pd_change_report.html">pd_change_report()</a></code></td>
+<td>Read-only staged dependency report; never loads household artifacts</td>
+</tr>
 </tbody>
 </table>
+</div>
+<div class="section level2">
+<h2 id="staged-dependency-provenance">Staged dependency provenance<a class="anchor" aria-label="anchor" href="#staged-dependency-provenance"></a>
+</h2>
+<p>The dependency layer separates <code>clean</code> (<code>survey_id</code>), <code>metadata</code> (<code>pip_id</code>), and <code>deflate</code> (<code>pip_id</code>) work. Stamp remains authoritative for immutable artifact versions; pipdata stores a rebuildable, release-scoped provenance manifest. Legacy state is never rebuilt implicitly: inspect <code><a href="reference/pd_change_report.html">pd_change_report()</a></code>, then use explicit <code>bootstrap = TRUE</code> and a restrictive <code>bootstrap_entities</code> canary before resuming larger batches.</p>
+<p>Production must set <code>pipdata.dependency_manifest_path</code> to durable shared storage and complete the signed Windows/SMB fencing and unique-rename smoke test documented in <code>inst/doc/staged-dependency-manifest.md</code>. Local cache defaults are development-only and do not indicate production activation.</p>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>

@@ -27,6 +27,24 @@ remotes::install_github("PIP-Technical-Team/pipdata")
 | [`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md) | Clean main welfare and demographic variables |
 | [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md) | Deflate welfare values using CPI/PPP data |
 | [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md) | Attach auxiliary metadata (CPI, PPP, population, GDP, PCE) as attributes |
+| [`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md) | Read-only staged dependency report; never loads household artifacts |
+
+## Staged dependency provenance
+
+The dependency layer separates `clean` (`survey_id`), `metadata`
+(`pip_id`), and `deflate` (`pip_id`) work. Stamp remains authoritative
+for immutable artifact versions; pipdata stores a rebuildable,
+release-scoped provenance manifest. Legacy state is never rebuilt
+implicitly: inspect
+[`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md),
+then use explicit `bootstrap = TRUE` and a restrictive
+`bootstrap_entities` canary before resuming larger batches.
+
+Production must set `pipdata.dependency_manifest_path` to durable shared
+storage and complete the signed Windows/SMB fencing and unique-rename
+smoke test documented in `inst/doc/staged-dependency-manifest.md`. Local
+cache defaults are development-only and do not indicate production
+activation.
 
 ## Documentation
 

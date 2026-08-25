@@ -143,6 +143,9 @@ validation, survey cleaning, and deflation with stage-aware warnings.
 - [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md)
   : Build auxiliary metadata attributes for cleaned survey data
 
+- [`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
+  : Report staged dependency changes without writing artifacts
+
 - [`pd_cpfw_merge()`](https://pip-technical-team.github.io/pipdata/reference/pd_cpfw_merge.md)
   : Merge country/survey PFW info with dataliweb survey data
 

@@ -64,7 +64,10 @@ structured <code>deflate_summary_inf</code> summary entry to <code>"pipdata_log"
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pd_deflate_pipeline</span><span class="op">(</span></span>
 <span>  inv <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"pipdata.verbose"</span>, default <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"pipdata.verbose"</span>, default <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  bootstrap <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  bootstrap_entities <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  dependency_plan <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,6 +90,18 @@ master inventory is loaded internally.</p></dd>
 <dd><p>Logical. Controls verbosity of downstream
 <code><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_data.html" class="external-link">pipload::load_pip_master_inventory()</a></code> and <code><a href="https://pip-technical-team.github.io/pipload/reference/pip_write.html" class="external-link">pipload::pip_write()</a></code> calls.
 Default: <code>getOption("pipdata.verbose", default = TRUE)</code>.</p></dd>
+
+
+<dt id="arg-bootstrap">bootstrap<a class="anchor" aria-label="anchor" href="#arg-bootstrap"></a></dt>
+<dd><p>Logical. Explicitly permit unknown-provenance work.</p></dd>
+
+
+<dt id="arg-bootstrap-entities">bootstrap_entities<a class="anchor" aria-label="anchor" href="#arg-bootstrap-entities"></a></dt>
+<dd><p>Optional restrictive bootstrap identifiers.</p></dd>
+
+
+<dt id="arg-dependency-plan">dependency_plan<a class="anchor" aria-label="anchor" href="#arg-dependency-plan"></a></dt>
+<dd><p>Optional advisory plan, revalidated before writes.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -16,7 +16,10 @@ entry to `"pipdata_log"`.
 pd_deflate_pipeline(
   inv = NULL,
   force = FALSE,
-  verbose = getOption("pipdata.verbose", default = TRUE)
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  bootstrap = FALSE,
+  bootstrap_entities = NULL,
+  dependency_plan = NULL
 )
 ```
 
@@ -41,6 +44,18 @@ pd_deflate_pipeline(
   and
   [`pipload::pip_write()`](https://pip-technical-team.github.io/pipload/reference/pip_write.html)
   calls. Default: `getOption("pipdata.verbose", default = TRUE)`.
+
+- bootstrap:
+
+  Logical. Explicitly permit unknown-provenance work.
+
+- bootstrap_entities:
+
+  Optional restrictive bootstrap identifiers.
+
+- dependency_plan:
+
+  Optional advisory plan, revalidated before writes.
 
 ## Value
 

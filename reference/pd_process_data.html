@@ -63,7 +63,10 @@ pip inventory with the new versions recorded.</p>
 <span>  aux_measures <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pfw"</span>, <span class="st">"cpi"</span>, <span class="st">"ppp"</span>, <span class="st">"pop"</span>, <span class="st">"gdp"</span>, <span class="st">"pce"</span><span class="op">)</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"pipdata.verbose"</span>, default <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  force_surveys <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  force_surveys <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  bootstrap <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  bootstrap_entities <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  dependency_plan <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,6 +104,21 @@ candidates. Mutually exclusive with <code>force = TRUE</code>. Preserves content
 stamp versioning (unlike <code>force = TRUE</code>, which switches to timestamp
 versioning for the entire run). Unknown identifiers are warned about and
 skipped. Default <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-bootstrap">bootstrap<a class="anchor" aria-label="anchor" href="#arg-bootstrap"></a></dt>
+<dd><p>Logical. Explicitly permit rebuilding unknown legacy
+provenance. Default <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-bootstrap-entities">bootstrap_entities<a class="anchor" aria-label="anchor" href="#arg-bootstrap-entities"></a></dt>
+<dd><p>Optional restrictive survey/pip identifiers for a
+bootstrap canary. Unlike <code>force_surveys</code>, this never expands selection.</p></dd>
+
+
+<dt id="arg-dependency-plan">dependency_plan<a class="anchor" aria-label="anchor" href="#arg-dependency-plan"></a></dt>
+<dd><p>Optional precomputed advisory plan. Execution validates
+and restricts it again before any processing side effect.</p></dd>
 
 </dl></div>
     <div class="section level2">

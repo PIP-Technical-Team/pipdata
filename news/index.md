@@ -17,6 +17,17 @@
 
 ### New features
 
+- Add a staged dependency manifest and read-only
+  [`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
+  covering clean, auxiliary metadata, and exact-input deflation
+  provenance. State is release/identity/repository scoped, immutable by
+  generation, checksum verified, and protected by a fencing lease.
+
+- Add explicit resumable legacy bootstrap controls (`bootstrap` and
+  `bootstrap_entities`) and exact data/metadata version loading for
+  pipeline deflation. Missing provenance never triggers an implicit
+  rebuild.
+
 - Add
   [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md):
   a batch orchestrator that iterates over the master inventory, deflates
