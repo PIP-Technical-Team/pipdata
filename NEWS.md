@@ -2,6 +2,10 @@
 
 ## Breaking changes
 
+* Remove `copy_dlw_metadata()` because its cross-release artifact and
+  state-safety contracts were obsolete. No supported replacement metadata copier
+  is introduced.
+
 * `pipdata_dlw_process()`, `pipdata_get_gmd()`, and
   `pipdata_validate_gmd()` no longer accept `log` or `save_log` arguments.
   Logging is unconditional and writes typed entries to `"pipdata_log"`.
