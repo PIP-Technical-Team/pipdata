@@ -96,7 +96,7 @@ test_that("pd_process_data never calls st_opts when only force_surveys is set", 
 # force = TRUE alone still switches stamp versioning to "timestamp" (R10)
 # ---------------------------------------------------------------------------
 
-test_that("pd_process_data force = TRUE still switches versioning to timestamp", {
+test_that("pd_process_data force waits for authoritative preflight", {
   versioning_requests <- character(0)
 
   testthat::local_mocked_bindings(
@@ -113,8 +113,7 @@ test_that("pd_process_data force = TRUE still switches versioning to timestamp",
     .package = "pipload"
   )
 
-  # force = TRUE switches versioning BEFORE inventory load, so the timestamp
-  # write is already recorded even though the run then errors on the stub.
+  # Inventory loading and bootstrap validation are read-only preflight work.
   expect_error(
     pd_process_data(
       inv = NULL,
@@ -125,8 +124,30 @@ test_that("pd_process_data force = TRUE still switches versioning to timestamp",
     "stub inventory load"
   )
 
-  expect_true(
+  expect_false(
     "timestamp" %in% versioning_requests,
-    info = "force = TRUE must call st_opts(versioning = 'timestamp')"
+    info = "force must not mutate versioning before authoritative preflight"
   )
+})
+
+test_that("pd_process_data returns authoritative no-op master unchanged", {
+  inv <- data.table::data.table(survey_id = "s")
+  master <- data.table::data.table(survey_id = "s", pip_id = "p")
+  prepared <- FALSE
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() list(scope_id = "scope"),
+    pd_prepare_execution = function(...) {
+      prepared <<- TRUE
+      list(plan = list(actions = pd_empty_actions()), lease = list())
+    },
+    pd_lease_release = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+  out <- pd_process_data(inv, verbose = FALSE)
+  expect_true(prepared)
+  expect_identical(out, master)
 })
