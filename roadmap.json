@@ -417,8 +417,9 @@
                 {
                     "id": "audit-copy-dlw-meta",
                     "title": "Audit pipdata_copy_dlw_meta.R standalone utility",
-                    "description": "copy_dlw_metadata() is a standalone admin utility not called by either wrapper. Confirm it is intentionally standalone, document its role, and verify it works with current stamp/pipload APIs.",
-                    "status": "idea",
+                    "description": "Audit completed: retire copy_dlw_metadata() because it has no known callers and its cross-release logging, alias-state, and partial-write contracts are stale or unsafe. No replacement copier is introduced.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md",
                     "tags": [
                         "documentation",
                         "admin-utility",

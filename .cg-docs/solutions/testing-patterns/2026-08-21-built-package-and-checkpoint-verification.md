@@ -6,7 +6,7 @@ language: "R"
 tags: [R-CMD-check, package-build, piplog, stamp, checkpoint, testthat]
 root-cause: "Source-loaded tests and source-directory checks can miss installed-package dependency resolution, alias registration, and checkpoint persistence failures."
 severity: "P1"
-related: [".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md", ".cg-docs/solutions/testing-patterns/2026-04-27-contract-testing-for-logging-side-effects.md"]
+related: [".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md", ".cg-docs/solutions/testing-patterns/2026-04-27-contract-testing-for-logging-side-effects.md", ".cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md"]
 ---
 
 # Verify Built Packages and Stage Checkpoints
@@ -78,3 +78,4 @@ reading `R/*.R` paths that do not exist inside an installed tarball.
 
 - [Validate `Authors@R` through a built R package](../build-errors/2026-08-21-authors-at-r-description-validation.md)
 - [Contract testing for logging side effects](2026-04-27-contract-testing-for-logging-side-effects.md)
+- [Verify exported R API retirement from built package surfaces](2026-08-25-verify-exported-r-api-retirement.md)
