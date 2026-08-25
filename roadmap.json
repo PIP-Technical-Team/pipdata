@@ -578,15 +578,19 @@
             "ideas": [
                 {
                     "id": "code-hash-invalidation",
-                    "title": "Add code-hash invalidation for pipeline function changes",
-                    "description": "Track content hashes of pipeline-critical R functions (pd_dlw_clean, pd_cpfw_merge, pd_aux_attr, deflation helpers, apply_recode_spec) in the master inventory. When pd_process_data() runs, compute a hash of the current function bodies and compare against the stored hash. If function logic changed since the last clean, flag previously-cleaned surveys as stale and re-process them. This closes the gap where only DLW data and aux file changes trigger re-processing — a code change that alters cleaning logic currently serves stale data silently. Implementation: (1) define a curated list of pipeline function names in aaa.R, (2) compute a digest of their body text at package load time, (3) add a `code_hash_pipeline` column to the master inventory, (4) compare in valid_dlw_load() alongside content_hash_dlw.",
-                    "status": "idea",
+                    "title": "Implement pipdata staged dependency manifest",
+                    "description": "Build a pipdata-owned atomic dependency manifest with explicit clean, metadata, and deflate stages; record per-artifact provenance and stage code fingerprints; expose a read-only dependency planner/pd_change_report; target invalidation after a one-time full baseline rebuild; retain stamp as the authoritative artifact-version store; exclude an external orchestrator and estimation stage.",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
                     "tags": [
                         "invalidation",
                         "cache",
                         "pipeline",
                         "orchestration",
-                        "correctness"
+                        "correctness",
+                        "provenance",
+                        "dependency-graph",
+                        "metadata"
                     ]
                 },
                 {
