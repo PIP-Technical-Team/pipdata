@@ -307,6 +307,29 @@ pd_deflation <- function(
   deflation(dt, cpi = cpi, ppp = ppp, pop = pop)
 }
 
+pd_deflation_exact <- function(pip_id, data_version_id, metadata_version_id,
+                               data_hash = NULL, metadata_hash = NULL,
+                               verbose = FALSE) {
+  if (any(!nzchar(c(data_version_id, metadata_version_id)))) {
+    cli::cli_abort("Exact data and metadata versions are required.",
+                   class = c("pd_deflation_exact", "piperr"))
+  }
+  dt <- pipload::pip_read(id = pip_id, alias = "pip",
+                          version = data_version_id, verbose = verbose)
+  meta <- pipload::pip_read(id = pip_id, alias = "pip_meta",
+                            version = metadata_version_id, verbose = verbose)
+  if (!is.null(data_hash) && !identical(stamp::st_hash_obj(dt), data_hash)) {
+    cli::cli_abort("Exact cleaned-data hash mismatch.",
+                   class = c("pd_deflation_exact_hash", "piperr"))
+  }
+  if (!is.null(metadata_hash) && !identical(stamp::st_hash_obj(meta), metadata_hash)) {
+    cli::cli_abort("Exact metadata hash mismatch.",
+                   class = c("pd_deflation_exact_hash", "piperr"))
+  }
+  pd_deflation(dt = dt, cpi = meta$cpi, ppp = meta$ppp, pop = meta$pop,
+               pip_id = pip_id, verbose = verbose)
+}
+
 #' Deflation of welfare using auxiliary data (lower level)
 #'
 #' @param dt data.table of cleaned DLW survey from `wbpip_clean`

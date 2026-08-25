@@ -7,6 +7,12 @@
 #   log_*       — deflation error log (was .logenv)
 .pipdataenv <- new.env(parent = emptyenv())
 
+utils::globalVariables(c(
+  "i.code_hash", "i.input_hash", "i.output_hash", "i.output_version_id",
+  "i.pip_id", "i.survey_id", "name", "output_hash", "output_version_id"
+  , "aux_projection", "hash_new", "hash_old", "manifest_input_hash"
+))
+
 # ---------------------------------------------------------------------------
 # Package environment accessors — use these instead of raw assign()/rm()/get()
 # ---------------------------------------------------------------------------
@@ -151,6 +157,13 @@ data_level_column <- function(lvl) {
 utils::globalVariables(c(
   # data.table NSE column names
   "..key",
+  "..keys",
+  "..pip_id",
+  "..reporting_level",
+  "..survey_acronym",
+  "..survey_id",
+  "..stage",
+  "..year",
   "..selected_vars",
   ".data",
   ".joyn",
@@ -161,10 +174,15 @@ utils::globalVariables(c(
   "Module",
   "N",
   "age",
+  "action",
+  "alias",
+  "artifact",
   "code_hash",
   "content_hash_data",
   "content_hash_dlw",
   "content_hash_metadata",
+  "content_hash",
+  "component",
   "count_valid",
   "country",
   "country_code",
@@ -180,6 +198,7 @@ utils::globalVariables(c(
   "i.content_hash_deflated",
   "deflated",
   "description",
+  "entity_id",
   "first_release_version_id",
   "latest_release_version_id",
   "latest_version_id_dlw",
@@ -190,6 +209,9 @@ utils::globalVariables(c(
   "event",
   "ext",
   "hhid",
+  "hash",
+  "input",
+  "input_hash",
   "inpovcal",
   "logmeta",
   "maxalt",
@@ -205,11 +227,15 @@ utils::globalVariables(c(
   "pip_id",
   "pipeline_version_dlw",
   "rf_year",
+  "reason",
+  "reconstruct_base_metadata",
+  "root",
   "school",
   "size_bytes_data",
   "size_bytes_metadata",
   "status",
   "status_count",
+  "stage",
   "survey",
   "survey_acronym",
   "survey_id",
@@ -220,6 +246,10 @@ utils::globalVariables(c(
   "version_dlw",
   "version_id_data",
   "version_id_metadata",
+  "version_id_deflated",
+  "version_id",
+  "i.version_id",
+  "i.content_hash",
   "version_id_recode_spec",
   "welfare_type"
 ))

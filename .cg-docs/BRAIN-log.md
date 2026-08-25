@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-24 · 126 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-25 · 131 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -38,6 +38,22 @@ _Generated 2026-08-24 · 126 artifacts (newest first) + 0 roadmap features_
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
 - **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
   > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
+
+## 2026-08-25
+
+- **[2026-08-24-pipdata-staged-dependency-manifest-review](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md)** · `review` · _—_ · `2026-08-25`
+  > - **[P0.1]** Snapshot planning omitted dependency facts for existing entities. Fixed by deriving semantic input, outp…
+- **[2026-08-24-pipdata-staged-dependency-manifest-verify-review](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review.md)** · `review` · _—_ · `2026-08-25`
+  > - **[P0.1]** `R/pd_metadata_refresh.R` - metadata restart can rebuild from stale metadata instead of the exact newly …
+- **[Authoritative Staged Provenance Requires Result-Bound Checkpoints](.cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)** · `solution` · _—_ · `2026-08-25`
+  > A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current…
+
+## 2026-08-24
+
+- **[Implement Pipdata Staged Dependency Manifest](.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md)** · `plan` · _completed_ · `2026-08-24`
+  > Implement a self-contained dependency-planning layer in pipdata that detects stale clean, metadata, and deflated arti…
+- **[Pipdata Staged Dependency Manifest](.cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md)** · `brainstorm` · _decided_ · `2026-08-24`
+  > V2 replaces the V1 pipeline, whose `targets`-based orchestration is too slow, opaque, difficult to debug, and difficu…
 
 ## 2026-08-21
 

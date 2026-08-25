@@ -1,5 +1,5 @@
 {
-  "edge_count": 42,
+  "edge_count": 46,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -77,6 +77,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
       "target": ".cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "target": ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
       "target_missing": false
     },
     {
@@ -218,6 +224,18 @@
       "target_missing": false
     },
     {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
+      "target": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review.md",
+      "target": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
+      "target_missing": false
+    },
+    {
       "edge_type": "references",
       "source": ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
       "target": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
@@ -251,6 +269,12 @@
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md",
       "target": ".cg-docs/plans/2026-08-17-deflate-pipeline-wrapper.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "target": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
       "target_missing": false
     }
   ],
@@ -655,6 +679,36 @@
         "adjust_population()",
         "data_level_column()",
         "pd_deflation.r"
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "slug": "2026-08-24-pipdata-staged-dependency-manifest",
+      "status": "decided",
+      "summary": "V2 replaces the V1 pipeline, whose `targets`-based orchestration is too slow, opaque, difficult to debug, and difficult to maintain. V2 must make pipdata itself a transparent, self-contained dependency-tracking package before any future orchestrator is selected.",
+      "tags": [
+        "pipeline",
+        "invalidation",
+        "provenance",
+        "dependency-graph",
+        "caching",
+        "stamp",
+        "correctness"
+      ],
+      "title": "Pipdata Staged Dependency Manifest",
+      "top_keywords": [
+        "pip_id",
+        "manifest",
+        "dependency",
+        "approach",
+        "pd_process_data()",
+        "pd_deflate_pipeline()",
+        "staged",
+        "pip_meta",
+        "pip_deflated",
+        "targets"
       ]
     },
     {
@@ -1746,6 +1800,36 @@
       ]
     },
     {
+      "date": "2026-08-24",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "slug": "2026-08-24-pipdata-staged-dependency-manifest",
+      "status": "completed",
+      "summary": "Implement a self-contained dependency-planning layer in pipdata that detects stale clean, metadata, and deflated artifacts without loading household data, explains every planned action, and persists exact successful provenance in a release-scoped manifest. Execution must update only affected artifacts, preserve stamp version history, recover safely from partial failures, and never mark an unverified artifact current.",
+      "tags": [
+        "pipeline",
+        "dependency-manifest",
+        "provenance",
+        "invalidation",
+        "caching",
+        "stamp",
+        "data-table"
+      ],
+      "title": "Implement Pipdata Staged Dependency Manifest",
+      "top_keywords": [
+        "pip_id",
+        "pip_meta",
+        "pip",
+        "force_surveys",
+        "test scenarios",
+        "metadata",
+        "clean",
+        "bootstrap_entities",
+        "implement",
+        "version_id"
+      ]
+    },
+    {
       "date": "",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
@@ -2293,6 +2377,50 @@
         "2026-08-20-explicit-data-level-sentinel-semantics.md",
         "aaa.r",
         "data-level"
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
+      "slug": "2026-08-24-pipdata-staged-dependency-manifest-review",
+      "status": "",
+      "summary": "- **[P0.1]** Snapshot planning omitted dependency facts for existing entities. Fixed by deriving semantic input, output, and code-change facts. - **[P0.2]** Checkpoints permitted missing input/code provenance. Fixed by requiring and persisting exact records, inputs, and fingerprints. - **[P0.3]** Fingerprints omitted transitive value-affecting dependencies. Fixed with curated closures and a codetools audit.",
+      "tags": [],
+      "title": "2026-08-24-pipdata-staged-dependency-manifest-review",
+      "top_keywords": [
+        "review",
+        "report",
+        "blocking",
+        "critical",
+        "verification",
+        "devtools::test()",
+        "devtools::check()",
+        "review report",
+        "2026-08-24-pipdata-staged-dependency-manifest.md",
+        "fixed"
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review.md",
+      "slug": "2026-08-24-pipdata-staged-dependency-manifest-verify-review",
+      "status": "",
+      "summary": "- **[P0.1]** `R/pd_metadata_refresh.R` - metadata restart can rebuild from stale metadata instead of the exact newly cleaned artifact. - **[P0.2]** `R/code_fingerprint.R` - stage closures still omit required constants, S3 methods, and external implementations.",
+      "tags": [],
+      "title": "2026-08-24-pipdata-staged-dependency-manifest-verify-review",
+      "top_keywords": [
+        "verification",
+        "review",
+        "r/pd_metadata_refresh.r",
+        "r/code_fingerprint.r",
+        "r/dependency_manifest.r",
+        "r/pd_deflate_pipeline.r",
+        "r/dependency_execution.r",
+        "tests/testthat/test-code-fingerprint.r",
+        "verification review",
+        "2026-08-24-pipdata-staged-dependency-manifest-review.md"
       ]
     },
     {
@@ -3260,6 +3388,34 @@
       ]
     },
     {
+      "date": "2026-08-25",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md",
+      "slug": "2026-08-25-authoritative-staged-provenance-checkpoints",
+      "status": "",
+      "summary": "A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current state. This occurs when execution trusts an advisory plan, reloads latest inputs, infers success from catalog presence, or writes manifest inputs from the pre-execution snapshot after upstream work has produced a new exact version. Restart boundaries make the problem more visible. A clean artifact may commit before metadata, or a deflation attempt may fail after a prior successful version. Without result-bound provenance, the next run can use stale metadata or retain a persisted current flag that no longer describes the attempted inputs.",
+      "tags": [
+        "provenance",
+        "dependency-manifest",
+        "checkpoint",
+        "fencing",
+        "exact-version"
+      ],
+      "title": "Authoritative Staged Provenance Requires Result-Bound Checkpoints",
+      "top_keywords": [
+        "provenance",
+        "authoritative staged provenance requires result",
+        "bound checkpoints",
+        "authoritative",
+        "result-bound",
+        "staged",
+        "requires",
+        "checkpoints",
+        "problem",
+        "related"
+      ]
+    },
+    {
       "date": "2026-04-30",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
@@ -3734,13 +3890,13 @@
       ]
     }
   ],
-  "entity_count": 126,
-  "generated": "2026-08-24",
+  "entity_count": 131,
+  "generated": "2026-08-25",
   "schema_version": "0.2.0",
   "topic_count": 5,
   "topics": [
     {
-      "entity_count": 93,
+      "entity_count": 96,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -3752,6 +3908,7 @@
         ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
         ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
         ".cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md",
+        ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
         ".cg-docs/plans/2026-04-06-enrich-log-report.md",
         ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
         ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
@@ -3778,6 +3935,7 @@
         ".cg-docs/plans/2026-08-06-aux-version-gate-valid-dlw-load-revised.md",
         ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
         ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
+        ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
         ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
         ".cg-docs/reviews/2026-04-16-review.md",
         ".cg-docs/reviews/2026-04-27-branch-review.md",
@@ -3803,6 +3961,7 @@
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
         ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
+        ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
         ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
@@ -3845,6 +4004,23 @@
       "slug": "valid-dlw-load-reporting-level-aaa-r"
     },
     {
+      "entity_count": 5,
+      "entity_paths": [
+        ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
+        ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
+        ".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md",
+        ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
+        ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md"
+      ],
+      "keywords": [
+        "%||%",
+        "r cmd check",
+        "authors@r"
+      ],
+      "label": "%||% / R Cmd Check / Authors@R",
+      "slug": "r-cmd-check-authors-r"
+    },
+    {
       "entity_count": 4,
       "entity_paths": [
         ".cg-docs/plans/2026-04-30-archive-dead-pip-vars.md",
@@ -3859,22 +4035,6 @@
       ],
       "label": "Old_Files/ / Archive / Devtools::Document()",
       "slug": "old-files-archive-devtools-document"
-    },
-    {
-      "entity_count": 4,
-      "entity_paths": [
-        ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
-        ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
-        ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
-        ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md"
-      ],
-      "keywords": [
-        "%||%",
-        "r cmd check",
-        "authors@r"
-      ],
-      "label": "%||% / R Cmd Check / Authors@R",
-      "slug": "r-cmd-check-authors-r"
     },
     {
       "entity_count": 3,

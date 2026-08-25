@@ -1,10 +1,10 @@
 # 🧠 Project Brain — Part 1
 
-_Generated 2026-08-24_
+_Generated 2026-08-25_
 
 ## Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R
 
-_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 93 entities
+_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 96 entities
 
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`
   > dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phant…
@@ -26,6 +26,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 93 entities
   > `force = TRUE` in `pd_process_data()` (`R/pd_process_data.R:61-64`) does two things at once:
 - **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md)** · `brainstorm` · _decided_ · `2026-08-20`
   > The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes currently carry **dual semantics** in a singl…
+- **[Pipdata Staged Dependency Manifest](.cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md)** · `brainstorm` · _decided_ · `2026-08-24`
+  > V2 replaces the V1 pipeline, whose `targets`-based orchestration is too slow, opaque, difficult to debug, and difficu…
 - **[Enrich log report with success metrics and aux changes](.cg-docs/plans/2026-04-06-enrich-log-report.md)** · `plan` · _completed_ · `2026-04-06`
   > Extend the pipeline logging and `log_report()` so the markdown report includes: (a) the number of surveys successfull…
 - **[Remove redundant get_wrk_release\(\) guards from DLW call chains](.cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md)** · `plan` · _completed_ · `2026-04-23`
@@ -78,6 +80,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 93 entities
   > Add a `force_surveys` parameter (character vector of `survey_id` and/or `pip_id`) to `pd_process_data()` and `valid_d…
 - **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md)** · `plan` · _completed_ · `2026-08-20`
   > Replace the implicit `"area"` column-pointer sentinel with an explicit, code-enforced column-lookup registry so the p…
+- **[Implement Pipdata Staged Dependency Manifest](.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md)** · `plan` · _completed_ · `2026-08-24`
+  > Implement a self-contained dependency-planning layer in pipdata that detects stale clean, metadata, and deflated arti…
 - **[2026-04-06-enrich-log-report-review](.cg-docs/reviews/2026-04-06-enrich-log-report-review.md)** · `review` · _—_ · `—`
   > **Review depth**: standard **Plan**: `.cg-docs/plans/2026-04-06-enrich-log-report.md` **Files reviewed**: 5 **Finding…
 - **[2026-04-16-review](.cg-docs/reviews/2026-04-16-review.md)** · `review` · _—_ · `—`
@@ -128,6 +132,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 93 entities
   > **Review mode**: mode:verify / light **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-…
 - **[2026-08-20-explicit-data-level-sentinel-semantics-verify-review](.cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md)** · `review` · _—_ · `2026-08-21`
   > **Review mode**: verify **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review…
+- **[2026-08-24-pipdata-staged-dependency-manifest-review](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md)** · `review` · _—_ · `2026-08-25`
+  > - **[P0.1]** Snapshot planning omitted dependency facts for existing entities. Fixed by deriving semantic input, outp…
 - **[Internal logmeta type markers polluting build_type_summary\(\) table](.cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md)** · `solution` · _—_ · `2026-04-07`
   > `log_report()` renders a "Summary by Type" table via `build_type_summary()`. The table was supposed to show only genu…
 - **[Conditional column initialization produces inconsistent data.table schema](.cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md)** · `solution` · _—_ · `2026-04-29`
@@ -193,6 +199,21 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 93 entities
 - **[Dual fixture pattern: stamp-path vs pipeline-path for pipmd/pipgd objects](.cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md)** · `solution` · _—_ · `2026-05-06`
   > `ppp_data_level`, `cpi_data_level`, and `pop_data_level` are **attributes only** — they are never columns in a `pipmd…
 
+## %||% / R Cmd Check / Authors@R
+
+_Keywords: `%||%` · `r cmd check` · `authors@r`_ · 5 entities
+
+- **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
+  > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
+- **[Validate Authors@R through a built R package](.cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md)** · `solution` · _—_ · `2026-08-21`
+  > The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles,…
+- **[Authoritative Staged Provenance Requires Result-Bound Checkpoints](.cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)** · `solution` · _—_ · `2026-08-25`
+  > A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current…
+- **[Package-imported operators \(%||%, %in%, etc.\) are not available in test helper functions](.cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md)** · `solution` · _—_ · `2026-05-20`
+  > A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used …
+- **[Verify R package dependencies and stage checkpoints from built artifacts](.cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md)** · `solution` · _—_ · `2026-08-21`
+  > Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: …
+
 ## Old_Files/ / Archive / Devtools::Document\(\)
 
 _Keywords: `old_files/` · `archive` · `devtools::document()`_ · 4 entities
@@ -205,19 +226,6 @@ _Keywords: `old_files/` · `archive` · `devtools::document()`_ · 4 entities
   > Add `@note` to the `pd_deflation()` roxygen block explaining this function is not yet integrated into the active pipe…
 - **[Relocate mock_funs.R to tests/](.cg-docs/plans/2026-04-30-relocate-mock-funs.md)** · `plan` · _completed_ · `2026-04-30`
   > Move `R/mock_funs.R` to `tests/testthat/helper-mock_funs.R` so test helpers live alongside tests, not in the package …
-
-## %||% / R Cmd Check / Authors@R
-
-_Keywords: `%||%` · `r cmd check` · `authors@r`_ · 4 entities
-
-- **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
-  > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
-- **[Validate Authors@R through a built R package](.cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md)** · `solution` · _—_ · `2026-08-21`
-  > The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles,…
-- **[Package-imported operators \(%||%, %in%, etc.\) are not available in test helper functions](.cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md)** · `solution` · _—_ · `2026-05-20`
-  > A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used …
-- **[Verify R package dependencies and stage checkpoints from built artifacts](.cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md)** · `solution` · _—_ · `2026-08-21`
-  > Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: …
 
 ## Pd_Deflation\(\) / Pip_Id / "Pip_Deflated"
 

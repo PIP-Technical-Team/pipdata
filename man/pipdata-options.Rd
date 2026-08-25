@@ -43,6 +43,15 @@ scope of this option.
 does \strong{not} affect the structured pipeline logging written via
 \code{pipfun::log_add()} / \code{pipfun::log_info()} into \code{pipdata_log}. Structured
 log entries are always emitted regardless of this option.
+
+\strong{\code{pipdata.dependency_manifest_path}} defaults to the package user cache.
+Production must override it with a durable shared path scoped to the release
+repository. \strong{\code{pipdata.dependency_scope}} is an optional additional
+namespace; it never replaces release, identity, and alias-root isolation.
+\strong{\code{pipdata.manifest_checkpoint_n}} (25) and
+\strong{\code{pipdata.manifest_checkpoint_seconds}} (60) bound verified checkpoint
+batches. Stamp remains the artifact version store; this manifest stores
+rebuildable dependency provenance.
 }
 
 \keyword{internal}

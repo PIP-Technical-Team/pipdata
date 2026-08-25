@@ -23,6 +23,12 @@
 #'   stamp versioning (unlike `force = TRUE`, which switches to timestamp
 #'   versioning for the entire run). Unknown identifiers are warned about and
 #'   skipped. Default `NULL`.
+#' @param bootstrap Logical. Explicitly permit rebuilding unknown legacy
+#'   provenance. Default `FALSE`.
+#' @param bootstrap_entities Optional restrictive survey/pip identifiers for a
+#'   bootstrap canary. Unlike `force_surveys`, this never expands selection.
+#' @param dependency_plan Optional precomputed advisory plan. Execution validates
+#'   and restricts it again before any processing side effect.
 #' @return A data.frame: updated pip inventory (`new_pip_inv`) with new
 #'   versions for cleaned data and metadata.
 #'
@@ -61,7 +67,10 @@ pd_process_data <- function(
   aux_measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
   force = FALSE,
   verbose = getOption("pipdata.verbose", default = TRUE),
-  force_surveys = NULL
+  force_surveys = NULL,
+  bootstrap = FALSE,
+  bootstrap_entities = NULL,
+  dependency_plan = NULL
 ) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Guard force + force_surveys are mutually exclusive, before any stamp
@@ -74,21 +83,121 @@ pd_process_data <- function(
     )
   }
 
+  if (!isTRUE(bootstrap) && !is.null(bootstrap_entities)) {
+    cli::cli_abort("bootstrap_entities requires bootstrap = TRUE.",
+                   class = "pipdata_bootstrap_selector_error")
+  }
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Temporarily switch stamp versioning to "timestamp" when force = TRUE
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (force) {
-    old_versioning <- stamp::st_opts("versioning", .get = TRUE)
-    on.exit(stamp::st_opts(versioning = old_versioning), add = TRUE)
-    stamp::st_opts(versioning = "timestamp")
-  }
-
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load the validated DLW inventory when the caller does not supply one
   if (is.null(inv)) {
     inv <- pipload::load_gmd_valid_inv(verbose = verbose)
+  }
+
+  master <- pipload::load_pip_master_inventory(verbose = verbose)
+  execution <- pd_prepare_execution(
+    inv, master, pd_dependency_context(), dependency_plan, bootstrap,
+    bootstrap_entities, force, force_surveys, verbose
+  )
+  on.exit(pd_lease_release(execution$lease), add = TRUE)
+  if (force) {
+    old_versioning <- stamp::st_opts("versioning", .get = TRUE)
+    on.exit(stamp::st_opts(versioning = old_versioning), add = TRUE)
+    stamp::st_opts(versioning = "timestamp")
+  }
+  actions <- execution$plan$actions[action != "none"]
+  if (!nrow(actions)) return(master)
+  recode_spec <- sync_recode_spec(alias = "pip_inv", verbose = verbose)
+  clean_actions <- actions[stage == "clean"]
+  cleaned_ids <- character()
+  for (i in seq_len(nrow(clean_actions))) {
+    action <- clean_actions[i]
+    inv_row <- data.table::as.data.table(inv)[survey_id == action$survey_id]
+    result <- pd_execute_clean(action, inv_row, execution, recode_spec, verbose)
+    if (!isTRUE(result$success)) {
+      master <- pd_invalidate_failed_action(master, action)
+      next
+    }
+    finalized <- pd_finalize_checkpoint(
+      execution, master, "clean", result$receipts,
+      pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
+      pd_inventory_writer("pip_master", "pip_master_inventory", verbose),
+      survey_id = result$survey_id,
+      expected_pip_ids = result$expected_pip_ids
+    )
+    master <- finalized$candidate
+    execution <- finalized$execution
+    for (pip_id in result$receipts$pip_id) {
+      metadata_action <- actions[stage == "metadata" & pip_id == ..pip_id]
+      if (!nrow(metadata_action)) {
+        metadata_action <- data.table::data.table(
+          stage = "metadata", entity_id = pip_id, survey_id = result$survey_id,
+          pip_id = pip_id, action = "refresh",
+          input_hash = pd_hash_object(result$receipts[pip_id == ..pip_id,
+            .(version_id, content_hash)]),
+          code_hash = execution$snapshot$fingerprints$summary[
+            stage == "metadata", hash][1L]
+        )
+        metadata_action[, aux_projection := list(list(list()))]
+      }
+      metadata_result <- pd_execute_metadata(
+        metadata_action, execution$snapshot, execution, result, verbose
+      )
+      if (!isTRUE(metadata_result$success)) next
+      metadata_finalized <- pd_finalize_checkpoint(
+        execution, master, "metadata",
+        data.table::as.data.table(metadata_result),
+        pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
+        pd_inventory_writer("pip_master", "pip_master_inventory", verbose)
+      )
+      master <- metadata_finalized$candidate
+      execution <- metadata_finalized$execution
+      cleaned_ids <- c(cleaned_ids, pip_id)
+    }
+    rm(result)
+  }
+  metadata_actions <- actions[stage == "metadata" & !pip_id %in% cleaned_ids]
+  for (i in seq_len(nrow(metadata_actions))) {
+    action <- metadata_actions[i]
+    reconstruct_reasons <- c("upstream_output_changed", "clean_code_changed")
+    action[, reconstruct_base_metadata := any(
+      execution$plan$reasons[
+        stage == "metadata" & entity_id == action$entity_id[[1L]], reason
+      ] %in% reconstruct_reasons
+    )]
+    result <- tryCatch(
+      pd_execute_metadata(action, execution$snapshot, execution, NULL,
+                          verbose),
+      error = function(e) list(success = FALSE)
+    )
+    if (!isTRUE(result$success)) {
+      master <- pd_invalidate_failed_action(master, action)
+      next
+    }
+    result_dt <- data.table::as.data.table(result)
+    finalized <- pd_finalize_checkpoint(
+      execution, master, "metadata", result_dt,
+      pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
+      pd_inventory_writer("pip_master", "pip_master_inventory", verbose)
+    )
+    master <- finalized$candidate
+    execution <- finalized$execution
+  }
+  return(master)
+
+  if (!is.null(dependency_plan)) {
+    pd_validate_plan(dependency_plan)
+    dependency_plan <- pd_assert_bootstrap(
+      dependency_plan, bootstrap, bootstrap_entities
+    )
+    clean_ids <- dependency_plan$actions[stage == "clean" & action != "none",
+                                         unique(survey_id)]
+    inv <- inv[survey_id %in% clean_ids, ]
   }
 
   # Resolve current aux content hashes once, before aux data is loaded.
@@ -209,6 +318,82 @@ pd_process_data <- function(
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(new_pip_inv)
+}
+
+pd_invalidate_failed_action <- function(master, action) {
+  out <- data.table::copy(data.table::as.data.table(master))
+  stage <- action$stage[[1L]]
+  ids <- if (stage == "clean") {
+    out[survey_id == action$survey_id[[1L]], which = TRUE]
+  } else out[pip_id == action$pip_id[[1L]], which = TRUE]
+  columns <- switch(stage,
+    clean = c("version_id_data", "content_hash_data", "version_id_metadata",
+              "content_hash_metadata", "version_id_deflated",
+              "content_hash_deflated", "deflated"),
+    metadata = c("version_id_metadata", "content_hash_metadata",
+                 "version_id_deflated", "content_hash_deflated", "deflated"),
+    deflate = c("version_id_deflated", "content_hash_deflated", "deflated")
+  )
+  for (column in intersect(columns, names(out))) {
+    value <- if (column == "deflated") FALSE else NA
+    data.table::set(out, i = ids, j = column, value = value)
+  }
+  pipfun::log_add(
+    event = "error", message = "Forced dependency work failed.",
+    name = "pipdata_log",
+    logmeta = list(error = "forced_work_failed", stage = stage,
+                   entity_id = action$entity_id[[1L]])
+  )
+  out
+}
+
+pd_inventory_writer <- function(alias, id, verbose = FALSE) {
+  function(candidate, lease) {
+    pd_save_receipt(candidate, id, alias, verbose, lease)
+  }
+}
+
+pd_execute_clean <- function(action, inv_row, execution, recode_spec,
+                             verbose = FALSE) {
+  survey_id <- action$survey_id[[1L]]
+  result <- tryCatch({
+    df <- inv_dlw_load(inv_row)
+    merged <- pd_cpfw_merge(df, execution$snapshot$aux$objects$pfw)
+    clean <- pd_dlw_clean(merged, verbose = verbose, recode_spec = recode_spec)
+    metadata <- pd_aux_attr(clean, execution$snapshot$aux$objects)
+    expected <- sort(toupper(names(clean)))
+    if (!length(expected) || !setequal(expected, toupper(names(metadata)))) {
+      rlang::abort("Clean output set and metadata base set differ.",
+                   class = "pipdata_clean_output_incomplete")
+    }
+    receipts <- lapply(expected, function(pip_id) {
+      source_name <- names(clean)[match(pip_id, toupper(names(clean)))]
+      pd_assert_execution_fence(execution)
+      receipt <- pd_save_receipt(clean[[source_name]], pip_id, "pip", verbose,
+                                 execution$lease)
+      c(list(stage = "clean", survey_id = survey_id, pip_id = pip_id,
+             input_hash = action$input_hash[[1L]],
+             code_hash = action$code_hash[[1L]]), receipt)
+    })
+    receipts <- data.table::rbindlist(receipts, fill = TRUE)
+    invariant <- data.table::copy(inv_row)
+    invariant[, pip_id := expected[1L]]
+    if (length(expected) > 1L) {
+      invariant <- invariant[rep(seq_len(.N), each = length(expected))]
+      invariant[, pip_id := expected]
+    }
+    receipts <- invariant[receipts, on = "pip_id"]
+    success <- nrow(receipts) == length(expected) && all(receipts$success) &&
+      setequal(receipts$pip_id, expected)
+    list(stage = "clean", survey_id = survey_id, success = success,
+         expected_pip_ids = expected, receipts = receipts,
+         metadata = metadata)
+  }, error = function(e) {
+    list(stage = "clean", survey_id = survey_id, success = FALSE,
+         expected_pip_ids = character(), receipts = data.table::data.table(),
+         metadata = list(), error = conditionMessage(e))
+  })
+  result
 }
 
 #' Process datalibweb data: merge PFW data and clean variables
