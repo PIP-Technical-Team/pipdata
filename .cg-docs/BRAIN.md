@@ -1,6 +1,6 @@
 # 🧠 Project Brain
 
-_Generated 2026-08-26 · 139 entities · 5 topics · 52 edges_
+_Generated 2026-08-26 · 143 entities · 6 topics · 56 edges_
 
 ## How to Use
 
@@ -13,29 +13,30 @@ _Generated 2026-08-26 · 139 entities · 5 topics · 52 edges_
 
 | # | Topic | Entities | File |
 |---|-------|----------|------|
-| 1 | [Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R](BRAIN-01.md#valid-dlw-load-reporting-level-aaa-r) | 99 | BRAIN-01.md |
-| 2 | [%||% / Namespace / Related](BRAIN-01.md#namespace-related) | 7 | BRAIN-01.md |
-| 3 | [Old_Files/ / Archive / Devtools::Document\(\)](BRAIN-01.md#old-files-archive-devtools-document) | 4 | BRAIN-01.md |
-| 4 | [Pd_Deflation\(\) / Pip_Id / "Pip_Deflated"](BRAIN-01.md#pd-deflation-pip-id-pip-deflated) | 3 | BRAIN-01.md |
-| 5 | [Validation_Spec.Yml / Severity / Pipdata_Validate_Gmd.R](BRAIN-01.md#validation-spec-yml-severity-pipdata-validate-gmd-r) | 3 | BRAIN-01.md |
+| 1 | [Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R](BRAIN-01.md#valid-dlw-load-reporting-level-aaa-r) | 100 | BRAIN-01.md |
+| 2 | [%||% / Related / Root](BRAIN-01.md#related-root) | 9 | BRAIN-01.md |
+| 3 | [Failed / Partial / No_Work](BRAIN-01.md#failed-partial-no-work) | 4 | BRAIN-01.md |
+| 4 | [Old_Files/ / Archive / Devtools::Document\(\)](BRAIN-01.md#old-files-archive-devtools-document) | 4 | BRAIN-01.md |
+| 5 | [Pd_Deflation\(\) / Pip_Id / "Pip_Deflated"](BRAIN-01.md#pd-deflation-pip-id-pip-deflated) | 3 | BRAIN-01.md |
+| 6 | [Validation_Spec.Yml / Severity / Pipdata_Validate_Gmd.R](BRAIN-01.md#validation-spec-yml-severity-pipdata-validate-gmd-r) | 3 | BRAIN-01.md |
 
 ## Entity Summary
 
 | Type | Count |
 |------|-------|
-| brainstorm | 16 |
-| plan | 42 |
-| review | 30 |
-| solution | 50 |
+| brainstorm | 17 |
+| plan | 43 |
+| review | 31 |
+| solution | 51 |
 | strategy | 1 |
 
-_23 entities not assigned to any topic_
+_20 entities not assigned to any topic_
 
 ## Relationship Summary
 
 | Edge Type | Count |
 |-----------|-------|
-| decided_from | 16 |
-| references | 8 |
+| decided_from | 17 |
+| references | 10 |
 | reviews | 19 |
-| verifies | 9 |
+| verifies | 10 |

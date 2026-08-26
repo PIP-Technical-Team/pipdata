@@ -329,7 +329,7 @@ pd_process_data <- function(
   return(new_pip_inv)
 }
 
-pd_invalidate_failed_action <- function(master, action) {
+pd_invalidate_failed_action <- function(master, action, emit_log = TRUE) {
   out <- data.table::copy(data.table::as.data.table(master))
   stage <- action$stage[[1L]]
   ids <- if (stage == "clean") {
@@ -347,12 +347,14 @@ pd_invalidate_failed_action <- function(master, action) {
     value <- if (column == "deflated") FALSE else NA
     data.table::set(out, i = ids, j = column, value = value)
   }
-  pipfun::log_add(
-    event = "error", message = "Forced dependency work failed.",
-    name = "pipdata_log",
-    logmeta = list(error = "forced_work_failed", stage = stage,
-                   entity_id = action$entity_id[[1L]])
-  )
+  if (isTRUE(emit_log)) {
+    pipfun::log_add(
+      event = "error", message = "Forced dependency work failed.",
+      name = "pipdata_log",
+      logmeta = list(error = "forced_work_failed", stage = stage,
+                     entity_id = action$entity_id[[1L]])
+    )
+  }
   out
 }
 

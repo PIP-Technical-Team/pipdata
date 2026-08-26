@@ -7,7 +7,7 @@
 add_ppp(dt, ppp)
 }
 \arguments{
-\item{dt}{A cleaned survey \code{data.table} with a \code{ppp_data_level} column.}
+\item{dt}{A cleaned survey \code{data.table} with a \code{ppp_data_level} attribute.}
 
 \item{ppp}{Named numeric vector or wide \code{data.table}.}
 }

@@ -7,7 +7,7 @@
 add_cpi(dt, cpi)
 }
 \arguments{
-\item{dt}{A cleaned survey \code{data.table} with a \code{cpi_data_level} column.}
+\item{dt}{A cleaned survey \code{data.table} with a \code{cpi_data_level} attribute.}
 
 \item{cpi}{Named numeric vector or \code{data.table}.}
 }

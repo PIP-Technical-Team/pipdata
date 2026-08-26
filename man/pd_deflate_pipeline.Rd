@@ -40,12 +40,9 @@ alias, writes the updated master to \code{"pip_master"}, and logs a
 \code{deflate_summary_inf} entry.
 }
 \description{
-Iterates over the master inventory of cleaned surveys, deflates each via
-\code{\link[=pd_deflation]{pd_deflation()}} (simple Mode B: \code{pip_id} only, no \code{version} hint), correctly
-detects and skips failures -- including \code{NA} returns from \code{\link[=pd_deflation]{pd_deflation()}}
--- saves each successful deflated survey to the dedicated \code{"pip_deflated"}
-stamp alias, updates the master inventory with deflation columns, and logs a
-structured \code{deflate_summary_inf} summary entry to \code{"pipdata_log"}.
+Builds a fresh dependency plan, loads exact planned data and metadata
+versions through the internal strict exact-deflation path, saves verified receipts to the
+\code{"pip_deflated"} alias, and publishes inventory and manifest checkpoints.
 }
 \details{
 This function is an independent pipeline stage: it is \strong{not} called by
@@ -73,8 +70,8 @@ artifact (queried from stamp after the run).
 \item \code{aux_cpi_hash_at_deflation}, \code{aux_ppp_hash_at_deflation},
 \code{aux_pop_hash_at_deflation} -- aux \code{content_hash} resolved once per run by
 \code{\link[=get_aux_hashes]{get_aux_hashes()}}, snapshot on the deflated rows. These describe the aux
-catalog state when the pipeline ran; the exact aux vintage consumed by
-\code{\link[=pd_deflation]{pd_deflation()}} is the one embedded in the survey's \code{pip_meta} artifact
+catalog state when the pipeline ran; the exact aux vintage consumed is
+embedded in the pinned \code{pip_meta} artifact
 (pinned by \code{version_id_metadata}), not this snapshot.
 }
 }

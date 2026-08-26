@@ -1,5 +1,5 @@
 {
-  "edge_count": 52,
+  "edge_count": 56,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -95,6 +95,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
       "target": ".cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
+      "target": ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
       "target_missing": false
     },
     {
@@ -249,6 +255,12 @@
     },
     {
       "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md",
+      "target": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
       "source": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review.md",
       "target": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
       "target_missing": false
@@ -269,6 +281,12 @@
       "edge_type": "references",
       "source": ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
       "target": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md",
+      "target": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
       "target_missing": false
     },
     {
@@ -311,6 +329,12 @@
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
       "target": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
+      "target": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
       "target_missing": false
     }
   ],
@@ -776,6 +800,38 @@
         "pip_meta",
         "pip_deflated",
         "targets"
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
+      "slug": "2026-08-25-pipeline-stage-interface",
+      "status": "decided",
+      "summary": "<!-- Valid status values: decided, in-progress, abandoned -->",
+      "tags": [
+        "pipeline",
+        "orchestration",
+        "interface",
+        "s3",
+        "context",
+        "results",
+        "provenance",
+        "logging",
+        "serialization"
+      ],
+      "title": "Typed Pipeline Stage Interface",
+      "top_keywords": [
+        "na_character_",
+        "null",
+        "tests",
+        "force_surveys",
+        "cached",
+        "skipped",
+        "pipeline_context",
+        "pipdata_stage_result",
+        "run_id",
+        "phase"
       ]
     },
     {
@@ -1955,6 +2011,39 @@
       ]
     },
     {
+      "date": "2026-08-25",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
+      "slug": "2026-08-25-pipeline-stage-interface",
+      "status": "completed",
+      "summary": "Implement validated, versioned `pipeline_context` and `pipdata_stage_result` S3 contracts and prove them on the batch deflation stage. The typed path must capture independent survey failures and continue, while shared-state integrity failures stop all later writes. Existing public deflation signatures, side effects, and master-inventory returns remain unchanged through a shared internal execution core. The sole additive legacy side effect is restoration of the already-documented deflation summary for attempted, completed runs.",
+      "tags": [
+        "pipeline",
+        "orchestration",
+        "interface",
+        "s3",
+        "context",
+        "results",
+        "deflation",
+        "provenance",
+        "logging",
+        "serialization"
+      ],
+      "title": "Implement Typed Pipeline Stage Interface",
+      "top_keywords": [
+        "test scenarios",
+        "pipeline_context",
+        "args",
+        "skipped",
+        "null",
+        "partial",
+        "run_id",
+        "pipdata_stage_result",
+        "data.table",
+        "failed"
+      ]
+    },
+    {
       "date": "",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
@@ -2546,6 +2635,28 @@
         "review report",
         "2026-08-24-pipdata-staged-dependency-manifest.md",
         "fixed"
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md",
+      "slug": "2026-08-24-pipdata-staged-dependency-manifest-verify-review-2",
+      "status": "",
+      "summary": "**Review mode**: light (verification) **Files reviewed**: 23 **Findings**: 7 (P0: 2, P1: 3, P2: 2, P3: 0)",
+      "tags": [],
+      "title": "2026-08-24-pipdata-staged-dependency-manifest-verify-review-2",
+      "top_keywords": [
+        "pd_deflate_pipeline.r",
+        "fix",
+        "units",
+        "review",
+        "verification",
+        "required",
+        "passed",
+        "context",
+        "pip_id",
+        "unknown_error"
       ]
     },
     {
@@ -3155,6 +3266,34 @@
         "resolver",
         "registry",
         "sentinels"
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md",
+      "slug": "2026-08-26-fail-closed-typed-stage-orchestration",
+      "status": "",
+      "summary": "A typed pipeline result can look complete and auditable while execution has already crossed an unsafe boundary. The deflation pilot exposed four related symptoms: - joining accepted actions to the current inventory by `pip_id` allowed same-named inventory fields to replace the exact versions and hashes accepted by the dependency plan; - unknown fence, lease, write, or integrity errors could be normalized as recoverable survey failures, allowing later writes; - a failed checkpoint omitted successful-but-uncommitted and not-yet-attempted units from result accounting; and - focused wrapper tests mocked the shared execution core, so they could pass without exercising these integrity paths. The...",
+      "tags": [
+        "pipeline",
+        "orchestration",
+        "fail-closed",
+        "checkpoint",
+        "provenance"
+      ],
+      "title": "Typed Stage Orchestration Must Fail Closed and Account for Every Unit",
+      "top_keywords": [
+        "orchestration",
+        "typed stage orchestration must fail closed",
+        "every unit",
+        "typed",
+        "stage",
+        "closed",
+        "unit",
+        "must",
+        "account",
+        "2026-08-25-pipeline-stage-interface.md"
       ]
     },
     {
@@ -4140,13 +4279,13 @@
       ]
     }
   ],
-  "entity_count": 139,
+  "entity_count": 143,
   "generated": "2026-08-26",
   "schema_version": "0.2.0",
-  "topic_count": 5,
+  "topic_count": 6,
   "topics": [
     {
-      "entity_count": 99,
+      "entity_count": 100,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -4213,6 +4352,7 @@
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
         ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
         ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
+        ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
@@ -4257,10 +4397,12 @@
       "slug": "valid-dlw-load-reporting-level-aaa-r"
     },
     {
-      "entity_count": 7,
+      "entity_count": 9,
       "entity_paths": [
         ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
+        ".cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md",
         ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
+        ".cg-docs/solutions/data-quality/2026-05-27-catalog-validation-before-filter-spurious-warnings.md",
         ".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md",
         ".cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md",
         ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
@@ -4269,11 +4411,27 @@
       ],
       "keywords": [
         "%||%",
-        "namespace",
-        "related"
+        "related",
+        "root"
       ],
-      "label": "%||% / Namespace / Related",
-      "slug": "namespace-related"
+      "label": "%||% / Related / Root",
+      "slug": "related-root"
+    },
+    {
+      "entity_count": 4,
+      "entity_paths": [
+        ".cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md",
+        ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
+        ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
+        ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md"
+      ],
+      "keywords": [
+        "failed",
+        "partial",
+        "no_work"
+      ],
+      "label": "Failed / Partial / No_Work",
+      "slug": "failed-partial-no-work"
     },
     {
       "entity_count": 4,

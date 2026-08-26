@@ -832,7 +832,7 @@ build_deflation_summary <- function(dt) {
     return(character(0))
   }
 
-  ds <- dt$logmeta[[ds_idx[1L]]]
+  ds <- dt$logmeta[[ds_idx[length(ds_idx)]]]
 
   lines <- c(
     "## Deflation Summary",

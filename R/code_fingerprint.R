@@ -12,13 +12,13 @@
             "get_gd_type", "area_gd_clean", "format_wgt", "format_wlf",
             "shift_subnatid", "pip_vars"),
   metadata = c("pd_aux_attr", "pd_metadata_refresh", "pd_normalize_metadata_keys"),
-  deflate = c("pd_deflation_exact", "pd_deflation", "adjust_population",
+  deflate = c("pd_deflation_exact", "pd_deflation_exact_strict", "pd_deflation", "adjust_population",
               ".load_deflation_aux", "deflation", "deflation.pipmd",
               "deflation.pipgd", "safe_deflation", ".validate_deflation_input",
               ".deflation_pipmd_core", ".deflation_pipgd_core",
               "finalize_deflation_output", "add_aux", "welfare_lcu",
-              "deflate_wlf", "char_to_fct", "ppp_to_wide", "add_cpi",
-              "add_ppp", "cpi_ppp_years", "log_failure", "pd_env_set",
+               "deflate_wlf", "char_to_fct", "ppp_to_wide", "add_cpi",
+               "add_ppp", "cpi_ppp_years", "data_level_column", "log_failure", "pd_env_set",
               "pd_env_rm", "piperr", "add_log", "find_condition")
 )
 

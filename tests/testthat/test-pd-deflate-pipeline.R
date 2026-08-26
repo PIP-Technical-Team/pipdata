@@ -10,7 +10,7 @@ test_that("authoritative deflation uses only exact pinned inputs", {
   action <- deflation_action()
   called <- list()
   testthat::local_mocked_bindings(
-    pd_deflation_exact = function(pip_id, data_version_id,
+    pd_deflation_exact_strict = function(pip_id, data_version_id,
                                   metadata_version_id, data_hash,
                                   metadata_hash, verbose) {
       called <<- as.list(environment())
@@ -44,8 +44,25 @@ test_that("authoritative deflation fails closed on incomplete actions", {
     },
     .package = "pipdata"
   )
-  expect_null(pd_execute_deflate(action, FALSE))
+  expect_error(
+    pd_execute_deflate(action, FALSE),
+    class = "pipdata_deflation_action_invalid"
+  )
   expect_false(latest_called)
+})
+
+test_that("unknown worker errors fail closed", {
+  action <- deflation_action()
+  testthat::local_mocked_bindings(
+    pd_deflation_exact_strict = function(...) rlang::abort(
+      "unexpected fence failure", class = "unrecognized_storage_failure"
+    ),
+    .package = "pipdata"
+  )
+  expect_error(
+    pd_execute_deflate(action, FALSE),
+    class = "unrecognized_storage_failure"
+  )
 })
 
 test_that("legacy single-survey deflation adapter remains compatible", {
@@ -72,25 +89,13 @@ test_that("pipeline exported signature remains stable", {
 test_that("pd_deflate_pipeline executes fresh exact actions and returns candidate", {
   inv <- deflation_action()
   inv[, `:=`(deflated = FALSE, input_hash = "ih", code_hash = "ch")]
-  action <- inv[, .(stage = "deflate", entity_id = pip_id, survey_id, pip_id,
-                    action = "refresh", input_hash, code_hash)]
   executed <- character()
   testthat::local_mocked_bindings(
-    pd_dependency_context = function() list(scope_id = "scope"),
-    pd_prepare_execution = function(...) list(
-      plan = list(actions = action), lease = list(),
-      snapshot = list(), manifest = pd_empty_manifest(list(scope_id = "scope")),
-      manifest_identity = NULL, context = list(scope_id = "scope")
-    ),
-    pd_lease_release = function(...) invisible(NULL),
-    pd_execute_deflate = function(action, verbose) {
-      executed <<- c(executed, action$pip_id)
-      list(pip_id = action$pip_id, success = TRUE, version_id = "f1",
-           content_hash = "fh", input_hash = "ih", code_hash = "ch")
-    },
-    pd_finalize_checkpoint = function(execution, master, stage, results, ...) {
-      master[results, on = "pip_id", deflated := TRUE]
-      list(candidate = master, execution = execution)
+    pd_deflate_pipeline_core = function(inv, ...) {
+      executed <<- inv$pip_id
+      inv[, deflated := TRUE]
+      list(result = structure(list(), class = "pipdata_stage_result"),
+           master = inv, context = structure(list(), class = "pipeline_context"))
     },
     .package = "pipdata"
   )
@@ -134,4 +139,132 @@ test_that("failed deflation invalidation is written durably for restart", {
   expect_identical(
     writes$master$latest_release_version_id, "release-v1"
   )
+})
+
+test_that("real core rejects changed inputs before executing a worker", {
+  inv <- deflation_action()
+  action <- data.table::data.table(
+    stage = "deflate", entity_id = inv$pip_id, survey_id = inv$survey_id,
+    pip_id = inv$pip_id, action = "create", input_hash = "ih",
+    code_hash = "ch", data_version_id = "changed", data_hash = "dh",
+    metadata_version_id = "m1", metadata_hash = "mh",
+    reason = list("new_entity")
+  )
+  context <- list(release = "20260826", identity = "TEST", roots = list(),
+                  namespace = "test")
+  context$scope_id <- pd_context_hash(context)
+  execution <- list(
+    context = context,
+    snapshot = list(
+      fingerprints = list(summary = data.table::data.table(
+        stage = "deflate", hash = "ch"
+      )), captured_at = Sys.time()
+    ),
+    plan = list(
+      actions = action,
+      reasons = data.table::data.table(
+        stage = "deflate", entity_id = inv$pip_id, reason = "new_entity",
+        input = NA_character_, old = NA_character_, new = NA_character_
+      )
+    ),
+    manifest = pd_empty_manifest(context), manifest_identity = NULL,
+    lease = list()
+  )
+  worker_called <- FALSE
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() context,
+    pd_prepare_execution = function(...) execution,
+    pd_pipeline_storage = function(...) list(
+      aliases = c(pip = "pip", pip_meta = "pip_meta",
+                  pip_deflated = "pip_deflated", pip_master = "pip_master",
+                  pip_inv = "pip_inv"),
+      roots = c(pip = "p", pip_meta = "m", pip_deflated = "d",
+                pip_master = "pm", pip_inv = "pi"), log_name = "pipdata_log"
+    ),
+    pd_execute_deflate = function(...) {
+      worker_called <<- TRUE
+      list(success = TRUE)
+    },
+    pd_lease_release = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+  expect_error(
+    pd_deflate_pipeline_core(
+      inv, FALSE, FALSE, FALSE, NULL, NULL, character(), "continue", "abort"
+    ),
+    class = "pipdata_deflation_action_invalid"
+  )
+  expect_false(worker_called)
+})
+
+test_that("real core accounts for checkpoint-pending and unattempted units", {
+  inv <- data.table::rbindlist(replicate(3L, deflation_action(), simplify = FALSE))
+  inv[, pip_id := paste0("id", seq_len(.N))]
+  inv[, survey_id := paste0("s", seq_len(.N))]
+  actions <- inv[, .(
+    stage = "deflate", entity_id = pip_id, survey_id, pip_id,
+    action = "create", input_hash = paste0("ih", seq_len(.N)),
+    code_hash = "ch", data_version_id = version_id_data,
+    data_hash = content_hash_data, metadata_version_id = version_id_metadata,
+    metadata_hash = content_hash_metadata, reason = list("new_entity")
+  )]
+  context <- list(release = "20260826", identity = "TEST", roots = list(),
+                  namespace = "test")
+  context$scope_id <- pd_context_hash(context)
+  execution <- list(
+    context = context,
+    snapshot = list(
+      fingerprints = list(summary = data.table::data.table(
+        stage = "deflate", hash = "ch"
+      )), captured_at = Sys.time()
+    ),
+    plan = list(
+      actions = actions,
+      reasons = actions[, .(stage, entity_id, reason = "new_entity",
+                            input = NA_character_, old = NA_character_,
+                            new = NA_character_)]
+    ),
+    manifest = pd_empty_manifest(context), manifest_identity = NULL,
+    lease = list()
+  )
+  old_n <- getOption("pipdata.manifest_checkpoint_n")
+  options(pipdata.manifest_checkpoint_n = 2L)
+  on.exit(options(pipdata.manifest_checkpoint_n = old_n), add = TRUE)
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() context,
+    pd_prepare_execution = function(...) execution,
+    pd_pipeline_storage = function(...) list(
+      aliases = c(pip = "pip", pip_meta = "pip_meta",
+                  pip_deflated = "pip_deflated", pip_master = "pip_master",
+                  pip_inv = "pip_inv"),
+      roots = c(pip = "p", pip_meta = "m", pip_deflated = "d",
+                pip_master = "pm", pip_inv = "pi"), log_name = "pipdata_log"
+    ),
+    pd_execute_deflate = function(action, verbose) list(
+      stage = "deflate", pip_id = action$pip_id, success = TRUE,
+      alias = "pip_deflated", artifact = action$pip_id, path = "p",
+      version_id = "v", content_hash = paste0("oh", action$pip_id),
+      data_version_id = action$data_version_id,
+      metadata_version_id = action$metadata_version_id,
+      input_hash = action$input_hash, code_hash = action$code_hash
+    ),
+    pd_finalize_checkpoint = function(...) rlang::abort(
+      "checkpoint failed", class = "pipdata_checkpoint_release_error"
+    ),
+    pd_lease_release = function(...) invisible(NULL),
+    pd_log_deflate_summary = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+  result <- pd_deflate_pipeline_core(
+    inv, FALSE, FALSE, FALSE, NULL, NULL, character(), "continue",
+    "capture_at_run_boundary"
+  )$result
+  expect_true(result$terminal)
+  expect_identical(result$units$status, c("failed", "failed", "skipped"))
+  expect_identical(
+    vapply(result$units$reason_codes, `[[`, "", 1L),
+    c("checkpoint_uncommitted", "checkpoint_uncommitted", "upstream_failed")
+  )
+  expect_identical(unname(result$counts[c("selected", "attempted", "skipped")]),
+                   c(3L, 2L, 1L))
 })

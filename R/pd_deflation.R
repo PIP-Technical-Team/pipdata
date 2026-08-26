@@ -330,6 +330,38 @@ pd_deflation_exact <- function(pip_id, data_version_id, metadata_version_id,
                pip_id = pip_id, verbose = verbose)
 }
 
+#' Strict exact deflation for typed stage execution
+#'
+#' Unlike the public deflation methods, this internal path does not use
+#' `safe_deflation()` and therefore preserves transform conditions.
+#' @noRd
+pd_deflation_exact_strict <- function(pip_id, data_version_id,
+                                      metadata_version_id, data_hash = NULL,
+                                      metadata_hash = NULL, verbose = FALSE) {
+  if (any(!nzchar(c(data_version_id, metadata_version_id)))) {
+    cli::cli_abort("Exact data and metadata versions are required.",
+                   class = c("pd_deflation_exact", "piperr"))
+  }
+  dt <- pipload::pip_read(id = pip_id, alias = "pip",
+                          version = data_version_id, verbose = verbose)
+  meta <- pipload::pip_read(id = pip_id, alias = "pip_meta",
+                            version = metadata_version_id, verbose = verbose)
+  if (!is.null(data_hash) && !identical(stamp::st_hash_obj(dt), data_hash)) {
+    cli::cli_abort("Exact cleaned-data hash mismatch.",
+                   class = c("pd_deflation_exact_hash", "piperr"))
+  }
+  if (!is.null(metadata_hash) &&
+      !identical(stamp::st_hash_obj(meta), metadata_hash)) {
+    cli::cli_abort("Exact metadata hash mismatch.",
+                   class = c("pd_deflation_exact_hash", "piperr"))
+  }
+  .validate_deflation_input(dt)
+  if (inherits(dt, "pipmd")) {
+    return(.deflation_pipmd_core(dt, meta$cpi, meta$ppp, meta$pop))
+  }
+  .deflation_pipgd_core(dt, meta$cpi, meta$ppp, meta$pop)
+}
+
 #' Deflation of welfare using auxiliary data (lower level)
 #'
 #' @param dt data.table of cleaned DLW survey from `wbpip_clean`

@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-26 · 139 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-26 · 143 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -41,12 +41,16 @@ _Generated 2026-08-26 · 139 artifacts (newest first) + 0 roadmap features_
 
 ## 2026-08-26
 
+- **[2026-08-24-pipdata-staged-dependency-manifest-verify-review-2](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md)** · `review` · _—_ · `2026-08-26`
+  > **Review mode**: light (verification) **Files reviewed**: 23 **Findings**: 7 (P0: 2, P1: 3, P2: 2, P3: 0)
 - **[2026-08-25-dlw-wrapper-rewrite-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: architecture **Scope**: DLW wrapper rewrite against synchronized base `55b7a3a1369504dcee8754237bedc…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
 - **[Fail-closed durable reconciliation for staged data pipelines](.cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md)** · `solution` · _—_ · `2026-08-26`
   > The DLW acquisition and validation wrappers combined discovery, per-survey execution, persistence, and logging. Sever…
+- **[Typed Stage Orchestration Must Fail Closed and Account for Every Unit](.cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md)** · `solution` · _—_ · `2026-08-26`
+  > A typed pipeline result can look complete and auditable while execution has already crossed an unsafe boundary. The d…
 
 ## 2026-08-25
 
@@ -58,8 +62,12 @@ _Generated 2026-08-26 · 139 artifacts (newest first) + 0 roadmap features_
   > - **[P0.1]** `R/pd_metadata_refresh.R` - metadata restart can rebuild from stale metadata instead of the exact newly …
 - **[Authoritative Staged Provenance Requires Result-Bound Checkpoints](.cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)** · `solution` · _—_ · `2026-08-25`
   > A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current…
+- **[Implement Typed Pipeline Stage Interface](.cg-docs/plans/2026-08-25-pipeline-stage-interface.md)** · `plan` · _completed_ · `2026-08-25`
+  > Implement validated, versioned `pipeline_context` and `pipdata_stage_result` S3 contracts and prove them on the batch…
 - **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md)** · `plan` · _completed_ · `2026-08-25`
   > Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchest…
+- **[Typed Pipeline Stage Interface](.cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md)** · `brainstorm` · _decided_ · `2026-08-25`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
 - **[Verify exported R API retirement from built package surfaces](.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md)** · `solution` · _—_ · `2026-08-25`
   > Removing an exported R function requires more than deleting its source. The generated `NAMESPACE` can change unexpect…
 
