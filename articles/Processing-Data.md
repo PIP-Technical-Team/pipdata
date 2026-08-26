@@ -46,11 +46,15 @@ new_pip_inv <- pd_process_data(
 )
 ```
 
-- `inv` — the validated DLW inventory (as produced by [Validating
+- `inv` — the completed DLW validation inventory (as produced by
+  [Validating
   Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md)’s
   [`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)).
   When `NULL` (the default), it is loaded internally via
   [`pipload::load_gmd_valid_inv()`](https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html).
+  Before planning, only available rows with status `valid` or `invalid`
+  are retained. Recognized legacy blank/unavailable retry rows are
+  removed, and malformed completed rows abort.
 - `aux_measures` — which auxiliary datasets to load and merge/attach.
 - `force` — when `TRUE`, temporarily switches `stamp` versioning to
   `"timestamp"` and bypasses the master-inventory comparison, forcing
@@ -58,16 +62,22 @@ new_pip_inv <- pd_process_data(
 
 ### What happens inside
 
-1.  **Load auxiliary data** for each measure in `aux_measures` via
+1.  **Guard completed validation input** before snapshots, dependency
+    planning, force selection, or row lookup. The guard also runs inside
+    execution preparation for internal callers, so legacy
+    execution-control rows cannot create cleaning or metadata actions.
+    Existing policy still permits both completed `valid` and `invalid`
+    rows.
+2.  **Load auxiliary data** for each measure in `aux_measures` via
     [`pipload::load_aux_data()`](https://pip-technical-team.github.io/pipload/reference/load_aux_data.html).
-2.  **Determine which surveys need (re-)processing** —
+3.  **Determine which surveys need (re-)processing** —
     [`valid_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.md)
     detects auxiliary-file changes (logging an `aux_changes_inf` entry
     when found), filters `inv` to the relevant modules
     (`ALL`/`GROUP`/`HIST`/`GPWG`/`BIN`), keeps the latest version of
     each survey, and — unless `force = TRUE` — drops surveys already
     present in the master inventory.
-3.  **Sync the recode spec once** via
+4.  **Sync the recode spec once** via
     [`sync_recode_spec()`](https://pip-technical-team.github.io/pipdata/reference/sync_recode_spec.md),
     before the loop. This compares the package’s bundled recode spec
     (see [What is the recode spec?](#what-is-the-recode-spec) below)
@@ -80,7 +90,7 @@ new_pip_inv <- pd_process_data(
     call — so the comparison/save only happens a single time per
     [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
     run, instead of once per survey.
-4.  **Process each survey** with
+5.  **Process each survey** with
     [`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md),
     one at a time:
     [`inv_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/inv_dlw_load.md)
@@ -97,12 +107,23 @@ new_pip_inv <- pd_process_data(
     `"pipdata_log"` with the survey id and error class, and the survey
     is skipped — it does not abort the rest of the run. No deflation
     step is part of this chain.
-5.  **Log a processing summary** (`process_summary_inf`: totals,
+6.  **Log a processing summary** (`process_summary_inf`: totals,
     successes, failures) and, if any surveys failed, a `null_svys_inf`
     entry listing them.
-6.  **Rebuild the PIP master inventory** via
+7.  **Rebuild the PIP master inventory** via
     [`build_pip_inventory()`](https://pip-technical-team.github.io/pipdata/reference/build_pip_inventory.md)
     from the successful surveys’ `stamp` catalog entries, and return it.
+
+[`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
+applies the same completed-inventory guard without writing artifacts:
+
+``` r
+
+change_plan <- pd_change_report(
+  inv = pipload::load_gmd_valid_inv(),
+  master = pipload::load_pip_master_inventory()
+)
+```
 
 ### What is the recode spec?
 
@@ -268,15 +289,19 @@ log_report(
 ```
 
 The report includes, when the corresponding logmeta entry is present in
-the log: DLW acquisition and validation summaries, stage-aware run
-warnings, run metadata (time window, totals), the processing summary
-(`process_summary_inf`), the deflation summary (`deflate_summary_inf`),
-auxiliary file changes (`aux_changes_inf`), a summary table by
-error/info type, a country-level breakdown of errors, inventory
-verification counts (`inv_update_inf`), skipped-survey details
+the log: latest-attempt DLW acquisition and validation summaries,
+stage-aware run warnings, run metadata (time window, totals), the
+processing summary (`process_summary_inf`), the deflation summary
+(`deflate_summary_inf`), auxiliary file changes (`aux_changes_inf`), a
+summary table by error/info type, a country-level breakdown of errors,
+inventory verification counts (`inv_update_inf`), skipped-survey details
 (`skipped_svys_data`/`skipped_svys_metadata`), and the list of surveys
 that failed processing (`null_svys_inf`). Sections are silently omitted
-when their logmeta entry is absent.
+when their logmeta entry is absent. Exact DLW completion entries are
+preferred; older logs use fallback confined to the selected latest
+attempt. Dedicated DLW sections separate invalid classifications from
+execution failures, and DLW discriminators are excluded from generic
+type/country sections to prevent stale history and duplicate reporting.
 
 **Scope**:
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
@@ -288,3 +313,9 @@ and
 The report is stage-aware and shows DLW acquisition/validation outcomes
 together with cleaning and deflation results. Auxiliary refresh logging
 from `pipaux` remains outside this report.
+
+[`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
+applies the same completed-validation input guard before building its
+read-only dependency plan. This protects both execution and report
+planning when a legacy `gmd_valid_inv` still contains blank/unavailable
+retry rows from an earlier pipeline version.

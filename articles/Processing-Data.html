@@ -103,10 +103,14 @@ inventory:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <ul>
 <li>
-<code>inv</code> — the validated DLW inventory (as produced by <a href="Validating-Data.html">Validating Data</a>’s
+<code>inv</code> — the completed DLW validation inventory (as
+produced by <a href="Validating-Data.html">Validating Data</a>’s
 <code><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code>). When <code>NULL</code> (the
 default), it is loaded internally via
-<code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>.</li>
+<code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>. Before planning, only
+available rows with status <code>valid</code> or <code>invalid</code>
+are retained. Recognized legacy blank/unavailable retry rows are
+removed, and malformed completed rows abort.</li>
 <li>
 <code>aux_measures</code> — which auxiliary datasets to load and
 merge/attach.</li>
@@ -120,6 +124,13 @@ the master-inventory comparison, forcing every survey in
 <h3 id="what-happens-inside">What happens inside<a class="anchor" aria-label="anchor" href="#what-happens-inside"></a>
 </h3>
 <ol style="list-style-type: decimal">
+<li>
+<strong>Guard completed validation input</strong> before snapshots,
+dependency planning, force selection, or row lookup. The guard also runs
+inside execution preparation for internal callers, so legacy
+execution-control rows cannot create cleaning or metadata actions.
+Existing policy still permits both completed <code>valid</code> and
+<code>invalid</code> rows.</li>
 <li>
 <strong>Load auxiliary data</strong> for each measure in
 <code>aux_measures</code> via
@@ -168,6 +179,13 @@ them.</li>
 <code><a href="../reference/build_pip_inventory.html">build_pip_inventory()</a></code> from the successful surveys’
 <code>stamp</code> catalog entries, and return it.</li>
 </ol>
+<p><code><a href="../reference/pd_change_report.html">pd_change_report()</a></code> applies the same completed-inventory
+guard without writing artifacts:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">change_plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_change_report.html">pd_change_report</a></span><span class="op">(</span></span>
+<span>  inv <span class="op">=</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">load_gmd_valid_inv</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  master <span class="op">=</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_data.html" class="external-link">load_pip_master_inventory</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="what-is-the-recode-spec">What is the recode spec?<a class="anchor" aria-label="anchor" href="#what-is-the-recode-spec"></a>
@@ -204,7 +222,7 @@ single cleaned survey’s welfare values using CPI, PPP, and population
 auxiliary data. It is <strong>not</strong> called automatically by
 <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> — it must be run afterwards, per survey,
 once cleaned data exists in PIP storage. There are two input modes:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Mode A: pass a cleaned survey directly (aux auto-loaded from the master</span></span>
 <span><span class="co"># inventory when cpi/ppp/pop are NULL)</span></span>
 <span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_read.html" class="external-link">pip_read</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span>, alias <span class="op">=</span> <span class="st">"pip"</span><span class="op">)</span></span>
@@ -235,7 +253,7 @@ locates a survey (by <code>id_name</code> or by filter arguments such as
 <code>country_code</code>/<code>surveyid_year</code>/<code>module</code>),
 loads it, and deflates it in one call — useful when you don’t already
 have the survey’s <code>pip_id</code> in hand:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_deflated_data.html" class="external-link">load_pip_deflated_data</a></span><span class="op">(</span>id_name <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or filter by country/year/module instead of a known id_name</span></span>
@@ -261,7 +279,7 @@ only), detects and skips failures (including <code>NA</code> returns),
 saves every deflated survey to the dedicated <code>"pip_deflated"</code>
 stamp alias, updates the master inventory with deflation columns, and
 logs a <code>deflate_summary_inf</code> summary entry:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline</a></span><span class="op">(</span></span>
 <span>  inv     <span class="op">=</span> <span class="cn">NULL</span>, <span class="co"># NULL loads the master inventory internally</span></span>
 <span>  force   <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -312,7 +330,7 @@ section.</p>
 </h2>
 <p><code><a href="../reference/log_report.html">log_report()</a></code> parses a <code>piplog</code> object and
 writes (or returns) a structured markdown report:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># log defaults to pipfun::log_filter(name = "pipdata_log") when not supplied</span></span>
 <span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/log_report.html">log_report</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -322,16 +340,21 @@ writes (or returns) a structured markdown report:</p>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The report includes, when the corresponding logmeta entry is present
-in the log: DLW acquisition and validation summaries, stage-aware run
-warnings, run metadata (time window, totals), the processing summary
-(<code>process_summary_inf</code>), the deflation summary
-(<code>deflate_summary_inf</code>), auxiliary file changes
+in the log: latest-attempt DLW acquisition and validation summaries,
+stage-aware run warnings, run metadata (time window, totals), the
+processing summary (<code>process_summary_inf</code>), the deflation
+summary (<code>deflate_summary_inf</code>), auxiliary file changes
 (<code>aux_changes_inf</code>), a summary table by error/info type, a
 country-level breakdown of errors, inventory verification counts
 (<code>inv_update_inf</code>), skipped-survey details
 (<code>skipped_svys_data</code>/<code>skipped_svys_metadata</code>), and
 the list of surveys that failed processing (<code>null_svys_inf</code>).
-Sections are silently omitted when their logmeta entry is absent.</p>
+Sections are silently omitted when their logmeta entry is absent. Exact
+DLW completion entries are preferred; older logs use fallback confined
+to the selected latest attempt. Dedicated DLW sections separate invalid
+classifications from execution failures, and DLW discriminators are
+excluded from generic type/country sections to prevent stale history and
+duplicate reporting.</p>
 <p><strong>Scope</strong>: <code><a href="../reference/log_report.html">log_report()</a></code> parses entries
 written under the <code>"pipdata_log"</code> name by
 <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>,
@@ -340,6 +363,11 @@ written under the <code>"pipdata_log"</code> name by
 report is stage-aware and shows DLW acquisition/validation outcomes
 together with cleaning and deflation results. Auxiliary refresh logging
 from <code>pipaux</code> remains outside this report.</p>
+<p><code><a href="../reference/pd_change_report.html">pd_change_report()</a></code> applies the same completed-validation
+input guard before building its read-only dependency plan. This protects
+both execution and report planning when a legacy
+<code>gmd_valid_inv</code> still contains blank/unavailable retry rows
+from an earlier pipeline version.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

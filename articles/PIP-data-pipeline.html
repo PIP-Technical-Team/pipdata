@@ -78,11 +78,10 @@ Datalibweb, and write access to PIP storage.</p>
 companion article <a href="Validating-Data.html">Validating Data</a>;
 for survey cleaning, deflation, and logging, see <a href="Processing-Data.html">Processing Data functions</a>.</p>
 <div class="section level2">
-<h2 id="the-three-wrapper-functions">The three wrapper functions<a class="anchor" aria-label="anchor" href="#the-three-wrapper-functions"></a>
+<h2 id="current-pipeline-entry-points">Current pipeline entry points<a class="anchor" aria-label="anchor" href="#current-pipeline-entry-points"></a>
 </h2>
-<p>The pipeline runs as three sequential stages, each owned by a
-dedicated wrapper function in a separate package and (typically) a
-different developer:</p>
+<p>The pipeline currently runs through three explicit entry points, each
+owned by a package and (typically) a different developer:</p>
 <table class="table">
 <colgroup>
 <col width="13%">
@@ -128,6 +127,9 @@ metadata, save versioned outputs, update the PIP master inventory</td>
 is not detailed in this {pipdata} article beyond this table — it is a
 prerequisite step that should run before Step 2 so that the latest
 auxiliary data is available.</p>
+<p>There is no current top-level <code>run_pipeline()</code> API.
+<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> is the supported DLW entry point; a
+broader orchestrator remains future direction.</p>
 <p><strong>Important</strong>: <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> cleans and
 attaches metadata to survey data — it does <strong>not</strong> deflate
 welfare. Deflation is a separate, currently manual step; see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
@@ -162,7 +164,7 @@ output, read from:</p>
 <h3 id="acquire-and-validate-dlw-data-pipdata">2. Acquire and validate DLW data (pipdata)<a class="anchor" aria-label="anchor" href="#acquire-and-validate-dlw-data-pipdata"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">dlw_result</span> <span class="op">&lt;-</span> <span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process</a></span><span class="op">(</span></span>
 <span>  inv_gmd_list      <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
 <span>  get_dlw_data      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  validate_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -170,22 +172,40 @@ output, read from:</p>
 <span>  release           <span class="op">=</span> <span class="va">release</span>,</span>
 <span>  identity          <span class="op">=</span> <span class="va">identity</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>This downloads new/updated GMD survey files via
-<code><a href="https://worldbank.github.io/dlw/reference/dlw_get_gmd.html" class="external-link">dlw::dlw_get_gmd()</a></code> and validates them, producing an updated
-validated inventory (<code>gmd_valid_inv</code>) consumed by Step 3. See
-<a href="Validating-Data.html">Validating Data</a> for the internal
-mechanics.</p>
+<p>The wrapper requires explicit nonempty <code>release</code> and
+<code>identity</code> values. Their formal <code>NULL</code> defaults
+are missing-required-value sentinels, not operational defaults;
+<code>identity</code> is restricted to <code>"PROD"</code>,
+<code>"INT"</code>, or <code>"TEST"</code>.</p>
+<p>This acquires five active modules and validates all seven recognized
+module mappings, producing completed validation inventory
+(<code>gmd_valid_inv</code>) for Step 3. The assigned result is a plain
+aggregate. Inspect <code>dlw_result$outcome</code>
+(<code>success</code>, <code>partial</code>, <code>failed</code>, or
+<code>no_work</code>) before deciding whether a script should continue.
+Disabled or dependency-blocked nested stages use
+<code>not_run</code>.</p>
+<p>Runtime stage failures after setup are represented in nested compact
+failure tables and can yield partial or failed results. Invalid
+arguments, release setup/precondition errors, explicit cancellation, and
+interrupts still escape. Under automation a missing acquisition
+inventory returns failure rather than opening a menu; validate-only
+execution never prompts. See <a href="Validating-Data.html">Validating
+Data</a> for the exact result and persistence contracts.</p>
 </div>
 <div class="section level3">
 <h3 id="clean-surveys-and-build-metadata-pipdata">3. Clean surveys and build metadata (pipdata)<a class="anchor" aria-label="anchor" href="#clean-surveys-and-build-metadata-pipdata"></a>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_process_data.html">pd_process_data</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> loads the validated inventory
-internally (via <code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>) when
-<code>inv</code> is not supplied, then iterates it, merges auxiliary
-measures, cleans each survey, attaches metadata, saves versioned
-outputs, and returns the updated PIP master inventory. See <a href="Processing-Data.html">Processing Data functions</a> for the
+<p><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> loads the completed validation
+inventory internally (via <code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>)
+when <code>inv</code> is not supplied. It accepts current
+<code>valid</code> and <code>invalid</code> available rows under
+existing cleaning policy, filters recognized legacy blank/unavailable
+retry rows before planning, then iterates, merges auxiliary measures,
+cleans each survey, attaches metadata, saves versioned outputs, and
+returns the updated PIP master inventory. See <a href="Processing-Data.html">Processing Data functions</a> for the
 internal mechanics.</p>
 </div>
 <div class="section level3">
@@ -196,10 +216,12 @@ internal mechanics.</p>
 <span>  path      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"log_reports"</span>, <span class="st">"log_report.md"</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/log_report.html">log_report()</a></code> loads the <code>"pipdata_log"</code>
-internally (via <code>pipfun::log_filter(name = "pipdata_log")</code>)
+<p><code><a href="../reference/log_report.html">log_report()</a></code> loads <code>"pipdata_log"</code> internally
 and summarizes DLW acquisition, DLW validation, survey cleaning,
-deflation, and their structured failures.</p>
+deflation, and structured failures. DLW stage sections use each latest
+attempt and exact completion metadata, with confined fallback for older
+logs. DLW discriminators are excluded from generic type and country
+tables to avoid double counting.</p>
 </div>
 </div>
 <div class="section level2">
@@ -215,8 +237,11 @@ the auxiliary-data lifecycle: dependency resolution, GitHub/Y-drive
 sync, and change detection.</li>
 <li>
 <strong><code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code></strong> (pipdata) is
-responsible only for getting raw survey data into a validated state — it
-does not clean or transform welfare data.</li>
+responsible only for getting raw survey data into a validated state. It
+can continue validation after an acquisition failure when a trustworthy
+durable inventory remains, routes a custom inventory ID through both
+stages, and records summary/checkpoint facts. It does not clean or
+transform welfare data.</li>
 <li>
 <strong><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code></strong> (pipdata) consumes
 the validated inventory and the refreshed auxiliary data, and is
@@ -273,7 +298,9 @@ details on both modes.</p>
 <code>"pipdata_log"</code> entries from
 <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> and <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>.
 It adds stage-aware warnings for DLW-only, pipeline-only, incomplete,
-and DLW no-op runs. Auxiliary refresh logging from <code>pipaux</code>
+and DLW no-op runs. Acquisition and validation are segmented
+independently at their latest attempt boundaries; dedicated DLW sections
+own those records. Auxiliary refresh logging from <code>pipaux</code>
 remains a separate follow-on scope.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -6,11 +6,11 @@ The three top-level wrapper functions that make up the pipeline (see the
 “Pipeline” articles for the narrative walkthrough).
 
 - [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
-  : Process DLW Data
+  : Acquire and validate DLW data
 - [`pipdata_get_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_get_gmd.md)
-  : Retrieve and Save GMD Catalog Datasets to a Local Directory
+  : Acquire GMD catalog datasets and reconcile the local inventory
 - [`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)
-  : Validate GMD data and generate inventory report data
+  : Validate available GMD data and commit completed validation state
 - [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
   : Process DLW inventory and create cleaned pip data
 
@@ -87,18 +87,17 @@ validation, survey cleaning, and deflation with stage-aware warnings.
   : Clean micro data from Datalibweb original file
 
 - [`dlw_gmd_list()`](https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_list.md)
-  : Retrieve a List of GMD datasets from the Server and save it in the
-  local dlw inventory folder.
+  : Retrieve the GMD server catalog and initialize an acquisition
+  inventory
 
 - [`dlw_gmd_match()`](https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_match.md)
-  : Get the list of current GMD datasets that match the local inventory
+  : Match available local GMD rows to the current server catalog
 
 - [`dlw_gmd_new()`](https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_new.md)
-  : Compare the local GMD dataset list with the server version to
-  identify new entries.
+  : Compare the local GMD inventory with the current server catalog
 
 - [`dlw_gmd_unvalidated()`](https://pip-technical-team.github.io/pipdata/reference/dlw_gmd_unvalidated.md)
-  : Get un-validated datasets list
+  : Get current available GMD datasets without completed validation
 
 - [`dlw_validation_engine()`](https://pip-technical-team.github.io/pipdata/reference/dlw_validation_engine.md)
   : DLW Validation Engine

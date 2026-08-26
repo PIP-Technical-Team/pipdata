@@ -1,6 +1,13 @@
-# Get un-validated datasets list
+# Get current available GMD datasets without completed validation
 
-Get un-validated datasets list
+Reconciles the default completed validation inventory to current
+available acquisition `survey_id`/`Checksum` keys and returns keys
+absent from completed state. Completed state means
+`data_available = "Yes"` with status `"valid"` or `"invalid"`;
+recognized legacy blank/`"No"` retry rows are not completed.
+Consequently execution failures are returned again because they have no
+completed inventory row. All seven validation module mappings may be
+present.
 
 ## Usage
 
@@ -12,17 +19,20 @@ dlw_gmd_unvalidated(check_missing = TRUE)
 
 - check_missing:
 
-  Logical. If TRUE, includes missing datasets from validation inventory
-  list.
+  Logical scalar retained for API compatibility. It is validated, while
+  retry selection is now determined by absence from the completed
+  validation inventory.
 
 ## Value
 
-A data.table with new or unmatched local GMD datasets.
+Invisibly, a `data.table` of current available acquisition rows that
+lack a completed validation row.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 df <- dlw_gmd_unvalidated()
 head(df)
 } # }

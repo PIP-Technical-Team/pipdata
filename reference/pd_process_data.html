@@ -75,9 +75,12 @@ pip inventory with the new versions recorded.</p>
 
 
 <dl><dt id="arg-inv">inv<a class="anchor" aria-label="anchor" href="#arg-inv"></a></dt>
-<dd><p>A data.frame or tibble containing the DLW inventory. Default
-<code>NULL</code>, in which case it is loaded internally via
-<code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>.</p></dd>
+<dd><p>A data.frame or tibble containing the completed DLW validation
+inventory. Default <code>NULL</code>, in which case it is loaded internally via
+<code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>. Before planning or row lookup, input is
+normalized to <code>data_available = "Yes"</code> rows whose status is <code>"valid"</code> or
+<code>"invalid"</code>. Recognized legacy blank/<code>"No"</code> retry rows are excluded;
+malformed completed rows abort rather than entering cleaning.</p></dd>
 
 
 <dt id="arg-aux-measures">aux_measures<a class="anchor" aria-label="anchor" href="#arg-aux-measures"></a></dt>
@@ -128,7 +131,11 @@ versions for cleaned data and metadata.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Logging</strong>: This function writes <code>process_summary_inf</code> and <code>null_svys_inf</code> entries
+    <p><strong>Validation handoff</strong>: Both valid and invalid completed validation rows keep
+their existing cleaning eligibility. Execution-failure control rows are not
+eligible. The guard is applied here and again during dependency execution so
+legacy inventories cannot create cleaning, metadata, or deflation actions.</p>
+<p><strong>Logging</strong>: This function writes <code>process_summary_inf</code> and <code>null_svys_inf</code> entries
 to the <code>"pipdata_log"</code>, summarizing totals and failed surveys. Additional entries for
 auxiliary file changes and inventory verification are emitted by <code><a href="valid_dlw_load.html">valid_dlw_load()</a></code>
 and <code><a href="build_pip_inventory.html">build_pip_inventory()</a></code> respectively.</p>

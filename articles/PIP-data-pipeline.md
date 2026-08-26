@@ -13,11 +13,10 @@ Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md);
 for survey cleaning, deflation, and logging, see [Processing Data
 functions](https://pip-technical-team.github.io/pipdata/articles/Processing-Data.md).
 
-## The three wrapper functions
+## Current pipeline entry points
 
-The pipeline runs as three sequential stages, each owned by a dedicated
-wrapper function in a separate package and (typically) a different
-developer:
+The pipeline currently runs through three explicit entry points, each
+owned by a package and (typically) a different developer:
 
 | Order | Wrapper | Package | Developer scope | Purpose |
 |:--:|----|----|----|----|
@@ -29,6 +28,11 @@ developer:
 detailed in this {pipdata} article beyond this table — it is a
 prerequisite step that should run before Step 2 so that the latest
 auxiliary data is available.
+
+There is no current top-level `run_pipeline()` API.
+[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
+is the supported DLW entry point; a broader orchestrator remains future
+direction.
 
 **Important**:
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
@@ -67,7 +71,7 @@ pipaux::update_aux_measures()
 
 ``` r
 
-pipdata::pipdata_dlw_process(
+dlw_result <- pipdata::pipdata_dlw_process(
   inv_gmd_list      = "dlw_gmd_inv",
   get_dlw_data      = TRUE,
   validate_dlw_data = TRUE,
@@ -77,12 +81,26 @@ pipdata::pipdata_dlw_process(
 )
 ```
 
-This downloads new/updated GMD survey files via
-[`dlw::dlw_get_gmd()`](https://worldbank.github.io/dlw/reference/dlw_get_gmd.html)
-and validates them, producing an updated validated inventory
-(`gmd_valid_inv`) consumed by Step 3. See [Validating
+The wrapper requires explicit nonempty `release` and `identity` values.
+Their formal `NULL` defaults are missing-required-value sentinels, not
+operational defaults; `identity` is restricted to `"PROD"`, `"INT"`, or
+`"TEST"`.
+
+This acquires five active modules and validates all seven recognized
+module mappings, producing completed validation inventory
+(`gmd_valid_inv`) for Step 3. The assigned result is a plain aggregate.
+Inspect `dlw_result$outcome` (`success`, `partial`, `failed`, or
+`no_work`) before deciding whether a script should continue. Disabled or
+dependency-blocked nested stages use `not_run`.
+
+Runtime stage failures after setup are represented in nested compact
+failure tables and can yield partial or failed results. Invalid
+arguments, release setup/precondition errors, explicit cancellation, and
+interrupts still escape. Under automation a missing acquisition
+inventory returns failure rather than opening a menu; validate-only
+execution never prompts. See [Validating
 Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md)
-for the internal mechanics.
+for the exact result and persistence contracts.
 
 ### 3. Clean surveys and build metadata (pipdata)
 
@@ -92,11 +110,14 @@ new_pip_inv <- pd_process_data()
 ```
 
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
-loads the validated inventory internally (via
+loads the completed validation inventory internally (via
 [`pipload::load_gmd_valid_inv()`](https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html))
-when `inv` is not supplied, then iterates it, merges auxiliary measures,
-cleans each survey, attaches metadata, saves versioned outputs, and
-returns the updated PIP master inventory. See [Processing Data
+when `inv` is not supplied. It accepts current `valid` and `invalid`
+available rows under existing cleaning policy, filters recognized legacy
+blank/unavailable retry rows before planning, then iterates, merges
+auxiliary measures, cleans each survey, attaches metadata, saves
+versioned outputs, and returns the updated PIP master inventory. See
+[Processing Data
 functions](https://pip-technical-team.github.io/pipdata/articles/Processing-Data.md)
 for the internal mechanics.
 
@@ -111,10 +132,11 @@ log_report(
 ```
 
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
-loads the `"pipdata_log"` internally (via
-`pipfun::log_filter(name = "pipdata_log")`) and summarizes DLW
-acquisition, DLW validation, survey cleaning, deflation, and their
-structured failures.
+loads `"pipdata_log"` internally and summarizes DLW acquisition, DLW
+validation, survey cleaning, deflation, and structured failures. DLW
+stage sections use each latest attempt and exact completion metadata,
+with confined fallback for older logs. DLW discriminators are excluded
+from generic type and country tables to avoid double counting.
 
 ## Architecture: why three wrappers?
 
@@ -127,7 +149,10 @@ and logging:
   detection.
 - **[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)**
   (pipdata) is responsible only for getting raw survey data into a
-  validated state — it does not clean or transform welfare data.
+  validated state. It can continue validation after an acquisition
+  failure when a trustworthy durable inventory remains, routes a custom
+  inventory ID through both stages, and records summary/checkpoint
+  facts. It does not clean or transform welfare data.
 - **[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)**
   (pipdata) consumes the validated inventory and the refreshed auxiliary
   data, and is responsible for the cleaning/metadata transformation.
@@ -202,5 +227,7 @@ summarizes the shared `"pipdata_log"` entries from
 and
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md).
 It adds stage-aware warnings for DLW-only, pipeline-only, incomplete,
-and DLW no-op runs. Auxiliary refresh logging from `pipaux` remains a
+and DLW no-op runs. Acquisition and validation are segmented
+independently at their latest attempt boundaries; dedicated DLW sections
+own those records. Auxiliary refresh logging from `pipaux` remains a
 separate follow-on scope.

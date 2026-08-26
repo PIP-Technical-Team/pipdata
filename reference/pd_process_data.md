@@ -25,9 +25,13 @@ pd_process_data(
 
 - inv:
 
-  A data.frame or tibble containing the DLW inventory. Default `NULL`,
-  in which case it is loaded internally via
+  A data.frame or tibble containing the completed DLW validation
+  inventory. Default `NULL`, in which case it is loaded internally via
   [`pipload::load_gmd_valid_inv()`](https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html).
+  Before planning or row lookup, input is normalized to
+  `data_available = "Yes"` rows whose status is `"valid"` or
+  `"invalid"`. Recognized legacy blank/`"No"` retry rows are excluded;
+  malformed completed rows abort rather than entering cleaning.
 
 - aux_measures:
 
@@ -77,6 +81,12 @@ A data.frame: updated pip inventory (`new_pip_inv`) with new versions
 for cleaned data and metadata.
 
 ## Details
+
+**Validation handoff**: Both valid and invalid completed validation rows
+keep their existing cleaning eligibility. Execution-failure control rows
+are not eligible. The guard is applied here and again during dependency
+execution so legacy inventories cannot create cleaning, metadata, or
+deflation actions.
 
 **Logging**: This function writes `process_summary_inf` and
 `null_svys_inf` entries to the `"pipdata_log"`, summarizing totals and

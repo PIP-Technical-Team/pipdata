@@ -68,13 +68,12 @@
 
     
     
-<p>This article explains the internal mechanics of
-<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> — the second of the three pipeline
-wrappers, responsible for downloading new survey files from Datalibweb
-(DLW) and validating them before they are handed off to survey cleaning.
-Code in this article is illustrative and does not execute when the
-article is built — running it requires a configured working release and
-network access to Datalibweb.</p>
+<p>This article explains the current supported DLW entry point,
+<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>, which acquires survey files from
+Datalibweb (DLW) and validates them before survey cleaning. Code is
+illustrative and does not execute when the article is built; running it
+requires a configured working release and network and storage
+access.</p>
 <p>For the end-to-end orchestration and how this wrapper fits with the
 other two, see <a href="PIP-data-pipeline.html">PIP Data Pipeline:
 Orchestration Overview</a>. For what happens after validation (survey
@@ -82,8 +81,8 @@ cleaning, deflation, logging), see <a href="Processing-Data.html">Processing Dat
 <div class="section level2">
 <h2 id="what-pipdata_dlw_process-does">What <code>pipdata_dlw_process()</code> does<a class="anchor" aria-label="anchor" href="#what-pipdata_dlw_process-does"></a>
 </h2>
-<p><code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> is a thin orchestrator over two
-delegate functions, run in order:</p>
+<p><code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> is an explicit orchestrator over
+two independently callable stages, run in order:</p>
 <table class="table">
 <colgroup>
 <col width="26%">
@@ -109,12 +108,16 @@ inventory</td>
 </tr>
 </tbody>
 </table>
-<p>Before either delegate runs, <code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>
-ensures a working release is configured and that a local GMD catalog
-list exists (downloading it interactively via
-<code><a href="../reference/dlw_gmd_list.html">dlw_gmd_list()</a></code> if missing).</p>
+<p>The same <code>inv_gmd_list</code> is routed through bootstrap,
+acquisition, and validation, including when it is a custom artifact ID.
+The wrapper configures the working release and records a summary and
+checkpoint after the delegates. <code>release</code> and
+<code>identity</code> are required. Their formal <code>NULL</code>
+defaults are explicit missing-value sentinels so an omitted value aborts
+before release setup; <code>identity</code> must be <code>"PROD"</code>,
+<code>"INT"</code>, or <code>"TEST"</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">dlw_result</span> <span class="op">&lt;-</span> <span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process</a></span><span class="op">(</span></span>
 <span>  inv_gmd_list      <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
 <span>  get_dlw_data      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  validate_dlw_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -122,38 +125,181 @@ list exists (downloading it interactively via
 <span>  release           <span class="op">=</span> <span class="st">"20260401"</span>,</span>
 <span>  identity          <span class="op">=</span> <span class="st">"TEST"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Both <code>get_dlw_data</code> and <code>validate_dlw_data</code> can
-be set to <code>FALSE</code> independently — for example, to re-run only
-validation without re-downloading data.</p>
+<p>Both stage flags can be set independently. A validate-only call never
+displays a menu; a missing acquisition inventory is returned as a failed
+validation result. A noninteractive call that requests acquisition also
+returns a failed acquisition result rather than prompting. Only an
+interactive acquisition call can offer the Download/Abort menu.</p>
+<p>This wrapper remains the supported DLW lifecycle entry point. A
+broader <code>run_pipeline()</code> orchestrator is future direction,
+not a current function to call.</p>
+</div>
+<div class="section level2">
+<h2 id="returned-results-and-errors">Returned results and errors<a class="anchor" aria-label="anchor" href="#returned-results-and-errors"></a>
+</h2>
+<p>Normal unassigned calls remain quiet, but all three DLW functions now
+return plain, unclassed lists invisibly. Acquisition and validation
+results have these names in this order:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stage"</span>, <span class="st">"outcome"</span>, <span class="st">"inventory"</span>, <span class="st">"summary"</span>, <span class="st">"failures"</span>, <span class="st">"artifacts"</span><span class="op">)</span></span></code></pre></div>
+<p>Their outcomes have precise meanings:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>Outcome</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>success</code></td>
+<td>At least one worker completed, required commits were verified, and
+no execution/workflow failure occurred</td>
+</tr>
+<tr class="even">
+<td><code>partial</code></td>
+<td>Useful work completed and required commits were verified, but a
+worker or non-commit workflow failure occurred</td>
+</tr>
+<tr class="odd">
+<td><code>failed</code></td>
+<td>A required commit was not verified, discovery failed, or no worker
+completed while failures occurred</td>
+</tr>
+<tr class="even">
+<td><code>no_work</code></td>
+<td>Trustworthy discovery selected no workers</td>
+</tr>
+</tbody>
+</table>
+<p>The returned <code>inventory</code> is trustworthy durable state (or
+<code>NULL</code> when absent or unknown). <code>failures</code> is a
+compact table with <code>survey_id</code>, <code>phase</code>,
+<code>error_type</code>, and <code>condition_msg</code>; it does not
+retain R conditions or survey data. Artifact facts expose whether each
+write was attempted, successful, trustworthy, skipped, or reconciled and
+include its version ID.</p>
+<p>For artifact facts, <code>success = NA</code> means no write was
+needed or permitted and is verified when
+<code>trustworthy = TRUE</code>. In contrast,
+<code>success = FALSE</code> means a required write was not reached or
+was not verified and cannot satisfy a successful stage outcome. This
+distinction lets a retry succeed when its report is already durably
+current and only the inventory commit needs recovery.</p>
+<p>The wrapper result has <code>stage</code>, <code>outcome</code>,
+<code>acquisition</code>, <code>validation</code>,
+<code>failures</code>, and <code>checkpoint</code>. A disabled or
+dependency-blocked nested stage has <code>outcome = "not_run"</code> and
+<code>summary$reason</code> of <code>"disabled"</code> or
+<code>"dependency_failed"</code>. Summary-log and checkpoint diagnostics
+are retained in <code>checkpoint</code>; checkpoint failure does not
+change the business outcome.</p>
+<p>Invalid arguments, working-release setup/precondition errors,
+explicit user cancellation, and interrupts still escape. Runtime folder,
+catalog, artifact, worker, logging, and persistence errors after setup
+return inspectable failed or partial results. Callers that need
+conditional continuation should assign and inspect the result.</p>
 </div>
 <div class="section level2">
 <h2 id="step-1-acquiring-new-datasets-pipdata_get_gmd">Step 1: Acquiring new datasets — <code>pipdata_get_gmd()</code><a class="anchor" aria-label="anchor" href="#step-1-acquiring-new-datasets-pipdata_get_gmd"></a>
 </h2>
-<p><code><a href="../reference/pipdata_get_gmd.html">pipdata_get_gmd()</a></code> identifies datasets that are new or
-changed in the GMD catalog and downloads them:</p>
+<p><code><a href="../reference/pipdata_get_gmd.html">pipdata_get_gmd()</a></code> identifies current datasets that are
+new, changed, or eligible for retry and downloads them:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Identify new datasets</strong> —
-<code>dlw_gmd_new(check_missing, update_inventory = TRUE)</code>
-compares the local inventory against the GMD catalog and returns the
-rows that need downloading. If nothing is new, the function records a
-typed no-new-data entry and returns invisibly.</li>
+<strong>Load and validate current state</strong>: both the local
+inventory and server catalog must have one checksum for each normalized
+filename.</li>
 <li>
-<strong>Filter by module</strong> — only <code>"ALL"</code>,
-<code>"GROUP"</code>, <code>"HIST"</code>, <code>"GPWG"</code>, and
-<code>"BIN"</code> modules are downloaded.</li>
+<strong>Select active download modules</strong>: acquisition
+downloads only <code>"ALL"</code>, <code>"GROUP"</code>,
+<code>"HIST"</code>, <code>"GPWG"</code>, and <code>"BIN"</code>.
+<code>"ASPIRE"</code> and <code>"L"</code> remain recognized
+catalog/validation modules but are not newly downloaded here.</li>
 <li>
-<strong>Download per survey</strong> — for each row,
-<code><a href="https://worldbank.github.io/dlw/reference/dlw_get_gmd.html" class="external-link">dlw::dlw_get_gmd()</a></code> downloads the file (identified by
-country, year, survey acronym, module, and
-<code>vermast</code>/<code>veralt</code> version markers) to the local
-DLW data folder. Each download is wrapped in <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>:
-failures are logged automatically with typed <code>logmeta</code> and
-the row is marked <code>data_available = "No"</code> rather than
-aborting the whole run; a success is marked <code>"Yes"</code>.</li>
+<strong>Force the selected file</strong>: each worker passes the
+exact catalog <code>FileName</code> and
+<code>local_overwrite = TRUE</code> to <code><a href="https://worldbank.github.io/dlw/reference/dlw_get_gmd.html" class="external-link">dlw::dlw_get_gmd()</a></code>.
+Cached-only or ambiguous multi-file responses are failures.</li>
+<li>
+<strong>Isolate failures</strong>: one failed survey does not stop
+siblings. Successful rows become <code>data_available = "Yes"</code>;
+failures remain <code>"No"</code>.</li>
+<li>
+<strong>Reconcile the full inventory</strong>: current server rows
+replace stale rows and checksums, catalog-deleted rows are removed, and
+prior successful <code>"ASPIRE"</code>/<code>"L"</code> rows survive
+only while current. This happens even when no worker is selected.</li>
 </ol>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_get_gmd.html">pipdata_get_gmd</a></span><span class="op">(</span></span>
+<p>With <code>check_missing = TRUE</code>, unresolved current
+five-module rows are selected again because they remain
+<code>"No"</code>. The retry model is driven by durable inventory state.
+A completed attempt writes the intended inventory once. If a write
+throws or returns an invalid result, the code reloads active storage and
+compares canonical intended and prior content; it never assumes
+rollback.</p>
+<p>The exact acquisition inventory schema is:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="66%">
+</colgroup>
+<thead><tr class="header">
+<th>Column</th>
+<th>Persisted rule</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>Country</code></td>
+<td>Nonempty character</td>
+</tr>
+<tr class="even">
+<td><code>Year</code></td>
+<td>Nonmissing whole-number integer</td>
+</tr>
+<tr class="odd">
+<td>
+<code>Survey_acronym</code>, <code>Vermast</code>,
+<code>Veralt</code>, <code>Collection</code>
+</td>
+<td>Nonempty character</td>
+</tr>
+<tr class="even">
+<td><code>Module</code></td>
+<td>
+<code>GPWG</code>, <code>GROUP</code>, <code>BIN</code>,
+<code>HIST</code>, <code>ALL</code>, <code>ASPIRE</code>, or
+<code>L</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>FileName</code></td>
+<td>Nonempty <code>.dta</code> filename, unique after basename/case
+normalization</td>
+</tr>
+<tr class="even">
+<td><code>Checksum</code></td>
+<td>Nonempty character; exactly one per normalized filename</td>
+</tr>
+<tr class="odd">
+<td><code>Ext</code></td>
+<td>Character <code>dta</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>data_available</code></td>
+<td>Character <code>Yes</code> or <code>No</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Additional server columns are retained in deterministic name order. A
+normalized zero-row server catalog is a <code>catalog_load</code>
+failure and cannot erase durable acquisition state.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">acquisition_result</span> <span class="op">&lt;-</span> <span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_get_gmd.html">pipdata_get_gmd</a></span><span class="op">(</span></span>
 <span>  inv_gmd_list  <span class="op">=</span> <span class="st">"dlw_gmd_inv"</span>,</span>
 <span>  check_missing <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -162,51 +308,147 @@ aborting the whole run; a success is marked <code>"Yes"</code>.</li>
 <h2 id="step-2-validating-downloaded-datasets-pipdata_validate_gmd">Step 2: Validating downloaded datasets —
 <code>pipdata_validate_gmd()</code><a class="anchor" aria-label="anchor" href="#step-2-validating-downloaded-datasets-pipdata_validate_gmd"></a>
 </h2>
-<p><code><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code> runs after acquisition and
-validates the local datasets that have not yet been validated:</p>
+<p><code><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code> validates current available
+acquisition keys that are absent from completed validation state:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Identify unvalidated local datasets</strong> —
-<code><a href="../reference/dlw_gmd_unvalidated.html">dlw_gmd_unvalidated()</a></code> scans the local DLW data folder for
-datasets not yet recorded in the validated inventory.</li>
+<strong>Reconcile authoritative keys</strong>: current
+<code>data_available = "Yes"</code> acquisition
+<code>survey_id</code>/<code>Checksum</code> pairs determine retained
+validation rows. Deleted, superseded, and unavailable acquisition keys
+are pruned, including on a zero-worker call.</li>
 <li>
-<strong>Load the existing validated inventory</strong> — via
-<code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code> (<code>gmd_valid_inv</code>),
-if one already exists.</li>
+<strong>Map all validation modules</strong>: the one-survey worker
+calls <code><a href="../reference/dlw_validation_engine.html">dlw_validation_engine()</a></code> with mappings for
+<code>"ALL"</code>, <code>"GROUP"</code>, <code>"HIST"</code>,
+<code>"GPWG"</code>, <code>"BIN"</code>, <code>"ASPIRE"</code>, and
+<code>"L"</code> (or the skip mapping for an unrecognized module).</li>
 <li>
-<strong>Diff against the existing inventory</strong> —
-<code><a href="../reference/gmd_to_validate.html">gmd_to_validate()</a></code> identifies datasets that still need
-validation; <code><a href="../reference/gmd_validated.html">gmd_validated()</a></code> identifies datasets already
-validated in a prior run.</li>
+<strong>Separate classification from execution</strong>: an
+engine-completed result is <code>valid</code> or <code>invalid</code>.
+Load, artifact-info, engine, or inventory-row errors are execution
+failures. Only valid/invalid rows enter <code>gmd_valid_inv</code>;
+failed IDs have no completed row and are selected again on the next
+call.</li>
 <li>
-<strong>Dispatch validation by module</strong> — each dataset is
-validated with a module-specific function:
-<code><a href="../reference/dlw_validation.html">dlw_validation_gpwg()</a></code>, <code><a href="../reference/dlw_validation.html">dlw_validation_group()</a></code>,
-<code><a href="../reference/dlw_validation.html">dlw_validation_bin()</a></code>, <code><a href="../reference/dlw_validation.html">dlw_validation_hist()</a></code>,
-<code><a href="../reference/dlw_validation.html">dlw_validation_all()</a></code>, <code><a href="../reference/dlw_validation.html">dlw_validation_aspire()</a></code>,
-<code><a href="../reference/dlw_validation.html">dlw_validation_l()</a></code>, or <code><a href="../reference/dlw_validation.html">dlw_validation_skip()</a></code>
-as the default for unrecognized modules.</li>
+<strong>Preserve version history</strong>: the next successful
+<code>pipeline_version</code> is <code>1L</code> or one plus that
+survey’s maximum across persisted inventory history, calculated before
+stale-checksum pruning. Failed retries consume no version.</li>
 <li>
-<strong>Write the updated validated inventory</strong> — the result
-becomes the new <code>gmd_valid_inv</code>, which
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> consumes as its starting inventory (see
-<a href="Processing-Data.html">Processing Data functions</a>).</li>
+<strong>Keep report and inventory consistent</strong>:
+<code>validation_report$table_name</code> must exactly cover completed
+inventory IDs. Orphan rows are removed, missing diagnostics block the
+run, and exact normalized report rows are deduplicated.</li>
+<li>
+<strong>Commit report first</strong>: completed worker output is
+assembled in memory; <code>validation_report</code> is verified before
+<code>gmd_valid_inv</code> is written. Every uncertain write is
+reconciled against reloaded durable content.</li>
 </ol>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>Engine results must contain at least one row and nonmissing, nonempty
+character <code>type</code> values in <code>success</code>,
+<code>warning</code>, or <code>error</code>; those values must agree
+with the extracted report rows. A missing report after engine completion
+is <code>report_unavailable</code>: no inventory or report row is
+persisted for that survey, so the same acquisition key retries
+automatically on the next call.</p>
+<p>The exact completed validation inventory schema is:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="66%">
+</colgroup>
+<thead><tr class="header">
+<th>Column</th>
+<th>Persisted rule</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>survey_id</code></td>
+<td>Nonempty character; unique completed key</td>
+</tr>
+<tr class="even">
+<td><code>pipeline_version</code></td>
+<td>Positive integer</td>
+</tr>
+<tr class="odd">
+<td>
+<code>latest_version_id</code>, <code>content_hash</code>,
+<code>file_path</code>, <code>Checksum</code>
+</td>
+<td>Nonempty character</td>
+</tr>
+<tr class="even">
+<td><code>status</code></td>
+<td>Character <code>valid</code> or <code>invalid</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>data_available</code></td>
+<td>Character <code>Yes</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>date_validated</code></td>
+<td>Nonmissing Date/POSIX time normalized to UTC</td>
+</tr>
+<tr class="odd">
+<td>
+<code>country_code</code>, <code>survey_acronym</code>,
+<code>vermast</code>, <code>veralt</code>
+</td>
+<td>Nonempty parsed character identity</td>
+</tr>
+<tr class="even">
+<td><code>surveyid_year</code></td>
+<td>Nonnegative integer</td>
+</tr>
+<tr class="odd">
+<td>
+<code>collection</code>, <code>module</code>, <code>tool</code>
+</td>
+<td>Nonempty parsed character identity</td>
+</tr>
+</tbody>
+</table>
+<p>The exact required report columns are <code>table_name</code>,
+<code>message</code>, <code>type</code>, <code>description</code>,
+<code>module_type</code>, <code>vermast</code>, <code>veralt</code>,
+<code>country_code</code>, and <code>rf_year</code>, normalized to
+character. Optional columns are additive only when same-name columns
+have matching type and coercion-relevant attributes, including class,
+factor levels/order, units, and time zone. Additive raw columns are
+rejected because raw vectors cannot represent typed missing values.
+Canonical row ordering compares the four primary keys
+(<code>table_name</code>, <code>type</code>, <code>message</code>,
+<code>description</code>) and then every remaining persisted column.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">validation_result</span> <span class="op">&lt;-</span> <span class="fu">pipdata</span><span class="fu">::</span><span class="fu"><a href="../reference/pipdata_validate_gmd.html">pipdata_validate_gmd</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>The exported validator uses <code>"dlw_gmd_inv"</code>. The wrapper
+uses the same internal validation path with its requested custom
+inventory ID.</p>
+<p><code>gmd_valid_inv</code> is a completed-data inventory, not a retry
+ledger. Downstream cleaning continues to admit completed
+<code>valid</code> and <code>invalid</code> rows under existing policy,
+while entry guards remove recognized legacy blank/<code>"No"</code>
+execution control rows before cleaning and dependency planning.</p>
 </div>
 <div class="section level2">
 <h2 id="logging-scope">Logging scope<a class="anchor" aria-label="anchor" href="#logging-scope"></a>
 </h2>
-<p>Both delegates write unconditional typed entries to the shared
-<code>"pipdata_log"</code> log. Acquisition uses
-<code>dlw_acquisition_inf</code>; validation uses
-<code>dlw_validation_inf</code>. The enclosing
-<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> wrapper writes a
-<code>dlw_summary_inf</code> stage marker and saves a DLW checkpoint
-automatically. <code><a href="../reference/log_report.html">log_report()</a></code> consumes these entries and
-presents DLW acquisition failures, validation phases, and stage-aware
-warnings alongside the survey-cleaning sections.</p>
+<p>Both stages write unconditional typed entries to
+<code>"pipdata_log"</code>. Acquisition and validation each emit an
+attempt boundary and exact completion metadata; validation counts valid,
+invalid, and execution-failed surveys separately. The wrapper derives
+its aggregate summary from returned stage facts rather than parsing the
+log and attempts the existing DLW checkpoint afterwards.</p>
+<p><code><a href="../reference/log_report.html">log_report()</a></code> independently selects each stage’s latest
+attempt segment and prefers its exact completion entry. Older logs use
+fallback only within the selected segment. DLW discriminators appear
+only in dedicated DLW sections and are excluded from generic type and
+country tables, preventing stale-attempt leakage and double
+counting.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

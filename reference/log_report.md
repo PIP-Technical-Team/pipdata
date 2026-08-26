@@ -54,10 +54,10 @@ The report contains:
   incomplete runs.
 
 - DLW acquisition summary, including attempted, successful, and failed
-  survey counts and failure details.
+  survey counts and failure details from the latest attempt.
 
-- DLW validation summary, including workflow phase counts and validation
-  or loading failures.
+- DLW validation summary, separating valid, invalid, execution-failed,
+  and workflow outcomes from the latest attempt.
 
 - Processing summary: total, cleaned, and failed counts (from
   `process_summary_inf` log entry).
@@ -80,8 +80,14 @@ The report contains:
 
 - List of surveys that failed processing (`null_svys_inf` entry).
 
-Sections that rely on a specific logmeta entry are silently omitted when
-that entry is absent from the log.
+Acquisition and validation are segmented independently from their latest
+`attempt_start` entry. An exact completion entry is preferred; logs
+produced before completion entries existed use a fallback confined to
+that latest segment. All DLW acquisition, validation, and wrapper
+discriminators are excluded from generic type and country sections, so
+dedicated DLW sections own those entries without historical leakage or
+double counting. Other sections that rely on a specific logmeta entry
+are silently omitted when that entry is absent.
 
 ## See also
 

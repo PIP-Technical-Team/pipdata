@@ -1,7 +1,11 @@
-# Retrieve a List of GMD datasets from the Server and save it in the local dlw inventory folder.
+# Retrieve the GMD server catalog and initialize an acquisition inventory
 
-This function fetches a list of GMD datasets from the server, filters
-them based on Module and file extension.
+Loads the authoritative server catalog for the seven recognized modules
+and `.dta` files, then builds the local acquisition inventory. On a
+first run the inventory contains the five active download modules as
+unavailable; current `"ASPIRE"` and `"L"` rows are retained only when a
+prior inventory already records them as available. Obsolete rows and
+superseded checksums are removed.
 
 ## Usage
 
@@ -13,12 +17,19 @@ dlw_gmd_list(inv_gmd_list = "dlw_gmd_inv")
 
 - inv_gmd_list:
 
-  Character. The name of the inventory file containing the list of GMD
-  datasets.
+  Character scalar. Acquisition inventory artifact ID. This ID controls
+  loading, comparison, and persistence.
 
 ## Value
 
-A data table containing the list of GMD datasets.
+Invisibly, a copy of the verified durable acquisition `data.table`.
+
+## Details
+
+The write uses `inv_gmd_list` consistently. Any thrown, null-version, or
+malformed write result is treated as uncertain and reconciled by
+reloading durable state; the function aborts unless the intended
+inventory is verified.
 
 ## Note
 
@@ -33,6 +44,7 @@ the release is already set. When called standalone, ensure
 
 ``` r
 if (FALSE) { # \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 gmd_list <- dlw_gmd_list()
 head(gmd_list)
 } # }

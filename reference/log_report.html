@@ -97,9 +97,9 @@ If <code>path</code> is non-<code>NULL</code>, the file is written as a side-eff
 <li><p>Stage-aware warnings for DLW-only, pipeline-only, no-op, and
 incomplete runs.</p></li>
 <li><p>DLW acquisition summary, including attempted, successful, and
-failed survey counts and failure details.</p></li>
-<li><p>DLW validation summary, including workflow phase counts and
-validation or loading failures.</p></li>
+failed survey counts and failure details from the latest attempt.</p></li>
+<li><p>DLW validation summary, separating valid, invalid, execution-failed,
+and workflow outcomes from the latest attempt.</p></li>
 <li><p>Processing summary: total, cleaned, and failed counts
 (from <code>process_summary_inf</code> log entry).</p></li>
 <li><p>Deflation summary: candidates, successes, failures, and failing
@@ -113,8 +113,14 @@ surveys were affected (from <code>aux_changes_inf</code> log entry).</p></li>
 <li><p>Surveys skipped during data processing or metadata creation
 (<code>skipped_svys_data</code> / <code>skipped_svys_metadata</code> entries), with reasons.</p></li>
 <li><p>List of surveys that failed processing (<code>null_svys_inf</code> entry).</p></li>
-</ul><p>Sections that rely on a specific logmeta entry are silently omitted when
-that entry is absent from the log.</p>
+</ul><p>Acquisition and validation are segmented independently from their latest
+<code>attempt_start</code> entry. An exact completion entry is preferred; logs produced
+before completion entries existed use a fallback confined to that latest
+segment. All DLW acquisition, validation, and wrapper discriminators are
+excluded from generic type and country sections, so dedicated DLW sections
+own those entries without historical leakage or double counting. Other
+sections that rely on a specific logmeta entry are silently omitted when that
+entry is absent.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
