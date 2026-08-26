@@ -25,9 +25,9 @@
 #'   \item Stage-aware warnings for DLW-only, pipeline-only, no-op, and
 #'     incomplete runs.
 #'   \item DLW acquisition summary, including attempted, successful, and
-#'     failed survey counts and failure details.
-#'   \item DLW validation summary, including workflow phase counts and
-#'     validation or loading failures.
+#'     failed survey counts and failure details from the latest attempt.
+#'   \item DLW validation summary, separating valid, invalid, execution-failed,
+#'     and workflow outcomes from the latest attempt.
 #'   \item Processing summary: total, cleaned, and failed counts
 #'     (from `process_summary_inf` log entry).
 #'   \item Deflation summary: candidates, successes, failures, and failing
@@ -42,8 +42,14 @@
 #'     (`skipped_svys_data` / `skipped_svys_metadata` entries), with reasons.
 #'   \item List of surveys that failed processing (`null_svys_inf` entry).
 #' }
-#' Sections that rely on a specific logmeta entry are silently omitted when
-#' that entry is absent from the log.
+#' Acquisition and validation are segmented independently from their latest
+#' `attempt_start` entry. An exact completion entry is preferred; logs produced
+#' before completion entries existed use a fallback confined to that latest
+#' segment. All DLW acquisition, validation, and wrapper discriminators are
+#' excluded from generic type and country sections, so dedicated DLW sections
+#' own those entries without historical leakage or double counting. Other
+#' sections that rely on a specific logmeta entry are silently omitted when that
+#' entry is absent.
 #'
 #' @family pd_process_data pipeline
 #' @export
@@ -162,6 +168,86 @@ build_stage_warning <- function(dt) {
 }
 
 
+.dlw_log_phase <- function(meta) {
+  phase <- meta$phase
+  if (!is.character(phase) || length(phase) != 1L || is.na(phase) ||
+      !nzchar(phase)) {
+    return("unknown")
+  }
+  phase
+}
+
+.latest_dlw_attempt_segment <- function(dt, discriminator) {
+  idx <- which(!is.na(dt$error_type) & dt$error_type == discriminator)
+  if (length(idx) == 0L) {
+    return(integer())
+  }
+  phases <- vapply(dt$logmeta[idx], .dlw_log_phase, character(1))
+  boundaries <- idx[phases == "attempt_start" & dt$event[idx] == "info"]
+  if (length(boundaries) > 0L) {
+    return(idx[idx >= boundaries[[length(boundaries)]]])
+  }
+  legacy_boundaries <- idx[
+    phases %in% c("start", "no_new_data") & dt$event[idx] == "info"
+  ]
+  if (length(legacy_boundaries) > 0L) {
+    return(idx[idx >= legacy_boundaries[[length(legacy_boundaries)]]])
+  }
+  idx
+}
+
+.latest_valid_dlw_completion <- function(dt, idx, validate) {
+  phases <- vapply(dt$logmeta[idx], .dlw_log_phase, character(1))
+  completion_idx <- rev(idx[phases == "complete"])
+  if (length(completion_idx) == 0L) {
+    return(NULL)
+  }
+  for (i in completion_idx) {
+    valid <- tryCatch({
+      validate(dt$logmeta[[i]])
+      TRUE
+    }, error = function(e) FALSE)
+    if (valid) {
+      return(dt$logmeta[[i]])
+    }
+  }
+  NULL
+}
+
+.latest_dlw_start_count <- function(dt, idx) {
+  phases <- vapply(dt$logmeta[idx], .dlw_log_phase, character(1))
+  starts <- rev(idx[phases == "start"])
+  if (length(starts) == 0L) {
+    return(NA_integer_)
+  }
+  value <- dt$logmeta[[starts[[1L]]]]$n_surveys
+  valid <- is.numeric(value) && length(value) == 1L && !is.na(value) &&
+    is.finite(value) && value >= 0 && value == floor(value)
+  if (!valid) {
+    return(NA_integer_)
+  }
+  as.integer(value)
+}
+
+.dlw_workflow_failure_lines <- function(dt, idx) {
+  if (length(idx) == 0L) {
+    return(character())
+  }
+  vapply(idx, function(i) {
+    meta <- dt$logmeta[[i]]
+    detail <- if (!is.null(meta$condition_msg)) {
+      meta$condition_msg
+    } else {
+      dt$message[[i]]
+    }
+    sprintf(
+      "- Workflow phase `%s` - %s",
+      .dlw_log_phase(meta),
+      detail
+    )
+  }, character(1))
+}
+
 #' Build the DLW acquisition summary section
 #'
 #' Successful acquisitions are inferred from the start-entry denominator
@@ -171,137 +257,109 @@ build_stage_warning <- function(dt) {
 #' @return Character vector of markdown lines, or an empty vector.
 #' @keywords internal
 build_dlw_acquisition_summary <- function(dt) {
-  idx <- which(dt$error_type == .logtype_dlw_acquisition)
+  idx <- .latest_dlw_attempt_segment(dt, .logtype_dlw_acquisition)
   if (length(idx) == 0L) {
-    return(character(0))
+    return(character())
   }
-
-  metas <- dt$logmeta[idx]
-  start_idx <- which(vapply(
-    metas,
-    function(x) identical(x$phase, "start"),
-    logical(1)
-  ))
-  no_work <- any(vapply(
-    metas,
-    function(x) identical(x$phase, "no_new_data"),
-    logical(1)
-  ))
-  workflow_failure_idx <- idx[
-    dt$event[idx] == "error" &
-      !vapply(
-        metas,
-        function(x) !is.null(x$survey),
-        logical(1)
-      )
-  ]
-
-  if (length(start_idx) == 0L && no_work &&
-      length(workflow_failure_idx) == 0L) {
-    return(c(
-      "## DLW Acquisition Summary",
-      "",
-      "**Surveys:** 0 attempted, 0 succeeded, 0 failed.",
-      "",
-      "No new GMD data was available for acquisition."
-    ))
-  }
-  if (length(start_idx) == 0L) {
-    n_surveys <- NA_integer_
-  } else {
-    n_surveys <- vapply(
-      metas[start_idx],
-      function(x) {
-        value <- x$n_surveys
-        if (length(value) != 1L || !is.numeric(value) || is.na(value)) {
-          return(NA_integer_)
-        }
-        as.integer(value)
-      },
-      integer(1)
-    )
-    if (anyNA(n_surveys)) {
-      n_surveys <- NA_integer_
-    } else {
-      n_surveys <- sum(n_surveys)
-    }
-  }
-
-  if (is.na(n_surveys) && length(workflow_failure_idx) == 0L) {
-    return(character(0))
-  }
-
-  failure_idx <- idx[
+  completion <- .latest_valid_dlw_completion(
+    dt,
+    idx,
+    .validate_dlw_acquisition_completion_logmeta
+  )
+  phases <- vapply(dt$logmeta[idx], .dlw_log_phase, character(1))
+  survey_failure_idx <- idx[
     dt$event[idx] == "error" & !is.na(dt$survey[idx])
   ]
-  n_failed <- length(failure_idx)
-  attempted_line <- if (is.na(n_surveys)) {
+  workflow_failure_idx <- idx[
+    dt$event[idx] == "error" & is.na(dt$survey[idx])
+  ]
+
+  if (!is.null(completion)) {
+    n_total <- completion$n_total
+    n_success <- completion$n_success
+    n_failed <- completion$n_failed
+    failed_ids <- completion$surveys_failed
+    no_work <- identical(completion$outcome, "no_work")
+  } else {
+    n_total <- .latest_dlw_start_count(dt, idx)
+    failed_ids <- unique(dt$survey[survey_failure_idx])
+    n_failed <- as.integer(length(failed_ids))
+    no_work <- any(phases == "no_new_data") &&
+      length(survey_failure_idx) == 0L &&
+      length(workflow_failure_idx) == 0L
+    if (no_work) {
+      n_total <- 0L
+    }
+    n_success <- if (is.na(n_total)) {
+      NA_integer_
+    } else {
+      as.integer(max(0L, n_total - n_failed))
+    }
+  }
+  if (is.na(n_total) && length(workflow_failure_idx) == 0L &&
+      length(survey_failure_idx) == 0L) {
+    return(character())
+  }
+
+  attempted_line <- if (is.na(n_total)) {
     "**Surveys:** no valid start-entry denominator was recorded."
   } else {
     sprintf(
       "**Surveys:** %d attempted, %d succeeded, %d failed.",
-      n_surveys,
-      n_surveys - n_failed,
+      n_total,
+      n_success,
       n_failed
     )
   }
   lines <- c("## DLW Acquisition Summary", "", attempted_line)
-
-  if (length(failure_idx) == 0L && length(workflow_failure_idx) == 0L) {
-    return(lines)
+  if (no_work) {
+    lines <- c(
+      lines,
+      "",
+      "No new GMD data was available for acquisition."
+    )
   }
 
-  failure_lines <- vapply(
-    failure_idx,
-    function(i) {
-      meta <- dt$logmeta[[i]]
-      survey <- if (is.null(meta$survey)) "unknown" else meta$survey
-      country <- if (is.null(meta$country)) dt$country[i] else meta$country
-      year <- if (is.null(meta$year)) "unknown" else meta$year
-      module <- if (is.null(meta$module)) "unknown" else meta$module
-      condition_msg <- if (is.null(meta$condition_msg)) {
-        dt$message[i]
-      } else {
-        meta$condition_msg
-      }
-      sprintf(
-        "- `%s` (%s, %s, %s) - %s",
-        survey,
-        country,
-        year,
-        module,
-        condition_msg
-      )
-    },
-    character(1)
-  )
-
-  workflow_lines <- vapply(
-    workflow_failure_idx,
-    function(i) {
-      meta <- dt$logmeta[[i]]
-      phase <- if (is.null(meta$phase)) "unknown" else meta$phase
-      detail <- if (is.null(meta$condition_msg)) {
-        dt$message[i]
-      } else {
-        meta$condition_msg
-      }
-      sprintf("- Workflow phase `%s` - %s", phase, detail)
-    },
-    character(1)
-  )
+  failure_lines <- vapply(failed_ids, function(survey_id) {
+    matches <- survey_failure_idx[dt$survey[survey_failure_idx] == survey_id]
+    if (length(matches) == 0L) {
+      return(sprintf("- `%s`", survey_id))
+    }
+    i <- matches[[length(matches)]]
+    meta <- dt$logmeta[[i]]
+    country <- if (is.null(meta$country)) dt$country[[i]] else meta$country
+    if (is.na(country)) {
+      country <- "unknown"
+    }
+    year <- if (is.null(meta$year)) "unknown" else meta$year
+    module <- if (is.null(meta$module)) "unknown" else meta$module
+    detail <- if (is.null(meta$condition_msg)) {
+      dt$message[[i]]
+    } else {
+      meta$condition_msg
+    }
+    sprintf(
+      "- `%s` (%s, %s, %s) - %s",
+      survey_id,
+      country,
+      year,
+      module,
+      detail
+    )
+  }, character(1))
+  workflow_lines <- .dlw_workflow_failure_lines(dt, workflow_failure_idx)
 
   c(
     lines,
     if (length(failure_lines) > 0L) {
       c("", "**Failed acquisitions:**", "", failure_lines)
     } else {
-      character(0)
+      character()
     },
     if (length(workflow_lines) > 0L) {
       c("", "**Acquisition workflow failures:**", "", workflow_lines)
     } else {
-      character(0)
+      character()
     }
   )
 }
@@ -316,132 +374,133 @@ build_dlw_acquisition_summary <- function(dt) {
 #' @return Character vector of markdown lines, or an empty vector.
 #' @keywords internal
 build_dlw_validation_summary <- function(dt) {
-  idx <- which(dt$error_type == .logtype_dlw_validation)
+  idx <- .latest_dlw_attempt_segment(dt, .logtype_dlw_validation)
   if (length(idx) == 0L) {
-    return(character(0))
+    return(character())
   }
-
-  metas <- dt$logmeta[idx]
-  start_idx <- which(vapply(
-    metas,
-    function(x) identical(x$phase, "start"),
-    logical(1)
-  ))
-  no_work <- any(vapply(
-    metas,
-    function(x) identical(x$phase, "no_new_data"),
-    logical(1)
-  ))
-  start_counts <- vapply(
-    metas[start_idx],
-    function(x) {
-      candidate <- x$n_surveys
-      if (length(candidate) == 1L && is.numeric(candidate) && !is.na(candidate)) {
-        return(as.integer(candidate))
-      }
-      NA_integer_
-    },
-    integer(1)
+  completion <- .latest_valid_dlw_completion(
+    dt,
+    idx,
+    .validate_dlw_validation_completion_logmeta
   )
-  if (length(start_counts) == 0L && no_work) {
-    n_surveys <- 0L
-  } else if (length(start_counts) == 0L || anyNA(start_counts)) {
-    n_surveys <- NA_integer_
-  } else {
-    n_surveys <- sum(start_counts)
-  }
+  phases <- vapply(dt$logmeta[idx], .dlw_log_phase, character(1))
+  error_idx <- idx[dt$event[idx] == "error"]
+  invalid_idx <- error_idx[
+    !is.na(dt$survey[error_idx]) &
+      phases[match(error_idx, idx)] == "validation"
+  ]
+  execution_idx <- error_idx[
+    !is.na(dt$survey[error_idx]) &
+      phases[match(error_idx, idx)] != "validation"
+  ]
+  workflow_idx <- error_idx[is.na(dt$survey[error_idx])]
 
-  failure_idx <- idx[
-    dt$event[idx] == "error" & !is.na(dt$survey[idx]) &
-      vapply(
-        metas,
-        function(x) identical(x$phase, "load") ||
-          identical(x$phase, "validation"),
-        logical(1)
-      )
-  ]
-  workflow_failure_idx <- idx[
-    dt$event[idx] == "error" & !(idx %in% failure_idx)
-  ]
-  n_failed <- length(failure_idx)
-  attempted_line <- if (is.na(n_surveys)) {
+  if (!is.null(completion)) {
+    n_total <- completion$n_total
+    n_valid <- completion$n_valid
+    n_invalid <- completion$n_invalid
+    n_failed <- completion$n_failed
+    invalid_ids <- completion$surveys_invalid
+    failed_ids <- completion$surveys_failed
+  } else {
+    n_total <- .latest_dlw_start_count(dt, idx)
+    invalid_ids <- unique(dt$survey[invalid_idx])
+    failed_ids <- unique(dt$survey[execution_idx])
+    invalid_ids <- setdiff(invalid_ids, failed_ids)
+    n_invalid <- as.integer(length(invalid_ids))
+    n_failed <- as.integer(length(failed_ids))
+    no_work <- any(phases == "no_new_data") &&
+      length(error_idx) == 0L
+    if (no_work) {
+      n_total <- 0L
+    }
+    n_valid <- if (is.na(n_total)) {
+      NA_integer_
+    } else {
+      as.integer(max(0L, n_total - n_invalid - n_failed))
+    }
+  }
+  attempted_line <- if (is.na(n_total)) {
     "**Surveys:** no valid start-entry denominator was recorded."
   } else {
     sprintf(
-      "**Surveys:** %d attempted, %d succeeded, %d failed.",
-      n_surveys,
-      n_surveys - n_failed,
+      paste0(
+        "**Surveys:** %d attempted, %d valid, %d invalid, ",
+        "%d execution failed."
+      ),
+      n_total,
+      n_valid,
+      n_invalid,
       n_failed
     )
   }
 
-  phases <- vapply(
-    metas,
-    function(x) if (is.null(x$phase)) "unknown" else as.character(x$phase),
-    character(1)
-  )
   phase_counts <- table(phases)
   phase_lines <- c(
     "### Workflow Phases",
     "",
     "| Phase | Entries |",
     "|-------|--------:|",
-    vapply(
-      names(phase_counts),
-      function(phase) sprintf("| `%s` | %d |", phase, phase_counts[[phase]]),
-      character(1)
-    )
+    vapply(names(phase_counts), function(phase) {
+      sprintf("| `%s` | %d |", phase, phase_counts[[phase]])
+    }, character(1))
+  )
+  lines <- c(
+    "## DLW Validation Summary",
+    "",
+    attempted_line,
+    "",
+    phase_lines
   )
 
-  lines <- c("## DLW Validation Summary", "", attempted_line, "", phase_lines)
-  if (length(failure_idx) == 0L && length(workflow_failure_idx) == 0L) {
-    return(lines)
+  detail_line <- function(survey_id, candidate_idx, category_phase = NULL) {
+    matches <- candidate_idx[dt$survey[candidate_idx] == survey_id]
+    if (length(matches) == 0L) {
+      return(sprintf("- `%s`", survey_id))
+    }
+    i <- matches[[length(matches)]]
+    meta <- dt$logmeta[[i]]
+    detail <- if (!is.null(meta$condition_msg)) {
+      meta$condition_msg
+    } else if (!is.null(meta$validation_messages)) {
+      paste(meta$validation_messages, collapse = "; ")
+    } else {
+      dt$message[[i]]
+    }
+    phase <- if (is.null(category_phase)) .dlw_log_phase(meta) else category_phase
+    sprintf("- `%s` (`%s`) - %s", survey_id, phase, detail)
   }
-
-  failure_lines <- vapply(
-    failure_idx,
-    function(i) {
-      meta <- dt$logmeta[[i]]
-      survey <- if (is.null(meta$survey)) "unknown" else meta$survey
-      phase <- if (is.null(meta$phase)) "unknown" else meta$phase
-      detail <- if (!is.null(meta$condition_msg)) {
-        meta$condition_msg
-      } else if (!is.null(meta$validation_messages)) {
-        paste(meta$validation_messages, collapse = "; ")
-      } else {
-        dt$message[i]
-      }
-      sprintf("- `%s` (`%s`) - %s", survey, phase, detail)
-    },
-    character(1)
+  invalid_lines <- vapply(
+    invalid_ids,
+    detail_line,
+    character(1),
+    candidate_idx = invalid_idx,
+    category_phase = "validation"
   )
-
-  workflow_lines <- vapply(
-    workflow_failure_idx,
-    function(i) {
-      meta <- dt$logmeta[[i]]
-      phase <- if (is.null(meta$phase)) "unknown" else meta$phase
-      detail <- if (!is.null(meta$condition_msg)) {
-        meta$condition_msg
-      } else {
-        dt$message[i]
-      }
-      sprintf("- Workflow phase `%s` - %s", phase, detail)
-    },
-    character(1)
+  execution_lines <- vapply(
+    failed_ids,
+    detail_line,
+    character(1),
+    candidate_idx = execution_idx
   )
+  workflow_lines <- .dlw_workflow_failure_lines(dt, workflow_idx)
 
   c(
     lines,
-    if (length(failure_lines) > 0L) {
-      c("", "**Validation failures:**", "", failure_lines)
+    if (length(invalid_lines) > 0L) {
+      c("", "**Invalid classifications:**", "", invalid_lines)
     } else {
-      character(0)
+      character()
+    },
+    if (length(execution_lines) > 0L) {
+      c("", "**Execution failures:**", "", execution_lines)
+    } else {
+      character()
     },
     if (length(workflow_lines) > 0L) {
       c("", "**Workflow failures:**", "", workflow_lines)
     } else {
-      character(0)
+      character()
     }
   )
 }
@@ -574,8 +633,13 @@ build_header <- function(dt, title) {
 #' @return Character vector of markdown lines.
 #' @keywords internal
 build_type_summary <- function(dt) {
+  dlw_types <- c(
+    .logtype_dlw_acquisition,
+    .logtype_dlw_validation,
+    .logtype_dlw_summary
+  )
   tbl <- dt[
-    !error_type %in% .log_internal_types,
+    !error_type %in% union(.log_internal_types, dlw_types),
     .N,
     by = .(event, error_type, message)
   ][
@@ -622,7 +686,16 @@ build_type_summary <- function(dt) {
 #' @return Character vector of markdown lines.
 #' @keywords internal
 build_country_table <- function(dt) {
-  ct <- dt[!is.na(country), .N, by = .(country, error_type)][
+  dlw_types <- c(
+    .logtype_dlw_acquisition,
+    .logtype_dlw_validation,
+    .logtype_dlw_summary
+  )
+  ct <- dt[
+    !is.na(country) & !error_type %in% dlw_types,
+    .N,
+    by = .(country, error_type)
+  ][
     order(error_type, country)
   ]
 
