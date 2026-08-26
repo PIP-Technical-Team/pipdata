@@ -6,9 +6,12 @@
 #' data and metadata into the pip storage. The function returns an updated
 #' pip inventory with the new versions recorded.
 #'
-#' @param inv A data.frame or tibble containing the DLW inventory. Default
-#' `NULL`, in which case it is loaded internally via
-#' `pipload::load_gmd_valid_inv()`.
+#' @param inv A data.frame or tibble containing the completed DLW validation
+#'   inventory. Default `NULL`, in which case it is loaded internally via
+#'   `pipload::load_gmd_valid_inv()`. Before planning or row lookup, input is
+#'   normalized to `data_available = "Yes"` rows whose status is `"valid"` or
+#'   `"invalid"`. Recognized legacy blank/`"No"` retry rows are excluded;
+#'   malformed completed rows abort rather than entering cleaning.
 #' @param aux_measures A character vector of auxiliary measures to load and merge
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
 #' @param force Logical. If `TRUE`, forces reprocessing of all surveys by
@@ -33,6 +36,11 @@
 #'   versions for cleaned data and metadata.
 #'
 #' @details
+#' **Validation handoff**: Both valid and invalid completed validation rows keep
+#' their existing cleaning eligibility. Execution-failure control rows are not
+#' eligible. The guard is applied here and again during dependency execution so
+#' legacy inventories cannot create cleaning, metadata, or deflation actions.
+#'
 #' **Logging**: This function writes `process_summary_inf` and `null_svys_inf` entries
 #' to the `"pipdata_log"`, summarizing totals and failed surveys. Additional entries for
 #' auxiliary file changes and inventory verification are emitted by [valid_dlw_load()]
@@ -98,6 +106,7 @@ pd_process_data <- function(
   if (is.null(inv)) {
     inv <- pipload::load_gmd_valid_inv(verbose = verbose)
   }
+  inv <- .filter_completed_dlw_validation_inventory(inv)
 
   master <- pipload::load_pip_master_inventory(verbose = verbose)
   execution <- pd_prepare_execution(
