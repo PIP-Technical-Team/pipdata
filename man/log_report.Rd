@@ -42,9 +42,9 @@ The report contains:
 \item Stage-aware warnings for DLW-only, pipeline-only, no-op, and
 incomplete runs.
 \item DLW acquisition summary, including attempted, successful, and
-failed survey counts and failure details.
-\item DLW validation summary, including workflow phase counts and
-validation or loading failures.
+failed survey counts and failure details from the latest attempt.
+\item DLW validation summary, separating valid, invalid, execution-failed,
+and workflow outcomes from the latest attempt.
 \item Processing summary: total, cleaned, and failed counts
 (from \code{process_summary_inf} log entry).
 \item Deflation summary: candidates, successes, failures, and failing
@@ -59,8 +59,14 @@ surveys were affected (from \code{aux_changes_inf} log entry).
 (\code{skipped_svys_data} / \code{skipped_svys_metadata} entries), with reasons.
 \item List of surveys that failed processing (\code{null_svys_inf} entry).
 }
-Sections that rely on a specific logmeta entry are silently omitted when
-that entry is absent from the log.
+Acquisition and validation are segmented independently from their latest
+\code{attempt_start} entry. An exact completion entry is preferred; logs produced
+before completion entries existed use a fallback confined to that latest
+segment. All DLW acquisition, validation, and wrapper discriminators are
+excluded from generic type and country sections, so dedicated DLW sections
+own those entries without historical leakage or double counting. Other
+sections that rely on a specific logmeta entry are silently omitted when that
+entry is absent.
 }
 \examples{
 \dontrun{

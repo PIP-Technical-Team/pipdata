@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_get_gmd.R
 \name{pipdata_get_gmd}
 \alias{pipdata_get_gmd}
-\title{Retrieve and Save GMD Catalog Datasets to a Local Directory}
+\title{Acquire GMD catalog datasets and reconcile the local inventory}
 \usage{
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
@@ -11,44 +11,80 @@ pipdata_get_gmd(
 )
 }
 \arguments{
-\item{inv_gmd_list}{Character. The name of the inventory file containing the list of GMD datasets.}
+\item{inv_gmd_list}{Character scalar. Acquisition inventory artifact ID.
+This ID controls loading, comparison, and persistence.}
 
-\item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
+\item{check_missing}{Logical scalar. Retry current unresolved five-module
+rows when \code{TRUE}. Default \code{TRUE}.}
 
 \item{verbose}{Logical. Controls verbosity of downstream
 \code{\link[pipload:pip_write]{pipload::pip_write()}} calls. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
-Invisibly returns \code{NULL}; the acquisition inventory is persisted as a
-side effect.
+Invisibly, a plain unclassed list with names \code{stage}, \code{outcome},
+\code{inventory}, \code{summary}, \code{failures}, and \code{artifacts}. \code{stage} is
+\code{"acquisition"}. \code{outcome} is \code{"success"} when one or more downloads
+complete without failure and the intended write is verified; \code{"partial"}
+when useful downloads complete but a worker or non-commit workflow failure
+occurs; \code{"failed"} when a required commit is unverified or no download
+completes while failures occur; or \code{"no_work"} when trustworthy discovery
+selects no downloads.
+
+\code{inventory} is a copy of the trustworthy durable \code{data.table}, or \code{NULL}
+when durable state is absent or unknown. \code{summary} has exactly \code{n_total},
+\code{n_success}, \code{n_failed}, \code{surveys_success}, and \code{surveys_failed}.
+\code{failures} is a \code{data.table} with \code{survey_id}, \code{phase}, \code{error_type}, and
+\code{condition_msg}, and never contains condition objects. \code{artifacts$inventory}
+records \code{id}, \code{alias}, \code{attempted}, \code{success}, \code{trustworthy}, \code{version_id},
+\code{skipped}, and \code{reconciled} for the durable inventory write.
 }
 \description{
-This wrapper function automates the process of managing GMD catalog
-datasets by performing the following tasks:
-\enumerate{
-\item Checks for new datasets in the GMD catalog using the inventory
-file (\code{dlw_gmd_inv}), which contains the current list of available GMD datasets.
-\item If new datasets are found (specifically \code{"GPWG"}, \code{"GROUP"},
-\code{"BIN"}, \code{"HIST"}, \code{"ALL"}, \code{"ASPIRE"}, and \code{"L"}), downloads them
-using \code{dlw::dlw_get_gmd} and save them to the local directory.
-\item Updates the inventory file (\code{dlw_gmd_inv}) with information about
-the newly downloaded datasets.
+Compares the current server catalog with \code{inv_gmd_list}, downloads selected
+files, and reconciles the complete local acquisition inventory to the
+authoritative current catalog. Acquisition actively downloads only the five
+modules \code{"ALL"}, \code{"GROUP"}, \code{"HIST"}, \code{"GPWG"}, and \code{"BIN"}; the catalog and
+validation layer also recognize \code{"ASPIRE"} and \code{"L"}.
 }
+\details{
+Every selected download is pinned to the catalog's exact \code{FileName} and uses
+\code{local_overwrite = TRUE}. Cached or ambiguous multi-file DLW responses are
+failures and cannot mark a row available. When \code{check_missing = TRUE}, current
+five-module rows whose durable state is \code{data_available = "No"} are selected
+again. Retry is inventory-driven and at least once.
 
-Logging is unconditional. The function writes \code{dlw_acquisition_inf} entries
-for start, no-new-data, per-survey download failures, and completion. Error
-conditions are represented by \code{condition_msg} in \code{logmeta}; the discriminator
-in \code{logmeta$error} is always a string.
+The intended inventory is assembled even when no download is selected. It
+drops obsolete checksums and catalog-deleted rows, retains current successful
+rows, and retains current \code{"ASPIRE"}/\code{"L"} rows only when they were already
+available. A changed durable inventory is written once per completed attempt.
+A thrown or malformed write result is uncertain: active storage is reloaded
+and compared with canonical prior and intended content. The result never
+assumes that a reported write failure rolled back.
+
+The persisted acquisition inventory has required columns \code{Country}
+(nonempty character), \code{Year} (nonmissing whole-number integer),
+\code{Survey_acronym}, \code{Vermast}, \code{Veralt}, \code{Collection}, \code{FileName}, and
+\code{Checksum} (nonempty character), \code{Module} (one of the seven recognized
+modules), \code{Ext = "dta"}, and \code{data_available} (\code{"Yes"} or \code{"No"}). Server
+columns beyond this schema are retained in deterministic name order. A
+normalized server catalog with zero rows is a load failure, not authoritative
+evidence that all durable acquisition state should be deleted.
+
+Logging is unconditional. \code{dlw_acquisition_inf} entries include an attempt
+boundary, lifecycle and failure entries, and an exact completion summary.
 }
 \note{
 This function expects a working release to be configured via
 \code{\link[pipfun:setup_working_release]{pipfun::setup_working_release()}}. When called from
 \code{\link[=pipdata_dlw_process]{pipdata_dlw_process()}}, the release is already set. When called
-standalone, ensure \code{setup_working_release()} has been invoked first.
+standalone, configure it first. Invalid arguments and a missing working
+release are caller/precondition errors and escape. Runtime folder, catalog,
+download, logging, and persistence failures are returned in an inspectable
+failed or partial result; interrupts are not converted.
 }
 \examples{
 \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 pipdata_get_gmd(
   inv_gmd_list = "dlw_gmd_inv",
   check_missing = TRUE

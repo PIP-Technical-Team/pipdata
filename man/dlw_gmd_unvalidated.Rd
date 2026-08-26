@@ -2,21 +2,30 @@
 % Please edit documentation in R/pipdata_dlw_compare.R
 \name{dlw_gmd_unvalidated}
 \alias{dlw_gmd_unvalidated}
-\title{Get un-validated datasets list}
+\title{Get current available GMD datasets without completed validation}
 \usage{
 dlw_gmd_unvalidated(check_missing = TRUE)
 }
 \arguments{
-\item{check_missing}{Logical. If TRUE, includes missing datasets from validation inventory list.}
+\item{check_missing}{Logical scalar retained for API compatibility. It is
+validated, while retry selection is now determined by absence from the
+completed validation inventory.}
 }
 \value{
-A data.table with new or unmatched local GMD datasets.
+Invisibly, a \code{data.table} of current available acquisition rows that
+lack a completed validation row.
 }
 \description{
-Get un-validated datasets list
+Reconciles the default completed validation inventory to current available
+acquisition \code{survey_id}/\code{Checksum} keys and returns keys absent from completed
+state. Completed state means \code{data_available = "Yes"} with status \code{"valid"}
+or \code{"invalid"}; recognized legacy blank/\code{"No"} retry rows are not completed.
+Consequently execution failures are returned again because they have no
+completed inventory row. All seven validation module mappings may be present.
 }
 \examples{
 \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 df <- dlw_gmd_unvalidated()
 head(df)
 }

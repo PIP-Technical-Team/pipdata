@@ -2,19 +2,28 @@
 % Please edit documentation in R/pipdata_dlw_compare.R
 \name{dlw_gmd_list}
 \alias{dlw_gmd_list}
-\title{Retrieve a List of GMD datasets from the Server and save it in the local dlw inventory folder.}
+\title{Retrieve the GMD server catalog and initialize an acquisition inventory}
 \usage{
 dlw_gmd_list(inv_gmd_list = "dlw_gmd_inv")
 }
 \arguments{
-\item{inv_gmd_list}{Character. The name of the inventory file containing the list of GMD datasets.}
+\item{inv_gmd_list}{Character scalar. Acquisition inventory artifact ID.
+This ID controls loading, comparison, and persistence.}
 }
 \value{
-A data table containing the list of GMD datasets.
+Invisibly, a copy of the verified durable acquisition \code{data.table}.
 }
 \description{
-This function fetches a list of GMD datasets from the server,
-filters them based on Module and file extension.
+Loads the authoritative server catalog for the seven recognized modules and
+\code{.dta} files, then builds the local acquisition inventory. On a first run the
+inventory contains the five active download modules as unavailable; current
+\code{"ASPIRE"} and \code{"L"} rows are retained only when a prior inventory already
+records them as available. Obsolete rows and superseded checksums are removed.
+}
+\details{
+The write uses \code{inv_gmd_list} consistently. Any thrown, null-version, or
+malformed write result is treated as uncertain and reconciled by reloading
+durable state; the function aborts unless the intended inventory is verified.
 }
 \note{
 This function expects a working release to be configured via
@@ -24,6 +33,7 @@ standalone, ensure \code{setup_working_release()} has been invoked first.
 }
 \examples{
 \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 gmd_list <- dlw_gmd_list()
 head(gmd_list)
 }

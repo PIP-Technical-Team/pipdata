@@ -2,7 +2,7 @@
 % Please edit documentation in R/pipdata_dlw_process.R
 \name{pipdata_dlw_process}
 \alias{pipdata_dlw_process}
-\title{Process DLW Data}
+\title{Acquire and validate DLW data}
 \usage{
 pipdata_dlw_process(
   inv_gmd_list = "dlw_gmd_inv",
@@ -15,36 +15,86 @@ pipdata_dlw_process(
 )
 }
 \arguments{
-\item{inv_gmd_list}{Character. The name of the inventory file containing the list of GMD datasets.}
+\item{inv_gmd_list}{Character scalar. Acquisition inventory artifact ID.
+This ID controls loading, comparison, and persistence.}
 
-\item{get_dlw_data}{Logical. Whether to check for and download new DLW data. Default is \code{TRUE}.}
+\item{get_dlw_data}{Logical scalar. Run acquisition. Default \code{TRUE}.}
 
-\item{validate_dlw_data}{Logical. Whether to validate newly downloaded datasets. Default is \code{TRUE}.}
+\item{validate_dlw_data}{Logical scalar. Run validation. Default \code{TRUE}.}
 
-\item{check_missing}{Logical. Whether to check for and retrieve missing data. Default is \code{TRUE}.}
+\item{check_missing}{Logical scalar. Retry current unresolved five-module
+rows when \code{TRUE}. Default \code{TRUE}.}
 
-\item{release}{Character. The data release identifier or date, used to configure the working environment.}
+\item{release}{Required nonempty character scalar. Data release identifier or
+date. The formal default \code{NULL} is a missing-required-value sentinel, not an
+operational default, and aborts before setup.}
 
-\item{identity}{Character. One of \code{"PROD"}, \code{"INT"}, or \code{"TEST"}.}
+\item{identity}{Required character scalar. One of \code{"PROD"}, \code{"INT"}, or
+\code{"TEST"}. The formal default \code{NULL} is a missing-required-value sentinel,
+not an operational default, and aborts before setup.}
 
 \item{verbose}{Logical. Controls verbosity of downstream
 \code{\link[pipload:pip_write]{pipload::pip_write()}} calls. Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
-Invisibly returns \code{NULL}. Output files are written to disk.
+Invisibly, a plain unclassed list with names \code{stage}, \code{outcome},
+\code{acquisition}, \code{validation}, \code{failures}, and \code{checkpoint}. \code{stage} is
+\code{"dlw"}; \code{outcome} is the aggregate \code{"success"}, \code{"partial"}, \code{"failed"}, or
+\code{"no_work"}. \code{acquisition} and \code{validation} are the six-field stage results
+documented by \code{\link[=pipdata_get_gmd]{pipdata_get_gmd()}} and \code{\link[=pipdata_validate_gmd]{pipdata_validate_gmd()}}. A wrapper-only
+not-run stage still has names \code{stage}, \code{outcome}, \code{inventory}, \code{summary},
+\code{failures}, and \code{artifacts}, with \code{inventory = NULL},
+\code{summary = list(reason = ...)}, an empty failure table, and empty artifacts.
+
+\code{failures} is the compact wrapper \code{data.table} with \code{survey_id}, \code{phase},
+\code{error_type}, and \code{condition_msg}. \code{checkpoint} records
+\code{summary_logged}, \code{summary_condition_msg}, \code{attempted}, \code{success},
+\code{trustworthy}, \code{alias}, \code{stage}, \code{version_id}, \code{skipped}, \code{reconciled}, and
+\code{condition_msg}.
 }
 \description{
-This wrapper function automates key steps in processing DLW data by performing the following tasks:
-\enumerate{
-\item Checks if the list of GMD DLW datasets is available, if not, get the list
-\item Checks for new datasets in the GMD catalog, downloads them using \code{dlw::dlw_get_gmd},
-and save them to the local directory.
-\item Validates the downloaded datasets using \code{pipdata::pipdata_validate_gmd}
-and updates the validation inventory (\code{"gmd_valid_inv"}).
-\item Writes a \code{dlw_summary_inf} stage marker and persists a DLW logging
-checkpoint after the delegates complete.
+\code{pipdata_dlw_process()} is the current supported DLW entry point. It runs the
+explicit acquisition and validation stages in order, emits a scalar
+\code{dlw_summary_inf} entry from their returned facts, and attempts the existing
+\code{"dlw"} checkpoint. A broader \code{run_pipeline()} orchestrator is future
+direction only and is not part of the current API.
 }
+\details{
+Validation continues after acquisition \code{"no_work"}, \code{"partial"}, or even
+\code{"failed"} when acquisition still returns a trustworthy non-\code{NULL} durable
+inventory. It is dependency-blocked only when that prerequisite is
+unavailable. Stage outcomes are aggregated as \code{"success"}, \code{"partial"},
+\code{"failed"}, or \code{"no_work"}; disabled or dependency-blocked nested stages use
+\code{"not_run"} with \code{summary$reason} equal to \code{"disabled"} or
+\code{"dependency_failed"}.
+
+With both stages requested, acquisition \code{"success"} followed by validation
+\code{"success"}/\code{"no_work"} is aggregate \code{"success"}; acquisition \code{"no_work"}
+followed by validation \code{"success"} is also \code{"success"}, while two no-work
+stages are \code{"no_work"}. Any acquisition \code{"partial"} is aggregate \code{"partial"}.
+Acquisition \code{"success"}/\code{"no_work"} plus validation \code{"partial"}/\code{"failed"} is
+\code{"partial"}. Acquisition \code{"failed"} with trustworthy state plus validation
+\code{"success"}/\code{"no_work"}/\code{"partial"} is \code{"partial"}, but two failed stages are
+\code{"failed"}. An untrustworthy acquisition failure that dependency-blocks
+validation is \code{"failed"}. When only one stage is requested, its outcome is
+the aggregate; both disabled is \code{"no_work"} unless a wrapper failure occurs.
+Checkpoint or summary-log failure is reported in the checkpoint facts and
+does not rewrite the completed business outcome.
+
+The wrapper routes \code{inv_gmd_list} through acquisition, bootstrap, and the
+internal validation path, so custom inventory IDs are honored end to end.
+Validate-only calls never display a menu. A missing inventory in validate-only
+or noninteractive execution is an inspectable validation/acquisition failure,
+respectively. The Download/Abort menu is reserved for interactive calls that
+request acquisition.
+}
+\note{
+Invalid arguments, working-release setup failures, interactive user
+cancellation, and interrupts escape. Runtime failures after setup are
+converted to compact wrapper or stage facts so callers can inspect the
+returned result. Normal unassigned calls remain quiet because the result is
+invisible.
 }
 \examples{
 \dontrun{

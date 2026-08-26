@@ -2,33 +2,101 @@
 % Please edit documentation in R/pipdata_validate_gmd.R
 \name{pipdata_validate_gmd}
 \alias{pipdata_validate_gmd}
-\title{Validate GMD data and generate inventory report data}
+\title{Validate available GMD data and commit completed validation state}
 \usage{
 pipdata_validate_gmd(verbose = getOption("pipdata.verbose", default = TRUE))
 }
 \arguments{
-\item{verbose}{Logical. Controls verbosity of downstream I/O calls
+\item{verbose}{Logical scalar. Controls verbosity of downstream I/O calls
 (including \code{\link[pipload:pip_write]{pipload::pip_write()}}). Default:
 \code{getOption("pipdata.verbose", default = TRUE)}.}
 }
 \value{
-Invisibly returns \code{NULL}; validation inventory and report artifacts
-are persisted as side effects.
+Invisibly, a plain unclassed list with names \code{stage}, \code{outcome},
+\code{inventory}, \code{summary}, \code{failures}, and \code{artifacts}. \code{stage} is
+\code{"validation"}. \code{outcome} is \code{"success"} when one or more validations
+complete and required commits are verified; \code{"partial"} when a valid or
+invalid result completes alongside an execution or non-commit workflow
+failure; \code{"failed"} when a required commit is unverified or no validation
+completes while failures occur; or \code{"no_work"} when trustworthy discovery
+selects no validation workers. Invalid classifications alone do not make an
+outcome partial or failed.
+
+\code{inventory} is a copy of trustworthy durable completed state, or \code{NULL}
+when that state is absent or unknown. \code{summary} has exactly \code{n_total},
+\code{n_valid}, \code{n_invalid}, \code{n_failed}, \code{surveys_valid}, \code{surveys_invalid}, and
+\code{surveys_failed}; totals count terminal worker outcomes. \code{failures} is a
+\code{data.table} with \code{survey_id}, \code{phase}, \code{error_type}, and \code{condition_msg}.
+\code{artifacts} contains \code{report} and \code{inventory} facts, each with \code{id}, \code{alias},
+\code{attempted}, \code{success}, \code{trustworthy}, \code{version_id}, \code{skipped}, and
+\code{reconciled}. The full validation report is not returned.
 }
 \description{
-Logging is unconditional. The function writes \code{dlw_validation_inf} entries
-for validation start, no-new-data, load/validation failures, inventory and
-report workflow phases. Error conditions are stored as \code{condition_msg} and
-the discriminator in \code{logmeta$error} is always a string.
+Validates current available acquisition rows with \code{\link[=dlw_validation_engine]{dlw_validation_engine()}}.
+The engine receives mappings for all seven recognized modules: \code{"ALL"},
+\code{"GROUP"}, \code{"HIST"}, \code{"GPWG"}, \code{"BIN"}, \code{"ASPIRE"}, and \code{"L"}. A completed
+engine result is classified as \code{"valid"} or \code{"invalid"}; invalid data is a
+completed validation, not an execution failure.
+}
+\details{
+\code{gmd_valid_inv} is authoritative completed-data state. It contains only
+\code{data_available = "Yes"} rows with status \code{"valid"} or \code{"invalid"}. Load,
+artifact-info, engine, and inventory-row failures produce no inventory or
+report row and therefore retry because their current acquisition key remains
+absent. Before pruning stale checksums, historical inventory versions are
+scanned by \code{survey_id}; the next completed \code{pipeline_version} is one plus the
+historical maximum, or \code{1L} with no history. Failed attempts consume no
+version. Every catalog-listed historical version must be readable and
+schema-valid; otherwise validation blocks rather than understating history.
+
+Completed inventory rows have exactly the core fields \code{survey_id},
+\code{pipeline_version}, \code{latest_version_id}, \code{content_hash}, \code{file_path},
+\code{status}, \code{data_available}, \code{date_validated}, and \code{Checksum}, plus parsed
+identity fields \code{country_code}, \code{surveyid_year}, \code{survey_acronym}, \code{vermast},
+\code{veralt}, \code{collection}, \code{module}, and \code{tool}. Character identity and artifact
+fields are nonmissing and nonempty; \code{pipeline_version} is a positive integer;
+\code{surveyid_year} is a nonnegative integer; \code{date_validated} is nonmissing
+Date/POSIX time; \code{status} is \code{"valid"} or \code{"invalid"}; and
+\code{data_available = "Yes"}.
+
+Validation inventory and report state are reconciled to current available
+acquisition \code{survey_id}/\code{Checksum} keys on every call, including no-work
+calls. The normalized report must exactly cover completed inventory IDs and
+exact full-row duplicates are removed. Completed worker rows are assembled in
+memory, then \code{validation_report} is verified first and \code{gmd_valid_inv} is
+committed last. Every uncertain write is reloaded and compared with canonical
+prior and intended content; unreadable or ambiguous durable state is not
+overwritten as though it were trustworthy.
+
+Persisted reports require character-compatible \code{table_name}, \code{message},
+\code{type}, \code{description}, \code{module_type}, \code{vermast}, \code{veralt}, \code{country_code}, and
+\code{rf_year}. Optional columns may be added only when same-name columns have
+identical coercion-relevant attributes, including class, factor levels and
+ordering, units, and time zone. Exact rows are deduplicated and canonical row
+order uses every persisted column. Engine \code{type} values must be nonempty
+character values in \code{success}, \code{warning}, or \code{error} and agree with the
+report. If the engine completes but its report rows are unavailable, the
+survey records \code{phase = "report_unavailable"}, persists no completed row or
+report row, and is selected again on the next call.
+
+Logging is unconditional. \code{dlw_validation_inf} entries include an attempt
+boundary, lifecycle and failure entries, and an exact completion summary that
+separates valid, invalid, and execution-failed surveys.
 }
 \note{
 This function expects a working release to be configured via
 \code{\link[pipfun:setup_working_release]{pipfun::setup_working_release()}}. When called from
 \code{\link[=pipdata_dlw_process]{pipdata_dlw_process()}}, the release is already set. When called
-standalone, ensure \code{setup_working_release()} has been invoked first.
+standalone, configure it first. This exported function reads the default
+\code{"dlw_gmd_inv"}; \code{\link[=pipdata_dlw_process]{pipdata_dlw_process()}} routes its \code{inv_gmd_list} value to
+the same validation implementation. Invalid arguments and a missing working
+release escape as caller/precondition errors. Runtime folder, artifact,
+schema, worker, logging, and persistence failures return inspectable
+results; interrupts are not converted.
 }
 \examples{
 \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 pipdata_validate_gmd()
 }
 }
