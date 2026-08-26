@@ -1,24 +1,27 @@
 {
   "schemaVersion": "compound-gpid-active-state-v1",
-  "updatedAt": "2026-08-25T14:32:00Z",
+  "updatedAt": "2026-08-26T15:15:00Z",
   "workflow": "/cg-work",
   "status": "completed",
-  "branch": "stream-a-worktree-a3-audit-copy-dlw-meta-audi",
-  "plan": ".cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md",
-  "executionReport": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md",
+  "branch": "stream-b-worktree-b3-dlw-wrapper-rewrite",
+  "plan": ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
+  "executionReport": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md",
   "currentPhase": null,
   "evidenceStatus": [
-    {"id": "V1", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md"},
-    {"id": "V2", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md"},
-    {"id": "V3", "status": "passed", "artifact": "NEWS.md"},
-    {"id": "V4", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md"},
-    {"id": "V5", "status": "passed", "artifact": "_pkgdown.yml"},
-    {"id": "V6", "status": "passed", "artifact": "roadmap.json"}
+    {"id": "V1", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V2", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V3", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V4", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V5", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V6", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V7", "status": "accepted_exception", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V8", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"},
+    {"id": "V9", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md"}
   ],
   "unresolvedDecisions": [],
   "artifactRefs": [
-    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md", "status": "completed"},
-    {"kind": "review", "path": ".cg-docs/work-reports/2026-08-25-retire-copy-dlw-metadata.md", "status": "completed"}
+    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-08-26-dlw-wrapper-rewrite.md", "status": "completed"},
+    {"kind": "review", "path": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md", "status": "fixed"}
   ],
-  "nextCommand": "/cg-compound"
+  "nextCommand": "/cg-review mode:verify"
 }

@@ -189,7 +189,8 @@
                     "id": "dlw-wrapper-rewrite",
                     "title": "Rewrite DLW wrapper to mirror pipeline architecture",
                     "description": "Long-term goal: rewrite pipdata_dlw_process() and delegates to structurally mirror pd_process_data() — survey-level map loop with tryCatch/piperr, unconditional logging, DLW summary logmeta entry. Enables future consolidation into a single end-to-end pipeline function. Prerequisite: unified-logging-report must be completed first (Approach 1).",
-                    "status": "idea",
+                    "status": "done",
+                    "plan": ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
                     "tags": [
                         "architecture",
                         "dlw",

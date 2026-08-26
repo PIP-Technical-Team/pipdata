@@ -1,5 +1,5 @@
 {
-  "edge_count": 46,
+  "edge_count": 52,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -83,6 +83,18 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
       "target": ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md",
+      "target": ".cg-docs/brainstorms/2026-08-24-pipeline-alignment-a3-cleanup.md",
+      "target_missing": true
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
+      "target": ".cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md",
       "target_missing": false
     },
     {
@@ -207,6 +219,12 @@
     },
     {
       "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4.md",
+      "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
       "source": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
       "target": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
       "target_missing": false
@@ -236,9 +254,27 @@
       "target_missing": false
     },
     {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+      "target": ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
+      "target": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+      "target_missing": false
+    },
+    {
       "edge_type": "references",
       "source": ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
       "target": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md",
+      "target": ".cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md",
       "target_missing": false
     },
     {
@@ -679,6 +715,37 @@
         "adjust_population()",
         "data_level_column()",
         "pd_deflation.r"
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md",
+      "slug": "2026-08-24-dlw-wrapper-rewrite",
+      "status": "decided",
+      "summary": "<!-- Valid status values: decided, in-progress, abandoned -->",
+      "tags": [
+        "dlw",
+        "pipeline",
+        "architecture",
+        "acquisition",
+        "validation",
+        "orchestration",
+        "logging",
+        "resumability"
+      ],
+      "title": "Rewrite the DLW wrapper around explicit acquisition and validation stages",
+      "top_keywords": [
+        "pipdata_dlw_process()",
+        "validation",
+        "tests",
+        "phase",
+        "no_work",
+        "acquisition",
+        "null",
+        "safe_pipeline_step",
+        "dlw",
+        "result"
       ]
     },
     {
@@ -1830,6 +1897,64 @@
       ]
     },
     {
+      "date": "2026-08-24",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md",
+      "slug": "2026-08-24-retire-copy-dlw-metadata",
+      "status": "completed",
+      "summary": "Remove the unsupported `copy_dlw_metadata()` administrative utility from the installed package, including its export and stale help page, while documenting the intentional public API break, preserving every unrelated package API, and preparing documentation sources so the next pkgdown build drops the page.",
+      "tags": [
+        "pipeline-alignment",
+        "api-cleanup",
+        "dlw",
+        "documentation"
+      ],
+      "title": "A3.1: Retire copy_dlw_metadata()",
+      "top_keywords": [
+        "news.md",
+        "copy_dlw_metadata()",
+        "_pkgdown.yml",
+        "namespace",
+        "pip_root_dir",
+        "r/pipdata_copy_dlw_meta.r",
+        "man/copy_dlw_metadata.rd",
+        "roadmap.json",
+        "@cg-roadmap",
+        "readlines()"
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
+      "slug": "2026-08-25-dlw-wrapper-rewrite",
+      "status": "completed",
+      "summary": "Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchestrators that map compact one-survey workers, isolate survey execution failures, persist trustworthy inventories, emit the existing B2 logging contracts, and invisibly return inspectable DLW-specific results.",
+      "tags": [
+        "dlw",
+        "pipeline",
+        "architecture",
+        "acquisition",
+        "validation",
+        "logging",
+        "retry",
+        "orchestration"
+      ],
+      "title": "Rewrite the DLW wrapper around explicit acquisition and validation stages",
+      "top_keywords": [
+        "failed",
+        "no_work",
+        "na",
+        "partial",
+        "test scenarios",
+        "validation",
+        "success",
+        "acquisition",
+        "gmd_valid_inv",
+        "dlw"
+      ]
+    },
+    {
       "date": "",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
@@ -2336,6 +2461,28 @@
       ]
     },
     {
+      "date": "2026-08-25",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4.md",
+      "slug": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4",
+      "status": "",
+      "summary": "**Review mode**: light (`mode:verify`) **Files reviewed**: 6 textual diff paths, 18 status-only generated Rd paths, and 3 untracked workflow artifacts **Findings**: 1 (P0: 0, P1: 0, P2: 0, P3: 1) **Parent review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md`",
+      "tags": [],
+      "title": "2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4",
+      "top_keywords": [
+        "roadmap.json",
+        "2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
+        "verification",
+        "report",
+        "namespace",
+        "review",
+        "diagnostics",
+        "cg-code-quality",
+        "invoke-history",
+        "passed"
+      ]
+    },
+    {
       "date": "2026-08-07",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
@@ -2421,6 +2568,50 @@
         "tests/testthat/test-code-fingerprint.r",
         "verification review",
         "2026-08-24-pipdata-staged-dependency-manifest-review.md"
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+      "slug": "2026-08-25-dlw-wrapper-rewrite-review",
+      "status": "",
+      "summary": "**Review mode**: architecture **Scope**: DLW wrapper rewrite against synchronized base `55b7a3a1369504dcee8754237bedc260128d7d97` **Agents**: code quality, testing, documentation, version control, reproducibility, performance, architecture, and data quality **Findings**: 14 fixed (P0: 4, P1: 4, P2: 6)",
+      "tags": [],
+      "title": "2026-08-25-dlw-wrapper-rewrite-review",
+      "top_keywords": [
+        "r/pipdata_validate_gmd.r",
+        "pipdata_validate_gmd.r",
+        "r/pipdata_dlw_compare.r",
+        "pipdata_dlw_compare.r",
+        "report",
+        "review",
+        "skipped",
+        "verbose",
+        "file_path",
+        "date_validated"
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
+      "slug": "2026-08-25-dlw-wrapper-rewrite-verify-review",
+      "status": "",
+      "summary": "**Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **Files reviewed**: all changed R, tests, documentation, and workflow artifacts **Findings**: 10 (P0: 1, P1: 5, P2: 4, P3: 0)",
+      "tags": [],
+      "title": "2026-08-25-dlw-wrapper-rewrite-verify-review",
+      "top_keywords": [
+        "verification",
+        "pipdata_dlw_compare.r",
+        "2026-08-25-dlw-wrapper-rewrite-review.md",
+        "pipdata_validate_gmd.r",
+        "test-pipdata_get_gmd.r",
+        "review",
+        "report",
+        "created_at",
+        "nan",
+        "inventory_row"
       ]
     },
     {
@@ -3416,6 +3607,37 @@
       ]
     },
     {
+      "date": "2026-08-26",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md",
+      "slug": "2026-08-26-durable-stage-reconciliation",
+      "status": "",
+      "summary": "The DLW acquisition and validation wrappers combined discovery, per-survey execution, persistence, and logging. Several failure modes could silently make control state disagree with durable data: - a write could report failure after activating intended content, or return a malformed/null version without proving rollback; - validation execution failures were stored as unavailable inventory rows, allowing retry-control state to leak into cleaning; - stale checksums, deleted catalog rows, and orphan report rows survived reruns; - unreadable historical inventory versions could be omitted when computing the next pipeline version; - accumulated logs and validation-report rows from older attempts could be counted as current...",
+      "tags": [
+        "dlw",
+        "orchestration",
+        "reconciliation",
+        "inventory",
+        "validation",
+        "retry",
+        "stamp",
+        "logging"
+      ],
+      "title": "Fail-closed durable reconciliation for staged data pipelines",
+      "top_keywords": [
+        "reconciliation",
+        "durable",
+        "fail-closed",
+        "staged",
+        "pipelines",
+        "valid",
+        "gmd_valid_inv",
+        "invalid",
+        "attempt_start",
+        "nan"
+      ]
+    },
+    {
       "date": "2026-04-30",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
@@ -3863,8 +4085,36 @@
         "checkpoints",
         "2026-08-21-authors-at-r-description-validation.md",
         "2026-04-27-contract-testing-for-logging-side-effects.md",
-        "root",
-        "pipfun"
+        "2026-08-25-verify-exported-r-api-retirement.md",
+        "root"
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md",
+      "slug": "2026-08-25-verify-exported-r-api-retirement",
+      "status": "",
+      "summary": "Removing an exported R function requires more than deleting its source. The generated `NAMESPACE` can change unexpectedly, an orphaned `.Rd` page can keep the function in installed help, and a passing source-loaded test suite does not prove what users receive from the package tarball. For `copy_dlw_metadata()`, the retirement also had to distinguish intentional compatibility risk for unknown external callers from accidental regressions to the package's remaining exports, help topics, and check diagnostics.",
+      "tags": [
+        "R-CMD-check",
+        "api-retirement",
+        "namespace",
+        "installed-help",
+        "roxygen2"
+      ],
+      "title": "Verify exported R API retirement from built package surfaces",
+      "top_keywords": [
+        "namespace",
+        ".rd",
+        "copy_dlw_metadata()",
+        "package",
+        "exported",
+        "api",
+        "retirement",
+        "built",
+        "verify",
+        "surfaces"
       ]
     },
     {
@@ -3890,13 +4140,13 @@
       ]
     }
   ],
-  "entity_count": 131,
-  "generated": "2026-08-25",
+  "entity_count": 139,
+  "generated": "2026-08-26",
   "schema_version": "0.2.0",
   "topic_count": 5,
   "topics": [
     {
-      "entity_count": 96,
+      "entity_count": 99,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -3959,9 +4209,12 @@
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-2.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-3.md",
+        ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4.md",
         ".cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review.md",
         ".cg-docs/reviews/2026-08-20-explicit-data-level-sentinel-semantics-verify-review.md",
         ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
+        ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+        ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
         ".cg-docs/solutions/bugs/2026-04-29-duplicate-logmeta-discriminator-key.md",
@@ -4004,21 +4257,23 @@
       "slug": "valid-dlw-load-reporting-level-aaa-r"
     },
     {
-      "entity_count": 5,
+      "entity_count": 7,
       "entity_paths": [
         ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
         ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
         ".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md",
+        ".cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md",
         ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
-        ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md"
+        ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md",
+        ".cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md"
       ],
       "keywords": [
         "%||%",
-        "r cmd check",
-        "authors@r"
+        "namespace",
+        "related"
       ],
-      "label": "%||% / R Cmd Check / Authors@R",
-      "slug": "r-cmd-check-authors-r"
+      "label": "%||% / Namespace / Related",
+      "slug": "namespace-related"
     },
     {
       "entity_count": 4,

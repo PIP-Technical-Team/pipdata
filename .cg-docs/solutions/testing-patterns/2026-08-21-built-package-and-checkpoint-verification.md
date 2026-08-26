@@ -79,3 +79,4 @@ reading `R/*.R` paths that do not exist inside an installed tarball.
 - [Validate `Authors@R` through a built R package](../build-errors/2026-08-21-authors-at-r-description-validation.md)
 - [Contract testing for logging side effects](2026-04-27-contract-testing-for-logging-side-effects.md)
 - [Verify exported R API retirement from built package surfaces](2026-08-25-verify-exported-r-api-retirement.md)
+- [Fail-closed durable reconciliation for staged data pipelines](../data-quality/2026-08-26-durable-stage-reconciliation.md)
