@@ -74,3 +74,4 @@ testing the hash mechanism alone does not prove closure completeness.
 - `.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md`
 - `.cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md`
 - `.cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md`
+- [Typed Stage Orchestration Must Fail Closed and Account for Every Unit](../bugs/2026-08-26-fail-closed-typed-stage-orchestration.md)

@@ -4,7 +4,7 @@ _Generated 2026-08-26_
 
 ## Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R
 
-_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 99 entities
+_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 100 entities
 
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`
   > dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phant…
@@ -136,6 +136,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 99 entities
   > **Review mode**: verify **Prior review**: `.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-review…
 - **[2026-08-24-pipdata-staged-dependency-manifest-review](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md)** · `review` · _—_ · `2026-08-25`
   > - **[P0.1]** Snapshot planning omitted dependency facts for existing entities. Fixed by deriving semantic input, outp…
+- **[2026-08-24-pipdata-staged-dependency-manifest-verify-review-2](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md)** · `review` · _—_ · `2026-08-26`
+  > **Review mode**: light (verification) **Files reviewed**: 23 **Findings**: 7 (P0: 2, P1: 3, P2: 2, P3: 0)
 - **[2026-08-25-dlw-wrapper-rewrite-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: architecture **Scope**: DLW wrapper rewrite against synchronized base `55b7a3a1369504dcee8754237bedc…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md)** · `review` · _—_ · `2026-08-26`
@@ -205,14 +207,18 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 99 entities
 - **[Dual fixture pattern: stamp-path vs pipeline-path for pipmd/pipgd objects](.cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md)** · `solution` · _—_ · `2026-05-06`
   > `ppp_data_level`, `cpi_data_level`, and `pop_data_level` are **attributes only** — they are never columns in a `pipmd…
 
-## %||% / Namespace / Related
+## %||% / Related / Root
 
-_Keywords: `%||%` · `namespace` · `related`_ · 7 entities
+_Keywords: `%||%` · `related` · `root`_ · 9 entities
 
 - **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
   > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
+- **[Typed Stage Orchestration Must Fail Closed and Account for Every Unit](.cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md)** · `solution` · _—_ · `2026-08-26`
+  > A typed pipeline result can look complete and auditable while execution has already crossed an unsafe boundary. The d…
 - **[Validate Authors@R through a built R package](.cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md)** · `solution` · _—_ · `2026-08-21`
   > The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles,…
+- **[Catalog-wide validation before scope filter generates spurious warnings](.cg-docs/solutions/data-quality/2026-05-27-catalog-validation-before-filter-spurious-warnings.md)** · `solution` · _—_ · `2026-05-27`
+  > `build_pip_inventory()` emitted `build_pip_inventory_bad_pip_id_format` warnings on every run — even when the current…
 - **[Authoritative Staged Provenance Requires Result-Bound Checkpoints](.cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)** · `solution` · _—_ · `2026-08-25`
   > A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current…
 - **[Fail-closed durable reconciliation for staged data pipelines](.cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md)** · `solution` · _—_ · `2026-08-26`
@@ -223,6 +229,19 @@ _Keywords: `%||%` · `namespace` · `related`_ · 7 entities
   > Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: …
 - **[Verify exported R API retirement from built package surfaces](.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md)** · `solution` · _—_ · `2026-08-25`
   > Removing an exported R function requires more than deleting its source. The generated `NAMESPACE` can change unexpect…
+
+## Failed / Partial / No_Work
+
+_Keywords: `failed` · `partial` · `no_work`_ · 4 entities
+
+- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md)** · `brainstorm` · _decided_ · `2026-08-24`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
+- **[Typed Pipeline Stage Interface](.cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md)** · `brainstorm` · _decided_ · `2026-08-25`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
+- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md)** · `plan` · _completed_ · `2026-08-25`
+  > Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchest…
+- **[Implement Typed Pipeline Stage Interface](.cg-docs/plans/2026-08-25-pipeline-stage-interface.md)** · `plan` · _completed_ · `2026-08-25`
+  > Implement validated, versioned `pipeline_context` and `pipdata_stage_result` S3 contracts and prove them on the batch…
 
 ## Old_Files/ / Archive / Devtools::Document\(\)
 
