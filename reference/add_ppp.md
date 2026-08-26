@@ -15,7 +15,7 @@ add_ppp(dt, ppp)
 
 - dt:
 
-  A cleaned survey `data.table` with a `ppp_data_level` column.
+  A cleaned survey `data.table` with a `ppp_data_level` attribute.
 
 - ppp:
 

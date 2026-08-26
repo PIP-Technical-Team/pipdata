@@ -1,14 +1,9 @@
 # Batch-deflate every survey in the PIP master inventory
 
-Iterates over the master inventory of cleaned surveys, deflates each via
-[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
-(simple Mode B: `pip_id` only, no `version` hint), correctly detects and
-skips failures – including `NA` returns from
-[`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
-– saves each successful deflated survey to the dedicated
-`"pip_deflated"` stamp alias, updates the master inventory with
-deflation columns, and logs a structured `deflate_summary_inf` summary
-entry to `"pipdata_log"`.
+Builds a fresh dependency plan, loads exact planned data and metadata
+versions through the internal strict exact-deflation path, saves
+verified receipts to the `"pip_deflated"` alias, and publishes inventory
+and manifest checkpoints.
 
 ## Usage
 
@@ -100,10 +95,9 @@ deflated survey is logged (`deflate_provenance_missing`), never silent.
   by
   [`get_aux_hashes()`](https://pip-technical-team.github.io/pipdata/reference/get_aux_hashes.md),
   snapshot on the deflated rows. These describe the aux catalog state
-  when the pipeline ran; the exact aux vintage consumed by
-  [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md)
-  is the one embedded in the survey's `pip_meta` artifact (pinned by
-  `version_id_metadata`), not this snapshot.
+  when the pipeline ran; the exact aux vintage consumed is embedded in
+  the pinned `pip_meta` artifact (pinned by `version_id_metadata`), not
+  this snapshot.
 
 ## See also
 

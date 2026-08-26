@@ -165,6 +165,12 @@ validation, survey cleaning, and deflation with stage-aware warnings.
 
   Convert PPP data from `pipload` to wide format
 
+- [`print(`*`<pipdata_stage_result>`*`)`](https://pip-technical-team.github.io/pipdata/reference/print.pipdata_stage_result.md)
+  : Print a compact pipeline stage result
+
+- [`print(`*`<pipeline_context>`*`)`](https://pip-technical-team.github.io/pipdata/reference/print.pipeline_context.md)
+  : Print compact pipeline context identity
+
 - [`process_data()`](https://pip-technical-team.github.io/pipdata/reference/process_data.md)
   : Process datalibweb data: merge PFW data and clean variables
 

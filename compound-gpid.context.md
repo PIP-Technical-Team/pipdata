@@ -239,6 +239,20 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   for row sorting, e.g. `2017L`; `NULL` when no `welfare_ppp_*` columns
   are present). See
   `.cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md`.
+- **Typed stage boundary**: Internal `pipeline_context` and
+  `pipdata_stage_result` S3 lists expose the unchanged C2 dependency
+  context, accepted plan identity, compact unit outcomes, stable
+  condition records, and finalized artifact references. C2 remains
+  authoritative for actions, hashes, receipts, currentness, and
+  manifests; B2 `pipdata_log` remains the sole persistent log. Portable
+  RDS-v3 projections exclude runtime environments, inventories,
+  household data, raw conditions, and log rows. Deflation uses a shared
+  core: the public wrapper still returns the master inventory, while the
+  internal typed entry point returns the stage result. Survey-domain
+  failures may continue; lease, exact-hash, manifest, receipt,
+  checkpoint, and other integrity failures stop later writes. This
+  interface does not activate production: signed Windows/SMB fencing and
+  immutable unique-rename evidence remain required.
 - **data.table `DT[i, ]` scoping: function arguments do NOT shadow
   columns**: Inside `DT[i, ]`, bare names resolve to **columns** before
   looking up in the parent frame. When a function argument shares a name

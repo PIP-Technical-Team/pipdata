@@ -14,7 +14,7 @@ add_cpi(dt, cpi)
 
 - dt:
 
-  A cleaned survey `data.table` with a `cpi_data_level` column.
+  A cleaned survey `data.table` with a `cpi_data_level` attribute.
 
 - cpi:
 

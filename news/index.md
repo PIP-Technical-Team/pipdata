@@ -51,6 +51,13 @@
 
 ### New features
 
+- Add internal, versioned `pipeline_context` and `pipdata_stage_result`
+  S3 contracts and adopt them for deflation through a shared execution
+  core. Independent survey failures are retained as compact condition
+  records while integrity failures stop later writes. Public deflation
+  signatures and return values are unchanged, and attempted completed
+  runs again emit the documented compact `deflate_summary_inf` entry.
+
 - Add a staged dependency manifest and read-only
   [`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
   covering clean, auxiliary metadata, and exact-input deflation
