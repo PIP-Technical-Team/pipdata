@@ -189,7 +189,129 @@ test_that("build_dlw_acquisition_summary aggregates repeated run starts", {
 
   out <- build_dlw_acquisition_summary(parse_log_meta(log))
 
-  expect_true(any(grepl("5 attempted, 5 succeeded, 0 failed", out)))
+  expect_true(any(grepl("3 attempted, 3 succeeded, 0 failed", out)))
+})
+
+test_that("acquisition report uses only the latest attempt segment", {
+  log <- make_piplog(
+    make_entry(
+      "info", "old boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "error", "obsolete acquisition",
+      list(
+        error = "dlw_acquisition_inf", phase = "download",
+        survey = "OLD_2020_SURVEY", country = "OLD", year = 2020L,
+        module = "ALL", condition_msg = "obsolete"
+      )
+    ),
+    make_entry(
+      "info", "old completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "failed", n_total = 1L, n_success = 0L, n_failed = 1L,
+        surveys_success = character(), surveys_failed = "OLD_2020_SURVEY"
+      )
+    ),
+    make_entry(
+      "info", "current boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "info", "current completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "success", n_total = 1L, n_success = 1L, n_failed = 0L,
+        surveys_success = "NEW_2021_SURVEY", surveys_failed = character()
+      )
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("1 attempted, 1 succeeded, 0 failed", out)))
+  expect_false(any(grepl("OLD_2020_SURVEY|obsolete", out)))
+})
+
+test_that("malformed current acquisition completion falls back in-segment", {
+  log <- make_piplog(
+    make_entry(
+      "info", "old boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "info", "old completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "success", n_total = 9L, n_success = 9L, n_failed = 0L,
+        surveys_success = paste0("OLD", seq_len(9L)),
+        surveys_failed = character()
+      )
+    ),
+    make_entry(
+      "info", "current boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "info", "current start",
+      list(info = "dlw_acquisition_inf", phase = "start", n_surveys = 2L)
+    ),
+    make_entry(
+      "error", "current failure",
+      list(
+        error = "dlw_acquisition_inf", phase = "download",
+        survey = "CUR_2022_SURVEY", country = "CUR", year = 2022L,
+        module = "ALL", condition_msg = "current timeout"
+      )
+    ),
+    make_entry(
+      "info", "malformed current completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "success", n_total = 2, n_success = 2L, n_failed = 0L,
+        surveys_success = c("A", "B"), surveys_failed = character(),
+        extra = TRUE
+      )
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("2 attempted, 1 succeeded, 1 failed", out)))
+  expect_true(any(grepl("CUR_2022_SURVEY", out)))
+  expect_false(any(grepl("9 attempted", out)))
+})
+
+test_that("acquisition report selects the latest valid in-segment completion", {
+  log <- make_piplog(
+    make_entry(
+      "info", "current boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "info", "valid completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "success", n_total = 1L, n_success = 1L, n_failed = 0L,
+        surveys_success = "CUR_2022_SURVEY", surveys_failed = character()
+      )
+    ),
+    make_entry(
+      "info", "malformed duplicate completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "success", n_total = 8, n_success = 8L, n_failed = 0L,
+        surveys_success = paste0("BAD", seq_len(8L)),
+        surveys_failed = character(), extra = TRUE
+      )
+    )
+  )
+
+  out <- build_dlw_acquisition_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("1 attempted, 1 succeeded, 0 failed", out)))
+  expect_false(any(grepl("8 attempted", out)))
 })
 
 test_that("build_dlw_validation_summary groups workflow phases", {
@@ -238,6 +360,98 @@ test_that("build_dlw_validation_summary groups workflow phases", {
   expect_true(any(grepl("report_load_fail", out)))
   expect_true(any(grepl("BOL_2020_EH", out)))
   expect_true(any(grepl("missing report", out)))
+})
+
+test_that("validation completion separates invalid from execution failure", {
+  log <- make_piplog(
+    make_entry(
+      "info", "validation boundary",
+      list(info = "dlw_validation_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "error", "classified invalid",
+      list(
+        error = "dlw_validation_inf", phase = "validation",
+        survey = "BOL_2020_INVALID", validation_messages = "bad welfare"
+      )
+    ),
+    make_entry(
+      "error", "engine failed",
+      list(
+        error = "dlw_validation_inf", phase = "validation_engine",
+        survey = "IND_2021_FAILED", condition_msg = "engine boom"
+      )
+    ),
+    make_entry(
+      "info", "validation completion",
+      list(
+        info = "dlw_validation_inf", phase = "complete",
+        outcome = "partial", n_total = 3L, n_valid = 1L,
+        n_invalid = 1L, n_failed = 1L,
+        surveys_valid = "CHN_2019_VALID",
+        surveys_invalid = "BOL_2020_INVALID",
+        surveys_failed = "IND_2021_FAILED"
+      )
+    )
+  )
+
+  out <- build_dlw_validation_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("3 attempted, 1 valid, 1 invalid", out)))
+  expect_true(any(grepl("1 execution failed", out)))
+  expect_true(any(grepl("Invalid classifications", out)))
+  expect_true(any(grepl("Execution failures", out)))
+  expect_true(any(grepl("BOL_2020_INVALID", out)))
+  expect_true(any(grepl("IND_2021_FAILED", out)))
+})
+
+test_that("validation report never falls back before the current boundary", {
+  log <- make_piplog(
+    make_entry(
+      "info", "old boundary",
+      list(info = "dlw_validation_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "info", "old completion",
+      list(
+        info = "dlw_validation_inf", phase = "complete",
+        outcome = "success", n_total = 8L, n_valid = 8L,
+        n_invalid = 0L, n_failed = 0L,
+        surveys_valid = paste0("OLD", seq_len(8L)),
+        surveys_invalid = character(), surveys_failed = character()
+      )
+    ),
+    make_entry(
+      "info", "current boundary",
+      list(info = "dlw_validation_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "info", "current start",
+      list(info = "dlw_validation_inf", phase = "start", n_surveys = 2L)
+    ),
+    make_entry(
+      "error", "current invalid",
+      list(
+        error = "dlw_validation_inf", phase = "validation",
+        survey = "CUR_2022_INVALID"
+      )
+    ),
+    make_entry(
+      "info", "malformed completion",
+      list(
+        info = "dlw_validation_inf", phase = "complete",
+        outcome = "success", n_total = 2L, n_valid = 2L,
+        n_invalid = 0L, n_failed = 0L,
+        surveys_valid = c("A", "A"), surveys_invalid = character(),
+        surveys_failed = character()
+      )
+    )
+  )
+
+  out <- build_dlw_validation_summary(parse_log_meta(log))
+
+  expect_true(any(grepl("2 attempted, 1 valid, 1 invalid", out)))
+  expect_false(any(grepl("8 attempted|OLD", out)))
 })
 
 test_that("build_stage_warning distinguishes stage combinations", {
@@ -876,6 +1090,133 @@ test_that("log_report gracefully omits optional sections when entries absent", {
   expect_false(any(grepl("Processing Summary", out)))
   expect_false(any(grepl("Auxiliary File Changes", out)))
   expect_false(any(grepl("Inventory Verification", out)))
+})
+
+test_that("rendered report keeps latest DLW details only in dedicated sections", {
+  log <- make_piplog(
+    make_entry(
+      "info", "obsolete acquisition boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "error", "OBSOLETE_ACQUISITION_DETAIL",
+      list(
+        error = "dlw_acquisition_inf", phase = "download",
+        survey = "OLD_2020_ACQUISITION", country = "OLD", year = 2020L,
+        module = "ALL", condition_msg = "obsolete acquisition"
+      )
+    ),
+    make_entry(
+      "info", "obsolete acquisition completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "failed", n_total = 1L, n_success = 0L, n_failed = 1L,
+        surveys_success = character(),
+        surveys_failed = "OLD_2020_ACQUISITION"
+      )
+    ),
+    make_entry(
+      "info", "current acquisition boundary",
+      list(info = "dlw_acquisition_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "error", "CURRENT_ACQUISITION_DETAIL",
+      list(
+        error = "dlw_acquisition_inf", phase = "download",
+        survey = "CUR_2022_ACQUISITION", country = "CUR", year = 2022L,
+        module = "ALL", condition_msg = "current acquisition"
+      )
+    ),
+    make_entry(
+      "info", "current acquisition completion",
+      list(
+        info = "dlw_acquisition_inf", phase = "complete",
+        outcome = "failed", n_total = 1L, n_success = 0L, n_failed = 1L,
+        surveys_success = character(),
+        surveys_failed = "CUR_2022_ACQUISITION"
+      )
+    ),
+    make_entry(
+      "info", "obsolete validation boundary",
+      list(info = "dlw_validation_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "error", "OBSOLETE_VALIDATION_DETAIL",
+      list(
+        error = "dlw_validation_inf", phase = "validation",
+        survey = "OLD_2020_VALIDATION"
+      )
+    ),
+    make_entry(
+      "info", "obsolete validation completion",
+      list(
+        info = "dlw_validation_inf", phase = "complete",
+        outcome = "success", n_total = 1L, n_valid = 0L,
+        n_invalid = 1L, n_failed = 0L, surveys_valid = character(),
+        surveys_invalid = "OLD_2020_VALIDATION", surveys_failed = character()
+      )
+    ),
+    make_entry(
+      "info", "current validation boundary",
+      list(info = "dlw_validation_inf", phase = "attempt_start")
+    ),
+    make_entry(
+      "error", "CURRENT_INVALID_DETAIL",
+      list(
+        error = "dlw_validation_inf", phase = "validation",
+        survey = "CUR_2022_INVALID", validation_messages = "invalid data"
+      )
+    ),
+    make_entry(
+      "error", "CURRENT_EXECUTION_DETAIL",
+      list(
+        error = "dlw_validation_inf", phase = "load",
+        survey = "CUR_2022_FAILED", condition_msg = "load failed"
+      )
+    ),
+    make_entry(
+      "info", "current validation completion",
+      list(
+        info = "dlw_validation_inf", phase = "complete",
+        outcome = "failed", n_total = 2L, n_valid = 0L,
+        n_invalid = 1L, n_failed = 1L, surveys_valid = character(),
+        surveys_invalid = "CUR_2022_INVALID",
+        surveys_failed = "CUR_2022_FAILED"
+      )
+    ),
+    make_entry(
+      "info", "DLW complete",
+      list(
+        info = "dlw_summary_inf", phase = "complete",
+        get_dlw_data = TRUE, validate_dlw_data = TRUE,
+        outcome = "failed", acquisition_outcome = "failed",
+        validation_outcome = "failed", acquisition_n_total = 1L,
+        acquisition_n_success = 0L, acquisition_n_failed = 1L,
+        validation_n_total = 2L, validation_n_valid = 0L,
+        validation_n_invalid = 1L, validation_n_failed = 1L
+      )
+    ),
+    make_entry(
+      "error", "GENERIC_DETAIL",
+      list(error = "gd_type_miss", survey = "GEN_2023_SURVEY")
+    )
+  )
+
+  report <- log_report(log)
+  type_start <- match("## Summary by Type", report)
+  country_start <- match("## Breakdown by Country", report)
+  inventory_start <- match("## Inventory Verification", report)
+  country_end <- if (is.na(inventory_start)) length(report) else inventory_start - 1L
+  type_section <- report[type_start:(country_start - 1L)]
+  country_section <- report[country_start:country_end]
+
+  expect_false(any(grepl("OLD_2020|OBSOLETE_", report)))
+  expect_identical(sum(grepl("CUR_2022_ACQUISITION", report)), 1L)
+  expect_identical(sum(grepl("CUR_2022_INVALID", report)), 1L)
+  expect_identical(sum(grepl("CUR_2022_FAILED", report)), 1L)
+  expect_true(any(grepl("GEN_2023_SURVEY|GEN", country_section)))
+  expect_false(any(grepl("CUR_2022|dlw_(acquisition|validation|summary)_inf", type_section)))
+  expect_false(any(grepl("CUR_2022|dlw_(acquisition|validation|summary)_inf", country_section)))
 })
 
 test_that("log_report writes file when path is provided", {

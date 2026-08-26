@@ -1,3 +1,22 @@
+.filter_completed_dlw_validation_inventory <- function(inv) {
+  if (!is.data.frame(inv)) {
+    .abort_dlw_validation_inventory_schema(
+      "The completed validation inventory must be tabular."
+    )
+  }
+  completed <- .normalize_dlw_validation_inventory(
+    inv,
+    allow_schema_light_empty = TRUE
+  )
+  completed <- unique(completed)
+  if (anyDuplicated(completed$survey_id)) {
+    .abort_dlw_validation_inventory_schema(
+      "Completed validation inventory contains duplicate survey IDs."
+    )
+  }
+  completed[]
+}
+
 pd_freeze_aux_snapshot <- function(measures, verbose = FALSE) {
   catalog <- data.table::as.data.table(stamp::st_catalog_query(alias = "aux"))
   if (!nrow(catalog)) {
@@ -215,8 +234,9 @@ pd_revalidate_snapshot <- function(snapshot) {
 
 pd_prepare_execution <- function(inv, master, context = pd_dependency_context(),
                                  advisory_plan = NULL, bootstrap = FALSE,
-                                 bootstrap_entities = NULL, force = FALSE,
-                                 force_surveys = NULL, verbose = FALSE) {
+                                  bootstrap_entities = NULL, force = FALSE,
+                                  force_surveys = NULL, verbose = FALSE) {
+  inv <- .filter_completed_dlw_validation_inventory(inv)
   manifest <- pd_manifest_read(context, allow_absent = TRUE)
   snapshot <- pd_build_dependency_snapshot(inv, master, context,
                                            verbose = verbose)

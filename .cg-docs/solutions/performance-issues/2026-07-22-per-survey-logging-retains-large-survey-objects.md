@@ -129,3 +129,6 @@ data.table::setattr(dt, "recode_spec_version_id", version_id)
   — related `capture_log_args()` behavior in handler/callback frames
 - `.cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md`
   — background on shared package/session state and `.pipdataenv`
+- `.cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md`
+  — applies orchestration-boundary logging alongside fail-closed artifact and
+  inventory reconciliation

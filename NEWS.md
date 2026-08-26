@@ -13,6 +13,29 @@
   and `log_report()` now covers DLW acquisition and validation alongside
   survey cleaning and deflation.
 
+* `pipdata_get_gmd()` and `pipdata_validate_gmd()` now invisibly return plain
+  six-field stage results (`stage`, `outcome`, `inventory`, `summary`,
+  `failures`, and `artifacts`). `pipdata_dlw_process()` now invisibly returns a
+  plain aggregate with its acquisition and validation results, compact wrapper
+  failures, and checkpoint facts. Outcomes are `success`, `partial`, `failed`,
+  or `no_work`; nested disabled or dependency-blocked stages use `not_run`.
+  Code that assigns these calls should inspect `outcome` rather than expecting
+  `NULL`.
+
+* After argument and working-release preconditions succeed, DLW runtime
+  failures now return inspectable failed or partial results instead of
+  necessarily aborting the caller. Invalid arguments, missing setup
+  preconditions, interactive cancellation, and interrupts still escape. This
+  means an unassigned noninteractive script can continue after a failed DLW
+  result and should use the returned outcome when continuation is conditional.
+
+* `gmd_valid_inv` now stores completed validation state only: available rows
+  classified `valid` or `invalid`. Execution failures are absent and retry by
+  absence. `pd_process_data()`, internal dependency execution, and
+  `pd_change_report()` filter recognized legacy blank/unavailable control rows
+  before planning; malformed completed rows fail validation instead of entering
+  cleaning.
+
 ## New features
 
 * Add a staged dependency manifest and read-only `pd_change_report()` covering
@@ -38,17 +61,46 @@
 
 ## Refactoring
 
-* Introduce `dlw_validation_engine()`: a single data-driven validation engine
-  that replaces the 7 near-identical per-module DLW validation functions
-  (`dlw_validation_gpwg`, `dlw_validation_group`, `dlw_validation_bin`,
-  `dlw_validation_hist`, `dlw_validation_all`, `dlw_validation_aspire`,
-  `dlw_validation_l`) and `dlw_validation_skip`. Engine behavior is driven by
-  `inst/extdata/validation_spec.yml` (corrected selection semantics, per-check
-  severity, hhid/pid gating, skip `error_stop`). The legacy functions remain
-  as deprecated wrappers calling the engine. Report output matches the legacy
-  functions on the deterministic subset (golden fixture-tested via
-  `tests/testthat/fixtures/`); `assertion.id`/`error_df` remain
-  non-deterministic per data.validator.
+* Acquisition now actively downloads five modules (`ALL`, `GROUP`, `HIST`,
+  `GPWG`, and `BIN`), while catalog and validation handling recognizes seven
+  modules by also mapping `ASPIRE` and `L`. Each selected download forces
+  replacement of the exact catalog filename. The acquisition inventory is
+  reconciled to the authoritative current catalog, including no-worker runs,
+  and unresolved current five-module rows retry when `check_missing = TRUE`.
+
+* DLW persistence now treats thrown, null-version, and malformed write returns
+  as uncertain. Acquisition inventory, validation report/inventory, direct
+  inventory utility, and checkpoint paths reload durable state and compare
+  canonical prior and intended content rather than assuming rollback.
+
+* Validation now calls the data-driven `dlw_validation_engine()` for one survey
+  at a time using all seven module mappings. Invalid classification counts as a
+  completed validation, separately from execution failure. The next completed
+  `pipeline_version` comes from the maximum persisted history for that survey,
+  including superseded checksums; failed attempts consume no version.
+
+* Validation inventory and report are reconciled to current available
+  acquisition keys on every run. The report exactly covers completed inventory
+  IDs, exact normalized rows are deduplicated, and report content is verified
+  before the completed inventory commit. Unreadable or ambiguous history is not
+  overwritten. Every catalog-listed history version must now be readable and
+  schema-valid, report ordering uses all persisted columns, and optional-column
+  compatibility includes coercion-relevant attributes.
+
+* `pipdata_dlw_process()` remains the supported DLW entry point and routes a
+  custom `inv_gmd_list` through acquisition, bootstrap, and validation.
+  Validate-only execution never opens a menu; missing inventories under
+  automation return failed stage results. Validation can continue after an
+  acquisition failure when a trustworthy durable inventory remains. Aggregate
+  outcome and summary logging come from stage facts, while checkpoint failure
+  remains separate from the business outcome. A broader `run_pipeline()` API is
+  future direction only.
+
+* `log_report()` now segments acquisition and validation independently from
+  each latest attempt boundary, prefers exact completion entries, and confines
+  legacy fallback to that segment. Dedicated DLW sections own all DLW
+  discriminators; generic type and country sections exclude them to prevent
+  stale-history leakage and double counting.
 
 ## Maintenance
 

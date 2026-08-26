@@ -2,20 +2,32 @@
 % Please edit documentation in R/pipdata_dlw_compare.R
 \name{dlw_gmd_new}
 \alias{dlw_gmd_new}
-\title{Compare the local GMD dataset list with the server version to identify new entries.}
+\title{Compare the local GMD inventory with the current server catalog}
 \usage{
 dlw_gmd_new(check_missing = TRUE, update_inventory = FALSE)
 }
 \arguments{
-\item{check_missing}{Logical. If TRUE, includes missing datasets from either side.}
+\item{check_missing}{Logical scalar. Include current unresolved inventory
+rows. Default \code{TRUE}.}
 
-\item{update_inventory}{Logical. If TRUE, updates the local inventory with new entries. Default is FALSE.}
+\item{update_inventory}{Logical scalar. Reconcile and write the default local
+inventory. Default \code{FALSE}.}
 }
 \value{
-A data.table with new or unmatched GMD datasets.
+A \code{data.table} with new or unresolved current GMD datasets.
 }
 \description{
-Compare the local GMD dataset list with the server version to identify new entries.
+Candidate comparison recognizes all seven catalog/validation modules. New
+current rows are returned, and current rows recorded as
+\code{data_available = "No"} are also returned when \code{check_missing = TRUE}.
+\code{pipdata_get_gmd()} applies the narrower five-module download policy.
+}
+\details{
+When \code{update_inventory = TRUE}, the default inventory is reconciled to the
+authoritative catalog: active five-module rows are retained, obsolete rows
+are removed, and \code{"ASPIRE"}/\code{"L"} rows remain only when already available.
+The direct utility write is reloaded after any uncertain return and aborts
+unless intended durable content is verified.
 }
 \note{
 This function expects a working release to be configured via
@@ -25,6 +37,7 @@ standalone, ensure \code{setup_working_release()} has been invoked first.
 }
 \examples{
 \dontrun{
+pipfun::setup_working_release("20260206", "TEST")
 df <- dlw_gmd_new()
 head(df)
 }

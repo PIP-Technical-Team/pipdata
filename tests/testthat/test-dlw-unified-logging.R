@@ -44,11 +44,16 @@ test_that("removed logging arguments are rejected at the call boundary", {
   expect_error(pipdata_dlw_process(log = TRUE), "unused argument")
 })
 
-test_that("acquisition no-op is logged and returns invisible NULL", {
+test_that("acquisition no-op is attempt-scoped and returns a stage result", {
   fixture <- make_dlw_logging_folders()
   events <- list()
+  prior <- make_dlw_acquisition_row()
+  prior[, `:=`(Ext = "dta", data_available = "Yes")]
+  server <- data.table::copy(prior)
+  server[, data_available := NULL]
 
   testthat::local_mocked_bindings(
+    get_wrk_release = function(...) invisible(TRUE),
     get_pip_folders = function(...) fixture$folders,
     log_info = function(message, name, logmeta = NULL, ...) {
       events <<- c(events, list(list(message = message, logmeta = logmeta)))
@@ -57,18 +62,23 @@ test_that("acquisition no-op is logged and returns invisible NULL", {
     .package = "pipfun"
   )
   testthat::local_mocked_bindings(
-    dlw_gmd_new = function(...) data.table::data.table(),
+    check_directory = function(...) invisible(TRUE),
+    .load_dlw_acquisition_inventory = function(...) data.table::copy(prior),
+    .load_dlw_acquisition_server_catalog = function(...) data.table::copy(server),
+    .dlw_acquisition_latest_version = function(...) "version-1",
     .package = "pipdata"
   )
 
   result <- withVisible(pipdata_get_gmd(verbose = FALSE))
 
-  expect_null(result$value)
+  expect_identical(result$value$outcome, "no_work")
   expect_false(result$visible)
-  expect_length(events, 1L)
+  expect_length(events, 3L)
   expect_equal(events[[1]]$logmeta$info, "dlw_acquisition_inf")
-  expect_equal(events[[1]]$logmeta$phase, "no_new_data")
-  expect_equal(events[[1]]$logmeta$n_surveys, 0L)
+  expect_equal(events[[1]]$logmeta$phase, "attempt_start")
+  expect_equal(events[[2]]$logmeta$phase, "no_new_data")
+  expect_equal(events[[3]]$logmeta$phase, "complete")
+  expect_equal(events[[3]]$logmeta$n_total, 0L)
 })
 
 test_that("acquisition logs typed download failures and completion counts", {
@@ -76,6 +86,9 @@ test_that("acquisition logs typed download failures and completion counts", {
   events <- list()
   written <- list()
   gmd <- make_dlw_acquisition_row()
+  gmd[, Ext := "dta"]
+  server <- data.table::copy(gmd)
+  server[, data_available := NULL]
 
   testthat::local_mocked_bindings(
     get_pip_folders = function(...) fixture$folders,
@@ -90,9 +103,20 @@ test_that("acquisition logs typed download failures and completion counts", {
     .package = "pipfun"
   )
   testthat::local_mocked_bindings(
-    dlw_gmd_new = function(...) gmd,
-    dlw_gmd_match = function(...) data.table::data.table(),
+    check_directory = function(...) invisible(TRUE),
+    .load_dlw_acquisition_inventory = function(...) data.table::copy(gmd),
+    .load_dlw_acquisition_server_catalog = function(...) data.table::copy(server),
+    .dlw_acquisition_latest_version = function(...) "version-1",
+    .reload_dlw_acquisition_inventory_state = function(...) list(
+      state = "present",
+      value = written$x,
+      version_id = "version-2"
+    ),
     .package = "pipdata"
+  )
+  testthat::local_mocked_bindings(
+    get_wrk_release = function(...) invisible(TRUE),
+    .package = "pipfun"
   )
   testthat::local_mocked_bindings(
     dlw_get_gmd = function(...) rlang::abort("download failed"),
@@ -108,7 +132,7 @@ test_that("acquisition logs typed download failures and completion counts", {
 
   result <- withVisible(pipdata_get_gmd(verbose = FALSE))
 
-  expect_null(result$value)
+  expect_identical(result$value$outcome, "failed")
   expect_false(result$visible)
   expect_equal(written$id, "dlw_gmd_inv")
   expect_equal(written$x$data_available, "No")
@@ -129,15 +153,25 @@ test_that("acquisition logs typed download failures and completion counts", {
     events
   )
   expect_length(complete_entries, 1L)
-  expect_equal(complete_entries[[1]]$logmeta$n_surveys, 1L)
+  expect_equal(complete_entries[[1]]$logmeta$n_total, 1L)
   expect_equal(complete_entries[[1]]$logmeta$n_success, 0L)
   expect_equal(complete_entries[[1]]$logmeta$n_failed, 1L)
+  expect_identical(
+    names(complete_entries[[1]]$logmeta),
+    c(
+      "info", "phase", "outcome", "n_total", "n_success", "n_failed",
+      "surveys_success", "surveys_failed"
+    )
+  )
 })
 
-test_that("acquisition logs persistence results without a version", {
+test_that("acquisition reconciles persistence results without a version", {
   fixture <- make_dlw_logging_folders()
   events <- list()
   gmd <- make_dlw_acquisition_row()
+  gmd[, Ext := "dta"]
+  server <- data.table::copy(gmd)
+  server[, data_available := NULL]
 
   testthat::local_mocked_bindings(
     get_pip_folders = function(...) fixture$folders,
@@ -152,9 +186,20 @@ test_that("acquisition logs persistence results without a version", {
     .package = "pipfun"
   )
   testthat::local_mocked_bindings(
-    dlw_gmd_new = function(...) gmd,
-    dlw_gmd_match = function(...) data.table::data.table(),
+    check_directory = function(...) invisible(TRUE),
+    .load_dlw_acquisition_inventory = function(...) data.table::copy(gmd),
+    .load_dlw_acquisition_server_catalog = function(...) data.table::copy(server),
+    .dlw_acquisition_latest_version = function(...) "version-1",
+    .reload_dlw_acquisition_inventory_state = function(...) list(
+      state = "present",
+      value = gmd,
+      version_id = "version-1"
+    ),
     .package = "pipdata"
+  )
+  testthat::local_mocked_bindings(
+    get_wrk_release = function(...) invisible(TRUE),
+    .package = "pipfun"
   )
   testthat::local_mocked_bindings(
     dlw_get_gmd = function(...) invisible(TRUE),
@@ -165,10 +210,10 @@ test_that("acquisition logs persistence results without a version", {
     .package = "pipload"
   )
 
-  expect_error(
-    pipdata_get_gmd(verbose = FALSE),
-    "Failed to save the GMD inventory"
-  )
+  result <- pipdata_get_gmd(verbose = FALSE)
+  expect_identical(result$outcome, "failed")
+  expect_identical(result$artifacts$inventory$success, FALSE)
+  expect_identical(result$artifacts$inventory$reconciled, TRUE)
   save_errors <- Filter(
     function(x) identical(x$event, "error") &&
       identical(x$logmeta$phase, "inventory_save"),
@@ -178,14 +223,19 @@ test_that("acquisition logs persistence results without a version", {
   expect_equal(save_errors[[1]]$logmeta$error, "dlw_acquisition_inf")
 })
 
-test_that("validation logs typed load failures and report availability", {
+test_that("validation logs load failures without persisting retry rows", {
   fixture <- make_dlw_logging_folders()
   events <- list()
   writes <- list()
   gmd <- make_dlw_acquisition_row()
-  gmd[, data_available := "Yes"]
+  gmd[, `:=`(
+    FileName = "BOL_2020_EH_V01_M_V01_A_GMD_ALL.dta",
+    Ext = "dta",
+    data_available = "Yes"
+  )]
 
   testthat::local_mocked_bindings(
+    get_wrk_release = function(...) invisible(TRUE),
     get_pip_folders = function(...) fixture$folders,
     log_info = function(message, name, logmeta = NULL, ...) {
       events <<- c(events, list(list(event = "info", logmeta = logmeta)))
@@ -198,12 +248,15 @@ test_that("validation logs typed load failures and report availability", {
     .package = "pipfun"
   )
   testthat::local_mocked_bindings(
-    dlw_gmd_unvalidated = function(...) gmd,
+    check_directory = function(...) invisible(TRUE),
+    .load_dlw_acquisition_inventory = function(...) data.table::copy(gmd),
+    .load_dlw_validation_artifact_state = function(id, ...) list(
+      state = "absent", value = NULL, version_id = NA_character_
+    ),
+    .scan_dlw_validation_history = function(...) data.table::data.table(
+      survey_id = character(), pipeline_version = integer()
+    ),
     .package = "pipdata"
-  )
-  testthat::local_mocked_bindings(
-    is_file = function(...) FALSE,
-    .package = "fs"
   )
   testthat::local_mocked_bindings(
     load_dlw_data = function(...) rlang::abort("qs read failed"),
@@ -211,16 +264,17 @@ test_that("validation logs typed load failures and report availability", {
       writes <<- c(writes, list(list(x = x, id = id)))
       list(version_id = paste0(id, "_version"), skipped = FALSE)
     },
-    survey_id_to_vars = function(x, ...) x,
     .package = "pipload"
   )
 
   result <- withVisible(pipdata_validate_gmd(verbose = FALSE))
 
-  expect_null(result$value)
+  expect_identical(result$value$stage, "validation")
+  expect_identical(result$value$outcome, "failed")
+  expect_identical(result$value$summary$n_failed, 1L)
+  expect_null(result$value$inventory)
   expect_false(result$visible)
-  expect_equal(writes[[1]]$id, "gmd_valid_inv")
-  expect_equal(writes[[1]]$x$data_available, "No")
+  expect_length(writes, 0L)
 
   load_errors <- Filter(
     function(x) identical(x$event, "error") &&
@@ -229,24 +283,27 @@ test_that("validation logs typed load failures and report availability", {
   )
   expect_length(load_errors, 1L)
   expect_equal(load_errors[[1]]$logmeta$error, "dlw_validation_inf")
-  expect_equal(load_errors[[1]]$logmeta$survey, "BOL_2020_EH")
+  expect_equal(
+    load_errors[[1]]$logmeta$survey,
+    "BOL_2020_EH_V01_M_V01_A_GMD_ALL"
+  )
   expect_equal(load_errors[[1]]$logmeta$condition_msg, "qs read failed")
 
-  inventory_entries <- Filter(
+  completion <- Filter(
     function(x) identical(x$event, "info") &&
-      identical(x$logmeta$phase, "inventory_save"),
+      identical(x$logmeta$phase, "complete"),
     events
   )
-  expect_length(inventory_entries, 1L)
-  expect_equal(inventory_entries[[1]]$logmeta$n_load_failed, 1L)
-
-  report_errors <- Filter(
-    function(x) identical(x$event, "error") &&
-      identical(x$logmeta$phase, "report_unavailable"),
-    events
+  expect_length(completion, 1L)
+  expect_identical(
+    names(completion[[1]]$logmeta),
+    c(
+      "info", "phase", "outcome", "n_total", "n_valid", "n_invalid",
+      "n_failed", "surveys_valid", "surveys_invalid", "surveys_failed"
+    )
   )
-  expect_length(report_errors, 1L)
-  expect_equal(report_errors[[1]]$logmeta$error, "dlw_validation_inf")
+  expect_identical(completion[[1]]$logmeta$n_total, 1L)
+  expect_identical(completion[[1]]$logmeta$n_failed, 1L)
 })
 
 test_that("DLW wrapper emits summary and checkpoint even when both delegates are disabled", {
@@ -268,12 +325,13 @@ test_that("DLW wrapper emits summary and checkpoint even when both delegates are
         checkpoints,
         list(list(name = name, stage = stage, alias = alias))
       )
-      invisible(TRUE)
+      list(version_id = "checkpoint-v1")
     },
     .package = "pipfun"
   )
   testthat::local_mocked_bindings(
     st_init = function(...) invisible(NULL),
+    st_versions = function(...) data.table::data.table(version_id = character()),
     .package = "stamp"
   )
   testthat::local_mocked_bindings(
@@ -298,7 +356,13 @@ test_that("DLW wrapper emits summary and checkpoint even when both delegates are
     verbose = FALSE
   ))
 
-  expect_null(result$value)
+  expect_identical(names(result$value), c(
+    "stage", "outcome", "acquisition", "validation", "failures",
+    "checkpoint"
+  ))
+  expect_identical(result$value$outcome, "no_work")
+  expect_identical(result$value$acquisition$summary$reason, "disabled")
+  expect_identical(result$value$validation$summary$reason, "disabled")
   expect_false(result$visible)
   expect_length(checkpoints, 1L)
   expect_equal(
@@ -319,6 +383,10 @@ test_that("DLW wrapper checkpoints real delegate no-op paths", {
   fixture <- make_dlw_logging_folders()
   events <- list()
   checkpoints <- list()
+  prior <- make_dlw_acquisition_row()
+  prior[, `:=`(Ext = "dta", data_available = "Yes")]
+  server <- data.table::copy(prior)
+  server[, data_available := NULL]
 
   withr::local_options(pipfun.main_dir = fixture$root)
   testthat::local_mocked_bindings(
@@ -338,12 +406,13 @@ test_that("DLW wrapper checkpoints real delegate no-op paths", {
         checkpoints,
         list(list(name = name, stage = stage, alias = alias))
       )
-      invisible(TRUE)
+      list(version_id = "checkpoint-v1")
     },
     .package = "pipfun"
   )
   testthat::local_mocked_bindings(
     st_init = function(...) invisible(NULL),
+    st_versions = function(...) data.table::data.table(version_id = character()),
     .package = "stamp"
   )
   testthat::local_mocked_bindings(
@@ -351,8 +420,30 @@ test_that("DLW wrapper checkpoints real delegate no-op paths", {
     .package = "fs"
   )
   testthat::local_mocked_bindings(
-    dlw_gmd_new = function(...) data.table::data.table(),
-    dlw_gmd_unvalidated = function(...) data.table::data.table(),
+    .load_dlw_acquisition_inventory = function(...) data.table::copy(prior),
+    .load_dlw_acquisition_server_catalog = function(...) data.table::copy(server),
+    .dlw_acquisition_latest_version = function(...) "version-1",
+    .pipdata_validate_gmd_core = function(...) {
+      pipfun::log_info(
+        "No new GMD data was available for validation.",
+        name = "pipdata_log",
+        logmeta = list(
+          info = .logtype_dlw_validation,
+          phase = "no_new_data",
+          n_surveys = 0L
+        )
+      )
+      .new_dlw_validation_result(
+        outcome = "no_work",
+        inventory = NULL,
+        summary = .dlw_validation_empty_summary(),
+        failures = .new_dlw_validation_failure(),
+        artifacts = list(
+          report = .dlw_validation_no_write_fact("validation_report"),
+          inventory = .dlw_validation_no_write_fact("gmd_valid_inv")
+        )
+      )
+    },
     .package = "pipdata"
   )
 

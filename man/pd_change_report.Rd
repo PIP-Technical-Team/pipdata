@@ -12,7 +12,10 @@ pd_change_report(
 )
 }
 \arguments{
-\item{inv}{DLW inventory metadata.}
+\item{inv}{Completed DLW validation inventory metadata. Before dependency
+planning, only \code{data_available = "Yes"} rows with status \code{"valid"} or
+\code{"invalid"} are retained. Recognized legacy blank/\code{"No"} retry rows are
+excluded, while malformed completed rows abort.}
 
 \item{master}{PIP master inventory metadata.}
 
@@ -25,4 +28,13 @@ A \code{pip_dependency_plan}, invisibly.
 }
 \description{
 Report staged dependency changes without writing artifacts
+}
+\examples{
+\dontrun{
+pipfun::setup_working_release("20260206", "TEST")
+plan <- pd_change_report(
+  inv = pipload::load_gmd_valid_inv(),
+  master = pipload::load_pip_master_inventory()
+)
+}
 }

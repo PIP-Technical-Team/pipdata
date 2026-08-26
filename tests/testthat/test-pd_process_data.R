@@ -10,6 +10,33 @@
 # force = TRUE is mutually exclusive with force_surveys
 # ---------------------------------------------------------------------------
 
+make_process_validation_inventory <- function() {
+  data.table::data.table(
+    survey_id = c(
+      "BOL_2020_EH_V01_M_V01_A_GMD_ALL",
+      "ZWE_2021_PICES_V02_M_V01_A_GMD_ALL"
+    ),
+    pipeline_version = c(1L, 2L),
+    latest_version_id = c("v1", "v2"),
+    content_hash = c("hash-1", "hash-2"),
+    file_path = c("bol.qs2", "zwe.qs2"),
+    status = c("valid", "invalid"),
+    data_available = "Yes",
+    date_validated = as.POSIXct(
+      c("2026-08-26 11:00:00", "2026-08-26 12:00:00"), tz = "UTC"
+    ),
+    Checksum = c("checksum-1", "checksum-2"),
+    country_code = c("BOL", "ZWE"),
+    surveyid_year = c(2020L, 2021L),
+    survey_acronym = c("EH", "PICES"),
+    vermast = c("v01", "v02"),
+    veralt = "v01",
+    collection = "GMD",
+    module = "ALL",
+    tool = "TB"
+  )
+}
+
 test_that("pd_process_data aborts with piperr when force and force_surveys are both set", {
   # The guard must fire BEFORE the stamp-versioning side effect, so st_opts
   # must never be touched even with force = TRUE.
@@ -131,7 +158,7 @@ test_that("pd_process_data force waits for authoritative preflight", {
 })
 
 test_that("pd_process_data returns authoritative no-op master unchanged", {
-  inv <- data.table::data.table(survey_id = "s")
+  inv <- make_process_validation_inventory()[1L]
   master <- data.table::data.table(survey_id = "s", pip_id = "p")
   prepared <- FALSE
   testthat::local_mocked_bindings(
@@ -150,4 +177,72 @@ test_that("pd_process_data returns authoritative no-op master unchanged", {
   out <- pd_process_data(inv, verbose = FALSE)
   expect_true(prepared)
   expect_identical(out, master)
+})
+
+test_that("pd_process_data filters retry rows before dependency preparation", {
+  inv <- make_process_validation_inventory()
+  retry <- inv[1L]
+  retry[, `:=`(
+    survey_id = "PER_2022_ENAHO_V01_M_V01_A_GMD_ALL",
+    latest_version_id = "",
+    content_hash = "",
+    file_path = "",
+    status = "",
+    data_available = "No"
+  )]
+  inv <- data.table::rbindlist(list(inv, retry))
+  observed <- NULL
+  master <- data.table::data.table(survey_id = character(), pip_id = character())
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() list(scope_id = "scope"),
+    pd_prepare_execution = function(inv, ...) {
+      observed <<- data.table::copy(inv)
+      list(plan = list(actions = pd_empty_actions()), lease = list())
+    },
+    pd_lease_release = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+
+  pd_process_data(inv = inv, verbose = FALSE)
+  expect_false(retry$survey_id %in% observed$survey_id)
+  expect_true(any(observed$status == "invalid"))
+})
+
+test_that("pd_process_data filters loaded durable retry rows", {
+  inv <- make_process_validation_inventory()
+  retry <- inv[1L]
+  retry[, `:=`(
+    survey_id = "PER_2022_ENAHO_V01_M_V01_A_GMD_ALL",
+    latest_version_id = "",
+    content_hash = "",
+    file_path = "",
+    status = "",
+    data_available = "No"
+  )]
+  durable <- data.table::rbindlist(list(inv, retry))
+  observed <- NULL
+  master <- data.table::data.table(survey_id = character(), pip_id = character())
+
+  testthat::local_mocked_bindings(
+    load_gmd_valid_inv = function(...) durable,
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() list(scope_id = "scope"),
+    pd_prepare_execution = function(inv, ...) {
+      observed <<- data.table::copy(inv)
+      list(plan = list(actions = pd_empty_actions()), lease = list())
+    },
+    pd_lease_release = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+
+  pd_process_data(inv = NULL, verbose = FALSE)
+  expect_false(retry$survey_id %in% observed$survey_id)
 })

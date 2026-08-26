@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-25 · 131 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-26 · 139 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -39,21 +39,40 @@ _Generated 2026-08-25 · 131 artifacts (newest first) + 0 roadmap features_
 - **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
   > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
 
+## 2026-08-26
+
+- **[2026-08-25-dlw-wrapper-rewrite-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md)** · `review` · _—_ · `2026-08-26`
+  > **Review mode**: architecture **Scope**: DLW wrapper rewrite against synchronized base `55b7a3a1369504dcee8754237bedc…
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md)** · `review` · _—_ · `2026-08-26`
+  > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
+- **[Fail-closed durable reconciliation for staged data pipelines](.cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md)** · `solution` · _—_ · `2026-08-26`
+  > The DLW acquisition and validation wrappers combined discovery, per-survey execution, persistence, and logging. Sever…
+
 ## 2026-08-25
 
+- **[2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4](.cg-docs/reviews/2026-08-06-aux-version-gate-valid-dlw-load-revised-verify-review-4.md)** · `review` · _—_ · `2026-08-25`
+  > **Review mode**: light (`mode:verify`) **Files reviewed**: 6 textual diff paths, 18 status-only generated Rd paths, a…
 - **[2026-08-24-pipdata-staged-dependency-manifest-review](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md)** · `review` · _—_ · `2026-08-25`
   > - **[P0.1]** Snapshot planning omitted dependency facts for existing entities. Fixed by deriving semantic input, outp…
 - **[2026-08-24-pipdata-staged-dependency-manifest-verify-review](.cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review.md)** · `review` · _—_ · `2026-08-25`
   > - **[P0.1]** `R/pd_metadata_refresh.R` - metadata restart can rebuild from stale metadata instead of the exact newly …
 - **[Authoritative Staged Provenance Requires Result-Bound Checkpoints](.cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)** · `solution` · _—_ · `2026-08-25`
   > A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current…
+- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md)** · `plan` · _completed_ · `2026-08-25`
+  > Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchest…
+- **[Verify exported R API retirement from built package surfaces](.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md)** · `solution` · _—_ · `2026-08-25`
+  > Removing an exported R function requires more than deleting its source. The generated `NAMESPACE` can change unexpect…
 
 ## 2026-08-24
 
+- **[A3.1: Retire copy_dlw_metadata\(\)](.cg-docs/plans/2026-08-24-retire-copy-dlw-metadata.md)** · `plan` · _completed_ · `2026-08-24`
+  > Remove the unsupported `copy_dlw_metadata()` administrative utility from the installed package, including its export …
 - **[Implement Pipdata Staged Dependency Manifest](.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md)** · `plan` · _completed_ · `2026-08-24`
   > Implement a self-contained dependency-planning layer in pipdata that detects stale clean, metadata, and deflated arti…
 - **[Pipdata Staged Dependency Manifest](.cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md)** · `brainstorm` · _decided_ · `2026-08-24`
   > V2 replaces the V1 pipeline, whose `targets`-based orchestration is too slow, opaque, difficult to debug, and difficu…
+- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md)** · `brainstorm` · _decided_ · `2026-08-24`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
 
 ## 2026-08-21
 
