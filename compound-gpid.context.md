@@ -321,6 +321,15 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   disappeared. Compare complete normalized baseline/final diagnostics
   rather than counts. See
   `.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md`.
+- **Dependency invalidation separates exact provenance from semantic
+  change**: Named manifest components retain exact immutable
+  `version_id` and `content_hash` values, but shared auxiliary and PFW
+  artifacts invalidate an entity only when its keyed semantic projection
+  hash changes. Missing selected-node records must emit `new_entity` or
+  `unknown_provenance`, never default to cached work. Before inventory
+  writes, checkpoint inputs and stage code hashes must match accepted C2
+  fingerprints and exact committed receipts. See
+  `.cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md`.
 
 ## Work in Progress
 
