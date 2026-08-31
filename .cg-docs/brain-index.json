@@ -1,5 +1,5 @@
 {
-  "edge_count": 56,
+  "edge_count": 59,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -101,6 +101,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
       "target": ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
+      "target": ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md",
       "target_missing": false
     },
     {
@@ -273,6 +279,12 @@
     },
     {
       "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md",
+      "target": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
       "source": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
       "target": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
       "target_missing": false
@@ -335,6 +347,12 @@
       "edge_type": "references",
       "source": ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
       "target": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md",
+      "target": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
       "target_missing": false
     }
   ],
@@ -832,6 +850,36 @@
         "pipdata_stage_result",
         "run_id",
         "phase"
+      ]
+    },
+    {
+      "date": "2026-08-27",
+      "entity_type": "brainstorm",
+      "path": ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md",
+      "slug": "2026-08-27-executable-staged-invalidation-dag",
+      "status": "decided",
+      "summary": "<!-- Valid status values: decided, in-progress, abandoned -->",
+      "tags": [
+        "pipeline",
+        "invalidation",
+        "orchestration",
+        "dependency-graph",
+        "caching",
+        "provenance",
+        "resumability"
+      ],
+      "title": "Executable Staged Invalidation DAG",
+      "top_keywords": [
+        "cached",
+        "slice",
+        "force_surveys",
+        "pd_process_data()",
+        "pd_change_report()",
+        "pd_deflate_pipeline()",
+        "runnable",
+        "pip_deflated",
+        "current",
+        "tests"
       ]
     },
     {
@@ -2044,6 +2092,36 @@
       ]
     },
     {
+      "date": "2026-08-27",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
+      "slug": "2026-08-27-executable-staged-invalidation-dag",
+      "status": "active",
+      "summary": "Implement a pipdata-owned incremental executor for the existing durable `clean`, `metadata`, and `deflate` stages. The executor must use the C2 dependency manifest and exact Stamp receipts as its only currentness authority, map execution through C3 typed contexts and results, report every selected node, and run only directly affected descendants.",
+      "tags": [
+        "pipeline",
+        "invalidation",
+        "orchestration",
+        "dependency-graph",
+        "caching",
+        "provenance",
+        "resumability"
+      ],
+      "title": "Implement Executable Staged Invalidation DAG",
+      "top_keywords": [
+        "test scenarios",
+        "error paths",
+        "pd_change_report()",
+        "pip_id",
+        "pd_process_data()",
+        "null",
+        "aux_measures",
+        "pd_run_pipeline()",
+        "force_surveys",
+        "metadata"
+      ]
+    },
+    {
       "date": "",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
@@ -2701,6 +2779,28 @@
         "verbose",
         "file_path",
         "date_validated"
+      ]
+    },
+    {
+      "date": "2026-08-28",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md",
+      "slug": "2026-08-25-dlw-wrapper-rewrite-verify-review-2",
+      "status": "",
+      "summary": "**Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **Files reviewed**: 18 implementation and test files **Findings**: 12 (P0: 3, P1: 6, P2: 3, P3: 0)",
+      "tags": [],
+      "title": "2026-08-25-dlw-wrapper-rewrite-verify-review-2",
+      "top_keywords": [
+        "cg-testing",
+        "cg-code-quality",
+        "dependency_execution.r",
+        "verification",
+        "action = \"none\"",
+        "dependency_inputs.r",
+        "2026-08-25-dlw-wrapper-rewrite-review.md",
+        "dependency_manifest.r",
+        "test-pd-change-report.r",
+        "review"
       ]
     },
     {
@@ -3777,6 +3877,35 @@
       ]
     },
     {
+      "date": "2026-08-28",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md",
+      "slug": "2026-08-28-separate-exact-provenance-from-semantic-invalidation",
+      "status": "",
+      "summary": "An incremental planner can fail in two opposite directions: - A shared auxiliary artifact gets a new exact `version_id`, but only one keyed country/year projection changes. If the version enters every entity's semantic comparison, all entities rebuild. - A selected node has no manifest record. If fact construction skips the node, complete planning can default it to `action = \"none\"` and falsely cache work with no authoritative provenance. Checkpoint publication can then compound either error if it accepts any nonblank version/hash pair rather than proving it against committed receipts.",
+      "tags": [
+        "dependency-manifest",
+        "semantic-invalidation",
+        "exact-version",
+        "content-hash",
+        "missing-provenance",
+        "incremental-processing"
+      ],
+      "title": "Separate Exact Provenance From Semantic Invalidation",
+      "top_keywords": [
+        "version_id",
+        "separate exact provenance from semantic invalidation",
+        "exact",
+        "semantic",
+        "provenance",
+        "invalidation",
+        "separate",
+        "canonical",
+        "content_hash",
+        "new_entity"
+      ]
+    },
+    {
       "date": "2026-04-30",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
@@ -4279,13 +4408,13 @@
       ]
     }
   ],
-  "entity_count": 143,
-  "generated": "2026-08-26",
+  "entity_count": 147,
+  "generated": "2026-08-28",
   "schema_version": "0.2.0",
-  "topic_count": 6,
+  "topic_count": 5,
   "topics": [
     {
-      "entity_count": 100,
+      "entity_count": 107,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -4297,7 +4426,10 @@
         ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
         ".cg-docs/brainstorms/2026-08-15-force-surveys-surgical-reprocessing.md",
         ".cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md",
+        ".cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md",
         ".cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md",
+        ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
+        ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md",
         ".cg-docs/plans/2026-04-06-enrich-log-report.md",
         ".cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md",
         ".cg-docs/plans/2026-04-27-dplyr-to-collapse-phase1.md",
@@ -4325,6 +4457,9 @@
         ".cg-docs/plans/2026-08-17-force-surveys-surgical-reprocessing.md",
         ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
         ".cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md",
+        ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
+        ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
+        ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
         ".cg-docs/reviews/2026-04-06-enrich-log-report-review.md",
         ".cg-docs/reviews/2026-04-16-review.md",
         ".cg-docs/reviews/2026-04-27-branch-review.md",
@@ -4354,6 +4489,7 @@
         ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-review.md",
         ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+        ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
@@ -4389,15 +4525,15 @@
         ".cg-docs/solutions/testing-patterns/2026-05-06-stamp-vs-pipeline-path-test-fixtures.md"
       ],
       "keywords": [
-        "valid_dlw_load()",
-        "reporting_level",
-        "aaa.r"
+        "force_surveys",
+        "pip_id",
+        "valid_dlw_load()"
       ],
-      "label": "Valid_Dlw_Load() / Reporting_Level / Aaa.R",
-      "slug": "valid-dlw-load-reporting-level-aaa-r"
+      "label": "Force_Surveys / Pip_Id / Valid_Dlw_Load()",
+      "slug": "force-surveys-pip-id-valid-dlw-load"
     },
     {
-      "entity_count": 9,
+      "entity_count": 10,
       "entity_paths": [
         ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
         ".cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md",
@@ -4405,6 +4541,7 @@
         ".cg-docs/solutions/data-quality/2026-05-27-catalog-validation-before-filter-spurious-warnings.md",
         ".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md",
         ".cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md",
+        ".cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md",
         ".cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md",
         ".cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md",
         ".cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md"
@@ -4416,22 +4553,6 @@
       ],
       "label": "%||% / Related / Root",
       "slug": "related-root"
-    },
-    {
-      "entity_count": 4,
-      "entity_paths": [
-        ".cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md",
-        ".cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md",
-        ".cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md",
-        ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md"
-      ],
-      "keywords": [
-        "failed",
-        "partial",
-        "no_work"
-      ],
-      "label": "Failed / Partial / No_Work",
-      "slug": "failed-partial-no-work"
     },
     {
       "entity_count": 4,

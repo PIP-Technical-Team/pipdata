@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-26 · 143 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-08-28 · 147 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -38,6 +38,20 @@ _Generated 2026-08-26 · 143 artifacts (newest first) + 0 roadmap features_
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
 - **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
   > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
+
+## 2026-08-28
+
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review-2](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md)** · `review` · _—_ · `2026-08-28`
+  > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
+- **[Separate Exact Provenance From Semantic Invalidation](.cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md)** · `solution` · _—_ · `2026-08-28`
+  > An incremental planner can fail in two opposite directions: - A shared auxiliary artifact gets a new exact `version_i…
+
+## 2026-08-27
+
+- **[Executable Staged Invalidation DAG](.cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md)** · `brainstorm` · _decided_ · `2026-08-27`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
+- **[Implement Executable Staged Invalidation DAG](.cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md)** · `plan` · _active_ · `2026-08-27`
+  > Implement a pipdata-owned incremental executor for the existing durable `clean`, `metadata`, and `deflate` stages. Th…
 
 ## 2026-08-26
 

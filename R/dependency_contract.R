@@ -6,7 +6,8 @@
   "clean_code_changed", "metadata_code_changed", "deflate_code_changed",
   "aux_cpi_changed", "aux_ppp_changed", "aux_pop_changed",
   "aux_gdp_changed", "aux_pce_changed", "upstream_output_changed",
-  "output_missing", "output_drift", "forced", "unknown_provenance"
+  "output_missing", "output_drift", "forced", "unknown_provenance",
+  "legacy_input_changed"
 )
 
 pd_empty_actions <- function() {
@@ -21,6 +22,15 @@ pd_empty_reasons <- function() {
     stage = character(), entity_id = character(), reason = character(),
     input = character(), old = character(), new = character()
   )
+}
+
+pd_empty_plan_node_states <- function() {
+  actions <- pd_empty_actions()
+  actions[, `:=`(
+    state = character(), scheduling_state = character(),
+    wave_state = character()
+  )]
+  return(actions)
 }
 
 pd_empty_manifest <- function(context) {
@@ -50,16 +60,60 @@ pd_empty_manifest <- function(context) {
 }
 
 pd_validate_plan <- function(x) {
-  if (!is.list(x) || !identical(names(x), c("context", "actions", "reasons", "snapshot"))) {
-    rlang::abort("Invalid dependency plan shape.", class = "pipdata_dependency_plan_invalid")
+  expected <- c("context", "actions", "reasons", "snapshot")
+  action_fields <- c("stage", "entity_id", "survey_id", "pip_id", "action")
+  reason_fields <- c("stage", "entity_id", "reason", "input", "old", "new")
+  if (!is.list(x) || !identical(names(x), expected) ||
+      !data.table::is.data.table(x$actions) ||
+      !data.table::is.data.table(x$reasons) ||
+      !all(action_fields %in% names(x$actions)) ||
+      !all(reason_fields %in% names(x$reasons))) {
+    rlang::abort(
+      "Invalid dependency plan shape.",
+      class = "pipdata_dependency_plan_invalid"
+    )
   }
-  if (any(!x$actions$stage %in% .PD_STAGES) ||
+  actions <- x$actions
+  reasons <- x$reasons
+  invalid_mapping <- actions[
+    stage == "clean",
+    any(is.na(survey_id) | !nzchar(survey_id) | entity_id != survey_id |
+          !is.na(pip_id))
+  ] || actions[
+    stage %in% c("metadata", "deflate"),
+    any(is.na(survey_id) | !nzchar(survey_id) | is.na(pip_id) |
+          !nzchar(pip_id) | entity_id != pip_id)
+  ]
+  if (anyNA(actions[, .(stage, entity_id, action)]) ||
+      any(!nzchar(actions$stage)) || any(!nzchar(actions$entity_id)) ||
+      any(!actions$stage %in% .PD_STAGES) ||
       any(!x$actions$action %in% .PD_ACTIONS) ||
-      anyDuplicated(x$actions[, .(stage, entity_id)])) {
-    rlang::abort("Invalid dependency plan actions.", class = "pipdata_dependency_plan_invalid")
+      anyDuplicated(actions[, .(stage, entity_id)]) || invalid_mapping) {
+    rlang::abort(
+      "Invalid dependency plan actions.",
+      class = "pipdata_dependency_plan_invalid"
+    )
   }
-  if (any(!x$reasons$reason %in% .PD_REASON_CODES)) {
-    rlang::abort("Unknown dependency reason code.", class = "pipdata_dependency_plan_invalid")
+  if (anyNA(reasons[, .(stage, entity_id, reason)]) ||
+      any(!reasons$stage %in% .PD_STAGES) ||
+      any(!reasons$reason %in% .PD_REASON_CODES) ||
+      anyDuplicated(reasons)) {
+    rlang::abort(
+      "Invalid dependency plan reasons.",
+      class = "pipdata_dependency_plan_invalid"
+    )
+  }
+  reason_actions <- actions[reasons, on = c("stage", "entity_id")]
+  actionable <- actions[action != "none", .(stage, entity_id)]
+  reason_keys <- unique(reasons[, .(stage, entity_id)])
+  missing_reasons <- actionable[!reason_keys, on = c("stage", "entity_id")]
+  if ((nrow(reasons) &&
+       (anyNA(reason_actions$action) || any(reason_actions$action == "none"))) ||
+      nrow(missing_reasons)) {
+    rlang::abort(
+      "Plan actions and reasons are inconsistent.",
+      class = "pipdata_dependency_plan_invalid"
+    )
   }
   invisible(x)
 }
@@ -95,7 +149,65 @@ pd_validate_manifest <- function(x, context = NULL) {
       (nrow(x$fingerprints) && (!nonblank(x$fingerprints$stage) ||
       !nonblank(x$fingerprints$component) || !nonblank(x$fingerprints$hash)))) {
     rlang::abort("Manifest inputs and fingerprints must be complete.",
-                 class = "pipdata_dependency_manifest_invalid")
+                  class = "pipdata_dependency_manifest_invalid")
+  }
+  record_keys <- unique(x$records[, .(stage, entity_id)])
+  input_keys <- unique(x$inputs[, .(stage, entity_id)])
+  data.table::setorder(record_keys, stage, entity_id)
+  data.table::setorder(input_keys, stage, entity_id)
+  if (!identical(record_keys, input_keys)) {
+    rlang::abort(
+      "Manifest records and input groups must have identical keys.",
+      class = "pipdata_dependency_manifest_invalid"
+    )
+  }
+  if (nrow(x$inputs)) {
+    if (any(!x$inputs$stage %in% .PD_STAGES)) {
+      rlang::abort(
+        "Manifest input stages are invalid.",
+        class = "pipdata_dependency_manifest_invalid"
+      )
+    }
+    input_groups <- unique(x$inputs[, .(stage, entity_id)])
+    valid_inputs <- vapply(seq_len(nrow(input_groups)), function(i) {
+      key <- input_groups[i]
+      rows <- x$inputs[
+        stage == key$stage[[1L]] & entity_id == key$entity_id[[1L]]
+      ]
+      canonical <- rows[name == "canonical"]
+      components <- rows[name != "canonical"]
+      record <- x$records[
+        stage == key$stage[[1L]] & entity_id == key$entity_id[[1L]]
+      ]
+      if (nrow(canonical) != 1L || nrow(record) != 1L ||
+          !identical(
+            record$input_hash[[1L]], canonical$content_hash[[1L]]
+          )) {
+        return(FALSE)
+      }
+      if (!nrow(components)) {
+        return(TRUE)
+      }
+      expected <- tryCatch(
+        pd_build_input_rows(
+          key$stage[[1L]], key$entity_id[[1L]],
+          components[, .(name, version_id, content_hash)]
+        ),
+        error = function(e) NULL
+      )
+      !is.null(expected) &&
+        identical(
+          as.list(canonical[, .(name, version_id, content_hash)]),
+          as.list(expected[name == "canonical",
+                           .(name, version_id, content_hash)])
+        )
+    }, logical(1))
+    if (!all(valid_inputs)) {
+      rlang::abort(
+        "Manifest named input composites are invalid.",
+        class = "pipdata_dependency_manifest_invalid"
+      )
+    }
   }
   if (nrow(x$records)) {
     valid_receipts <- vapply(seq_len(nrow(x$records)), function(i) {

@@ -44,25 +44,271 @@ pd_freeze_aux_snapshot <- function(measures, verbose = FALSE) {
   list(catalog = rows, objects = objects)
 }
 
-pd_build_dependency_snapshot <- function(inv, master, context,
-                                         measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
-                                         verbose = FALSE) {
-  aux <- pd_freeze_aux_snapshot(measures, verbose)
-  catalogs <- lapply(c("pip", "pip_meta", "pip_deflated", "pip_inv"), function(alias) {
-    data.table::as.data.table(stamp::st_catalog_query(alias = alias))
-  })
-  names(catalogs) <- c("pip", "pip_meta", "pip_deflated", "pip_inv")
+pd_build_dependency_snapshot <- function(
+  inv,
+  master,
+  context,
+  measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  verbose = FALSE,
+  aux = NULL,
+  catalogs = NULL,
+  fingerprints = NULL
+) {
+  if (is.null(aux)) {
+    aux <- pd_freeze_aux_snapshot(measures, verbose)
+  }
+  if (is.null(catalogs)) {
+    aliases <- c("pip", "pip_meta", "pip_deflated", "pip_inv")
+    catalogs <- lapply(aliases, function(alias) {
+      data.table::as.data.table(stamp::st_catalog_query(alias = alias))
+    })
+    names(catalogs) <- aliases
+  }
+  if (is.null(fingerprints)) {
+    fingerprints <- pd_code_fingerprints()
+  }
   snapshot <- list(
     context = context,
     inventory = data.table::copy(data.table::as.data.table(inv)),
     master = data.table::copy(data.table::as.data.table(master)),
+    measures = unique(tolower(measures)),
     aux = aux,
     catalogs = catalogs,
-    fingerprints = pd_code_fingerprints(),
+    fingerprints = fingerprints,
     captured_at = format(Sys.time(), tz = "UTC", usetz = TRUE)
   )
   snapshot$current <- pd_snapshot_current(snapshot)
-  snapshot
+  return(snapshot)
+}
+
+pd_canonical_snapshot_value <- function(x) {
+  if (inherits(x, "POSIXt")) {
+    return(format(x, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"))
+  }
+  if (is.factor(x)) {
+    return(as.character(x))
+  }
+  if (is.environment(x) || inherits(x, "externalptr")) {
+    return(NULL)
+  }
+  if (is.data.frame(x)) {
+    return(pd_canonical_snapshot_table(x))
+  }
+  if (is.list(x)) {
+    if (!is.null(names(x))) {
+      x <- x[order(names(x))]
+    }
+    return(lapply(x, pd_canonical_snapshot_value))
+  }
+  if (!is.null(names(x))) {
+    x <- x[order(names(x))]
+  }
+  return(x)
+}
+
+pd_canonical_snapshot_table <- function(x) {
+  dt <- data.table::as.data.table(data.table::copy(x))
+  if (!ncol(dt)) {
+    return(list(columns = character(), data = list()))
+  }
+  data.table::setcolorder(dt, sort(names(dt)))
+  for (column in names(dt)) {
+    values <- dt[[column]]
+    if (inherits(values, "POSIXt")) {
+      data.table::set(
+        dt,
+        j = column,
+        value = format(values, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")
+      )
+    } else if (is.factor(values)) {
+      data.table::set(dt, j = column, value = as.character(values))
+    } else if (is.list(values)) {
+      hashes <- vapply(values, function(value) {
+        pd_hash_object(pd_canonical_snapshot_value(value))
+      }, character(1))
+      data.table::set(dt, j = column, value = hashes)
+    }
+  }
+  if (nrow(dt)) {
+    data.table::setorderv(dt, names(dt), na.last = TRUE)
+  }
+  return(list(columns = names(dt), data = as.list(dt)))
+}
+
+pd_snapshot_manifest_identity <- function(manifest, context) {
+  if (inherits(manifest, "pipdata_manifest_absent")) {
+    return(list(absent = TRUE, scope_id = context$scope_id))
+  }
+  identity <- attr(manifest, "manifest_identity")
+  if (!is.null(identity)) {
+    return(pd_canonical_snapshot_value(identity))
+  }
+  tables <- lapply(manifest, function(value) {
+    if (is.data.frame(value)) {
+      return(pd_canonical_snapshot_table(value))
+    }
+    pd_canonical_snapshot_value(value)
+  })
+  return(list(in_memory_manifest = pd_hash_object(tables)))
+}
+
+pd_snapshot_identity <- function(snapshot, manifest) {
+  current <- data.table::as.data.table(
+    data.table::copy(snapshot$current %||% data.table::data.table())
+  )
+  aux_columns <- intersect(c("stage", "entity_id", "aux_hashes"), names(current))
+  aux_hashes <- if (length(aux_columns)) {
+    current[, ..aux_columns]
+  } else {
+    data.table::data.table()
+  }
+  current_columns <- names(current)[!vapply(current, is.list, logical(1))]
+  current_facts <- current[, ..current_columns]
+  catalogs <- snapshot$catalogs %||% list()
+  if (length(catalogs)) {
+    catalog_names <- names(catalogs) %||% as.character(seq_along(catalogs))
+    catalogs <- catalogs[order(catalog_names)]
+  }
+  canonical_catalogs <- lapply(catalogs, pd_canonical_snapshot_table)
+  fingerprints <- pd_canonical_snapshot_value(
+    snapshot$fingerprints %||% list()
+  )
+  payload <- list(
+    manifest = pd_snapshot_manifest_identity(manifest, snapshot$context),
+    aux_catalog = pd_canonical_snapshot_table(
+      snapshot$aux$catalog %||% data.table::data.table()
+    ),
+    catalogs = canonical_catalogs,
+    inventory = pd_canonical_snapshot_table(snapshot$inventory),
+    master = pd_canonical_snapshot_table(snapshot$master),
+    auxiliary_components = pd_canonical_snapshot_table(aux_hashes),
+    current = pd_canonical_snapshot_table(current_facts),
+    facts = pd_canonical_snapshot_table(
+      snapshot$facts %||% data.table::data.table()
+    ),
+    fingerprints = fingerprints
+  )
+  return(pd_hash_object(payload))
+}
+
+pd_assert_no_removed_surveys <- function(inv, master) {
+  inv <- data.table::as.data.table(data.table::copy(inv))
+  master <- data.table::as.data.table(data.table::copy(master))
+  if (!nrow(master)) {
+    return(invisible(NULL))
+  }
+  if (!"survey_id" %in% names(inv) || !"survey_id" %in% names(master)) {
+    rlang::abort(
+      "Survey removal detection requires survey IDs in both inventories.",
+      class = "pipdata_dependency_facts_invalid"
+    )
+  }
+  completed_surveys <- sort(unique(inv$survey_id[!is.na(inv$survey_id)]))
+  prior_surveys <- sort(unique(master$survey_id[!is.na(master$survey_id)]))
+  removed_surveys <- setdiff(prior_surveys, completed_surveys)
+  if (length(removed_surveys)) {
+    rlang::abort(
+      paste(
+        "Completed validation no longer contains whole surveys:",
+        paste(removed_surveys, collapse = ", ")
+      ),
+      class = "pipdata_upstream_survey_removed",
+      removed_surveys = removed_surveys
+    )
+  }
+  return(invisible(NULL))
+}
+
+pd_prepare_dependency_facts <- function(
+  inv,
+  master,
+  context = pd_dependency_context(),
+  manifest = NULL,
+  measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  verbose = FALSE,
+  aux = NULL,
+  catalogs = NULL,
+  fingerprints = NULL,
+  check_removed_surveys = TRUE
+) {
+  if (!is.list(context) || !is.character(context$scope_id) ||
+      length(context$scope_id) != 1L || is.na(context$scope_id) ||
+      !nzchar(context$scope_id)) {
+    rlang::abort(
+      "A valid dependency context is required.",
+      class = "pipdata_dependency_context_error"
+    )
+  }
+  if (!is.data.frame(master)) {
+    rlang::abort(
+      "The master inventory must be tabular.",
+      class = "pipdata_dependency_facts_invalid"
+    )
+  }
+  inv <- .filter_completed_dlw_validation_inventory(inv)
+  master <- data.table::as.data.table(data.table::copy(master))
+  if (isTRUE(check_removed_surveys)) {
+    pd_assert_no_removed_surveys(inv, master)
+  }
+  if (is.null(manifest)) {
+    manifest <- pd_manifest_read(context, allow_absent = TRUE)
+  }
+  if (!inherits(manifest, "pipdata_manifest_absent")) {
+    pd_validate_manifest(manifest, context)
+  }
+  snapshot <- pd_build_dependency_snapshot(
+    inv = inv,
+    master = master,
+    context = context,
+    measures = measures,
+    verbose = verbose,
+    aux = aux,
+    catalogs = catalogs,
+    fingerprints = fingerprints
+  )
+  snapshot$facts <- pd_snapshot_facts(snapshot, manifest)
+  snapshot$snapshot_identity <- pd_snapshot_identity(snapshot, manifest)
+  return(list(context = context, manifest = manifest, snapshot = snapshot))
+}
+
+pd_refresh_execution_facts <- function(
+  execution,
+  master,
+  force = FALSE,
+  force_surveys = NULL,
+  bootstrap = FALSE,
+  bootstrap_entities = NULL,
+  verbose = FALSE
+) {
+  pd_assert_execution_fence(execution)
+  snapshot <- pd_build_dependency_snapshot(
+    inv = execution$snapshot$inventory,
+    master = master,
+    context = execution$context,
+    measures = execution$snapshot$measures,
+    verbose = verbose,
+    aux = execution$snapshot$aux,
+    fingerprints = execution$snapshot$fingerprints
+  )
+  snapshot$facts <- pd_snapshot_facts(snapshot, execution$manifest)
+  snapshot$snapshot_identity <- pd_snapshot_identity(
+    snapshot, execution$manifest
+  )
+  plan <- pd_dependency_plan(
+    snapshot$inventory,
+    snapshot$master,
+    execution$manifest,
+    execution$context,
+    snapshot$fingerprints,
+    force,
+    force_surveys,
+    snapshot = snapshot
+  )
+  execution$snapshot <- snapshot
+  execution$plan <- pd_assert_bootstrap(
+    plan, bootstrap, bootstrap_entities
+  )
+  return(execution)
 }
 
 pd_catalog_receipt <- function(catalog, artifact) {
@@ -119,91 +365,280 @@ pd_entity_aux_projection <- function(snapshot, row, measures) {
 pd_snapshot_current <- function(snapshot) {
   rows <- list()
   fingerprints <- snapshot$fingerprints$summary
-  code_hash <- function(stage) fingerprints[stage == ..stage, hash][1L]
+  code_hash <- function(stage) {
+    fingerprints[which(fingerprints$stage == stage), hash][1L]
+  }
+  requested <- snapshot$measures %||%
+    c("pfw", "cpi", "ppp", "pop", "gdp", "pce")
   inv <- snapshot$inventory
   for (i in seq_len(nrow(inv))) {
-    row <- as.list(inv[i])
-    entity <- row$survey_id
-    aux_hash <- pd_entity_aux_hash(snapshot, row, "pfw")
-    expected <- tryCatch(expected_pip_ids(row, pd_select_aux(
-      snapshot$aux$objects$pfw, "pfw", row$country_code %||% row$country,
-      row$year, row$survey_acronym %||% NULL,
-      row$reporting_level %||% NULL)$data), error = function(e) character())
-    receipts <- lapply(expected, function(id) pd_catalog_receipt(snapshot$catalogs$pip, id))
+    row <- inv[i]
+    entity <- row$survey_id[[1L]]
+    state <- pd_entity_input_state(snapshot, row, "clean", "pfw")
+    expected <- state$expected_pip_ids
+    receipts <- data.table::rbindlist(lapply(expected, function(id) {
+      receipt <- pd_catalog_receipt(snapshot$catalogs$pip, id)
+      data.table::data.table(
+        pip_id = id, alias = "pip", artifact = id, path = receipt$path,
+        version_id = receipt$version_id, content_hash = receipt$content_hash,
+        success = !anyNA(unlist(receipt)) &&
+          all(nzchar(unlist(receipt)))
+      )
+    }), fill = TRUE)
+    receipt_set <- tryCatch(
+      pd_clean_receipt_set(receipts, expected),
+      error = function(e) list(
+        receipts = receipts, output_version_id = NA_character_,
+        output_hash = NA_character_
+      )
+    )
     rows[[length(rows) + 1L]] <- data.table::data.table(
       stage = "clean", entity_id = entity, survey_id = entity,
-      pip_id = NA_character_, input_hash = pd_hash_object(list(row, aux_hash)),
-      code_hash = code_hash("clean"), output_version_id = pd_hash_object(lapply(receipts, `[[`, "version_id")),
-      output_hash = pd_hash_object(lapply(receipts, `[[`, "content_hash")),
-      expected_outputs = list(expected), output_receipts = list(receipts)
+      pip_id = NA_character_, input_hash = state$input_hash,
+      legacy_input_hash = state$legacy_input_hash,
+      legacy_input_version = state$legacy_input_version,
+      code_hash = code_hash("clean"),
+      output_version_id = receipt_set$output_version_id,
+      output_hash = receipt_set$output_hash,
+      expected_outputs = list(expected), expected_pip_ids = list(expected),
+      output_receipts = list(receipt_set$receipts),
+      input_rows = list(state$input_rows)
     )
   }
   master <- snapshot$master
   for (i in seq_len(nrow(master))) {
-    row <- as.list(master[i])
+    row <- master[i]
     for (stage in c("metadata", "deflate")) {
-      measures <- if (stage == "metadata") c("cpi", "ppp", "pop", "gdp", "pce") else c("cpi", "ppp", "pop")
-      aux_hash <- pd_entity_aux_hash(snapshot, row, measures)
-      aux_projection <- tryCatch(
-        pd_entity_aux_projection(snapshot, row, measures),
-        error = function(e) list()
+      row_list <- as.list(row)
+      measures <- if (stage == "metadata") {
+        intersect(c("cpi", "ppp", "pop", "gdp", "pce"), requested)
+      } else {
+        intersect(c("cpi", "ppp", "pop"), requested)
+      }
+      upstream_fields <- if (stage == "metadata") {
+        c("version_id_data", "content_hash_data")
+      } else {
+        c(
+          "version_id_data", "content_hash_data",
+          "version_id_metadata", "content_hash_metadata"
+        )
+      }
+      exact_upstream <- all(upstream_fields %in% names(row)) &&
+        all(vapply(upstream_fields, function(field) {
+          value <- row[[field]][[1L]]
+          is.character(value) && !is.na(value) && nzchar(value)
+        }, logical(1)))
+      state <- if (exact_upstream) {
+        pd_entity_input_state(snapshot, row, stage, measures)
+      } else {
+        list(
+          input_hash = NA_character_, legacy_input_hash = NA_character_,
+          legacy_input_version = NA_character_, aux_projection = list(),
+          input_rows = data.table::data.table(
+            stage = character(), entity_id = character(), name = character(),
+            version_id = character(), content_hash = character()
+          )
+        )
+      }
+      receipt <- pd_catalog_receipt(
+        snapshot$catalogs[[
+          if (stage == "metadata") "pip_meta" else "pip_deflated"
+        ]],
+        row_list$pip_id
       )
-      input <- if (stage == "metadata") {
-        list(row$version_id_data, row$content_hash_data, aux_hash)
-      } else list(row$version_id_data, row$content_hash_data,
-                  row$version_id_metadata, row$content_hash_metadata, aux_hash)
-      receipt <- pd_catalog_receipt(snapshot$catalogs[[if (stage == "metadata") "pip_meta" else "pip_deflated"]], row$pip_id)
       if (identical(stage, "deflate")) {
-        receipt <- pd_deflate_current_receipt(receipt, row)
+        receipt <- pd_deflate_current_receipt(receipt, row_list)
       }
       rows[[length(rows) + 1L]] <- data.table::data.table(
-        stage, entity_id = row$pip_id, survey_id = row$survey_id,
-        pip_id = row$pip_id, input_hash = pd_hash_object(input),
+        stage, entity_id = row_list$pip_id, survey_id = row_list$survey_id,
+        pip_id = row_list$pip_id, input_hash = state$input_hash,
+        legacy_input_hash = state$legacy_input_hash,
+        legacy_input_version = state$legacy_input_version,
         code_hash = code_hash(stage), output_version_id = receipt$version_id,
-        output_hash = receipt$content_hash, expected_outputs = list(row$pip_id),
-        output_receipts = list(list(receipt)), aux_projection = list(aux_projection),
-        data_version_id = row$version_id_data %||% NA_character_,
-        data_hash = row$content_hash_data %||% NA_character_,
-        metadata_version_id = row$version_id_metadata %||% NA_character_,
-        metadata_hash = row$content_hash_metadata %||% NA_character_
+        output_hash = receipt$content_hash,
+        expected_outputs = list(row_list$pip_id),
+        output_receipts = list(list(receipt)),
+        aux_projection = list(state$aux_projection),
+        data_version_id = row_list$version_id_data %||% NA_character_,
+        data_hash = row_list$content_hash_data %||% NA_character_,
+        metadata_version_id = row_list$version_id_metadata %||% NA_character_,
+        metadata_hash = row_list$content_hash_metadata %||% NA_character_,
+        input_rows = list(state$input_rows)
       )
     }
   }
-  data.table::rbindlist(rows, fill = TRUE)
+  return(data.table::rbindlist(rows, fill = TRUE))
 }
 
 pd_snapshot_facts <- function(snapshot, manifest) {
   current <- snapshot$current
-  if (!nrow(current) || inherits(manifest, "pipdata_manifest_absent")) return(data.table::data.table())
+  if (!nrow(current) || inherits(manifest, "pipdata_manifest_absent")) {
+    return(data.table::data.table())
+  }
   records <- manifest$records
-  joined <- records[current, on = c("stage", "entity_id")]
-  prior_inputs <- manifest$inputs[name == "canonical",
-                                  .(stage, entity_id,
-                                    manifest_input_hash = content_hash)]
-  joined <- prior_inputs[joined, on = c("stage", "entity_id")]
-  current_fingerprints <- snapshot$fingerprints$components
-  fingerprint_compare <- merge(
-    manifest$fingerprints, current_fingerprints,
-    by = c("stage", "component"), all = TRUE,
-    suffixes = c("_old", "_new")
+  facts <- pd_empty_reasons()
+  facts[, `:=`(survey_id = character(), pip_id = character())]
+  data.table::setcolorder(
+    facts,
+    c("stage", "entity_id", "survey_id", "pip_id", "reason", "input",
+      "old", "new")
   )
-  changed_fingerprint_stages <- fingerprint_compare[
-    is.na(hash_old) | is.na(hash_new) | hash_old != hash_new, unique(stage)
-  ]
-  joined[, reason := data.table::fcase(
-    is.na(i.output_hash), "output_missing",
-    output_hash != i.output_hash | output_version_id != i.output_version_id, "output_drift",
-    input_hash != i.input_hash | manifest_input_hash != i.input_hash,
-      "upstream_output_changed",
-    code_hash != i.code_hash | stage %in% changed_fingerprint_stages,
-      ifelse(stage == "clean", "clean_code_changed",
-             ifelse(stage == "metadata", "metadata_code_changed", "deflate_code_changed")),
-    default = NA_character_
-  )]
-  joined[!is.na(reason), .(
-    stage, entity_id, survey_id = i.survey_id, pip_id = i.pip_id, reason,
-    input = "canonical", old = input_hash, new = i.input_hash
-  )]
+  fact_rows <- list()
+  add_fact <- function(row, reason, input, old, new) {
+    fact_rows[[length(fact_rows) + 1L]] <<- data.table::data.table(
+      stage = row$stage[[1L]], entity_id = row$entity_id[[1L]],
+      survey_id = row$survey_id[[1L]], pip_id = row$pip_id[[1L]],
+      reason = reason, input = input,
+      old = as.character(old), new = as.character(new)
+    )
+  }
+  stage_code_reason <- function(stage) {
+    paste0(stage, "_code_changed")
+  }
+  for (i in seq_len(nrow(current))) {
+    row <- current[i]
+    prior_record <- records[
+      stage == row$stage[[1L]] & entity_id == row$entity_id[[1L]]
+    ]
+    if (nrow(prior_record) != 1L) {
+      has_output <- !is.na(row$output_version_id[[1L]]) &&
+        nzchar(row$output_version_id[[1L]]) &&
+        !is.na(row$output_hash[[1L]]) && nzchar(row$output_hash[[1L]])
+      add_fact(
+        row,
+        if (has_output) "unknown_provenance" else "new_entity",
+        "manifest", NA_character_, row$input_hash[[1L]]
+      )
+      next
+    }
+    if (is.na(row$output_hash[[1L]]) ||
+        is.na(row$output_version_id[[1L]])) {
+      add_fact(
+        row, "output_missing", "output", prior_record$output_hash[[1L]],
+        row$output_hash[[1L]]
+      )
+    } else if (!identical(
+      prior_record$output_hash[[1L]], row$output_hash[[1L]]
+    ) || !identical(
+      prior_record$output_version_id[[1L]], row$output_version_id[[1L]]
+    )) {
+      add_fact(
+        row, "output_drift", "output", prior_record$output_hash[[1L]],
+        row$output_hash[[1L]]
+      )
+    }
+
+    prior_inputs <- manifest$inputs[
+      stage == row$stage[[1L]] & entity_id == row$entity_id[[1L]]
+    ]
+    named_prior <- prior_inputs[name != "canonical"]
+    if (!nrow(named_prior)) {
+      old_hash <- prior_inputs[name == "canonical", content_hash][1L]
+      old_version <- prior_inputs[name == "canonical", version_id][1L]
+      new_hash <- row$legacy_input_hash[[1L]]
+      new_version <- if ("legacy_input_version" %in% names(row)) {
+        row$legacy_input_version[[1L]]
+      } else {
+        old_version
+      }
+      if (!identical(prior_record$input_hash[[1L]], new_hash) ||
+          !identical(old_hash, new_hash) ||
+          !identical(old_version, new_version)) {
+        add_fact(
+          row, "legacy_input_changed", "canonical",
+          paste(old_version, prior_record$input_hash[[1L]], sep = ":"),
+          paste(new_version, new_hash, sep = ":")
+        )
+      }
+    } else {
+      current_inputs <- row$input_rows[[1L]][name != "canonical"]
+      comparison <- merge(
+        named_prior[, .(name, version_id_old = version_id,
+                        content_hash_old = content_hash)],
+        current_inputs[, .(name, version_id_new = version_id,
+                           content_hash_new = content_hash)],
+        by = "name", all = TRUE
+      )
+      semantic_component <- comparison$name == "pfw" |
+        grepl("^aux_", comparison$name)
+      changed <- comparison[
+        is.na(content_hash_old) | is.na(content_hash_new) |
+          content_hash_old != content_hash_new |
+          (!semantic_component & (
+            is.na(version_id_old) | is.na(version_id_new) |
+              version_id_old != version_id_new
+          ))
+      ]
+      for (j in seq_len(nrow(changed))) {
+        old <- if (!is.na(changed$version_id_old[[j]]) &&
+                   !is.na(changed$version_id_new[[j]]) &&
+                   identical(changed$version_id_old[[j]],
+                             changed$version_id_new[[j]])) {
+          changed$content_hash_old[[j]]
+        } else {
+          paste(changed$version_id_old[[j]],
+                changed$content_hash_old[[j]], sep = ":")
+        }
+        new <- if (!is.na(changed$version_id_old[[j]]) &&
+                   !is.na(changed$version_id_new[[j]]) &&
+                   identical(changed$version_id_old[[j]],
+                             changed$version_id_new[[j]])) {
+          changed$content_hash_new[[j]]
+        } else {
+          paste(changed$version_id_new[[j]],
+                changed$content_hash_new[[j]], sep = ":")
+        }
+        add_fact(
+          row,
+          pd_input_change_reason(row$stage[[1L]], changed$name[[j]]),
+          changed$name[[j]], old, new
+        )
+      }
+    }
+
+    old_components <- manifest$fingerprints[stage == row$stage[[1L]]]
+    new_components <- snapshot$fingerprints$components[
+      stage == row$stage[[1L]]
+    ]
+    if (nrow(old_components)) {
+      component_compare <- merge(
+        old_components[, .(component, hash_old = hash)],
+        new_components[, .(component, hash_new = hash)],
+        by = "component", all = TRUE
+      )
+      changed_components <- component_compare[
+        is.na(hash_old) | is.na(hash_new) | hash_old != hash_new
+      ]
+      for (j in seq_len(nrow(changed_components))) {
+        reason <- if (identical(
+          changed_components$component[[j]], "recode_spec.yml"
+        )) {
+          "recode_spec_changed"
+        } else {
+          stage_code_reason(row$stage[[1L]])
+        }
+        add_fact(
+          row, reason, changed_components$component[[j]],
+          changed_components$hash_old[[j]], changed_components$hash_new[[j]]
+        )
+      }
+    } else if (!identical(
+      prior_record$code_hash[[1L]], row$code_hash[[1L]]
+    )) {
+      add_fact(
+        row, stage_code_reason(row$stage[[1L]]), "code",
+        prior_record$code_hash[[1L]], row$code_hash[[1L]]
+      )
+    }
+  }
+  if (length(fact_rows)) {
+    facts <- data.table::rbindlist(
+      c(list(facts), fact_rows), use.names = TRUE, fill = TRUE
+    )
+  }
+  facts <- unique(facts)
+  data.table::setorder(facts, stage, entity_id, reason, input)
+  return(facts)
 }
 
 pd_revalidate_snapshot <- function(snapshot) {
@@ -235,25 +670,53 @@ pd_revalidate_snapshot <- function(snapshot) {
 pd_prepare_execution <- function(inv, master, context = pd_dependency_context(),
                                  advisory_plan = NULL, bootstrap = FALSE,
                                   bootstrap_entities = NULL, force = FALSE,
-                                  force_surveys = NULL, verbose = FALSE) {
-  inv <- .filter_completed_dlw_validation_inventory(inv)
-  manifest <- pd_manifest_read(context, allow_absent = TRUE)
-  snapshot <- pd_build_dependency_snapshot(inv, master, context,
-                                           verbose = verbose)
-  snapshot$facts <- pd_snapshot_facts(snapshot, manifest)
-  plan <- pd_dependency_plan(
-    snapshot$inventory, snapshot$master, manifest, context,
-    snapshot$fingerprints, force, force_surveys, snapshot
-  )
-  plan <- pd_assert_bootstrap(plan, bootstrap, bootstrap_entities)
+                                  force_surveys = NULL, verbose = FALSE,
+                                  measures = c(
+                                    "pfw", "cpi", "ppp", "pop", "gdp", "pce"
+                                  )) {
+  check_removed_surveys <- is.data.frame(inv) && ncol(inv) > 0L
+  prepare_plan <- function() {
+    prepared <- pd_prepare_dependency_facts(
+      inv = inv,
+      master = master,
+      context = context,
+      measures = measures,
+      verbose = verbose,
+      check_removed_surveys = check_removed_surveys
+    )
+    snapshot <- prepared$snapshot
+    plan <- pd_dependency_plan(
+      snapshot$inventory,
+      snapshot$master,
+      prepared$manifest,
+      prepared$context,
+      snapshot$fingerprints,
+      force,
+      force_surveys,
+      snapshot = snapshot
+    )
+    plan <- pd_assert_bootstrap(plan, bootstrap, bootstrap_entities)
+    list(prepared = prepared, plan = plan)
+  }
+  prepare_plan()
   if (!is.null(advisory_plan)) {
     pd_validate_plan(advisory_plan)
   }
   lease <- pd_lease_acquire(context)
+  authoritative <- tryCatch(
+    prepare_plan(),
+    error = function(cnd) {
+      try(pd_lease_release(lease), silent = TRUE)
+      rlang::cnd_signal(cnd)
+    }
+  )
+  prepared <- authoritative$prepared
+  manifest <- prepared$manifest
   if (inherits(manifest, "pipdata_manifest_absent")) {
     manifest <- pd_empty_manifest(context)
   }
-  list(context = context, snapshot = snapshot, plan = plan,
+  list(context = context, snapshot = prepared$snapshot,
+       plan = authoritative$plan,
        manifest = manifest,
        manifest_identity = if (inherits(manifest, "pipdata_manifest_absent")) {
          NULL
@@ -278,6 +741,22 @@ pd_run_checkpoint_batches <- function(units, worker, checkpoint,
                                       checkpoint_n = getOption("pipdata.manifest_checkpoint_n", 25L),
                                       checkpoint_seconds = getOption("pipdata.manifest_checkpoint_seconds", 60),
                                       clock = Sys.time) {
+  has_current_action <- vapply(units, function(unit) {
+    action <- if (is.data.frame(unit) && "action" %in% names(unit)) {
+      unit$action
+    } else if (is.list(unit) && "action" %in% names(unit)) {
+      unit[["action"]]
+    } else {
+      character()
+    }
+    any(as.character(action) == "none", na.rm = TRUE)
+  }, logical(1L))
+  if (any(has_current_action)) {
+    rlang::abort(
+      "Current dependency nodes cannot be dispatched to workers.",
+      class = "pipdata_dependency_action_not_runnable"
+    )
+  }
   pending <- list()
   last <- clock()
   for (i in seq_along(units)) {

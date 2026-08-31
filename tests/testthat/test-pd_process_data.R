@@ -246,3 +246,123 @@ test_that("pd_process_data filters loaded durable retry rows", {
   pd_process_data(inv = NULL, verbose = FALSE)
   expect_false(retry$survey_id %in% observed$survey_id)
 })
+
+test_that("new clean outputs refresh accepted metadata facts before checkpoint", {
+  inv <- make_process_validation_inventory()[1L]
+  survey_id <- inv$survey_id[[1L]]
+  pip_id <- "BOL_2020_EH_INC_ALL"
+  context <- list(scope_id = "scope")
+  initial_master <- data.table::data.table(
+    survey_id = character(), pip_id = character()
+  )
+  clean_action <- data.table::data.table(
+    stage = "clean", entity_id = survey_id, survey_id = survey_id,
+    pip_id = NA_character_, action = "create",
+    input_hash = "clean-input", code_hash = "clean-code",
+    expected_pip_ids = list(pip_id)
+  )
+  execution <- list(
+    context = context, lease = list(), manifest = pd_empty_manifest(context),
+    manifest_identity = NULL,
+    snapshot = list(
+      inventory = inv, master = initial_master,
+      measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+      aux = list(), catalogs = list(), fingerprints = list()
+    ),
+    plan = list(actions = clean_action, reasons = pd_empty_reasons())
+  )
+  refreshed <- FALSE
+  metadata_checkpointed <- FALSE
+  clean_receipts <- data.table::data.table(
+    survey_id = survey_id, pip_id = pip_id, alias = "pip",
+    artifact = pip_id, path = "clean.qs2", version_id = "data-v1",
+    content_hash = "data-h1", success = TRUE,
+    input_hash = "clean-input", code_hash = "clean-code"
+  )
+  refreshed_master <- data.table::data.table(
+    survey_id = survey_id, pip_id = pip_id,
+    version_id_data = "data-v1", content_hash_data = "data-h1"
+  )
+  accepted_inputs <- pd_build_input_rows(
+    "metadata", pip_id,
+    data.table::data.table(
+      name = c("clean_data", "aux_cpi"),
+      version_id = c("data-v1", "cpi-v1"),
+      content_hash = c("data-h1", "cpi-h1")
+    )
+  )
+
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) initial_master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() context,
+    pd_prepare_execution = function(...) execution,
+    pd_lease_release = function(...) invisible(NULL),
+    sync_recode_spec = function(...) list(),
+    pd_execute_clean = function(...) list(
+      stage = "clean", survey_id = survey_id, success = TRUE,
+      expected_pip_ids = pip_id, receipts = clean_receipts,
+      metadata = stats::setNames(list(list()), pip_id)
+    ),
+    pd_build_dependency_snapshot = function(inv, master, context, ...) {
+      refreshed <<- TRUE
+      list(
+        context = context, inventory = inv, master = master,
+        measures = execution$snapshot$measures,
+        aux = execution$snapshot$aux, catalogs = list(),
+        fingerprints = list(),
+        current = data.table::data.table(
+          stage = "metadata", entity_id = pip_id, survey_id = survey_id,
+          pip_id = pip_id, input_hash = "metadata-input",
+          code_hash = "metadata-code", input_rows = list(accepted_inputs),
+          aux_projection = list(list()), data_version_id = "data-v1",
+          data_hash = "data-h1"
+        )
+      )
+    },
+    pd_snapshot_facts = function(...) data.table::data.table(
+      stage = "metadata", entity_id = pip_id, survey_id = survey_id,
+      pip_id = pip_id, reason = "new_entity", input = "manifest",
+      old = NA_character_, new = "metadata-input"
+    ),
+    pd_snapshot_identity = function(...) "refreshed-snapshot",
+    pd_dependency_plan = function(..., snapshot) structure(
+      list(
+        context = context,
+        actions = data.table::copy(snapshot$current)[, action := "refresh"],
+        reasons = data.table::data.table(
+          stage = "metadata", entity_id = pip_id, reason = "new_entity",
+          input = "manifest", old = NA_character_, new = "metadata-input"
+        ),
+        snapshot = snapshot
+      ),
+      class = "pip_dependency_plan"
+    ),
+    pd_assert_bootstrap = function(plan, ...) plan,
+    pd_assert_execution_fence = function(...) invisible(NULL),
+    pd_execute_metadata = function(action, ...) list(
+      stage = "metadata", pip_id = action$pip_id[[1L]], success = TRUE,
+      version_id = "meta-v1", content_hash = "meta-h1"
+    ),
+    pd_finalize_checkpoint = function(execution, master, stage, ...) {
+      if (identical(stage, "clean")) {
+        return(list(candidate = refreshed_master, execution = execution))
+      }
+      metadata_checkpointed <<- any(
+        execution$snapshot$current$stage == "metadata" &
+          execution$snapshot$current$entity_id == pip_id
+      )
+      if (!metadata_checkpointed) {
+        rlang::abort("metadata facts were not refreshed")
+      }
+      list(candidate = master, execution = execution)
+    },
+    .package = "pipdata"
+  )
+
+  expect_no_error(pd_process_data(inv = inv, verbose = FALSE))
+  expect_true(refreshed)
+  expect_true(metadata_checkpointed)
+})

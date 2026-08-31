@@ -110,8 +110,10 @@ pd_process_data <- function(
 
   master <- pipload::load_pip_master_inventory(verbose = verbose)
   execution <- pd_prepare_execution(
-    inv, master, pd_dependency_context(), dependency_plan, bootstrap,
-    bootstrap_entities, force, force_surveys, verbose
+    inv = inv, master = master, context = pd_dependency_context(),
+    advisory_plan = dependency_plan, bootstrap = bootstrap,
+    bootstrap_entities = bootstrap_entities, force = force,
+    force_surveys = force_surveys, verbose = verbose, measures = aux_measures
   )
   on.exit(pd_lease_release(execution$lease), add = TRUE)
   if (force) {
@@ -141,18 +143,26 @@ pd_process_data <- function(
     )
     master <- finalized$candidate
     execution <- finalized$execution
+    execution <- pd_refresh_execution_facts(
+      execution,
+      master,
+      force = force,
+      force_surveys = force_surveys,
+      bootstrap = bootstrap,
+      bootstrap_entities = bootstrap_entities,
+      verbose = verbose
+    )
+    actions <- execution$plan$actions[action != "none"]
     for (pip_id in result$receipts$pip_id) {
-      metadata_action <- actions[stage == "metadata" & pip_id == ..pip_id]
-      if (!nrow(metadata_action)) {
-        metadata_action <- data.table::data.table(
-          stage = "metadata", entity_id = pip_id, survey_id = result$survey_id,
-          pip_id = pip_id, action = "refresh",
-          input_hash = pd_hash_object(result$receipts[pip_id == ..pip_id,
-            .(version_id, content_hash)]),
-          code_hash = execution$snapshot$fingerprints$summary[
-            stage == "metadata", hash][1L]
+      selected_pip_id <- pip_id
+      metadata_action <- actions[
+        stage == "metadata" & actions$pip_id == selected_pip_id
+      ]
+      if (nrow(metadata_action) != 1L) {
+        rlang::abort(
+          "Committed clean output lacks one accepted metadata action.",
+          class = "pipdata_dependency_facts_invalid"
         )
-        metadata_action[, aux_projection := list(list(list()))]
       }
       metadata_result <- pd_execute_metadata(
         metadata_action, execution$snapshot, execution, result, verbose
@@ -372,11 +382,9 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
     merged <- pd_cpfw_merge(df, execution$snapshot$aux$objects$pfw)
     clean <- pd_dlw_clean(merged, verbose = verbose, recode_spec = recode_spec)
     metadata <- pd_aux_attr(clean, execution$snapshot$aux$objects)
-    expected <- sort(toupper(names(clean)))
-    if (!length(expected) || !setequal(expected, toupper(names(metadata)))) {
-      rlang::abort("Clean output set and metadata base set differ.",
-                   class = "pipdata_clean_output_incomplete")
-    }
+    expected <- pd_assert_clean_output_set(
+      action$expected_pip_ids[[1L]], clean, metadata
+    )
     receipts <- lapply(expected, function(pip_id) {
       source_name <- names(clean)[match(pip_id, toupper(names(clean)))]
       pd_assert_execution_fence(execution)

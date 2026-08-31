@@ -5,6 +5,65 @@ pd_dependency_plan <- function(inv, master = NULL, manifest = NULL,
                                snapshot = list()) {
   inv <- data.table::as.data.table(data.table::copy(inv))
   master <- data.table::as.data.table(data.table::copy(master %||% data.table::data.table()))
+  if ((nrow(inv) && !"survey_id" %in% names(inv)) ||
+      (nrow(master) &&
+       !all(c("survey_id", "pip_id") %in% names(master)))) {
+    rlang::abort(
+      "Selected dependency entities are incomplete.",
+      class = "pipdata_dependency_facts_invalid"
+    )
+  }
+  invalid_inv <- nrow(inv) &&
+    (anyNA(inv$survey_id) || any(!nzchar(inv$survey_id)))
+  invalid_master <- nrow(master) &&
+    (anyNA(master[, .(survey_id, pip_id)]) ||
+     any(!nzchar(master$survey_id)) || any(!nzchar(master$pip_id)))
+  if (invalid_inv || invalid_master) {
+    rlang::abort(
+      "Selected dependency entity identifiers must be complete.",
+      class = "pipdata_dependency_facts_invalid"
+    )
+  }
+  if (nrow(master) && anyDuplicated(master$pip_id)) {
+    rlang::abort(
+      "Selected PIP entities do not map one-to-one to surveys.",
+      class = "pipdata_dependency_facts_invalid"
+    )
+  }
+  clean_nodes <- if (nrow(inv)) {
+    unique(inv[, .(
+      stage = "clean", entity_id = survey_id, survey_id,
+      pip_id = NA_character_
+    )])
+  } else {
+    pd_empty_actions()[, action := NULL]
+  }
+  downstream_nodes <- if (nrow(master)) {
+    data.table::rbindlist(list(
+      master[, .(
+        stage = "metadata", entity_id = pip_id, survey_id, pip_id
+      )],
+      master[, .(
+        stage = "deflate", entity_id = pip_id, survey_id, pip_id
+      )]
+    ))
+  } else {
+    pd_empty_actions()[, action := NULL]
+  }
+  nodes <- data.table::rbindlist(
+    list(clean_nodes, downstream_nodes), use.names = TRUE
+  )
+  data.table::setorder(nodes, stage, entity_id)
+  mapping_differs <- function(mapped) {
+    differs <- function(x, y) {
+      xor(is.na(x), is.na(y)) |
+        (!is.na(x) & !is.na(y) & x != y)
+    }
+    nrow(mapped) && any(
+      differs(mapped$survey_id, mapped$i.survey_id) |
+        differs(mapped$pip_id, mapped$i.pip_id)
+    )
+  }
   actions <- pd_empty_actions()
   reasons <- pd_empty_reasons()
   add <- function(stage, entity_id, survey_id, pip_id, action, reason,
@@ -36,7 +95,11 @@ pd_dependency_plan <- function(inv, master = NULL, manifest = NULL,
   if (nrow(facts)) {
     facts <- data.table::as.data.table(data.table::copy(facts))
     required <- c("stage", "entity_id", "survey_id", "pip_id", "reason")
-    if (!all(required %in% names(facts))) {
+    duplicate_fields <- intersect(
+      c(required, "input", "old", "new"), names(facts)
+    )
+    if (!all(required %in% names(facts)) ||
+        anyDuplicated(facts[, ..duplicate_fields])) {
       rlang::abort("Planning facts are incomplete.",
                    class = "pipdata_dependency_facts_invalid")
     }
@@ -91,13 +154,73 @@ pd_dependency_plan <- function(inv, master = NULL, manifest = NULL,
     )]
     reasons <- data.table::rbindlist(list(reasons, forced_reasons), fill = TRUE)
   }
-  data.table::setorder(actions, stage, entity_id)
-  actions <- unique(actions, by = c("stage", "entity_id"))
-  data.table::setorder(reasons, stage, entity_id, reason, input)
-  current <- data.table::as.data.table(snapshot$current %||% data.table::data.table())
+  current <- data.table::as.data.table(data.table::copy(
+    snapshot$current %||% data.table::data.table()
+  ))
   if (nrow(current)) {
-    actions <- current[actions, on = c("stage", "entity_id")]
+    required <- c("stage", "entity_id", "survey_id", "pip_id")
+    if (!all(required %in% names(current)) ||
+        anyDuplicated(current[, .(stage, entity_id)])) {
+      rlang::abort(
+        "Current dependency facts contain duplicate or incomplete nodes.",
+        class = "pipdata_dependency_facts_invalid"
+      )
+    }
+    current_keys <- current[, .(stage, entity_id, survey_id, pip_id)]
+    unmatched <- current_keys[!nodes, on = c("stage", "entity_id")]
+    mapped <- nodes[current_keys, on = c("stage", "entity_id")]
+    if (nrow(unmatched) || mapping_differs(mapped)) {
+      rlang::abort(
+        "Current dependency facts do not match selected entities.",
+        class = "pipdata_dependency_facts_invalid"
+      )
+    }
+    details <- setdiff(
+      names(current), c("stage", "entity_id", "survey_id", "pip_id")
+    )
+    if (length(details)) {
+      nodes <- current[
+        nodes,
+        on = c("stage", "entity_id"),
+        c(
+          list(
+            stage = i.stage, entity_id = i.entity_id,
+            survey_id = i.survey_id, pip_id = i.pip_id
+          ),
+          mget(details)
+        )
+      ]
+    }
   }
+  if (nrow(actions)) {
+    action_keys <- actions[, .(stage, entity_id, survey_id, pip_id)]
+    unmatched <- action_keys[!nodes, on = c("stage", "entity_id")]
+    mapped <- nodes[action_keys, on = c("stage", "entity_id")]
+    if (nrow(unmatched) || mapping_differs(mapped)) {
+      rlang::abort(
+        "Planning facts do not match selected entities.",
+        class = "pipdata_dependency_facts_invalid"
+      )
+    }
+    actions[, action_rank := match(
+      action, c("create", "rebuild", "refresh", "none")
+    )]
+    data.table::setorder(actions, stage, entity_id, action_rank)
+    actions <- actions[, .SD[1L], by = .(stage, entity_id)]
+    actions[, action_rank := NULL]
+  }
+  nodes[, action := "none"]
+  if (nrow(actions)) {
+    nodes[actions, on = c("stage", "entity_id"), action := i.action]
+  }
+  data.table::setcolorder(
+    nodes,
+    c("stage", "entity_id", "survey_id", "pip_id", "action")
+  )
+  actions <- nodes
+  data.table::setorder(actions, stage, entity_id)
+  reasons <- unique(reasons)
+  data.table::setorder(reasons, stage, entity_id, reason, input)
   plan <- structure(list(context = context, actions = actions, reasons = reasons,
                          snapshot = c(snapshot, list(fingerprints = fingerprints))),
                     class = "pip_dependency_plan")
@@ -120,4 +243,56 @@ pd_assert_bootstrap <- function(plan, bootstrap = FALSE, bootstrap_entities = NU
       paste(stage, entity_id) %in% paste(plan$actions$stage, plan$actions$entity_id)]
   }
   plan
+}
+
+pd_plan_node_states <- function(plan, blocked = NULL) {
+  pd_validate_plan(plan)
+  if (!nrow(plan$actions)) {
+    return(pd_empty_plan_node_states())
+  }
+  nodes <- data.table::copy(plan$actions)
+  nodes[, `:=`(
+    state = data.table::fifelse(action == "none", "current", "stale"),
+    scheduling_state = data.table::fifelse(
+      action == "none", "cached", "runnable"
+    ),
+    wave_state = "accepted"
+  )]
+  forced <- unique(plan$reasons[
+    reason == "forced", .(stage, entity_id)
+  ])
+  if (nrow(forced)) {
+    nodes[forced, on = c("stage", "entity_id"), state := "forced"]
+  }
+  actionable_clean <- unique(nodes[
+    stage == "clean" & action != "none", survey_id
+  ])
+  if (length(actionable_clean)) {
+    nodes[
+      stage != "clean" & survey_id %in% actionable_clean,
+      wave_state := "forecast"
+    ]
+  }
+  if (!is.null(blocked)) {
+    blocked <- data.table::as.data.table(data.table::copy(blocked))
+    required <- c("stage", "entity_id")
+    if (!all(required %in% names(blocked)) ||
+        anyDuplicated(blocked[, ..required])) {
+      rlang::abort(
+        "Blocked dependency nodes are invalid.",
+        class = "pipdata_dependency_plan_invalid"
+      )
+    }
+    blocked_nodes <- nodes[blocked, on = required]
+    if (nrow(blocked_nodes) != nrow(blocked) ||
+        anyNA(blocked_nodes$action) || any(blocked_nodes$action == "none")) {
+      rlang::abort(
+        "Only selected runnable nodes can become blocked.",
+        class = "pipdata_dependency_plan_invalid"
+      )
+    }
+    nodes[blocked, on = required, scheduling_state := "blocked"]
+  }
+  data.table::setorder(nodes, stage, entity_id)
+  return(nodes)
 }

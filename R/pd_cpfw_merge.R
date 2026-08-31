@@ -213,125 +213,16 @@ add_main_att <- function(dt, cpfw) {
 #' @return data.table
 #' @keywords internal
 add_dom_vars <- function(dt, cpfw) {
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Level and domain variables    ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  pref             <- c("ppp", "cpi", "gdp", "pce", "pop")
-  domain_vars      <- glue("{pref}_domain")
-
-  ## Check domain vars exist
-
-  if(any(!(domain_vars %in% names(cpfw)))){
-
-    miss_vars <- domain_vars[!(domain_vars %in% names(cpfw))]
-    miss_vars <- cli::cli_vec(miss_vars, list("vec-trunc" = 3))
-    msg <- cli::format_error("Domain variable{?s} {miss_vars} missing in country PFW")
-
-    rlang::abort(message = msg,
-                 class = "piperr", "dom_var")
+  resolved <- pd_resolve_data_levels(cpfw)
+  for (measure in names(resolved$data_levels)) {
+    setattr(
+      dt,
+      paste0(measure, "_data_level"),
+      unname(resolved$data_levels[[measure]])
+    )
   }
-
-  ## Create data_level attributes
-
-  data_level_vars <- glue("{pref}_data_level")
-
-  same_rep_lvl <- cpfw[, .SD, .SDcols = domain_vars] == cpfw$reporting_level
-
-  if(all(same_rep_lvl)){ # If reporting_level is equal to domain variables
-
-    # CPI and PPP variable cannot mismatch
-
-    if(cpfw$cpi_domain_var!=cpfw$ppp_domain_var){
-
-      rlang::abort(message = "There is a mismatch on the cpi_domain_var or ppp_domain_var",
-                   class = c("piperr", "cpi_ppp_var"))
-
-    }
-
-
-    for (x in data_level_vars) {
-
-      if (cpfw$reporting_level == 1) { # CASE 1: They are all national
-
-        setattr(dt, x, "national")
-
-      } else if (cpfw$reporting_level == 2) {
-
-        if (cpfw$cpi_domain_var == "urban") { # CASE 2: The cpi and ppp domain variable is "urban"
-
-          setattr(dt, x, "area") # Name of the variable to use will be area
-
-        } else if (cpfw$cpi_domain_var != "urban") { # CASE 3: The cpi and ppp domain variable is different than "urban"
-
-          rlang::abort(message = "The cpi domain variable is different than urban",
-                       class = c("piperr","cpi_dom_var"))
-
-          # setattr(dt, x, cpfw$cpi_domain_var) # Name of the variable to use
-        }
-
-      } else {
-
-        setattr(dt, x, as.character()) # CASE 4: There is no value for the reporting level
-      }
-    }
-
-    setattr(dt, "aux_data_levels", "same")
-
-
-  }else if(any(same_rep_lvl==FALSE)){ # If reporting_level is different to any domain variables
-
-
-    for(x in 1:length(domain_vars)){
-
-      dom_var <- domain_vars[x]
-      dta_var <- data_level_vars[x]
-
-      if (cpfw[[dom_var]] == 1) {
-
-        setattr(dt, dta_var, "national" ) # CASE 1: If domain variable is 1, then national
-
-      }else if (cpfw[[dom_var]] == 2) {
-
-        if(dom_var %in% c("cpi_domain","ppp_domain")){
-
-          if(cpfw$cpi_domain_var == "urban" & cpfw$ppp_domain_var == "urban"){
-
-            setattr(dt, dta_var, "area") # CASE 2: If domain variable is cpi or ppp, and the domain_var is "urban", use area
-
-          }else if(cpfw$cpi_domain_var != "urban"){
-
-            rlang::abort(message = "The cpi domain variable is different than urban",
-                         class = c("piperr","cpi_dom_var"))
-
-            # setattr(dt, dta_var, cpfw$cpi_domain_var) # CASE 3: If domain variable is cpi or ppp, and the domain_var is not "urban", use domain_var
-
-          }
-
-        }else{
-
-          setattr(dt, dta_var, "area") # CASE 4: For all other domain_var we use area (Need to check if this is correct)
-
-        }
-
-      }else{
-
-        setattr(dt, dta_var, as.character()) # CASE 5: There is no value for domain variable
-
-      }
-
-    }
-
-    setattr(dt, "aux_data_levels", "different")
-
-  }
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  setattr(dt, "aux_data_levels", resolved$aux_data_levels)
   return(dt)
-
 }
 
 #' Add distribution type (lower level, S3 methods)

@@ -80,3 +80,95 @@ test_that("external deflation mutation invalidates only deflate", {
   expect_identical(after[c("clean", "metadata")],
                    before[c("clean", "metadata")])
 })
+
+test_that("recode component change has exclusive recode reason ownership", {
+  context <- list(scope_id = "scope")
+  manifest <- pd_empty_manifest(context)
+  inputs <- pd_build_input_rows(
+    "clean", "survey",
+    data.table::data.table(
+      name = c("dlw", "pfw"), version_id = c("d1", "p1"),
+      content_hash = c("dh1", "ph1")
+    )
+  )
+  manifest$inputs <- inputs
+  manifest$records <- data.table::data.table(
+    stage = "clean", entity_id = "survey", output_version_id = "out-v1",
+    output_hash = "out-h1", input_hash = inputs[
+      name == "canonical", content_hash
+    ], code_hash = "old-summary", output_receipts = list(list())
+  )
+  manifest$fingerprints <- data.table::data.table(
+    stage = "clean", component = c("recode_spec.yml", "clean_fn"),
+    hash = c("recode-old", "fn-same")
+  )
+  snapshot <- list(
+    current = data.table::data.table(
+      stage = "clean", entity_id = "survey", survey_id = "survey",
+      pip_id = NA_character_, output_version_id = "out-v1",
+      output_hash = "out-h1", input_hash = inputs[
+        name == "canonical", content_hash
+      ], legacy_input_hash = "legacy", code_hash = "new-summary",
+      input_rows = list(inputs)
+    ),
+    fingerprints = list(
+      summary = data.table::data.table(stage = "clean", hash = "new-summary"),
+      components = data.table::data.table(
+        stage = "clean", component = c("recode_spec.yml", "clean_fn"),
+        hash = c("recode-new", "fn-same")
+      )
+    )
+  )
+
+  facts <- pd_snapshot_facts(snapshot, manifest)
+  expect_identical(facts$reason, "recode_spec_changed")
+  expect_identical(facts$input, "recode_spec.yml")
+})
+
+test_that("non-recode component and legacy summary own stage-code reasons", {
+  context <- list(scope_id = "scope")
+  manifest <- pd_empty_manifest(context)
+  inputs <- pd_build_input_rows(
+    "clean", "survey",
+    data.table::data.table(
+      name = c("dlw", "pfw"), version_id = c("d1", "p1"),
+      content_hash = c("dh1", "ph1")
+    )
+  )
+  manifest$inputs <- inputs
+  manifest$records <- data.table::data.table(
+    stage = "clean", entity_id = "survey", output_version_id = "out-v1",
+    output_hash = "out-h1", input_hash = inputs[
+      name == "canonical", content_hash
+    ], code_hash = "old-summary", output_receipts = list(list())
+  )
+  current <- data.table::data.table(
+    stage = "clean", entity_id = "survey", survey_id = "survey",
+    pip_id = NA_character_, output_version_id = "out-v1",
+    output_hash = "out-h1", input_hash = inputs[
+      name == "canonical", content_hash
+    ], legacy_input_hash = "legacy", code_hash = "new-summary",
+    input_rows = list(inputs)
+  )
+  snapshot <- list(
+    current = current,
+    fingerprints = list(
+      summary = data.table::data.table(stage = "clean", hash = "new-summary"),
+      components = data.table::data.table(
+        stage = "clean", component = "clean_fn", hash = "fn-new"
+      )
+    )
+  )
+  manifest$fingerprints <- data.table::data.table(
+    stage = "clean", component = "clean_fn", hash = "fn-old"
+  )
+
+  component_fact <- pd_snapshot_facts(snapshot, manifest)
+  expect_identical(component_fact$reason, "clean_code_changed")
+  expect_identical(component_fact$input, "clean_fn")
+
+  manifest$fingerprints <- manifest$fingerprints[0]
+  legacy_fact <- pd_snapshot_facts(snapshot, manifest)
+  expect_identical(legacy_fact$reason, "clean_code_changed")
+  expect_identical(legacy_fact$input, "code")
+})

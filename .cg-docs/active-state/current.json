@@ -1,21 +1,21 @@
 {
   "schemaVersion": "compound-gpid-active-state-v1",
-  "updatedAt": "2026-08-26T16:20:00Z",
+  "updatedAt": "2026-08-28T14:43:10Z",
   "workflow": "/cg-work",
-  "status": "completed",
-  "branch": "stream-c-c3-formalize-the-pipeline-stage-inter",
-  "plan": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
-  "executionReport": ".cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md",
-  "currentPhase": null,
+  "status": "active",
+  "branch": "feat/step-level-invalidation-dag",
+  "plan": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
+  "executionReport": ".cg-docs/work-reports/2026-08-28-executable-staged-invalidation-dag.md",
+  "currentPhase": 2,
   "evidenceStatus": [
-    {"id": "V11", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md"},
-    {"id": "V12", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md"},
-    {"id": "V13", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md"},
-    {"id": "V14", "status": "passed", "artifact": ".cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md"}
+    {"id": "V1", "status": "passed", "artifact": "tests/testthat/test-pd-change-report.R"},
+    {"id": "V2", "status": "passed", "artifact": "tests/testthat/test-dependency-plan.R"},
+    {"id": "V3", "status": "passed", "artifact": "tests/testthat/test-dependency-inputs.R"},
+    {"id": "V19", "status": "passed", "artifact": "tests/testthat/test-dependency-manifest.R"}
   ],
   "unresolvedDecisions": [],
   "artifactRefs": [
-    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md", "status": "open-findings"}
+    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-08-28-executable-staged-invalidation-dag.md", "status": "active"}
   ],
-  "nextCommand": "/cg-fix-triage"
+  "nextCommand": "/cg-work phase2 .cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md"
 }
