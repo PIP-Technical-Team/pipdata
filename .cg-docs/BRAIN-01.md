@@ -1,10 +1,10 @@
 # 🧠 Project Brain — Part 1
 
-_Generated 2026-08-26_
+_Generated 2026-08-28_
 
-## Valid_Dlw_Load\(\) / Reporting_Level / Aaa.R
+## Force_Surveys / Pip_Id / Valid_Dlw_Load\(\)
 
-_Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 100 entities
+_Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 107 entities
 
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`
   > dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phant…
@@ -26,8 +26,14 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 100 entities
   > `force = TRUE` in `pd_process_data()` (`R/pd_process_data.R:61-64`) does two things at once:
 - **[Explicit data_level sentinel semantics \(column-lookup registry\)](.cg-docs/brainstorms/2026-08-20-data-level-sentinel-semantics.md)** · `brainstorm` · _decided_ · `2026-08-20`
   > The `ppp_data_level`, `cpi_data_level`, and `pop_data_level` attributes currently carry **dual semantics** in a singl…
+- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md)** · `brainstorm` · _decided_ · `2026-08-24`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
 - **[Pipdata Staged Dependency Manifest](.cg-docs/brainstorms/2026-08-24-pipdata-staged-dependency-manifest.md)** · `brainstorm` · _decided_ · `2026-08-24`
   > V2 replaces the V1 pipeline, whose `targets`-based orchestration is too slow, opaque, difficult to debug, and difficu…
+- **[Typed Pipeline Stage Interface](.cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md)** · `brainstorm` · _decided_ · `2026-08-25`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
+- **[Executable Staged Invalidation DAG](.cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md)** · `brainstorm` · _decided_ · `2026-08-27`
+  > <!-- Valid status values: decided, in-progress, abandoned -->
 - **[Enrich log report with success metrics and aux changes](.cg-docs/plans/2026-04-06-enrich-log-report.md)** · `plan` · _completed_ · `2026-04-06`
   > Extend the pipeline logging and `log_report()` so the markdown report includes: (a) the number of surveys successfull…
 - **[Remove redundant get_wrk_release\(\) guards from DLW call chains](.cg-docs/plans/2026-04-23-remove-redundant-get-wrk-release.md)** · `plan` · _completed_ · `2026-04-23`
@@ -82,6 +88,12 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 100 entities
   > Replace the implicit `"area"` column-pointer sentinel with an explicit, code-enforced column-lookup registry so the p…
 - **[Implement Pipdata Staged Dependency Manifest](.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md)** · `plan` · _completed_ · `2026-08-24`
   > Implement a self-contained dependency-planning layer in pipdata that detects stale clean, metadata, and deflated arti…
+- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md)** · `plan` · _completed_ · `2026-08-25`
+  > Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchest…
+- **[Implement Typed Pipeline Stage Interface](.cg-docs/plans/2026-08-25-pipeline-stage-interface.md)** · `plan` · _completed_ · `2026-08-25`
+  > Implement validated, versioned `pipeline_context` and `pipdata_stage_result` S3 contracts and prove them on the batch…
+- **[Implement Executable Staged Invalidation DAG](.cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md)** · `plan` · _active_ · `2026-08-27`
+  > Implement a pipdata-owned incremental executor for the existing durable `clean`, `metadata`, and `deflate` stages. Th…
 - **[2026-04-06-enrich-log-report-review](.cg-docs/reviews/2026-04-06-enrich-log-report-review.md)** · `review` · _—_ · `—`
   > **Review depth**: standard **Plan**: `.cg-docs/plans/2026-04-06-enrich-log-report.md` **Files reviewed**: 5 **Finding…
 - **[2026-04-16-review](.cg-docs/reviews/2026-04-16-review.md)** · `review` · _—_ · `—`
@@ -140,6 +152,8 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 100 entities
   > **Review mode**: light (verification) **Files reviewed**: 23 **Findings**: 7 (P0: 2, P1: 3, P2: 2, P3: 0)
 - **[2026-08-25-dlw-wrapper-rewrite-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: architecture **Scope**: DLW wrapper rewrite against synchronized base `55b7a3a1369504dcee8754237bedc…
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review-2](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md)** · `review` · _—_ · `2026-08-28`
+  > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
 - **[Internal logmeta type markers polluting build_type_summary\(\) table](.cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md)** · `solution` · _—_ · `2026-04-07`
@@ -209,7 +223,7 @@ _Keywords: `valid_dlw_load()` · `reporting_level` · `aaa.r`_ · 100 entities
 
 ## %||% / Related / Root
 
-_Keywords: `%||%` · `related` · `root`_ · 9 entities
+_Keywords: `%||%` · `related` · `root`_ · 10 entities
 
 - **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
   > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
@@ -223,25 +237,14 @@ _Keywords: `%||%` · `related` · `root`_ · 9 entities
   > A metadata-only dependency planner can correctly identify stale work while the executor still publishes false-current…
 - **[Fail-closed durable reconciliation for staged data pipelines](.cg-docs/solutions/data-quality/2026-08-26-durable-stage-reconciliation.md)** · `solution` · _—_ · `2026-08-26`
   > The DLW acquisition and validation wrappers combined discovery, per-survey execution, persistence, and logging. Sever…
+- **[Separate Exact Provenance From Semantic Invalidation](.cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md)** · `solution` · _—_ · `2026-08-28`
+  > An incremental planner can fail in two opposite directions: - A shared auxiliary artifact gets a new exact `version_i…
 - **[Package-imported operators \(%||%, %in%, etc.\) are not available in test helper functions](.cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md)** · `solution` · _—_ · `2026-05-20`
   > A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used …
 - **[Verify R package dependencies and stage checkpoints from built artifacts](.cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md)** · `solution` · _—_ · `2026-08-21`
   > Unified logging passed source-loaded tests, but review identified gaps that source-only assertions could not detect: …
 - **[Verify exported R API retirement from built package surfaces](.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md)** · `solution` · _—_ · `2026-08-25`
   > Removing an exported R function requires more than deleting its source. The generated `NAMESPACE` can change unexpect…
-
-## Failed / Partial / No_Work
-
-_Keywords: `failed` · `partial` · `no_work`_ · 4 entities
-
-- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/brainstorms/2026-08-24-dlw-wrapper-rewrite.md)** · `brainstorm` · _decided_ · `2026-08-24`
-  > <!-- Valid status values: decided, in-progress, abandoned -->
-- **[Typed Pipeline Stage Interface](.cg-docs/brainstorms/2026-08-25-pipeline-stage-interface.md)** · `brainstorm` · _decided_ · `2026-08-25`
-  > <!-- Valid status values: decided, in-progress, abandoned -->
-- **[Rewrite the DLW wrapper around explicit acquisition and validation stages](.cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md)** · `plan` · _completed_ · `2026-08-25`
-  > Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchest…
-- **[Implement Typed Pipeline Stage Interface](.cg-docs/plans/2026-08-25-pipeline-stage-interface.md)** · `plan` · _completed_ · `2026-08-25`
-  > Implement validated, versioned `pipeline_context` and `pipdata_stage_result` S3 contracts and prove them on the batch…
 
 ## Old_Files/ / Archive / Devtools::Document\(\)
 
