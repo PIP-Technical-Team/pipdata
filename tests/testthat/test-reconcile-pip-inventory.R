@@ -208,3 +208,229 @@ test_that("checkpoint canonical inputs come from verified stage results", {
   expect_identical(canonical$version_id, "fresh-data-v2")
   expect_identical(canonical$content_hash, "input")
 })
+
+test_that("clean receipt-set canonicalization is symmetric and order stable", {
+  receipts <- data.table::data.table(
+    pip_id = c("P2", "P1"), alias = "pip", artifact = c("P2", "P1"),
+    path = c("p2.qs2", "p1.qs2"), version_id = c("v2", "v1"),
+    content_hash = c("h2", "h1"), success = TRUE
+  )
+
+  forward <- pd_clean_receipt_set(receipts)
+  reverse <- pd_clean_receipt_set(receipts[2:1])
+
+  expect_identical(forward, reverse)
+  expect_identical(forward$receipts$pip_id, c("P1", "P2"))
+  expect_true(nzchar(forward$output_version_id))
+  expect_true(nzchar(forward$output_hash))
+
+  expect_error(
+    pd_clean_receipt_set(receipts[pip_id == "P1"], c("P1", "P2")),
+    class = "pipdata_clean_output_incomplete"
+  )
+})
+
+test_that("checkpoint publishes finalized named rows and advances one stage", {
+  fixture <- checkpoint_fixture(withr::local_tempdir())
+  withr::defer(pd_lease_release(fixture$lease))
+  fixture$execution$manifest$records <- data.table::data.table(
+    stage = "clean", entity_id = "s", output_version_id = "clean-set-v1",
+    output_hash = "clean-set-h1", input_hash = "clean-input-h1",
+    code_hash = "clean-code-h1", output_receipts = list(list(list(
+      alias = "pip", artifact = "p", path = "p.qs2",
+      version_id = "data-final", content_hash = "data-final-hash"
+    )))
+  )
+  fixture$execution$manifest$inputs <- data.table::data.table(
+    stage = "clean", entity_id = "s", name = "canonical",
+    version_id = "clean-input-v1", content_hash = "clean-input-h1"
+  )
+  fixture$execution$manifest$fingerprints <- data.table::data.table(
+    stage = c("clean", "metadata"), component = c("recode_spec.yml", "meta_fn"),
+    hash = c("pending-clean-old", "metadata-old")
+  )
+  accepted <- pd_build_input_rows(
+    "metadata", "p",
+    data.table::data.table(
+      name = c("clean_data", "aux_cpi"),
+      version_id = c("data-old", "cpi-v1"),
+      content_hash = c("data-old-hash", "cpi-h1")
+    )
+  )
+  fixture$execution$snapshot <- list(
+    current = data.table::data.table(
+      stage = "metadata", entity_id = "p", input_rows = list(accepted)
+    ),
+    fingerprints = list(
+      summary = data.table::data.table(stage = "metadata", hash = "code"),
+      components = data.table::data.table(
+        stage = c("clean", "metadata"),
+        component = c("recode_spec.yml", "meta_fn"),
+        hash = c("pending-clean-new", "metadata-new")
+      )
+    )
+  )
+  fixture$results[, `:=`(
+    data_version_id = "data-final", data_hash = "data-final-hash"
+  )]
+  writer <- function(...) list(success = TRUE, version_id = "inventory")
+  testthat::local_mocked_bindings(
+    pd_assert_execution_fence = function(execution) invisible(execution),
+    pd_manifest_publish = function(payload, ...) payload,
+    .package = "pipdata"
+  )
+
+  finalized <- pd_finalize_checkpoint(
+    fixture$execution, fixture$master, "metadata", fixture$results,
+    writer, writer, fixture$root
+  )
+  inputs <- finalized$execution$manifest$inputs[stage == "metadata"]
+  fingerprints <- finalized$execution$manifest$fingerprints
+
+  expect_identical(inputs$name, c("aux_cpi", "canonical", "clean_data"))
+  expect_identical(
+    inputs[name == "clean_data", .(version_id, content_hash)],
+    data.table::data.table(
+      version_id = "data-final", content_hash = "data-final-hash"
+    )
+  )
+  expect_identical(
+    finalized$execution$manifest$records[
+      stage == "metadata", input_hash
+    ],
+    inputs[name == "canonical", content_hash]
+  )
+  expect_identical(
+    fingerprints[stage == "clean", hash], "pending-clean-old"
+  )
+  expect_identical(
+    fingerprints[stage == "metadata", hash], "metadata-new"
+  )
+})
+
+test_that("committed upstream mismatch fails before inventory writers", {
+  fixture <- checkpoint_fixture(withr::local_tempdir())
+  withr::defer(pd_lease_release(fixture$lease))
+  accepted <- pd_build_input_rows(
+    "deflate", "p",
+    data.table::data.table(
+      name = c(
+        "clean_data", "metadata", "aux_cpi", "aux_ppp", "aux_pop"
+      ),
+      version_id = c("data-v1", "meta-v1", "cpi-v1", "ppp-v1", "pop-v1"),
+      content_hash = c("data-h1", "meta-h1", "cpi-h1", "ppp-h1", "pop-h1")
+    )
+  )
+  fixture$execution$snapshot <- list(
+    current = data.table::data.table(
+      stage = "deflate", entity_id = "p", input_rows = list(accepted)
+    ),
+    fingerprints = list(components = data.table::data.table(
+      stage = character(), component = character(), hash = character()
+    ))
+  )
+  fixture$results[, `:=`(
+    data_version_id = "data-v2", metadata_version_id = "meta-v1"
+  )]
+  writer_calls <- 0L
+  writer <- function(...) {
+    writer_calls <<- writer_calls + 1L
+    list(success = TRUE, version_id = "inventory")
+  }
+  testthat::local_mocked_bindings(
+    pd_assert_execution_fence = function(execution) invisible(execution),
+    .package = "pipdata"
+  )
+
+  expect_error(
+    pd_finalize_checkpoint(
+      fixture$execution, fixture$master, "deflate", fixture$results,
+      writer, writer, fixture$root
+    ),
+    class = "pipdata_checkpoint_provenance_error"
+  )
+  expect_identical(writer_calls, 0L)
+})
+
+test_that("finalized named provenance matches committed receipts and code", {
+  run_case <- function(data_version, data_hash, code_hash) {
+    root <- withr::local_tempdir()
+    context <- list(scope_id = "scope")
+    lease <- pd_lease_acquire(context, root)
+    withr::defer(pd_lease_release(lease))
+    manifest <- pd_empty_manifest(context)
+    manifest$records <- data.table::data.table(
+      stage = "clean", entity_id = "s", output_version_id = "clean-set-v1",
+      output_hash = "clean-set-h1", input_hash = "clean-input-h1",
+      code_hash = "clean-code-h1", output_receipts = list(list(list(
+        alias = "pip", artifact = "p", path = "p.qs2",
+        version_id = "data-v1", content_hash = "data-h1"
+      )))
+    )
+    manifest$inputs <- data.table::data.table(
+      stage = "clean", entity_id = "s", name = "canonical",
+      version_id = "clean-input-v1", content_hash = "clean-input-h1"
+    )
+    pd_validate_manifest(manifest)
+    accepted <- pd_build_input_rows(
+      "metadata", "p",
+      data.table::data.table(
+        name = c("clean_data", "aux_cpi"),
+        version_id = c("data-v1", "cpi-v1"),
+        content_hash = c("data-h1", "cpi-h1")
+      )
+    )
+    execution <- list(
+      context = context, lease = lease, manifest = manifest,
+      manifest_identity = NULL,
+      snapshot = list(
+        current = data.table::data.table(
+          stage = "metadata", entity_id = "p", input_rows = list(accepted)
+        ),
+        fingerprints = list(
+          summary = data.table::data.table(
+            stage = "metadata", hash = "metadata-code-h1"
+          ),
+          components = data.table::data.table(
+            stage = "metadata", component = "metadata_fn",
+            hash = "metadata-code-h1"
+          )
+        )
+      )
+    )
+    results <- data.table::data.table(
+      pip_id = "p", version_id = "meta-v1", content_hash = "meta-h1",
+      success = TRUE, input_hash = "claimed-input", code_hash = code_hash,
+      data_version_id = data_version, data_hash = data_hash,
+      alias = "pip_meta", artifact = "p", path = "p-meta.qs2"
+    )
+    writer_calls <- 0L
+    writer <- function(...) {
+      writer_calls <<- writer_calls + 1L
+      list(success = TRUE, version_id = "inventory-v1")
+    }
+    testthat::local_mocked_bindings(
+      pd_assert_execution_fence = function(execution) invisible(execution),
+      .package = "pipdata"
+    )
+    testthat::local_mocked_bindings(
+      st_versions = function(path, alias) data.table::data.table(
+        version_id = "meta-v1", content_hash = "meta-h1"
+      ),
+      .package = "stamp"
+    )
+
+    expect_error(
+      pd_finalize_checkpoint(
+        execution,
+        data.table::data.table(survey_id = "s", pip_id = "p"),
+        "metadata", results, writer, writer, root
+      ),
+      class = "pipdata_checkpoint_provenance_error"
+    )
+    expect_identical(writer_calls, 0L)
+  }
+
+  run_case("invented-data-v2", "invented-data-h2", "metadata-code-h1")
+  run_case("data-v1", "data-h1", "invented-metadata-code-h2")
+})
