@@ -1,6 +1,9 @@
 .PD_FINGERPRINT_COMPONENTS <- list(
   clean = c("inv_dlw_load", "pd_cpfw_merge", "pd_dlw_clean", "apply_recode_spec",
             "pd_wbpip_clean", "pd_split_alt_welfare", "expected_pip_ids",
+            "pd_expected_clean_pip_ids", "pd_exact_pfw_projection",
+            "pd_dependency_key_adapter", "pd_canonical_projection",
+            "pd_hash_object",
             "data_to_dt", "get_country_pfw", "load_stamp_recode_spec",
             "recode_binary", "recode_binned", "recode_haven",
             "recode_indicator", "recode_quantile", "recode_range",

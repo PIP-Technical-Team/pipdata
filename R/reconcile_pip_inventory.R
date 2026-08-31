@@ -11,7 +11,12 @@ pd_reconcile_inventory <- function(master, stage, results, survey_id = NULL,
       !nrow(results) || any(!results$success) || anyNA(results[, .(pip_id, version_id, content_hash)]) ||
       anyDuplicated(results$pip_id)) return(fail("unverified_result"))
   if (stage == "clean") {
-    if (!setequal(results$pip_id, expected_pip_ids)) {
+    expected <- tryCatch(
+      pd_validate_expected_pip_ids(expected_pip_ids),
+      error = function(e) character()
+    )
+    if (!length(expected) ||
+        !identical(sort(results$pip_id), expected)) {
       return(fail("incomplete_output_set"))
     }
     selected_survey_id <- survey_id

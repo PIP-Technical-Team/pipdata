@@ -222,6 +222,186 @@ pd_checkpoint <- function(master, stage, results, context, lease, manifest,
   finalized$candidate
 }
 
+pd_checkpoint_named_inputs <- function(execution, stage, results, entities) {
+  current <- execution$snapshot$current %||% data.table::data.table()
+  if (!nrow(current) || !"input_rows" %in% names(current)) {
+    return(NULL)
+  }
+  output <- list()
+  for (entity_id in sort(unique(entities))) {
+    selected_entity <- entity_id
+    accepted <- current[
+      which(current$stage == stage & current$entity_id == selected_entity)
+    ]
+    if (nrow(accepted) != 1L || !length(accepted$input_rows[[1L]])) {
+      rlang::abort(
+        "Accepted named input components are missing or ambiguous.",
+        class = "pipdata_checkpoint_provenance_error"
+      )
+    }
+    components <- data.table::as.data.table(
+      data.table::copy(accepted$input_rows[[1L]])
+    )[name != "canonical", .(name, version_id, content_hash)]
+    result_rows <- if (identical(stage, "clean")) {
+      results
+    } else {
+      results[which(results$pip_id == selected_entity)]
+    }
+    if (identical(stage, "metadata")) {
+      required <- c("data_version_id", "data_hash")
+      if (nrow(result_rows) != 1L ||
+          !all(required %in% names(result_rows)) ||
+          anyNA(result_rows[, ..required]) ||
+          any(!nzchar(unlist(result_rows[, ..required])))) {
+        rlang::abort(
+          "Final metadata inputs lack an exact clean receipt.",
+          class = "pipdata_checkpoint_provenance_error"
+        )
+      }
+      components[name == "clean_data", `:=`(
+        version_id = result_rows$data_version_id[[1L]],
+        content_hash = result_rows$data_hash[[1L]]
+      )]
+    } else if (identical(stage, "deflate")) {
+      upstream <- list(
+        clean_data = c("data_version_id", "data_hash"),
+        metadata = c("metadata_version_id", "metadata_hash")
+      )
+      if (nrow(result_rows) != 1L) {
+        rlang::abort(
+          "Final deflate inputs are ambiguous.",
+          class = "pipdata_checkpoint_provenance_error"
+        )
+      }
+      for (name in names(upstream)) {
+        fields <- upstream[[name]]
+        if (!fields[[1L]] %in% names(result_rows) ||
+            is.na(result_rows[[fields[[1L]]]][[1L]]) ||
+            !nzchar(result_rows[[fields[[1L]]]][[1L]])) {
+          rlang::abort(
+            "Final deflate inputs lack exact upstream versions.",
+            class = "pipdata_checkpoint_provenance_error"
+          )
+        }
+        accepted_version <- components[
+          which(components$name == name), version_id
+        ][[1L]]
+        final_version <- result_rows[[fields[[1L]]]][[1L]]
+        if (fields[[2L]] %in% names(result_rows) &&
+            !is.na(result_rows[[fields[[2L]]]][[1L]]) &&
+            nzchar(result_rows[[fields[[2L]]]][[1L]])) {
+          components[which(components$name == name), `:=`(
+            version_id = final_version,
+            content_hash = result_rows[[fields[[2L]]]][[1L]]
+          )]
+        } else if (!identical(accepted_version, final_version)) {
+          rlang::abort(
+            "Committed upstream version differs from its accepted hash.",
+            class = "pipdata_checkpoint_provenance_error"
+          )
+        }
+      }
+    }
+    output[[length(output) + 1L]] <- pd_build_input_rows(
+      stage, selected_entity, components
+    )
+  }
+  return(data.table::rbindlist(output, use.names = TRUE))
+}
+
+pd_committed_output_receipt <- function(manifest, stage, entity_id, artifact) {
+  selected_stage <- stage
+  selected_entity <- entity_id
+  record <- manifest$records[
+    manifest$records$stage == selected_stage &
+      manifest$records$entity_id == selected_entity
+  ]
+  if (nrow(record) != 1L) {
+    return(NULL)
+  }
+  receipts <- record$output_receipts[[1L]]
+  while (is.list(receipts) && length(receipts) == 1L &&
+         is.list(receipts[[1L]]) && is.null(names(receipts[[1L]]))) {
+    receipts <- receipts[[1L]]
+  }
+  if (is.list(receipts) && !is.null(names(receipts))) {
+    receipts <- list(receipts)
+  }
+  matches <- Filter(function(receipt) {
+    is.list(receipt) && identical(receipt$artifact, artifact)
+  }, receipts)
+  if (length(matches) != 1L) {
+    return(NULL)
+  }
+  return(matches[[1L]])
+}
+
+pd_assert_checkpoint_provenance <- function(execution, master, stage, results,
+                                            named_inputs) {
+  if (is.null(named_inputs)) {
+    return(invisible(NULL))
+  }
+  pd_validate_manifest(execution$manifest, execution$context)
+  summary <- data.table::as.data.table(
+    execution$snapshot$fingerprints$summary %||% data.table::data.table()
+  )
+  expected_code <- if (all(c("stage", "hash") %in% names(summary))) {
+    summary[summary$stage == stage][["hash"]]
+  } else {
+    character()
+  }
+  if (length(expected_code) != 1L || is.na(expected_code) ||
+      !nzchar(expected_code) ||
+      any(results$code_hash != expected_code)) {
+    rlang::abort(
+      "Checkpoint code provenance differs from the accepted fingerprint.",
+      class = "pipdata_checkpoint_provenance_error"
+    )
+  }
+  if (identical(stage, "clean")) {
+    return(invisible(NULL))
+  }
+  master <- data.table::as.data.table(data.table::copy(master))
+  upstream <- if (identical(stage, "metadata")) {
+    list(clean_data = c("clean", "data_version_id", "data_hash"))
+  } else {
+    list(
+      clean_data = c("clean", "data_version_id", "data_hash"),
+      metadata = c("metadata", "metadata_version_id", "metadata_hash")
+    )
+  }
+  for (i in seq_len(nrow(results))) {
+    pip_id <- results$pip_id[[i]]
+    selected_pip_id <- pip_id
+    owner <- master[master$pip_id == selected_pip_id, survey_id]
+    if (length(owner) != 1L || is.na(owner) || !nzchar(owner)) {
+      rlang::abort(
+        "Checkpoint upstream ownership is missing or ambiguous.",
+        class = "pipdata_checkpoint_provenance_error"
+      )
+    }
+    for (name in names(upstream)) {
+      fields <- upstream[[name]]
+      entity_id <- if (identical(fields[[1L]], "clean")) owner else pip_id
+      receipt <- pd_committed_output_receipt(
+        execution$manifest, fields[[1L]], entity_id, pip_id
+      )
+      version <- results[[fields[[2L]]]][[i]] %||% NA_character_
+      hash <- results[[fields[[3L]]]][[i]] %||% NA_character_
+      if (is.null(receipt) || is.na(version) || !nzchar(version) ||
+          is.na(hash) || !nzchar(hash) ||
+          !identical(version, receipt$version_id) ||
+          !identical(hash, receipt$content_hash)) {
+        rlang::abort(
+          paste("Checkpoint", name, "does not match its committed receipt."),
+          class = "pipdata_checkpoint_provenance_error"
+        )
+      }
+    }
+  }
+  return(invisible(NULL))
+}
+
 pd_finalize_checkpoint <- function(execution, master, stage, results,
                                    release_writer, master_writer,
                                    manifest_root = NULL, survey_id = NULL,
@@ -244,6 +424,27 @@ pd_finalize_checkpoint <- function(execution, master, stage, results,
     for (i in seq_len(nrow(results))) {
       pd_revalidate_receipt(as.list(results[i]))
     }
+  }
+  if (!all(c("input_hash", "code_hash") %in% names(results)) ||
+      anyNA(results[, .(input_hash, code_hash)])) {
+    rlang::abort("Checkpoint results lack complete input/code provenance.",
+                 class = "pipdata_checkpoint_provenance_error")
+  }
+  entity <- if (identical(stage, "clean")) {
+    rep(survey_id, nrow(results))
+  } else {
+    results$pip_id
+  }
+  named_inputs <- pd_checkpoint_named_inputs(
+    execution, stage, results, unique(entity)
+  )
+  pd_assert_checkpoint_provenance(
+    execution, master, stage, results, named_inputs
+  )
+  receipt_set <- if (identical(stage, "clean")) {
+    pd_clean_receipt_set(results, expected_pip_ids)
+  } else {
+    NULL
   }
   reconciliation <- pd_reconcile_inventory(
     master, stage, results, survey_id, expected_pip_ids
@@ -279,31 +480,34 @@ pd_finalize_checkpoint <- function(execution, master, stage, results,
     }
   }
   assert_fence()
-  if (!all(c("input_hash", "code_hash") %in% names(results)) ||
-      anyNA(results[, .(input_hash, code_hash)])) {
-    rlang::abort("Checkpoint results lack complete input/code provenance.",
-                 class = "pipdata_checkpoint_provenance_error")
-  }
-  entity <- if (identical(stage, "clean")) {
-    rep(survey_id, nrow(results))
-  } else results$pip_id
   has_exact_receipt <- all(c("alias", "path") %in% names(results))
   records <- results[, .(
     stage = ..stage, entity_id = entity,
     output_version_id = version_id, output_hash = content_hash,
     input_hash, code_hash, output_receipts = lapply(seq_len(.N), function(i) {
       if (!has_exact_receipt) return(list())
-      list(alias = alias[i], artifact = pip_id[i], path = path[i],
+      artifact_id <- if ("artifact" %in% names(results)) artifact[i] else pip_id[i]
+      list(alias = alias[i], artifact = artifact_id, path = path[i],
            version_id = version_id[i], content_hash = content_hash[i])
     })
   )]
   if (identical(stage, "clean")) {
     records <- records[, .(
-      output_version_id = pd_hash_object(sort(.SD$output_version_id)),
-      output_hash = pd_hash_object(sort(.SD$output_hash)),
+      output_version_id = receipt_set$output_version_id,
+      output_hash = receipt_set$output_hash,
       input_hash = .SD$input_hash[1L], code_hash = .SD$code_hash[1L],
-      output_receipts = list(unlist(.SD$output_receipts, recursive = FALSE))
+      output_receipts = list(lapply(seq_len(nrow(receipt_set$receipts)), function(i) {
+        as.list(receipt_set$receipts[i, .(
+          alias, artifact, path, version_id, content_hash
+        )])
+      }))
     ), by = .(stage, entity_id)]
+  }
+  if (!is.null(named_inputs)) {
+    canonical <- named_inputs[name == "canonical",
+                              .(stage, entity_id, content_hash)]
+    records[canonical, on = c("stage", "entity_id"),
+            input_hash := i.content_hash]
   }
   manifest <- execution$manifest
   manifest$records <- manifest$records[!
@@ -322,17 +526,34 @@ pd_finalize_checkpoint <- function(execution, master, stage, results,
     }
     results$input_hash[i]
   }
-  new_inputs <- results[, .(
-    stage = ..stage, entity_id = entity, name = "canonical",
-    version_id = vapply(seq_len(.N), input_version, character(1)),
-    content_hash = input_hash
-  )]
-  new_inputs <- unique(new_inputs, by = c("stage", "entity_id"))
+  new_inputs <- if (!is.null(named_inputs)) {
+    named_inputs
+  } else {
+    fallback <- results[, .(
+      stage = ..stage, entity_id = entity, name = "canonical",
+      version_id = vapply(seq_len(.N), input_version, character(1)),
+      content_hash = input_hash
+    )]
+    unique(fallback, by = c("stage", "entity_id"))
+  }
   manifest$inputs <- manifest$inputs[!
     paste(stage, entity_id) %in% paste(affected$stage, affected$entity_id)]
   manifest$inputs <- data.table::rbindlist(list(manifest$inputs, new_inputs), fill = TRUE)
   if (!is.null(execution$snapshot$fingerprints$components)) {
-    manifest$fingerprints <- data.table::copy(execution$snapshot$fingerprints$components)
+    checkpoint_stage <- as.character(stage)[[1L]]
+    current_fingerprints <- data.table::copy(
+      execution$snapshot$fingerprints$components
+    )
+    committed_fingerprints <- current_fingerprints[
+      which(current_fingerprints[["stage"]] == checkpoint_stage)
+    ]
+    manifest$fingerprints <- manifest$fingerprints[
+      which(manifest$fingerprints[["stage"]] != checkpoint_stage)
+    ]
+    manifest$fingerprints <- data.table::rbindlist(
+      list(manifest$fingerprints, committed_fingerprints), fill = TRUE
+    )
+    data.table::setorder(manifest$fingerprints, stage, component)
   }
   manifest$tombstones <- data.table::rbindlist(
     list(manifest$tombstones, reconciliation$tombstones), fill = TRUE
