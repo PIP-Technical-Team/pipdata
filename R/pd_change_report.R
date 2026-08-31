@@ -19,11 +19,23 @@
 #' }
 pd_change_report <- function(inv = pipload::load_gmd_valid_inv(verbose = FALSE),
                              master = pipload::load_pip_master_inventory(verbose = FALSE),
-                              manifest = NULL,
-                              context = pd_dependency_context()) {
-  if (is.null(manifest)) manifest <- pd_manifest_read(context, allow_absent = TRUE)
-  inv <- .filter_completed_dlw_validation_inventory(inv)
-  plan <- pd_dependency_plan(inv, master, manifest, context)
+                             manifest = NULL,
+                             context = pd_dependency_context()) {
+  prepared <- pd_prepare_dependency_facts(
+    inv = inv,
+    master = master,
+    context = context,
+    manifest = manifest
+  )
+  snapshot <- prepared$snapshot
+  plan <- pd_dependency_plan(
+    snapshot$inventory,
+    snapshot$master,
+    prepared$manifest,
+    prepared$context,
+    snapshot$fingerprints,
+    snapshot = snapshot
+  )
   print(plan)
   invisible(plan)
 }
