@@ -38,3 +38,37 @@ test_that("2500 execution units use bounded checkpoints and zero catalog IO", {
   expect_length(checkpoints, 25L)
   expect_true(all(checkpoints == 100L))
 })
+
+test_that("fact construction binds accumulated rows once", {
+  current <- data.table::data.table(
+    stage = "metadata", entity_id = paste0("p", 1:20),
+    survey_id = paste0("s", 1:20), pip_id = paste0("p", 1:20),
+    output_version_id = NA_character_, output_hash = NA_character_,
+    input_hash = paste0("input-", 1:20),
+    legacy_input_hash = paste0("legacy-", 1:20),
+    code_hash = "metadata-code"
+  )
+  snapshot <- list(
+    current = current,
+    fingerprints = list(
+      components = data.table::data.table(
+        stage = character(), component = character(), hash = character()
+      )
+    )
+  )
+  manifest <- pd_empty_manifest(list(scope_id = "scope"))
+  bind_calls <- 0L
+  original_rbindlist <- data.table::rbindlist
+  testthat::local_mocked_bindings(
+    rbindlist = function(...) {
+      bind_calls <<- bind_calls + 1L
+      original_rbindlist(...)
+    },
+    .package = "data.table"
+  )
+
+  facts <- pd_snapshot_facts(snapshot, manifest)
+
+  expect_identical(nrow(facts), 20L)
+  expect_lte(bind_calls, 1L)
+})
