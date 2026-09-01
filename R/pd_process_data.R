@@ -96,6 +96,8 @@ pd_process_data <- function(
                    class = "pipdata_bootstrap_selector_error")
   }
 
+  aux_measures <- pd_normalize_aux_measures(aux_measures)
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Temporarily switch stamp versioning to "timestamp" when force = TRUE
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,28 +123,37 @@ pd_process_data <- function(
     on.exit(stamp::st_opts(versioning = old_versioning), add = TRUE)
     stamp::st_opts(versioning = "timestamp")
   }
-  actions <- execution$plan$actions[action != "none"]
-  if (!nrow(actions)) return(master)
-  recode_spec <- sync_recode_spec(alias = "pip_inv", verbose = verbose)
-  clean_actions <- actions[stage == "clean"]
-  cleaned_ids <- character()
-  for (i in seq_len(nrow(clean_actions))) {
-    action <- clean_actions[i]
-    inv_row <- data.table::as.data.table(inv)[survey_id == action$survey_id]
-    result <- pd_execute_clean(action, inv_row, execution, recode_spec, verbose)
-    if (!isTRUE(result$success)) {
-      master <- pd_invalidate_failed_action(master, action)
-      next
-    }
-    finalized <- pd_finalize_checkpoint(
-      execution, master, "clean", result$receipts,
-      pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
-      pd_inventory_writer("pip_master", "pip_master_inventory", verbose),
-      survey_id = result$survey_id,
-      expected_pip_ids = result$expected_pip_ids
+  selected <- execution$plan$actions
+  if (!any(selected$action != "none")) return(master)
+
+  run_id <- pd_random_id()
+  options <- pd_pipeline_options(
+    verbose = verbose,
+    force = force,
+    force_surveys = force_surveys %||% character(),
+    bootstrap = bootstrap,
+    bootstrap_entities = bootstrap_entities %||% character(),
+    checkpoint_size = getOption("pipdata.manifest_checkpoint_n", 25L),
+    checkpoint_seconds = getOption(
+      "pipdata.manifest_checkpoint_seconds", 60
     )
-    master <- finalized$candidate
-    execution <- finalized$execution
+  )
+  clean_actions <- selected[stage == "clean"]
+  clean_context <- pd_stage_context(
+    execution, run_id, options, clean_actions, force_surveys
+  )
+  recode_spec <- if (any(clean_actions$action != "none")) {
+    sync_recode_spec(alias = "pip_inv", verbose = verbose)
+  } else {
+    NULL
+  }
+  clean <- pd_run_clean_stage_prepared(
+    execution, clean_actions, run_id, clean_context, master, inv, options,
+    recode_spec, verbose
+  )
+  execution <- clean$execution
+  master <- clean$master
+  if (any(clean_actions$action != "none")) {
     execution <- pd_refresh_execution_facts(
       execution,
       master,
@@ -152,191 +163,27 @@ pd_process_data <- function(
       bootstrap_entities = bootstrap_entities,
       verbose = verbose
     )
-    actions <- execution$plan$actions[action != "none"]
-    for (pip_id in result$receipts$pip_id) {
-      selected_pip_id <- pip_id
-      metadata_action <- actions[
-        stage == "metadata" & actions$pip_id == selected_pip_id
-      ]
-      if (nrow(metadata_action) != 1L) {
-        rlang::abort(
-          "Committed clean output lacks one accepted metadata action.",
-          class = "pipdata_dependency_facts_invalid"
-        )
-      }
-      metadata_result <- pd_execute_metadata(
-        metadata_action, execution$snapshot, execution, result, verbose
-      )
-      if (!isTRUE(metadata_result$success)) next
-      metadata_finalized <- pd_finalize_checkpoint(
-        execution, master, "metadata",
-        data.table::as.data.table(metadata_result),
-        pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
-        pd_inventory_writer("pip_master", "pip_master_inventory", verbose)
-      )
-      master <- metadata_finalized$candidate
-      execution <- metadata_finalized$execution
-      cleaned_ids <- c(cleaned_ids, pip_id)
-    }
-    rm(result)
   }
-  metadata_actions <- actions[stage == "metadata" & !pip_id %in% cleaned_ids]
-  for (i in seq_len(nrow(metadata_actions))) {
-    action <- metadata_actions[i]
-    reconstruct_reasons <- c("upstream_output_changed", "clean_code_changed")
-    action[, reconstruct_base_metadata := any(
-      execution$plan$reasons[
-        stage == "metadata" & entity_id == action$entity_id[[1L]], reason
-      ] %in% reconstruct_reasons
-    )]
-    result <- tryCatch(
-      pd_execute_metadata(action, execution$snapshot, execution, NULL,
-                          verbose),
-      error = function(e) list(success = FALSE)
-    )
-    if (!isTRUE(result$success)) {
-      master <- pd_invalidate_failed_action(master, action)
-      next
-    }
-    result_dt <- data.table::as.data.table(result)
-    finalized <- pd_finalize_checkpoint(
-      execution, master, "metadata", result_dt,
-      pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
-      pd_inventory_writer("pip_master", "pip_master_inventory", verbose)
-    )
-    master <- finalized$candidate
-    execution <- finalized$execution
+  metadata_actions <- data.table::copy(
+    execution$plan$actions[stage == "metadata"]
+  )
+  failed_surveys <- clean$outcome$units[status == "failed", survey_id]
+  if (length(failed_surveys)) {
+    metadata_actions[
+      survey_id %in% failed_surveys & action != "none",
+      scheduling_state := "blocked"
+    ]
   }
+  metadata_context <- pd_stage_context(
+    execution, run_id, options, metadata_actions, force_surveys
+  )
+  metadata <- pd_run_metadata_stage_prepared(
+    execution, metadata_actions, run_id, metadata_context, master, options,
+    verbose
+  )
+  master <- metadata$master
   return(master)
 
-  if (!is.null(dependency_plan)) {
-    pd_validate_plan(dependency_plan)
-    dependency_plan <- pd_assert_bootstrap(
-      dependency_plan, bootstrap, bootstrap_entities
-    )
-    clean_ids <- dependency_plan$actions[stage == "clean" & action != "none",
-                                         unique(survey_id)]
-    inv <- inv[survey_id %in% clean_ids, ]
-  }
-
-  # Resolve current aux content hashes once, before aux data is loaded.
-  # These hashes are passed through the run and recorded in the master
-  # inventory so that aux-change detection can compare against them.
-  aux_hashes <- get_aux_hashes(aux_measures, verbose = verbose)
-
-  # Load aux data for metadata attributes and processing
-  aux_list <- lapply(aux_measures, pipload::load_aux_data, verbose = verbose)
-  names(aux_list) <- aux_measures
-
-  # Load valid inventory
-  inv_to_clean <- valid_dlw_load(
-    inv = inv,
-    aux_measures = aux_measures,
-    force = force,
-    force_surveys = force_surveys,
-    aux_hashes = aux_hashes,
-    verbose = verbose
-  )
-
-  if (is.null(inv_to_clean) || nrow(inv_to_clean) == 0) {
-    if (verbose) {
-      cli::cli_alert_info("No surveys to process.")
-    }
-
-    # Load old pip inventory and return (with default enrichment for consumer)
-    old_pip_inv <- pipload::load_pip_master_inventory(verbose = verbose)
-    return(old_pip_inv)
-  }
-
-  # Sync recode spec to stamp once before the per-survey loop and keep the
-  # resolved spec so each survey reuses it instead of re-reading from stamp.
-  recode_spec <- sync_recode_spec(alias = "pip_inv", verbose = verbose)
-
-  # Process data
-  inv_ls <- split(inv_to_clean, seq_len(nrow(inv_to_clean)))
-  names(inv_ls) <- inv_to_clean$survey_id
-  results <- lapply(
-    inv_ls,
-    process_data,
-    aux_list = aux_list,
-    recode_spec = recode_spec,
-    verbose = verbose
-  )
-  names(results) <- inv_to_clean$survey_id
-
-  # Log processing summary
-  n_total <- length(results)
-  n_success <- sum(!vapply(results, is.null, logical(1)))
-  n_failed <- n_total - n_success
-  successful <- names(Filter(Negate(is.null), results))
-
-  pipfun::log_info(
-    "Processing complete.",
-    name = "pipdata_log",
-    logmeta = list(
-      info = "process_summary_inf",
-      n_total = n_total,
-      n_success = n_success,
-      n_failed = n_failed,
-      surveys_success = successful
-    )
-  )
-
-  # Log null (failed) surveys before building the inventory map
-  null_ls <- names(Filter(is.null, results))
-  if (length(null_ls) > 0L) {
-    pipfun::log_add(
-      event = "info",
-      message = "Some surveys were not cleaned. Review logmeta to identify which ones.",
-      name = "pipdata_log",
-      logmeta = list(info = "null_svys_inf", surveys = null_ls)
-    )
-  }
-
-  # Build a minimal pip_id → survey_id map from successful results.
-  # This is the only per-run data the assembler needs; version metadata is
-  # read directly from stamp's persisted catalogs.
-  successful_results <- Filter(Negate(is.null), results)
-  pip_id_map <- if (length(successful_results) > 0L) {
-    data.table::rbindlist(
-      lapply(successful_results, \(x) {
-        ids <- toupper(unlist(x$pip_names))
-        if (length(ids) == 0L) {
-          return(data.table::data.table(pip_id = character(0)))
-        }
-        data.table::data.table(pip_id = ids)
-      }),
-      idcol = "survey_id"
-    )
-  } else {
-    data.table::data.table(survey_id = character(), pip_id = character())
-  }
-
-  # Update inventory via catalog-based assembler
-  new_pip_inv <- build_pip_inventory(
-    inv_to_clean = inv_to_clean,
-    pip_id_map = pip_id_map,
-    aux_hashes = aux_hashes,
-    verbose = verbose
-  )
-
-  log_root <- fs::path(
-    getOption("pipfun.main_dir"),
-    "pip_repository",
-    "pip_logs"
-  )
-  fs::dir_create(log_root, recurse = TRUE)
-  stamp::st_init(root = log_root, alias = "piplog")
-  pipfun::log_save_checkpoint(
-    name = "pipdata_log",
-    stage = "pipeline",
-    alias = "piplog"
-  )
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Return   ---------
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return(new_pip_inv)
 }
 
 pd_invalidate_failed_action <- function(master, action, emit_log = TRUE) {
@@ -395,6 +242,12 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
              code_hash = action$code_hash[[1L]]), receipt)
     })
     receipts <- data.table::rbindlist(receipts, fill = TRUE)
+    if (nrow(receipts) != length(expected) || any(!receipts$success)) {
+      rlang::abort(
+        "Clean artifact receipt was not verified.",
+        class = "pipdata_clean_receipt_invalid"
+      )
+    }
     invariant <- data.table::copy(inv_row)
     invariant[, pip_id := expected[1L]]
     if (length(expected) > 1L) {
@@ -408,9 +261,16 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
          expected_pip_ids = expected, receipts = receipts,
          metadata = metadata)
   }, error = function(e) {
+    if (!pd_condition_allowlisted(e, .PD_CLEAN_RECOVERABLE_CLASSES)) {
+      rlang::cnd_signal(e)
+    }
+    root <- pd_condition_root(e)
     list(stage = "clean", survey_id = survey_id, success = FALSE,
-         expected_pip_ids = character(), receipts = data.table::data.table(),
-         metadata = list(), error = conditionMessage(e))
+          expected_pip_ids = character(), receipts = data.table::data.table(),
+          metadata = list(), condition = new_stage_condition_record(
+            root, "error", stage = "clean", entity_id = survey_id,
+            survey_id = survey_id, operation = "clean", recoverable = TRUE
+          ))
   })
   result
 }
