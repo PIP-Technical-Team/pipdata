@@ -4,7 +4,7 @@ _Generated 2026-09-01_
 
 ## Force_Surveys / Pip_Id / Valid_Dlw_Load\(\)
 
-_Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 108 entities
+_Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 109 entities
 
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`
   > dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phant…
@@ -156,6 +156,8 @@ _Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 108 entities
   > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review-3](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md)** · `review` · _—_ · `2026-09-01`
   > **Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md`…
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review-4](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-4.md)** · `review` · _—_ · `2026-09-01`
+  > **Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md`…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
 - **[Internal logmeta type markers polluting build_type_summary\(\) table](.cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md)** · `solution` · _—_ · `2026-04-07`
@@ -225,7 +227,7 @@ _Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 108 entities
 
 ## %||% / Related / Root
 
-_Keywords: `%||%` · `related` · `root`_ · 11 entities
+_Keywords: `%||%` · `related` · `root`_ · 12 entities
 
 - **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
   > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
@@ -243,6 +245,8 @@ _Keywords: `%||%` · `related` · `root`_ · 11 entities
   > The DLW acquisition and validation wrappers combined discovery, per-survey execution, persistence, and logging. Sever…
 - **[Separate Exact Provenance From Semantic Invalidation](.cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md)** · `solution` · _—_ · `2026-08-28`
   > An incremental planner can fail in two opposite directions: - A shared auxiliary artifact gets a new exact `version_i…
+- **[Consume Durable Invalidation During Restart Planning](.cg-docs/solutions/data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md)** · `solution` · _—_ · `2026-09-01`
+  > A recoverable clean or metadata failure correctly cleared stage-owned pointers in the durable release and master inve…
 - **[Package-imported operators \(%||%, %in%, etc.\) are not available in test helper functions](.cg-docs/solutions/testing-patterns/2026-05-20-package-operators-not-available-in-test-helpers.md)** · `solution` · _—_ · `2026-05-20`
   > A test helper in `tests/testthat/test-update_pip_inventory.R` (now `tests/testthat/test-build_pip_inventory.R`) used …
 - **[Verify R package dependencies and stage checkpoints from built artifacts](.cg-docs/solutions/testing-patterns/2026-08-21-built-package-and-checkpoint-verification.md)** · `solution` · _—_ · `2026-08-21`

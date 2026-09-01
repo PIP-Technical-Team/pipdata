@@ -99,6 +99,7 @@ stale in-memory identity.
 
 ## Related
 
+- [Consume Durable Invalidation During Restart Planning](../data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md)
 - [Typed Stage Orchestration Must Fail Closed and Account for Every Unit](2026-08-26-fail-closed-typed-stage-orchestration.md)
 - [Authoritative Staged Provenance Requires Result-Bound Checkpoints](../data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)
 - [Fail-Closed Durable Reconciliation for Staged Data Pipelines](../data-quality/2026-08-26-durable-stage-reconciliation.md)

@@ -103,6 +103,13 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   fence even when no sibling checkpoint follows. Artifact-bearing results are
   built only after the final retained manifest is reloaded and verified. See
   `.cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md`.
+- **Restart currentness requires both catalog evidence and durable pointers**:
+  A surviving Stamp artifact is historical evidence, not proof that the failed
+  stage remains current. Clean and metadata receipts are current only when
+  their exact versions and hashes match complete master inventory pointers.
+  Clearing a pointer makes the stage stale on the next authoritative plan while
+  preserving immutable history. See
+  `.cg-docs/solutions/data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md`.
 
 ## Work in Progress
 

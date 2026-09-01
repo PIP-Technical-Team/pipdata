@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-09-01 · 149 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -43,6 +43,10 @@ _Generated 2026-09-01 · 149 artifacts (newest first) + 0 roadmap features_
 
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review-3](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md)** · `review` · _—_ · `2026-09-01`
   > **Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md`…
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review-4](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-4.md)** · `review` · _—_ · `2026-09-01`
+  > **Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md`…
+- **[Consume Durable Invalidation During Restart Planning](.cg-docs/solutions/data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md)** · `solution` · _—_ · `2026-09-01`
+  > A recoverable clean or metadata failure correctly cleared stage-owned pointers in the durable release and master inve…
 - **[Separate Stage Failure Status From Condition Provenance](.cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md)** · `solution` · _—_ · `2026-09-01`
   > A recoverable clean, metadata, or deflate worker could finish with a typed condition record but still prevent constru…
 

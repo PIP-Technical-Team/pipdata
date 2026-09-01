@@ -71,6 +71,7 @@ testing the hash mechanism alone does not prove closure completeness.
 
 ## Related
 
+- [Consume Durable Invalidation During Restart Planning](2026-09-01-consume-durable-invalidation-during-restart-planning.md)
 - `.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md`
 - `.cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md`
 - `.cg-docs/solutions/data-quality/2026-05-27-legacy-column-persistence-in-on-disk-inventory.md`
