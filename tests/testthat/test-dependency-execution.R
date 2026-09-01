@@ -459,6 +459,59 @@ test_that("execution rebuilds its authoritative plan after lease acquisition", {
   )
 })
 
+test_that("locked execution prepares once under the supplied lease", {
+  context <- list(scope_id = "scope")
+  lease <- list(token = "supplied-lease")
+  inv <- make_dependency_validation_inventory()[1L]
+  master <- data.table::data.table(
+    survey_id = inv$survey_id, pip_id = "BOL_2020_EH_INC"
+  )
+  manifest <- pd_empty_manifest(context)
+  snapshot <- list(
+    inventory = data.table::copy(inv),
+    master = data.table::copy(master),
+    fingerprints = list(),
+    current = data.table::data.table(),
+    facts = data.table::data.table()
+  )
+  prepare_calls <- 0L
+  plan_calls <- 0L
+  lease_acquires <- 0L
+
+  testthat::local_mocked_bindings(
+    pd_prepare_dependency_facts = function(...) {
+      prepare_calls <<- prepare_calls + 1L
+      list(context = context, manifest = manifest, snapshot = snapshot)
+    },
+    pd_dependency_plan = function(...) {
+      plan_calls <<- plan_calls + 1L
+      structure(
+        list(
+          context = context,
+          actions = pd_empty_actions(),
+          reasons = pd_empty_reasons(),
+          snapshot = snapshot
+        ),
+        class = "pip_dependency_plan"
+      )
+    },
+    pd_lease_acquire = function(...) {
+      lease_acquires <<- lease_acquires + 1L
+      rlang::abort("locked preparation must not acquire another lease")
+    },
+    .package = "pipdata"
+  )
+
+  execution <- pd_prepare_execution_locked(
+    inv, master, context, lease
+  )
+
+  expect_identical(execution$lease, lease)
+  expect_identical(prepare_calls, 1L)
+  expect_identical(plan_calls, 1L)
+  expect_identical(lease_acquires, 0L)
+})
+
 test_that("partial manifests make every unrecorded node actionable", {
   context <- list(scope_id = "scope")
   manifest <- pd_empty_manifest(context)

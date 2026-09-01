@@ -183,6 +183,52 @@ test_that("targeted force makes the selected current chain runnable", {
   )
 })
 
+test_that("targeted force is additive to unrelated ordinary invalidation", {
+  inv <- data.table::data.table(survey_id = c("s1", "s2"))
+  master <- data.table::data.table(
+    survey_id = c("s1", "s2"), pip_id = c("p1", "p2")
+  )
+  current <- data.table::rbindlist(list(
+    inv[, .(
+      stage = "clean", entity_id = survey_id, survey_id,
+      pip_id = NA_character_
+    )],
+    master[, .(
+      stage = "metadata", entity_id = pip_id, survey_id, pip_id
+    )],
+    master[, .(
+      stage = "deflate", entity_id = pip_id, survey_id, pip_id
+    )]
+  ))
+  facts <- data.table::data.table(
+    stage = "metadata", entity_id = "p2", survey_id = "s2", pip_id = "p2",
+    reason = "aux_cpi_changed", input = "aux_cpi", old = "old", new = "new"
+  )
+
+  plan <- pd_dependency_plan(
+    inv,
+    master,
+    pd_empty_manifest(list(scope_id = "scope")),
+    context = list(scope_id = "scope"),
+    fingerprints = list(),
+    force_surveys = "s1",
+    snapshot = list(current = current, facts = facts)
+  )
+
+  expect_true(all(plan$actions[survey_id == "s1", action != "none"]))
+  expect_identical(
+    plan$actions[stage == "metadata" & entity_id == "p2", action],
+    "refresh"
+  )
+  expect_true(all(plan$reasons[reason == "forced", entity_id] %in%
+                    c("s1", "p1")))
+  expect_identical(
+    plan$reasons[stage == "metadata" & entity_id == "p2", reason],
+    "aux_cpi_changed"
+  )
+  expect_false(any(plan$reasons[entity_id == "p2", reason == "forced"]))
+})
+
 test_that("zero selection returns an empty complete plan", {
   plan <- pd_dependency_plan(
     data.table::data.table(survey_id = character()),
