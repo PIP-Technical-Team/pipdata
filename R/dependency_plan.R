@@ -228,21 +228,59 @@ pd_dependency_plan <- function(inv, master = NULL, manifest = NULL,
   plan
 }
 
-pd_assert_bootstrap <- function(plan, bootstrap = FALSE, bootstrap_entities = NULL) {
+pd_assert_bootstrap <- function(plan, bootstrap = FALSE,
+                                bootstrap_entities = NULL,
+                                strict_selectors = FALSE) {
   unknown <- plan$reasons[reason == "unknown_provenance"]
   if (nrow(unknown) && !isTRUE(bootstrap)) {
     rlang::abort("Unknown legacy provenance requires bootstrap = TRUE.",
                  class = "pipdata_bootstrap_required")
   }
   if (isTRUE(bootstrap) && !is.null(bootstrap_entities)) {
-    keep <- plan$actions$entity_id %in% bootstrap_entities |
-      plan$actions$survey_id %in% bootstrap_entities |
-      plan$actions$pip_id %in% bootstrap_entities
-    plan$actions <- plan$actions[keep]
+    selectors <- unique(bootstrap_entities)
+    survey_ids <- unique(plan$actions$survey_id)
+    direct <- selectors[selectors %in% survey_ids]
+    pip_candidates <- selectors[!selectors %in% survey_ids]
+    mapping <- unique(plan$actions[
+      !is.na(pip_id), .(pip_id, survey_id)
+    ])
+    selected_surveys <- direct
+    unresolved <- character()
+    for (selector in pip_candidates) {
+      owners <- unique(mapping[
+        toupper(pip_id) == toupper(selector), survey_id
+      ])
+      if (length(owners) > 1L) {
+        rlang::abort(
+          paste("Bootstrap selector is ambiguous:", selector),
+          class = "pipdata_bootstrap_selector_error",
+          selector = selector
+        )
+      }
+      if (!length(owners)) {
+        unresolved <- c(unresolved, selector)
+      } else {
+        selected_surveys <- c(selected_surveys, owners)
+      }
+    }
+    if (isTRUE(strict_selectors) && length(unresolved)) {
+      rlang::abort(
+        paste(
+          "Unknown bootstrap selector(s):",
+          paste(sort(unique(unresolved)), collapse = ", ")
+        ),
+        class = "pipdata_bootstrap_selector_error",
+        unknown_identifiers = sort(unique(unresolved))
+      )
+    }
+    plan$actions <- plan$actions[
+      survey_id %in% sort(unique(selected_surveys))
+    ]
     plan$reasons <- plan$reasons[
       paste(stage, entity_id) %in% paste(plan$actions$stage, plan$actions$entity_id)]
   }
-  plan
+  pd_validate_plan(plan)
+  return(plan)
 }
 
 pd_plan_node_states <- function(plan, blocked = NULL) {
