@@ -1,10 +1,10 @@
 # 🧠 Project Brain — Part 1
 
-_Generated 2026-08-28_
+_Generated 2026-09-01_
 
 ## Force_Surveys / Pip_Id / Valid_Dlw_Load\(\)
 
-_Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 107 entities
+_Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 108 entities
 
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`
   > dplyr, tidyr, and tibble are used via `::` in 4 pipdata files but are **not declared in DESCRIPTION Imports** — phant…
@@ -92,7 +92,7 @@ _Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 107 entities
   > Refactor `pipdata_get_gmd()`, `pipdata_validate_gmd()`, and `pipdata_dlw_process()` into explicit stage-owned orchest…
 - **[Implement Typed Pipeline Stage Interface](.cg-docs/plans/2026-08-25-pipeline-stage-interface.md)** · `plan` · _completed_ · `2026-08-25`
   > Implement validated, versioned `pipeline_context` and `pipdata_stage_result` S3 contracts and prove them on the batch…
-- **[Implement Executable Staged Invalidation DAG](.cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md)** · `plan` · _active_ · `2026-08-27`
+- **[Implement Executable Staged Invalidation DAG](.cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md)** · `plan` · _completed_ · `2026-08-27`
   > Implement a pipdata-owned incremental executor for the existing durable `clean`, `metadata`, and `deflate` stages. Th…
 - **[2026-04-06-enrich-log-report-review](.cg-docs/reviews/2026-04-06-enrich-log-report-review.md)** · `review` · _—_ · `—`
   > **Review depth**: standard **Plan**: `.cg-docs/plans/2026-04-06-enrich-log-report.md` **Files reviewed**: 5 **Finding…
@@ -154,6 +154,8 @@ _Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 107 entities
   > **Review mode**: architecture **Scope**: DLW wrapper rewrite against synchronized base `55b7a3a1369504dcee8754237bedc…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review-2](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md)** · `review` · _—_ · `2026-08-28`
   > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review-3](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md)** · `review` · _—_ · `2026-09-01`
+  > **Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md`…
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md)** · `review` · _—_ · `2026-08-26`
   > **Review mode**: light verification **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **…
 - **[Internal logmeta type markers polluting build_type_summary\(\) table](.cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md)** · `solution` · _—_ · `2026-04-07`
@@ -223,12 +225,14 @@ _Keywords: `force_surveys` · `pip_id` · `valid_dlw_load()`_ · 107 entities
 
 ## %||% / Related / Root
 
-_Keywords: `%||%` · `related` · `root`_ · 10 entities
+_Keywords: `%||%` · `related` · `root`_ · 11 entities
 
 - **[NULL-coalescing operator %||% silently unavailable in package functions](.cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md)** · `solution` · _—_ · `2026-05-04`
   > `cpi_ppp_years()` in `R/pd_deflation.R` contained: This line caused a `could not find function "%||%"` error at runti…
 - **[Typed Stage Orchestration Must Fail Closed and Account for Every Unit](.cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md)** · `solution` · _—_ · `2026-08-26`
   > A typed pipeline result can look complete and auditable while execution has already crossed an unsafe boundary. The d…
+- **[Separate Stage Failure Status From Condition Provenance](.cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md)** · `solution` · _—_ · `2026-09-01`
+  > A recoverable clean, metadata, or deflate worker could finish with a typed condition record but still prevent constru…
 - **[Validate Authors@R through a built R package](.cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md)** · `solution` · _—_ · `2026-08-21`
   > The pipfun `DESCRIPTION` file contains valid `Authors@R` metadata with an author carrying both `aut` and `cre` roles,…
 - **[Catalog-wide validation before scope filter generates spurious warnings](.cg-docs/solutions/data-quality/2026-05-27-catalog-validation-before-filter-spurious-warnings.md)** · `solution` · _—_ · `2026-05-27`

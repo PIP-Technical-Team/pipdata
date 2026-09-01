@@ -1,5 +1,5 @@
 {
-  "edge_count": 59,
+  "edge_count": 60,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -280,6 +280,12 @@
     {
       "edge_type": "verifies",
       "source": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md",
+      "target": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md",
       "target": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
       "target_missing": false
     },
@@ -2096,7 +2102,7 @@
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
       "slug": "2026-08-27-executable-staged-invalidation-dag",
-      "status": "active",
+      "status": "completed",
       "summary": "Implement a pipdata-owned incremental executor for the existing durable `clean`, `metadata`, and `deflate` stages. The executor must use the C2 dependency manifest and exact Stamp receipts as its only currentness authority, map execution through C3 typed contexts and results, report every selected node, and run only directly affected descendants.",
       "tags": [
         "pipeline",
@@ -2804,6 +2810,28 @@
       ]
     },
     {
+      "date": "2026-09-01",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md",
+      "slug": "2026-08-25-dlw-wrapper-rewrite-verify-review-3",
+      "status": "",
+      "summary": "**Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md` **Files reviewed**: 67 **Findings**: 12 (P0: 0, P1: 8, P2: 4, P3: 0)",
+      "tags": [],
+      "title": "2026-08-25-dlw-wrapper-rewrite-verify-review-3",
+      "top_keywords": [
+        "cg-code-quality",
+        "cg-testing",
+        "pipeline_stage_cores.r",
+        "pip_id",
+        "test-pd-run-pipeline.r",
+        "2026-08-25-dlw-wrapper-rewrite-review.md",
+        "pd_deflate_pipeline.r",
+        "pd_run_pipeline.r",
+        "verification",
+        "review"
+      ]
+    },
+    {
       "date": "2026-08-26",
       "entity_type": "review",
       "path": ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
@@ -3394,6 +3422,34 @@
         "must",
         "account",
         "2026-08-25-pipeline-stage-interface.md"
+      ]
+    },
+    {
+      "date": "2026-09-01",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md",
+      "slug": "2026-09-01-separate-stage-failure-status-from-condition-provenance",
+      "status": "",
+      "summary": "A recoverable clean, metadata, or deflate worker could finish with a typed condition record but still prevent construction of the pipeline aggregate. The stage unit used the condition class, such as `report_lvl` or `deflation_na`, as its `reason_codes` value. The stage-result validator accepts only controlled dependency and execution reasons, so validation failed after worker activity. Clean and metadata failures also cleared current pointers only in the returned master inventory. If no later sibling checkpoint succeeded, the release and master inventories on disk retained the old pointers. A restart could therefore plan from stale durable state even though the prior run reported...",
+      "tags": [
+        "pipeline",
+        "stage-result",
+        "recoverable-failure",
+        "invalidation",
+        "manifest"
+      ],
+      "title": "Separate Stage Failure Status From Condition Provenance",
+      "top_keywords": [
+        "separate stage failure status from condition provenance",
+        "condition",
+        "stage",
+        "failure",
+        "provenance",
+        "separate",
+        "status",
+        "entity_failed",
+        "report_lvl",
+        "deflation_na"
       ]
     },
     {
@@ -4408,13 +4464,13 @@
       ]
     }
   ],
-  "entity_count": 147,
-  "generated": "2026-08-28",
+  "entity_count": 149,
+  "generated": "2026-09-01",
   "schema_version": "0.2.0",
   "topic_count": 5,
   "topics": [
     {
-      "entity_count": 107,
+      "entity_count": 108,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md",
         ".cg-docs/brainstorms/2026-04-28-unified-logging.md",
@@ -4490,6 +4546,7 @@
         ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md",
+        ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md",
         ".cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review.md",
         ".cg-docs/solutions/bugs/2026-04-07-internal-logmeta-types-polluting-type-summary.md",
         ".cg-docs/solutions/bugs/2026-04-29-conditional-column-init-inconsistent-schema.md",
@@ -4533,10 +4590,11 @@
       "slug": "force-surveys-pip-id-valid-dlw-load"
     },
     {
-      "entity_count": 10,
+      "entity_count": 11,
       "entity_paths": [
         ".cg-docs/solutions/bugs/2026-05-04-null-coalescing-operator-not-in-namespace.md",
         ".cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md",
+        ".cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md",
         ".cg-docs/solutions/build-errors/2026-08-21-authors-at-r-description-validation.md",
         ".cg-docs/solutions/data-quality/2026-05-27-catalog-validation-before-filter-spurious-warnings.md",
         ".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md",

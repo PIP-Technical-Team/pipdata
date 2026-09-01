@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-08-28 · 147 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-09-01 · 149 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -39,6 +39,13 @@ _Generated 2026-08-28 · 147 artifacts (newest first) + 0 roadmap features_
 - **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
   > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
 
+## 2026-09-01
+
+- **[2026-08-25-dlw-wrapper-rewrite-verify-review-3](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-3.md)** · `review` · _—_ · `2026-09-01`
+  > **Review mode**: light (`mode:verify`) **Parent review**: `.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-review.md`…
+- **[Separate Stage Failure Status From Condition Provenance](.cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md)** · `solution` · _—_ · `2026-09-01`
+  > A recoverable clean, metadata, or deflate worker could finish with a typed condition record but still prevent constru…
+
 ## 2026-08-28
 
 - **[2026-08-25-dlw-wrapper-rewrite-verify-review-2](.cg-docs/reviews/2026-08-25-dlw-wrapper-rewrite-verify-review-2.md)** · `review` · _—_ · `2026-08-28`
@@ -50,7 +57,7 @@ _Generated 2026-08-28 · 147 artifacts (newest first) + 0 roadmap features_
 
 - **[Executable Staged Invalidation DAG](.cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md)** · `brainstorm` · _decided_ · `2026-08-27`
   > <!-- Valid status values: decided, in-progress, abandoned -->
-- **[Implement Executable Staged Invalidation DAG](.cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md)** · `plan` · _active_ · `2026-08-27`
+- **[Implement Executable Staged Invalidation DAG](.cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md)** · `plan` · _completed_ · `2026-08-27`
   > Implement a pipdata-owned incremental executor for the existing durable `clean`, `metadata`, and `deflate` stages. Th…
 
 ## 2026-08-26
