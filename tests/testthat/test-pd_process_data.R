@@ -501,3 +501,114 @@ test_that("standalone process adapter normalizes aux subset without reordering",
 
   expect_identical(observed, c("pce", "cpi"))
 })
+
+test_that("standalone process adapter actively validates its metadata subset", {
+  inv <- make_process_validation_inventory()[1L]
+  survey_id <- inv$survey_id[[1L]]
+  action <- data.table::data.table(
+    stage = "metadata", entity_id = "P1", survey_id, pip_id = "P1",
+    action = "refresh", input_hash = "metadata-input", code_hash = "meta-code",
+    data_version_id = "data-v1", data_hash = "data-h1",
+    metadata_version_id = "meta-v1", metadata_hash = "meta-h1"
+  )
+  action[, aux_projection := list(list(
+    pce = stats::setNames(6, "2020_national"),
+    cpi = stats::setNames(2, "2017_national")
+  ))]
+  clean_action <- data.table::data.table(
+    stage = "clean", entity_id = survey_id, survey_id,
+    pip_id = NA_character_, action = "none", expected_pip_ids = list("P1")
+  )
+  actions <- data.table::rbindlist(list(clean_action, action), fill = TRUE)
+  clean_receipt <- list(
+    alias = "pip", artifact = "P1", path = "p1.qs2",
+    version_id = "data-v1", content_hash = "data-h1"
+  )
+  master <- data.table::data.table(
+    survey_id, pip_id = "P1", version_id_data = "data-v1",
+    content_hash_data = "data-h1", version_id_metadata = "meta-v1",
+    content_hash_metadata = "meta-h1"
+  )
+  observed_measures <- NULL
+  saved <- NULL
+  dependency_context <- list(
+    schema_version = 1L,
+    release = "20260831",
+    identity = "TEST",
+    roots = as.list(stats::setNames(
+      paste0("root/", c(
+        "pip", "pip_meta", "pip_deflated", "pip_master", "pip_inv"
+      )),
+      c("pip", "pip_meta", "pip_deflated", "pip_master", "pip_inv")
+    )),
+    namespace = "legacy-subset-test"
+  )
+  dependency_context$scope_id <- pd_context_hash(dependency_context)
+  execution <- list(
+    context = dependency_context,
+    plan = list(
+      actions = actions,
+      reasons = data.table::data.table(
+        stage = "metadata", entity_id = "P1", reason = "aux_pce_changed",
+        input = "aux_pce", old = "old", new = "new"
+      )
+    ),
+    snapshot = list(
+      measures = c("pce", "cpi"), metadata_measures = c("pce", "cpi"),
+      fingerprints = list(summary = data.table::data.table(
+        stage = c("clean", "metadata", "deflate"),
+        hash = c("clean-code", "meta-code", "deflate-code")
+      )),
+      captured_at = Sys.time()
+    ),
+    manifest = list(records = data.table::data.table(
+      stage = "clean", entity_id = survey_id,
+      output_receipts = list(list(clean_receipt))
+    )),
+    manifest_identity = NULL,
+    lease = list()
+  )
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) data.table::copy(master),
+    load_pip_data = function(pip_id, version, alias, verbose) list(
+      pce = stats::setNames(5, "2020_national"),
+      cpi = stats::setNames(1, "2017_national")
+    ),
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    st_hash_obj = function(x) "meta-h1",
+    .package = "stamp"
+  )
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() dependency_context,
+    pd_prepare_execution = function(..., measures, metadata_measures) {
+      observed_measures <<- list(
+        measures = measures, metadata_measures = metadata_measures
+      )
+      execution
+    },
+    pd_lease_release = function(...) invisible(NULL),
+    pd_assert_execution_fence = function(...) invisible(NULL),
+    pd_save_receipt = function(x, ...) {
+      saved <<- x
+      list(
+        success = TRUE, alias = "pip_meta", artifact = "P1",
+        path = "p1.qs2", version_id = "meta-v2", content_hash = "meta-h2"
+      )
+    },
+    pd_finalize_checkpoint = function(execution, master, ...) {
+      list(candidate = master, execution = execution)
+    },
+    .package = "pipdata"
+  )
+
+  expect_no_error(pd_process_data(
+    inv, aux_measures = c("PCE", "cpi", "PCE"), verbose = FALSE
+  ))
+  expect_identical(observed_measures, list(
+    measures = c("pce", "cpi"), metadata_measures = c("pce", "cpi")
+  ))
+  expect_setequal(names(saved), c("pce", "cpi"))
+  expect_identical(saved$pce, stats::setNames(6, "2020_national"))
+})

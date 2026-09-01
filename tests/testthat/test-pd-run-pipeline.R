@@ -227,6 +227,7 @@ test_that("pipeline accepts ordered waves under one lease and fences cached retu
   accepted_run_ids <- character()
   terminal_mode <- FALSE
   versioning_requests <- character()
+  required_metadata_measures <- NULL
 
   testthat::local_mocked_bindings(
     pd_dependency_context = function(...) {
@@ -242,8 +243,9 @@ test_that("pipeline accepts ordered waves under one lease and fences cached retu
       trace <<- c(trace, "release")
       invisible(NULL)
     },
-    pd_prepare_execution_locked = function(..., lease) {
+    pd_prepare_execution_locked = function(..., lease, metadata_measures) {
       trace <<- c(trace, "authoritative-plan")
+      required_metadata_measures <<- metadata_measures
       pipeline_test_execution(context, full_plan, lease)
     },
     pd_refresh_execution_facts = function(execution, ...) {
@@ -327,6 +329,7 @@ test_that("pipeline accepts ordered waves under one lease and fences cached retu
   expect_length(unique(accepted_run_ids), 1L)
   expect_identical(unique(accepted_run_ids), result$run_id)
   expect_identical(lease$run_id, result$run_id)
+  expect_identical(required_metadata_measures, c("cpi", "ppp", "pop"))
   expect_identical(
     trace,
     c(
@@ -756,7 +759,7 @@ test_that("recoverable clean failure is durable and remains aggregateable", {
     pd_persist_failed_invalidation = function(execution, master, action, ...) {
       persisted <<- persisted + 1L
       master[, version_id_data := NA_character_]
-      master
+      list(candidate = master, execution = execution)
     },
     pd_log_stage_condition = function(...) invisible(NULL),
     .package = "pipdata"
@@ -1226,6 +1229,10 @@ c4_pipeline_normalize_path <- function(path, root) {
 c4_pipeline_exact_state <- function(fixture) {
   manifest <- pd_manifest_read(fixture$context, fixture$root)
   records <- data.table::copy(manifest$records)
+  normalize_alias <- function(alias) {
+    mapped <- names(fixture$aliases)[match(alias, fixture$aliases)]
+    ifelse(is.na(mapped), alias, mapped)
+  }
   normalize_receipts <- function(receipts) {
     while (is.list(receipts) && length(receipts) == 1L &&
            is.list(receipts[[1L]]) && is.null(names(receipts[[1L]]))) {
@@ -1236,6 +1243,7 @@ c4_pipeline_exact_state <- function(fixture) {
     }
     lapply(receipts, function(receipt) {
       receipt$path <- c4_pipeline_normalize_path(receipt$path, fixture$root)
+      receipt$alias <- normalize_alias(receipt$alias)
       receipt
     })
   }
@@ -1249,6 +1257,18 @@ c4_pipeline_exact_state <- function(fixture) {
     }), fill = TRUE)
   }), fill = TRUE)
   records[, output_receipts := lapply(output_receipts, normalize_receipts)]
+  for (i in which(records$stage == "clean")) {
+    clean_receipts <- data.table::rbindlist(
+      records$output_receipts[[i]], fill = TRUE
+    )
+    clean_receipts[, `:=`(pip_id = artifact, success = TRUE)]
+    receipt_set <- pd_clean_receipt_set(clean_receipts)
+    records$output_version_id[[i]] <- receipt_set$output_version_id
+    records$output_hash[[i]] <- receipt_set$output_hash
+  }
+  if (nrow(receipts)) {
+    receipts[, alias := normalize_alias(alias)]
+  }
   release <- pipload::pip_read(
     "pip_release_inventory", alias = fixture$aliases[["pip_inv"]],
     verbose = FALSE
@@ -1263,7 +1283,7 @@ c4_pipeline_exact_state <- function(fixture) {
     )
     versions[, .(version_id, content_hash)]
   }
-  list(
+  canonical <- list(
     generation = attr(manifest, "manifest_identity")$generation,
     records = pd_canonical_snapshot_table(records),
     receipts = pd_canonical_snapshot_table(receipts),
@@ -1279,10 +1299,20 @@ c4_pipeline_exact_state <- function(fixture) {
       "pip_master", "pip_master_inventory"
     ))
   )
+  identity <- attr(manifest, "manifest_identity")
+  identity$checksum <- pd_hash_object(canonical[c(
+    "records", "inputs", "fingerprints", "tombstones"
+  )], algo = "sha256")
+  canonical$final_identity <- identity
+  canonical
 }
 
 test_that("V10 crash restart matrix preserves authority and converges", {
-  uninterrupted <- c4_pipeline_fixture()
+  matrix_parent <- withr::local_tempdir()
+  matrix_root <- file.path(matrix_parent, "canonical-state")
+  uninterrupted <- c4_pipeline_fixture(
+    alias_suffix = "fault_matrix", root = matrix_root
+  )
   c4_pipeline_change_code(
     uninterrupted, "metadata", "pd_execute_metadata", "metadata-fault-v2"
   )
@@ -1292,6 +1322,8 @@ test_that("V10 crash restart matrix preserves authority and converges", {
   expect_false(expected_run$result$terminal)
   expect_true(all(c4_pipeline_units(expected_run$result)$status %in%
     c("success", "cached")))
+  expected_state <- c4_pipeline_exact_state(uninterrupted)
+  fs::dir_delete(matrix_root)
 
   points <- c(
     "before_worker",
@@ -1304,7 +1336,9 @@ test_that("V10 crash restart matrix preserves authority and converges", {
     "lease_loss"
   )
   for (point in points) {
-    fixture <- c4_pipeline_fixture()
+    fixture <- c4_pipeline_fixture(
+      alias_suffix = "fault_matrix", root = matrix_root
+    )
     c4_pipeline_change_code(
       fixture, "metadata", "pd_execute_metadata", "metadata-fault-v2"
     )
@@ -1321,9 +1355,52 @@ test_that("V10 crash restart matrix preserves authority and converges", {
       nrow(fault_units),
       info = point
     )
-    expect_true(all(fault_units$status %in% c(
-      "success", "failed", "cached", "skipped"
-    )), info = point)
+    clean_ids <- sort(fixture$inv$survey_id)
+    metadata_ids <- sort(fixture$master$pip_id)
+    if (identical(point, "after_manifest_publication")) {
+      expected_fault_units <- data.table::rbindlist(list(
+        data.table::data.table(
+          stage = "clean", entity_id = clean_ids, status = "cached",
+          reason_codes = rep(list("current"), length(clean_ids))
+        ),
+        data.table::data.table(
+          stage = "metadata", entity_id = metadata_ids, status = "success",
+          reason_codes = rep(
+            list("metadata_code_changed"), length(metadata_ids)
+          )
+        )
+      ))
+    } else {
+      failed_reason <- if (point %in% c(
+        "before_worker", "after_artifact_write", "after_verified_receipt"
+      )) {
+        "fatal_uncommitted"
+      } else {
+        "checkpoint_uncommitted"
+      }
+      expected_fault_units <- data.table::rbindlist(list(
+        data.table::data.table(
+          stage = "clean", entity_id = clean_ids, status = "cached",
+          reason_codes = rep(list("current"), length(clean_ids))
+        ),
+        data.table::data.table(
+          stage = "metadata", entity_id = metadata_ids[[1L]],
+          status = "failed", reason_codes = list(failed_reason)
+        ),
+        data.table::data.table(
+          stage = "metadata", entity_id = metadata_ids[-1L],
+          status = "skipped",
+          reason_codes = rep(
+            list("upstream_failed"), length(metadata_ids) - 1L
+          )
+        )
+      ))
+    }
+    expect_identical(
+      fault_units[, .(stage, entity_id, status, reason_codes)],
+      expected_fault_units,
+      info = point
+    )
     expect_true(is.null(fault$result$stage_results$deflate), info = point)
     expect_false(fs::dir_exists(fault$counters$lease_path), info = point)
     expect_identical(
@@ -1346,9 +1423,13 @@ test_that("V10 crash restart matrix preserves authority and converges", {
     expect_identical(
       c4_pipeline_exact_state(fixture), restart_state, info = point
     )
+    expect_identical(restart_state, expected_state, info = point)
+    fs::dir_delete(matrix_root)
   }
 
-  forced <- c4_pipeline_fixture()
+  forced <- c4_pipeline_fixture(
+    alias_suffix = "fault_matrix", root = matrix_root
+  )
   versioning_before <- stamp::st_opts("versioning", .get = TRUE)
   forced_fault <- c4_pipeline_run(
     forced, force = TRUE, checkpoint_size = 1L,
@@ -1356,6 +1437,111 @@ test_that("V10 crash restart matrix preserves authority and converges", {
   )
   expect_true(forced_fault$result$terminal)
   expect_identical(stamp::st_opts("versioning", .get = TRUE), versioning_before)
+})
+
+test_that("recoverable stage failures retry before descendants on fresh calls", {
+  for (stage in c("clean", "metadata", "deflate")) {
+    selected_stage <- stage
+    fixture <- c4_pipeline_fixture()
+    survey_id <- fixture$inv$survey_id[[1L]]
+    selected_survey <- survey_id
+    pip_ids <- sort(fixture$master[
+      fixture$master$survey_id == selected_survey, pip_id
+    ])
+    failed_entity <- if (identical(stage, "clean")) survey_id else pip_ids[[1L]]
+    first <- c4_pipeline_run(
+      fixture,
+      force_surveys = failed_entity,
+      checkpoint_size = 1L,
+      recoverable_stage = stage,
+      recoverable_entity = failed_entity
+    )
+    first_units <- c4_pipeline_units(first$result)
+
+    expect_false(first$result$terminal, info = stage)
+    expect_true(first$counters$recoverable_failed, info = stage)
+    expect_identical(
+      first_units[
+        get("stage") == selected_stage & entity_id == failed_entity,
+        .(status, reason_codes)
+      ],
+      data.table::data.table(
+        status = "failed", reason_codes = list("entity_failed")
+      ),
+      info = stage
+    )
+    if (identical(stage, "clean")) {
+      expect_identical(
+        first_units[
+          entity_id %in% pip_ids & stage %in% c("metadata", "deflate"),
+          .(stage, entity_id, status, reason_codes)
+        ],
+        data.table::rbindlist(lapply(c("metadata", "deflate"), function(x) {
+          data.table::data.table(
+            stage = x,
+            entity_id = pip_ids,
+            status = "skipped",
+            reason_codes = rep(list("upstream_failed"), length(pip_ids))
+          )
+        })),
+        info = stage
+      )
+    } else if (identical(stage, "metadata")) {
+      expect_identical(
+        first_units[
+          stage == "deflate" & entity_id == failed_entity,
+          .(status, reason_codes)
+        ],
+        data.table::data.table(
+          status = "skipped", reason_codes = list("upstream_failed")
+        ),
+        info = stage
+      )
+    }
+
+    retry <- c4_pipeline_run(
+      fixture, checkpoint_size = 1L, checkpoint_seconds = Inf
+    )
+    retry_units <- c4_pipeline_units(retry$result)
+    expected_trace <- switch(
+      stage,
+      clean = c(
+        paste("clean", survey_id, sep = ":"),
+        paste("metadata", pip_ids, sep = ":"),
+        paste("deflate", pip_ids, sep = ":")
+      ),
+      metadata = c(
+        paste("metadata", failed_entity, sep = ":"),
+        paste("deflate", failed_entity, sep = ":")
+      ),
+      deflate = paste("deflate", failed_entity, sep = ":")
+    )
+
+    expect_false(retry$result$terminal, info = stage)
+    expect_identical(retry$counters$trace, expected_trace, info = stage)
+    expect_identical(
+      retry_units[
+        get("stage") == selected_stage & entity_id == failed_entity,
+        status
+      ],
+      "success",
+      info = stage
+    )
+    descendant_stage <- switch(
+      stage, clean = "metadata", metadata = "deflate", deflate = NULL
+    )
+    if (!is.null(descendant_stage)) {
+      descendant_ids <- if (identical(stage, "clean")) {
+        pip_ids
+      } else {
+        failed_entity
+      }
+      expect_true(all(retry_units[
+        stage == descendant_stage & entity_id %in% descendant_ids,
+        status == "success"
+      ]), info = stage)
+    }
+  }
 })
 
 test_that("V12 Colombia 2018 CPI invalidation is exact through the executor", {
@@ -1458,7 +1644,7 @@ test_that("V13 invalidation matrix has exact effects and immediate convergence",
       deflate = col_2019,
       reasons = list(
         clean = "dlw_changed",
-        metadata = "upstream_output_changed",
+        metadata = c("output_missing", "upstream_output_changed"),
         deflate = c("output_missing", "upstream_output_changed")
       )
     ),
@@ -1471,7 +1657,7 @@ test_that("V13 invalidation matrix has exact effects and immediate convergence",
       deflate = all_pip,
       reasons = list(
         clean = "clean_code_changed",
-        metadata = "upstream_output_changed",
+        metadata = c("output_missing", "upstream_output_changed"),
         deflate = c("output_missing", "upstream_output_changed")
       )
     ),
@@ -1484,7 +1670,7 @@ test_that("V13 invalidation matrix has exact effects and immediate convergence",
       deflate = all_pip,
       reasons = list(
         clean = "recode_spec_changed",
-        metadata = "upstream_output_changed",
+        metadata = c("output_missing", "upstream_output_changed"),
         deflate = c("output_missing", "upstream_output_changed")
       )
     ),
@@ -1499,7 +1685,9 @@ test_that("V13 invalidation matrix has exact effects and immediate convergence",
       deflate = col_2019,
       reasons = list(
         clean = "pfw_changed",
-        metadata = c("aux_gdp_changed", "upstream_output_changed"),
+        metadata = c(
+          "aux_gdp_changed", "output_missing", "upstream_output_changed"
+        ),
         deflate = c("output_missing", "upstream_output_changed")
       )
     ),

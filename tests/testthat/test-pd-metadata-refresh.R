@@ -87,6 +87,109 @@ test_that("metadata restart reconstructs from exact cleaned artifact", {
   expect_identical(result$data_hash, "dh2")
 })
 
+test_that("legacy canonical migration reconstructs exact clean and frozen aux", {
+  action <- data.table::data.table(
+    stage = "metadata", entity_id = "P1", survey_id = "S1", pip_id = "P1",
+    action = "refresh", data_version_id = "clean-v2", data_hash = "clean-h2",
+    metadata_version_id = "meta-v1", metadata_hash = "meta-h1",
+    input_hash = "metadata-input", code_hash = "metadata-code"
+  )
+  action[, aux_projection := list(list(
+    cpi = stats::setNames(2, "2017_national")
+  ))]
+  clean_receipt <- list(
+    alias = "pip", artifact = "P1", path = "p1.qs2",
+    version_id = "clean-v2", content_hash = "clean-h2"
+  )
+  execution <- list(
+    plan = list(
+      actions = action,
+      reasons = data.table::data.table(
+        stage = "metadata", entity_id = "P1",
+        reason = "legacy_input_changed", input = "canonical",
+        old = "clean-v1:legacy-h1", new = "clean-v2:legacy-h2"
+      )
+    ),
+    manifest = list(records = data.table::data.table(
+      stage = "clean", entity_id = "S1",
+      output_receipts = list(list(clean_receipt))
+    )),
+    manifest_identity = NULL,
+    snapshot = list(
+      metadata_measures = "cpi",
+      aux = list(objects = list(cpi = structure(list(), frozen = "aux-v1")))
+    ),
+    lease = list()
+  )
+  loaded <- NULL
+  frozen <- NULL
+  saved <- NULL
+  testthat::local_mocked_bindings(
+    load_pip_data = function(pip_id, version, alias, verbose) {
+      loaded <<- list(pip_id = pip_id, version = version, alias = alias)
+      if (identical(alias, "pip_meta")) {
+        return(list(
+          source = "stale-metadata",
+          cpi = stats::setNames(1, "2017_national")
+        ))
+      }
+      structure(data.table::data.table(welfare = 1), source = "clean-v2")
+    },
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    st_hash_obj = function(x) {
+      if (is.list(x) && identical(x$source, "stale-metadata")) {
+        "meta-h1"
+      } else {
+        "clean-h2"
+      }
+    },
+    .package = "stamp"
+  )
+  testthat::local_mocked_bindings(
+    pd_aux_attr = function(clean_data, aux_list) {
+      frozen <<- attr(aux_list$cpi, "frozen")
+      list(P1 = list(
+        source = attr(clean_data$P1, "source"),
+        cpi = stats::setNames(1, "2017_national")
+      ))
+    },
+    pd_assert_execution_fence = function(execution, ...) invisible(execution),
+    pd_save_receipt = function(x, ...) {
+      saved <<- x
+      list(
+        success = TRUE, alias = "pip_meta", artifact = "P1",
+        path = "p1.qs2", version_id = "meta-v2", content_hash = "meta-h2"
+      )
+    },
+    pd_finalize_checkpoint = function(execution, master, ...) {
+      list(candidate = master, execution = execution)
+    },
+    .package = "pipdata"
+  )
+
+  result <- pd_run_metadata_stage_prepared(
+    execution, action, "run", list(run_id = "run"),
+    data.table::data.table(
+      survey_id = "S1", pip_id = "P1",
+      version_id_data = "clean-v2", content_hash_data = "clean-h2"
+    ),
+    pd_pipeline_options(checkpoint_seconds = Inf), verbose = FALSE
+  )
+
+  expect_identical(loaded, list(
+    pip_id = "P1", version = "clean-v2", alias = "pip"
+  ))
+  expect_identical(frozen, "aux-v1")
+  expect_identical(saved$source, "clean-v2")
+  expect_identical(result$outcome$units$status, "success")
+  expect_identical(
+    result$outcome$units$reason_codes,
+    list("legacy_input_changed")
+  )
+})
+
 test_that("metadata restart rejects a cleaned artifact hash mismatch", {
   action <- data.table::data.table(
     pip_id = "P1", data_version_id = "d2", data_hash = "expected",
@@ -176,6 +279,22 @@ test_that("metadata base schema requires all deflation vectors", {
       info = name
     )
   }
+})
+
+test_that("metadata base schema validates only requested legacy measures", {
+  subset <- list(
+    pce = stats::setNames(5, "2020_national"),
+    cpi = stats::setNames(1, "2017_national")
+  )
+
+  expect_identical(
+    names(pd_validate_metadata_base(subset, c("pce", "cpi"))),
+    c("cpi", "pce")
+  )
+  expect_error(
+    pd_validate_metadata_base(subset, c("pce", "cpi", "ppp")),
+    class = "pipdata_metadata_base_invalid"
+  )
 })
 
 test_that("prepared metadata core accounts for cached and blocked nodes", {
@@ -271,7 +390,7 @@ test_that("recoverable metadata failure is durable and remains aggregateable", {
     pd_persist_failed_invalidation = function(execution, master, action, ...) {
       persisted <<- persisted + 1L
       master[, version_id_metadata := NA_character_]
-      master
+      list(candidate = master, execution = execution)
     },
     pd_log_stage_condition = function(...) invisible(NULL),
     .package = "pipdata"

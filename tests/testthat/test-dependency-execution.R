@@ -83,6 +83,49 @@ test_that("persisted failed deflation is missing on restart", {
   expect_identical(pd_deflate_current_receipt(receipt, current), receipt)
 })
 
+test_that("cleared durable clean pointers stale the atomic output set", {
+  receipts <- data.table::data.table(
+    pip_id = c("P1", "P2"), alias = "pip", artifact = c("P1", "P2"),
+    path = c("p1.qs2", "p2.qs2"), version_id = c("d1", "d2"),
+    content_hash = c("dh1", "dh2"), success = TRUE
+  )
+  current_master <- data.table::data.table(
+    survey_id = "S1", pip_id = c("P1", "P2"),
+    version_id_data = c("d1", "d2"), content_hash_data = c("dh1", "dh2")
+  )
+
+  expect_true(pd_clean_current_receipts(
+    receipts, current_master, "S1", c("P1", "P2")
+  ))
+  invalidated <- data.table::copy(current_master)
+  invalidated[pip_id == "P2", `:=`(
+    version_id_data = NA_character_, content_hash_data = NA_character_
+  )]
+  expect_false(pd_clean_current_receipts(
+    receipts, invalidated, "S1", c("P1", "P2")
+  ))
+})
+
+test_that("cleared durable metadata pointers stale old catalog receipts", {
+  receipt <- list(
+    version_id = "meta-v1", content_hash = "meta-h1", path = "p1.qs2"
+  )
+  current <- list(
+    version_id_metadata = "meta-v1", content_hash_metadata = "meta-h1"
+  )
+  invalidated <- list(
+    version_id_metadata = NA_character_, content_hash_metadata = NA_character_
+  )
+
+  expect_identical(
+    pd_metadata_current_receipt(receipt, current),
+    receipt
+  )
+  restarted <- pd_metadata_current_receipt(receipt, invalidated)
+  expect_true(is.na(restarted$version_id))
+  expect_true(is.na(restarted$content_hash))
+})
+
 test_that("write fence fails before work after lease loss", {
   root <- withr::local_tempdir()
   context <- list(scope_id = "scope")

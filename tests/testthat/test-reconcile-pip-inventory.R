@@ -213,6 +213,47 @@ test_that("inventory-ahead failure retains prior authority and reschedules", {
   expect_identical(facts$reason, "unknown_provenance")
 })
 
+test_that("inventory-ahead replay publishes manifest without duplicate writes", {
+  fixture <- checkpoint_fixture(withr::local_tempdir())
+  withr::defer(pd_lease_release(fixture$lease))
+  fixture$master[, `:=`(
+    version_id_metadata = "m1", content_hash_metadata = "h",
+    version_id_deflated = NA_character_,
+    content_hash_deflated = NA_character_, deflated = FALSE,
+    latest_release_version_id = "release-v1"
+  )]
+  fixture$execution$snapshot <- list(catalogs = list(
+    pip_inv = data.table::data.table(
+      path = "pip_release_inventory.qs2", version_id = "release-v1",
+      content_hash = "release-h1"
+    )
+  ))
+  writer_calls <- 0L
+  writer <- function(...) {
+    writer_calls <<- writer_calls + 1L
+    rlang::abort("Unchanged inventory must not be rewritten.")
+  }
+  testthat::local_mocked_bindings(
+    pd_assert_execution_fence = function(...) invisible(NULL),
+    pd_manifest_publish = function(payload, ...) payload,
+    .package = "pipdata"
+  )
+
+  finalized <- pd_finalize_checkpoint(
+    fixture$execution, fixture$master, "metadata", fixture$results,
+    writer, writer, fixture$root
+  )
+
+  expect_identical(writer_calls, 0L)
+  expect_identical(finalized$candidate, fixture$master)
+  expect_identical(
+    finalized$execution$manifest$records[
+      stage == "metadata", output_version_id
+    ],
+    "m1"
+  )
+})
+
 test_that("checkpoint publishes only after release and master verify", {
   root <- withr::local_tempdir()
   context <- list(scope_id = "scope")

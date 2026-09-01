@@ -170,7 +170,7 @@ v22_authoritative_snapshot <- function(n) {
        fingerprints = fingerprints)
 }
 
-test_that("V22 public checkpoints have bounded linear dependency operations", {
+test_that("V22 public cores keep full refreshes at stage boundaries", {
   run_size <- function(n) {
     fixture <- v22_authoritative_snapshot(n)
     context <- list(
@@ -189,60 +189,94 @@ test_that("V22 public checkpoints have bounded linear dependency operations", {
     household_reads <- 0L
     projection_calls <- 0L
     snapshot_builds <- 0L
+    fact_builds <- 0L
+    plan_builds <- 0L
     join_calls <- 0L
-    original_select <- pd_indexed_aux_rows
+    checkpoints <- stats::setNames(integer(3L), c(
+      "clean", "metadata", "deflate"
+    ))
+    worker_calls <- stats::setNames(integer(3L), c(
+      "clean", "metadata", "deflate"
+    ))
+    manifest_generation <- 0L
     original_snapshot <- pd_build_dependency_snapshot
     original_facts <- pd_snapshot_facts
     original_merge <- getS3method("merge", "data.table")
-    cached_snapshot <- NULL
-    cached_facts <- NULL
-    actions <- data.table::rbindlist(list(
-      fixture$inv[, .(
+    synthetic_current <- function(snapshot) {
+      selected_master <- data.table::as.data.table(snapshot$master)
+      selected_inv <- data.table::as.data.table(snapshot$inventory)
+      projection_calls <<- projection_calls + 2L * nrow(selected_master)
+      empty_inputs <- function(count) {
+        rep(list(data.table::data.table()), count)
+      }
+      clean_ids <- selected_master$version_id_data[
+        match(selected_inv$survey_id, selected_master$survey_id)
+      ]
+      clean_hashes <- selected_master$content_hash_data[
+        match(selected_inv$survey_id, selected_master$survey_id)
+      ]
+      clean <- selected_inv[, .(
         stage = "clean", entity_id = survey_id, survey_id,
-        pip_id = NA_character_, action = "create"
-      )],
-      fixture$master[, .(
-        stage = "metadata", entity_id = pip_id, survey_id, pip_id,
-        action = "create"
-      )],
-      fixture$master[, .(
-        stage = "deflate", entity_id = pip_id, survey_id, pip_id,
-        action = "create"
+        pip_id = NA_character_, input_hash = paste0("clean-input-", survey_id),
+        legacy_input_hash = paste0("clean-input-", survey_id),
+        legacy_input_version = paste0("clean-version-", survey_id),
+        code_hash = "clean-code", output_version_id = clean_ids,
+        output_hash = clean_hashes,
+        expected_outputs = lapply(survey_id, function(id) id),
+        expected_pip_ids = lapply(
+          selected_master$pip_id[match(survey_id, selected_master$survey_id)],
+          function(id) id
+        ),
+        input_rows = empty_inputs(.N)
       )]
-    ))
-    reasons <- actions[, .(
-      stage, entity_id, reason = "unknown_provenance",
-      input = NA_character_, old = NA_character_, new = NA_character_
-    )]
-    static_plan <- structure(
-      list(
-        context = context, actions = actions, reasons = reasons,
-        snapshot = list()
-      ),
-      class = "pip_dependency_plan"
-    )
-
-    cached_core <- function(
-      execution, actions, run_id, context, master, options,
-      checkpoint_callback = NULL, ...
-    ) {
-      stage <- unique(actions$stage)
-      outcome <- pd_new_stage_outcome(stage, execution$manifest_identity)
-      if (nrow(actions) && is.function(checkpoint_callback)) {
-        execution <- checkpoint_callback(execution, master)
-      }
-      if (nrow(actions)) {
-        outcome$units <- data.table::rbindlist(lapply(
-          seq_len(nrow(actions)),
-          function(i) pd_stage_unit_row(
-            actions[i], stage, "cached", "current"
-          )
-        ))
-      }
-      outcome$completed_at <- pd_utc_time(Sys.time())
-      list(
-        execution = execution, master = master, context = context,
-        outcome = outcome, terminal = FALSE, error = NULL
+      metadata <- selected_master[, .(
+        stage = "metadata", entity_id = pip_id, survey_id, pip_id,
+        input_hash = paste0("metadata-input-", pip_id),
+        legacy_input_hash = paste0("metadata-input-", pip_id),
+        legacy_input_version = version_id_data,
+        code_hash = "metadata-code", output_version_id = version_id_metadata,
+        output_hash = content_hash_metadata, expected_outputs = lapply(
+          pip_id, function(id) id
+        ),
+        aux_projection = rep(list(list()), .N),
+        data_version_id = version_id_data, data_hash = content_hash_data,
+        metadata_version_id = version_id_metadata,
+        metadata_hash = content_hash_metadata,
+        input_rows = empty_inputs(.N)
+      )]
+      deflate <- selected_master[, .(
+        stage = "deflate", entity_id = pip_id, survey_id, pip_id,
+        input_hash = paste0("deflate-input-", pip_id),
+        legacy_input_hash = paste0("deflate-input-", pip_id),
+        legacy_input_version = paste0(version_id_data, ":", version_id_metadata),
+        code_hash = "deflate-code", output_version_id = NA_character_,
+        output_hash = NA_character_, expected_outputs = lapply(
+          pip_id, function(id) id
+        ),
+        aux_projection = rep(list(list()), .N),
+        data_version_id = version_id_data, data_hash = content_hash_data,
+        metadata_version_id = version_id_metadata,
+        metadata_hash = content_hash_metadata,
+        input_rows = empty_inputs(.N)
+      )]
+      data.table::rbindlist(list(clean, metadata, deflate), fill = TRUE)
+    }
+    plan_from_snapshot <- function(snapshot) {
+      plan_builds <<- plan_builds + 1L
+      actions <- data.table::copy(snapshot$current)
+      actions[, action := data.table::fifelse(
+        stage == "clean", "none", "refresh"
+      )]
+      reasons <- actions[action != "none", .(
+        stage, entity_id, reason = "forced", input = NA_character_,
+        old = NA_character_, new = NA_character_
+      )]
+      structure(
+        list(
+          context = context, actions = actions, reasons = reasons,
+          snapshot = snapshot
+        ),
+        class = "pip_dependency_plan"
       )
     }
 
@@ -264,31 +298,21 @@ test_that("V22 public checkpoints have bounded linear dependency operations", {
       .package = "pipload"
     )
     testthat::local_mocked_bindings(
-      pd_indexed_aux_rows = function(...) {
-        projection_calls <<- projection_calls + 1L
-        original_select(...)
-      },
       pd_build_dependency_snapshot = function(...) {
         snapshot_builds <<- snapshot_builds + 1L
-        if (is.null(cached_snapshot)) {
-          cached_snapshot <<- original_snapshot(...)
-        }
-        snapshot <- cached_snapshot
-        arguments <- list(...)
-        snapshot$master <- data.table::copy(
-          data.table::as.data.table(arguments$master)
-        )
-        snapshot$captured_at <- format(Sys.time(), tz = "UTC", usetz = TRUE)
-        snapshot
+        original_snapshot(...)
       },
+      pd_snapshot_current = synthetic_current,
       pd_snapshot_facts = function(snapshot, manifest) {
-        if (is.null(cached_facts)) {
-          cached_facts <<- original_facts(snapshot, manifest)
-        }
-        cached_facts
+        fact_builds <<- fact_builds + 1L
+        original_facts(snapshot, manifest)
       },
-      pd_snapshot_identity = function(...) paste0("snapshot-", n),
-      pd_dependency_plan = function(...) static_plan,
+      pd_snapshot_identity = function(...) {
+        paste("snapshot", n, snapshot_builds, sep = "-")
+      },
+      pd_dependency_plan = function(..., snapshot) {
+        plan_from_snapshot(snapshot)
+      },
       pd_dependency_context = function(...) context,
       pd_lease_acquire = function(...) list(token = "lease"),
       pd_lease_release = function(...) invisible(NULL),
@@ -297,9 +321,65 @@ test_that("V22 public checkpoints have bounded linear dependency operations", {
       pd_assert_execution_fence = function(...) invisible(NULL),
       pd_final_retained_manifest = function(execution) execution,
       pd_code_fingerprints = function(...) fixture$fingerprints,
-      pd_run_clean_stage_prepared = cached_core,
-      pd_run_metadata_stage_prepared = cached_core,
-      pd_run_deflate_stage_prepared = cached_core,
+      pd_assert_metadata_prerequisite = function(...) invisible(NULL),
+      pd_execute_clean = function(...) {
+        worker_calls[["clean"]] <<- worker_calls[["clean"]] + 1L
+        rlang::abort("Cached clean work reached a worker.")
+      },
+      pd_execute_metadata = function(action, ...) {
+        worker_calls[["metadata"]] <<- worker_calls[["metadata"]] + 1L
+        list(
+          stage = "metadata", pip_id = action$pip_id[[1L]], success = TRUE,
+          alias = "pip_meta", artifact = action$pip_id[[1L]],
+          path = paste0(action$pip_id[[1L]], ".qs2"),
+          version_id = paste0("meta-new-", action$pip_id[[1L]]),
+          content_hash = paste0("meta-hash-new-", action$pip_id[[1L]]),
+          input_hash = action$input_hash[[1L]],
+          code_hash = action$code_hash[[1L]],
+          data_version_id = action$data_version_id[[1L]],
+          data_hash = action$data_hash[[1L]]
+        )
+      },
+      pd_execute_deflate = function(action, ...) {
+        worker_calls[["deflate"]] <<- worker_calls[["deflate"]] + 1L
+        list(
+          stage = "deflate", pip_id = action$pip_id[[1L]], success = TRUE,
+          alias = "pip_deflated", artifact = action$pip_id[[1L]],
+          path = paste0(action$pip_id[[1L]], ".qs2"),
+          version_id = paste0("deflate-new-", action$pip_id[[1L]]),
+          content_hash = paste0("deflate-hash-new-", action$pip_id[[1L]]),
+          input_hash = action$input_hash[[1L]],
+          code_hash = action$code_hash[[1L]],
+          data_version_id = action$data_version_id[[1L]],
+          data_hash = action$data_hash[[1L]],
+          metadata_version_id = action$metadata_version_id[[1L]],
+          metadata_hash = action$metadata_hash[[1L]]
+        )
+      },
+      pd_finalize_checkpoint = function(execution, master, stage, ...) {
+        checkpoints[[stage]] <<- checkpoints[[stage]] + 1L
+        manifest_generation <<- manifest_generation + 1L
+        execution$manifest_identity <- list(
+          filename = sprintf("manifest-v1-%d.rds", manifest_generation),
+          uuid = sprintf("manifest-%d", manifest_generation),
+          checksum = sprintf("checksum-%d", manifest_generation),
+          generation = manifest_generation
+        )
+        list(candidate = master, execution = execution)
+      },
+      new_artifact_reference = function(
+        receipt, finalized, stage, entity_id, role = "primary"
+      ) {
+        data.table::data.table(
+          entity_id = entity_id, alias = receipt$alias,
+          artifact = receipt$artifact, path = receipt$path,
+          version_id = receipt$version_id,
+          content_hash = receipt$content_hash, role = role,
+          manifest_generation = as.numeric(
+            finalized$execution$manifest_identity$generation
+          )
+        )
+      },
       sync_recode_spec = function(...) list(version = "test"),
       pd_log_clean_summary = function(result) invisible(result),
       pd_log_deflate_summary = function(result) invisible(result),
@@ -319,13 +399,23 @@ test_that("V22 public checkpoints have bounded linear dependency operations", {
     )
 
     elapsed <- system.time(result <- pd_run_pipeline(
-      inv = fixture$inv, bootstrap = TRUE, checkpoint_size = n,
+      inv = fixture$inv, bootstrap = TRUE, checkpoint_size = 100L,
       checkpoint_seconds = Inf, verbose = FALSE
     ))[["elapsed"]]
     expect_s3_class(result, "pipdata_pipeline_result")
     expect_identical(result$counts$selected, 3L * n)
+    expect_identical(worker_calls, c(
+      clean = 0L, metadata = as.integer(n), deflate = as.integer(n)
+    ))
+    expect_identical(checkpoints, c(
+      clean = 0L,
+      metadata = as.integer(ceiling(n / 100)),
+      deflate = as.integer(ceiling(n / 100))
+    ))
     list(
       snapshot_builds = snapshot_builds,
+      fact_builds = fact_builds,
+      plan_builds = plan_builds,
       projection_calls = projection_calls,
       join_calls = join_calls,
       catalog_calls = catalog_calls,
@@ -336,20 +426,21 @@ test_that("V22 public checkpoints have bounded linear dependency operations", {
 
   small <- run_size(1250L)
   large <- run_size(2500L)
-  fixed_setup_c <- 2L
+  fixed_setup_c <- 10L
 
-  for (operation in c(
-    "snapshot_builds", "projection_calls", "join_calls", "household_reads"
-  )) {
-    expect_lte(
-      large[[operation]], 2L * small[[operation]] + fixed_setup_c
-    )
-  }
-  expect_true(all(
-    large$catalog_calls <= 2L * small$catalog_calls + fixed_setup_c
-  ))
+  expect_identical(small$snapshot_builds, 3L)
+  expect_identical(large$snapshot_builds, 3L)
+  expect_identical(small$fact_builds, 3L)
+  expect_identical(large$fact_builds, 3L)
+  expect_identical(small$plan_builds, 3L)
+  expect_identical(large$plan_builds, 3L)
+  expect_identical(small$catalog_calls, large$catalog_calls)
+  expect_lte(sum(large$catalog_calls), 13L)
   expect_identical(small$household_reads, 0L)
   expect_identical(large$household_reads, 0L)
+  small_operations <- small$projection_calls + small$join_calls
+  large_operations <- large$projection_calls + large$join_calls
+  expect_lte(large_operations, 2L * small_operations + fixed_setup_c)
   expect_gte(small$elapsed, 0)
   expect_gte(large$elapsed, 0)
 })

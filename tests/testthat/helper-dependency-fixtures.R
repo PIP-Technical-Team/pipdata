@@ -99,9 +99,37 @@ c4_pipeline_context <- function(roots) {
   context
 }
 
-c4_pipeline_fixture <- function(alias_suffix = NULL) {
+c4_pipeline_manifest_id <- function(context, root) {
+  files <- pd_manifest_files(context, root)
+  generation <- if (length(files)) {
+    max(pd_manifest_generation(files)) + 1L
+  } else {
+    1L
+  }
+  paste0("c4", sprintf("%030d", generation))
+}
+
+c4_pipeline_write_seed <- function(x, id, alias) {
+  hash <- stamp::st_hash_obj(list(x = x, id = id, alias = alias))
+  seed <- strtoi(substr(hash, 1L, 7L), base = 16L)
+  as.integer(seed %% (.Machine$integer.max - 1L) + 1L)
+}
+
+c4_pipeline_write_time <- function(x, id, alias) {
+  seed <- c4_pipeline_write_seed(x, id, alias)
+  sprintf(
+    "2026-09-01T00:%02d:%02d.%06dZ",
+    seed %% 60L,
+    (seed %/% 60L) %% 60L,
+    seed %% 1000000L
+  )
+}
+
+c4_pipeline_fixture <- function(alias_suffix = NULL, root = NULL) {
   fixture <- new.env(parent = emptyenv())
-  fixture$root <- withr::local_tempdir(.local_envir = parent.frame())
+  fixture$root <- root %||%
+    withr::local_tempdir(.local_envir = parent.frame())
+  fs::dir_create(fixture$root, recurse = TRUE)
   suffix <- gsub("[^A-Za-z0-9]", "", fs::path_file(fixture$root))
   if (!is.null(alias_suffix)) {
     suffix <- alias_suffix
@@ -131,7 +159,11 @@ c4_pipeline_fixture <- function(alias_suffix = NULL) {
   fixture$catalog_permuted <- FALSE
 
   write_receipt <- function(x, id, alias) {
-    receipt <- pd_save_receipt(x, id, fixture$aliases[[alias]])
+    receipt <- testthat::with_mocked_bindings(
+      pd_save_receipt(x, id, fixture$aliases[[alias]]),
+      .st_now_utc = function() c4_pipeline_write_time(x, id, alias),
+      .package = "stamp"
+    )
     stopifnot(isTRUE(receipt$success))
     receipt$alias <- alias
     receipt
@@ -231,6 +263,7 @@ c4_pipeline_fixture <- function(alias_suffix = NULL) {
   )
 
   manifest <- pd_empty_manifest(fixture$context)
+  manifest$header[, created_at := "2026-09-01 00:00:00 UTC"]
   record_rows <- list()
   input_rows <- list()
   for (i in seq_len(nrow(snapshot$current))) {
@@ -268,8 +301,14 @@ c4_pipeline_fixture <- function(alias_suffix = NULL) {
   lease <- pd_lease_acquire(
     fixture$context, fixture$root, run_id = "c4-baseline"
   )
-  fixture$manifest <- pd_manifest_publish(
-    manifest, fixture$context, lease, fixture$root, parent = NULL
+  fixture$manifest <- testthat::with_mocked_bindings(
+    pd_manifest_publish(
+      manifest, fixture$context, lease, fixture$root, parent = NULL
+    ),
+    pd_random_id = function() {
+      c4_pipeline_manifest_id(fixture$context, fixture$root)
+    },
+    .package = "pipdata"
   )
   pd_lease_release(lease)
   fixture
@@ -329,7 +368,9 @@ c4_pipeline_run <- function(
   force_surveys = NULL,
   checkpoint_size = 25L,
   checkpoint_seconds = Inf,
-  fault_point = NULL
+  fault_point = NULL,
+  recoverable_stage = NULL,
+  recoverable_entity = NULL
 ) {
   real_catalog_query <- stamp::st_catalog_query
   real_versions <- stamp::st_versions
@@ -346,6 +387,8 @@ c4_pipeline_run <- function(
   counters$household_reads <- 0L
   counters$receipts <- list()
   counters$faulted <- FALSE
+  counters$recoverable_failed <- FALSE
+  counters$trace <- character()
   counters$lease_path <- NULL
   inject_fault <- function(point) {
     if (!counters$faulted && identical(fault_point, point)) {
@@ -356,6 +399,26 @@ c4_pipeline_run <- function(
       )
     }
     invisible(NULL)
+  }
+  recoverable_failure <- function(stage, action) {
+    entity_id <- action$entity_id[[1L]]
+    selected <- identical(recoverable_stage, stage) &&
+      (is.null(recoverable_entity) || identical(recoverable_entity, entity_id))
+    if (!selected || counters$recoverable_failed) {
+      return(NULL)
+    }
+    counters$recoverable_failed <- TRUE
+    new_stage_condition_record(
+      severity = "error",
+      code = paste0("recoverable_", stage),
+      message = paste("Injected recoverable", stage, "failure."),
+      stage = stage,
+      entity_id = entity_id,
+      survey_id = action$survey_id[[1L]],
+      pip_id = action$pip_id[[1L]],
+      operation = stage,
+      recoverable = TRUE
+    )
   }
 
   catalog_query <- function(alias, ...) {
@@ -382,12 +445,16 @@ c4_pipeline_run <- function(
     if (alias %in% names(counters$writes)) {
       counters$writes[[alias]] <- counters$writes[[alias]] + 1L
     }
-    result <- real_pip_write(
-      x = x,
-      id = id,
-      alias = c4_pipeline_map_alias(fixture, alias),
-      verbose = verbose,
-      ...
+    result <- testthat::with_mocked_bindings(
+      real_pip_write(
+        x = x,
+        id = id,
+        alias = c4_pipeline_map_alias(fixture, alias),
+        verbose = verbose,
+        ...
+      ),
+      .st_now_utc = function() c4_pipeline_write_time(x, id, alias),
+      .package = "stamp"
     )
     if (identical(alias, "pip_master") &&
         identical(id, "pip_master_inventory")) {
@@ -440,14 +507,22 @@ c4_pipeline_run <- function(
                             verbose = FALSE) {
     survey_id <- action$survey_id[[1L]]
     counters$workers$clean <- c(counters$workers$clean, survey_id)
+    counters$trace <- c(counters$trace, paste("clean", survey_id, sep = ":"))
     counters$household_reads <- counters$household_reads + 1L
+    condition <- recoverable_failure("clean", action)
+    if (!is.null(condition)) {
+      return(list(success = FALSE, condition = condition))
+    }
     reasons <- pd_action_reason_codes(execution, action)
     receipts <- data.table::rbindlist(lapply(
       action$expected_pip_ids[[1L]],
       function(pip_id) {
         object <- data.table::data.table(
           pip_id = pip_id,
-          source = paste(c(reasons, inv_row$content_hash[[1L]]), collapse = ":")
+          source = paste(
+            action$input_hash[[1L]], action$code_hash[[1L]],
+            inv_row$content_hash[[1L]], sep = ":"
+          )
         )
         receipt <- pd_save_receipt(
           object, pip_id, "pip", verbose, execution$lease
@@ -476,10 +551,17 @@ c4_pipeline_run <- function(
     pip_id <- action$pip_id[[1L]]
     inject_fault("before_worker")
     counters$workers$metadata <- c(counters$workers$metadata, pip_id)
+    counters$trace <- c(counters$trace, paste("metadata", pip_id, sep = ":"))
+    condition <- recoverable_failure("metadata", action)
+    if (!is.null(condition)) {
+      return(list(success = FALSE, condition = condition))
+    }
     reasons <- pd_action_reason_codes(execution, action)
     object <- list(
       pip_id = pip_id,
-      source = paste(reasons, collapse = ":"),
+      source = paste(
+        action$input_hash[[1L]], action$code_hash[[1L]], sep = ":"
+      ),
       projection = action$aux_projection[[1L]]
     )
     receipt <- pd_save_receipt(
@@ -503,10 +585,17 @@ c4_pipeline_run <- function(
     pip_id <- action$pip_id[[1L]]
     execution <- attr(action, "execution")
     counters$workers$deflate <- c(counters$workers$deflate, pip_id)
+    counters$trace <- c(counters$trace, paste("deflate", pip_id, sep = ":"))
+    condition <- recoverable_failure("deflate", action)
+    if (!is.null(condition)) {
+      return(list(success = FALSE, condition = condition))
+    }
     reasons <- pd_action_reason_codes(execution, action)
     object <- data.table::data.table(
       pip_id = pip_id,
-      source = paste(reasons, collapse = ":")
+      source = paste(
+        action$input_hash[[1L]], action$code_hash[[1L]], sep = ":"
+      )
     )
     receipt <- pd_save_receipt(
       object, pip_id, "pip_deflated", verbose, execution$lease
@@ -533,7 +622,16 @@ c4_pipeline_run <- function(
   }
   manifest_publish <- function(...) {
     inject_fault("before_manifest_publication")
-    real_manifest_publish(...)
+    arguments <- list(...)
+    context <- arguments$context %||% arguments[[2L]]
+    root <- arguments$root %||% arguments[[4L]]
+    testthat::with_mocked_bindings(
+      do.call(real_manifest_publish, arguments),
+      pd_random_id = function() {
+        c4_pipeline_manifest_id(context, root)
+      },
+      .package = "pipdata"
+    )
   }
   refresh_execution_facts <- function(execution, ...) {
     refreshed <- real_refresh_execution_facts(execution, ...)
