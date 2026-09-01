@@ -7,14 +7,15 @@ test_that("canonical DLW logmeta types are registered", {
   expect_equal(.logtype_dlw_acquisition, "dlw_acquisition_inf")
   expect_equal(.logtype_dlw_validation, "dlw_validation_inf")
   expect_equal(.logtype_dlw_summary, "dlw_summary_inf")
-  expect_length(.log_internal_types, 11L)
+  expect_length(.log_internal_types, 12L)
   expect_false(anyDuplicated(.log_internal_types) > 0L)
   expect_true(all(c(
     "dlw_acquisition_inf",
     "dlw_validation_inf",
     "dlw_summary_inf",
     "release_write_err",
-    "deflate_summary_inf"
+    "deflate_summary_inf",
+    "pipeline_run_summary_inf"
   ) %in% .log_internal_types))
 })
 
@@ -37,6 +38,145 @@ test_that("production log entries remain parseable with string discriminators", 
 
   expect_type(parsed$error_type, "character")
   expect_equal(parsed$error_type, "dlw_acquisition_inf")
+})
+
+test_that("pipeline summary logging failure does not change the result", {
+  now <- as.POSIXct("2026-08-31 12:00:00", tz = "UTC")
+  result <- new_pipdata_pipeline_result(
+    "run", list(clean = NULL, metadata = NULL, deflate = NULL),
+    list(), list(),
+    c(initial = "initial", clean = NA_character_,
+      metadata = NA_character_, deflate = NA_character_),
+    NULL, NULL,
+    list(
+      name = "pipdata_log", run_id = "run",
+      summary_discriminator = "pipeline_run_summary_inf",
+      log_checkpoint = NULL
+    ),
+    now, now
+  )
+  testthat::local_mocked_bindings(
+    log_add = function(...) rlang::abort("injected logging failure"),
+    .package = "pipfun"
+  )
+
+  expect_identical(pd_log_pipeline_summary(result), result)
+})
+
+test_that("pipeline summary logging retains only compact arguments", {
+  now <- as.POSIXct("2026-08-31 12:00:00", tz = "UTC")
+  result <- new_pipdata_pipeline_result(
+    "run", list(clean = NULL, metadata = NULL, deflate = NULL),
+    list(), list(),
+    c(initial = "initial", clean = NA_character_,
+      metadata = NA_character_, deflate = NA_character_),
+    NULL, NULL,
+    list(
+      name = "pipdata_log", run_id = "run",
+      summary_discriminator = "pipeline_run_summary_inf",
+      log_checkpoint = NULL
+    ),
+    now, now
+  )
+  captured <- list()
+  testthat::local_mocked_bindings(
+    log_add = function(...) {
+      captured <<- list(...)
+      invisible(NULL)
+    },
+    .package = "pipfun"
+  )
+
+  pd_log_pipeline_summary(result)
+
+  expect_named(
+    captured$args,
+    c("run_id", "status", "terminal")
+  )
+  expect_identical(captured$logmeta$info, "pipeline_run_summary_inf")
+  prohibited <- function(x) {
+    is.environment(x) || data.table::is.data.table(x) ||
+      inherits(x, "externalptr") ||
+      (is.list(x) && any(vapply(x, prohibited, logical(1L))))
+  }
+  expect_false(prohibited(captured$args))
+  expect_false(prohibited(captured$logmeta))
+})
+
+test_that("all staged executor logs exclude large runtime objects", {
+  units <- data.table::data.table(
+    status = c("success", "failed"),
+    survey_id = c("S1", "S2"),
+    pip_id = c("P1", "P2")
+  )
+  stage_result <- list(
+    run_id = "run",
+    status = "partial",
+    counts = c(attempted = 2L, succeeded = 1L, failed = 1L,
+               cached = 0L, skipped = 0L),
+    units = units
+  )
+  condition <- new_stage_condition_record(
+    simpleError("compact failure"),
+    "error",
+    stage = "metadata",
+    entity_id = "P2",
+    survey_id = "S2",
+    pip_id = "P2",
+    operation = "metadata",
+    recoverable = TRUE
+  )
+  captured <- list()
+  testthat::local_mocked_bindings(
+    log_add = function(...) {
+      captured[[length(captured) + 1L]] <<- list(...)
+      invisible(NULL)
+    },
+    .package = "pipfun"
+  )
+
+  pd_log_clean_summary(stage_result)
+  pd_log_deflate_summary(stage_result)
+  pd_log_stage_condition("run", condition)
+
+  prohibited <- function(x) {
+    is.environment(x) || is.data.frame(x) || inherits(x, "externalptr") ||
+      (is.list(x) && any(vapply(x, prohibited, logical(1L))))
+  }
+  expect_length(captured, 3L)
+  for (entry in captured) {
+    expect_false(prohibited(entry$args))
+    expect_false(prohibited(entry$logmeta))
+    expect_lt(as.numeric(utils::object.size(entry$args)), 10000)
+    expect_lt(as.numeric(utils::object.size(entry$logmeta)), 10000)
+  }
+})
+
+test_that("stage condition logs use the stage-specific survey identifier", {
+  captured <- list()
+  testthat::local_mocked_bindings(
+    log_add = function(...) {
+      captured[[length(captured) + 1L]] <<- list(...)
+      invisible(NULL)
+    },
+    .package = "pipfun"
+  )
+  clean <- new_stage_condition_record(
+    severity = "error", code = "yr_wrng", message = "clean failed",
+    stage = "clean", entity_id = "S1", survey_id = "S1",
+    operation = "clean", recoverable = TRUE
+  )
+  metadata <- new_stage_condition_record(
+    severity = "error", code = "report_lvl", message = "metadata failed",
+    stage = "metadata", entity_id = "P1", survey_id = "S1", pip_id = "P1",
+    operation = "metadata", recoverable = TRUE
+  )
+
+  pd_log_stage_condition("run", clean)
+  pd_log_stage_condition("run", metadata)
+
+  expect_identical(captured[[1L]]$logmeta$survey, "S1")
+  expect_identical(captured[[2L]]$logmeta$survey, "P1")
 })
 
 test_that("null_svys_inf logmeta structure is consistent", {

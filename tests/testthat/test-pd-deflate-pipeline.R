@@ -268,3 +268,89 @@ test_that("real core accounts for checkpoint-pending and unattempted units", {
   expect_identical(unname(result$counts[c("selected", "attempted", "skipped")]),
                    c(3L, 2L, 1L))
 })
+
+test_that("recoverable deflation failure keeps its condition code out of reasons", {
+  action <- deflation_action()
+  action[, `:=`(
+    stage = "deflate", entity_id = pip_id, action = "refresh",
+    input_hash = "ih", code_hash = "ch", data_version_id = version_id_data,
+    data_hash = content_hash_data, metadata_version_id = version_id_metadata,
+    metadata_hash = content_hash_metadata
+  )]
+  condition <- new_stage_condition_record(
+    severity = "error", code = "deflation_na", message = "bad data",
+    stage = "deflate", entity_id = action$pip_id, survey_id = action$survey_id,
+    pip_id = action$pip_id, operation = "transform", recoverable = TRUE
+  )
+  reasons <- action[, .(
+    stage, entity_id, reason = "aux_cpi_changed", input = "aux_cpi",
+    old = "old", new = "new"
+  )]
+  master <- data.table::copy(action)
+  master[, `:=`(
+    deflated = TRUE, version_id_deflated = "old-v",
+    content_hash_deflated = "old-h"
+  )]
+  execution <- list(
+    plan = list(actions = action, reasons = reasons), manifest_identity = NULL,
+    lease = list()
+  )
+  persisted <- 0L
+  testthat::local_mocked_bindings(
+    pd_execute_deflate = function(...) list(success = FALSE, condition = condition),
+    pd_persist_failed_invalidation = function(execution, master, action, ...) {
+      persisted <<- persisted + 1L
+      master[, `:=`(
+        deflated = FALSE, version_id_deflated = NA_character_,
+        content_hash_deflated = NA_character_
+      )]
+      master
+    },
+    pd_log_stage_condition = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+
+  out <- pd_run_deflate_stage_prepared(
+    execution, action, "run", list(run_id = "run"), master,
+    pd_pipeline_options(checkpoint_seconds = Inf), verbose = FALSE
+  )
+
+  expect_false(out$terminal)
+  expect_identical(persisted, 1L)
+  expect_false(out$master$deflated)
+  expect_identical(out$outcome$units$reason_codes, list("entity_failed"))
+  expect_identical(out$outcome$errors[[1L]]$code, "deflation_na")
+  expect_no_error(validate_stage_units(out$outcome$units))
+})
+
+test_that("prepared deflate path accounts for cached nodes without preparation", {
+  action <- data.table::data.table(
+    stage = "deflate", entity_id = "P1", survey_id = "S1", pip_id = "P1",
+    action = "none"
+  )
+  prepare_calls <- 0L
+  worker_calls <- 0L
+  testthat::local_mocked_bindings(
+    pd_prepare_execution = function(...) {
+      prepare_calls <<- prepare_calls + 1L
+      stop("prepared path must not prepare execution")
+    },
+    pd_execute_deflate = function(...) {
+      worker_calls <<- worker_calls + 1L
+      stop("cached deflate work reached worker")
+    },
+    .package = "pipdata"
+  )
+
+  out <- pd_run_deflate_stage_prepared(
+    execution = list(plan = list(actions = action), lease = list(),
+                     manifest_identity = NULL),
+    actions = action, run_id = "run", context = list(run_id = "run"),
+    master = data.table::data.table(survey_id = "S1", pip_id = "P1"),
+    options = pd_pipeline_options(checkpoint_seconds = Inf), verbose = FALSE
+  )
+
+  expect_identical(out$outcome$units$status, "cached")
+  expect_identical(prepare_calls, 0L)
+  expect_identical(worker_calls, 0L)
+})

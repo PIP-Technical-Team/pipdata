@@ -61,6 +61,35 @@ test_that("change report returns the shared plan without writes", {
   expect_identical(plan$snapshot$snapshot_identity, "snapshot-1")
 })
 
+test_that("change report prints disposition and reason summaries", {
+  plan <- structure(
+    list(
+      context = list(scope_id = "scope"),
+      actions = data.table::data.table(
+        stage = c("clean", "metadata"),
+        entity_id = c("s1", "p1"),
+        survey_id = "s1",
+        pip_id = c(NA_character_, "p1"),
+        action = c("none", "refresh")
+      ),
+      reasons = data.table::data.table(
+        stage = "metadata", entity_id = "p1", reason = "aux_cpi_changed",
+        input = "aux_cpi", old = "old", new = "new"
+      ),
+      snapshot = list()
+    ),
+    class = "pip_dependency_plan"
+  )
+
+  output <- capture.output(print(plan))
+
+  expect_match(paste(output, collapse = "\n"), "Disposition summary")
+  expect_match(paste(output, collapse = "\n"), "Reason summary")
+  expect_match(paste(output, collapse = "\n"), "cached")
+  expect_match(paste(output, collapse = "\n"), "runnable")
+  expect_match(paste(output, collapse = "\n"), "aux_cpi_changed")
+})
+
 test_that("change report filters retry rows before dependency planning", {
   inv <- make_change_report_validation_inventory()
   retry <- inv[1L]

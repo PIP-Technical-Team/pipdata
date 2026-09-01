@@ -300,6 +300,8 @@ test_that("new clean outputs refresh accepted metadata facts before checkpoint",
     pd_dependency_context = function() context,
     pd_prepare_execution = function(...) execution,
     pd_lease_release = function(...) invisible(NULL),
+    pd_stage_context = function(execution, run_id, ...) list(run_id = run_id),
+    pd_assert_metadata_prerequisite = function(...) invisible(NULL),
     sync_recode_spec = function(...) list(),
     pd_execute_clean = function(...) list(
       stage = "clean", survey_id = survey_id, success = TRUE,
@@ -348,6 +350,10 @@ test_that("new clean outputs refresh accepted metadata facts before checkpoint",
     ),
     pd_finalize_checkpoint = function(execution, master, stage, ...) {
       if (identical(stage, "clean")) {
+        execution$manifest_identity <- list(
+          filename = "manifest-v1-1.rds", uuid = "u1", checksum = "c1",
+          generation = 1
+        )
         return(list(candidate = refreshed_master, execution = execution))
       }
       metadata_checkpointed <<- any(
@@ -365,4 +371,133 @@ test_that("new clean outputs refresh accepted metadata facts before checkpoint",
   expect_no_error(pd_process_data(inv = inv, verbose = FALSE))
   expect_true(refreshed)
   expect_true(metadata_checkpointed)
+})
+
+test_that("prepared clean core accounts for cached work without household loads", {
+  action <- data.table::data.table(
+    stage = "clean", entity_id = "S1", survey_id = "S1",
+    pip_id = NA_character_, action = "none", expected_pip_ids = list("P1")
+  )
+  execution <- list(plan = list(actions = action), lease = list())
+  context <- list(run_id = "run")
+  master <- data.table::data.table(survey_id = "S1", pip_id = "P1")
+  household_loads <- 0L
+  testthat::local_mocked_bindings(
+    inv_dlw_load = function(...) {
+      household_loads <<- household_loads + 1L
+      stop("cached clean work must not load household data")
+    },
+    pd_execute_clean = function(...) stop("cached clean work reached worker"),
+    pd_finalize_checkpoint = function(...) stop("cached clean work checkpointed"),
+    .package = "pipdata"
+  )
+
+  out <- pd_run_clean_stage_prepared(
+    execution = execution, actions = action, run_id = "run",
+    context = context, master = master,
+    inv = make_process_validation_inventory()[1L],
+    options = pd_pipeline_options(), recode_spec = list(), verbose = FALSE
+  )
+
+  expect_identical(out$outcome$units$status, "cached")
+  expect_identical(out$outcome$units$reason_codes[[1L]], "current")
+  expect_identical(household_loads, 0L)
+  expect_identical(out$master, master)
+})
+
+test_that("prepared clean core lets unknown worker conditions escape", {
+  inv <- make_process_validation_inventory()[1L]
+  inv[, survey_id := "S1"]
+  action <- data.table::data.table(
+    stage = "clean", entity_id = "S1", survey_id = "S1",
+    pip_id = NA_character_, action = "rebuild", input_hash = "input",
+    code_hash = "code", expected_pip_ids = list("P1")
+  )
+  execution <- list(plan = list(actions = action), lease = list())
+  testthat::local_mocked_bindings(
+    pd_execute_clean = function(...) {
+      rlang::abort("unknown storage failure", class = "unknown_storage_failure")
+    },
+    .package = "pipdata"
+  )
+
+  expect_error(
+    pd_run_clean_stage_prepared(
+      execution, action, "run", list(run_id = "run"),
+      data.table::data.table(survey_id = "S1", pip_id = "P1"),
+      inv, pd_pipeline_options(),
+      recode_spec = list(), verbose = FALSE
+    ),
+    class = "unknown_storage_failure"
+  )
+})
+
+test_that("prepared clean core commits one complete multi-output survey", {
+  inv <- make_process_validation_inventory()[1L]
+  inv[, survey_id := "S1"]
+  action <- data.table::data.table(
+    stage = "clean", entity_id = "S1", survey_id = "S1",
+    pip_id = NA_character_, action = "rebuild", input_hash = "input",
+    code_hash = "code", expected_pip_ids = list(c("P1", "P2"))
+  )
+  receipts <- data.table::data.table(
+    stage = "clean", survey_id = "S1", pip_id = c("P1", "P2"),
+    alias = "pip", artifact = c("P1", "P2"),
+    path = c("p1.qs2", "p2.qs2"), version_id = c("v1", "v2"),
+    content_hash = c("h1", "h2"), success = TRUE,
+    input_hash = "input", code_hash = "code"
+  )
+  execution <- list(plan = list(actions = action), lease = list())
+  checkpoint_calls <- 0L
+  testthat::local_mocked_bindings(
+    pd_execute_clean = function(...) list(
+      stage = "clean", survey_id = "S1", success = TRUE,
+      expected_pip_ids = c("P1", "P2"), receipts = receipts,
+      metadata = list(P1 = list(), P2 = list())
+    ),
+    pd_finalize_checkpoint = function(execution, master, ...) {
+      checkpoint_calls <<- checkpoint_calls + 1L
+      execution$manifest_identity <- list(
+        filename = "manifest-v1-2.rds", uuid = "u2", checksum = "c2",
+        generation = 2
+      )
+      list(candidate = master, execution = execution)
+    },
+    .package = "pipdata"
+  )
+
+  out <- pd_run_clean_stage_prepared(
+    execution, action, "run", list(run_id = "run"),
+    data.table::data.table(survey_id = character(), pip_id = character()),
+    inv,
+    pd_pipeline_options(checkpoint_size = 25L),
+    recode_spec = list(), verbose = FALSE
+  )
+
+  expect_identical(checkpoint_calls, 1L)
+  expect_identical(out$outcome$units$status, "success")
+  expect_identical(nrow(out$outcome$receipts[["S1"]]), 2L)
+})
+
+test_that("standalone process adapter normalizes aux subset without reordering", {
+  inv <- make_process_validation_inventory()[1L]
+  master <- data.table::data.table(survey_id = "S1", pip_id = "P1")
+  observed <- NULL
+  testthat::local_mocked_bindings(
+    load_pip_master_inventory = function(...) master,
+    .package = "pipload"
+  )
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() list(scope_id = "scope"),
+    pd_prepare_execution = function(..., measures) {
+      observed <<- measures
+      list(plan = list(actions = pd_empty_actions()), lease = list())
+    },
+    pd_lease_release = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+
+  pd_process_data(inv, aux_measures = c("PCE", "cpi", "PCE"), verbose = FALSE)
+
+  expect_identical(observed, c("pce", "cpi"))
 })

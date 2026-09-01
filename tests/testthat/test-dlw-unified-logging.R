@@ -543,16 +543,15 @@ test_that("DLW checkpoint persists through the dlw_meta alias", {
   expect_equal(checkpoint_info$sidecar$stage, "dlw")
 })
 
-test_that("pipeline checkpoint is after the process summary log", {
+test_that("process adapter uses prepared cores without dead orchestration", {
   source <- paste(
     deparse(pipdata::pd_process_data),
     collapse = "\n"
   )
-  summary_pos <- regexpr("info = \"process_summary_inf\"", source, fixed = FALSE)
-  checkpoint_pos <- regexpr("log_save_checkpoint", source, fixed = TRUE)
-  inventory_pos <- regexpr("new_pip_inv <- build_pip_inventory", source, fixed = TRUE)
 
-  expect_true(summary_pos[[1]] > 0L)
-  expect_true(inventory_pos[[1]] > summary_pos[[1]])
-  expect_true(checkpoint_pos[[1]] > inventory_pos[[1]])
+  expect_match(source, "pd_run_clean_stage_prepared", fixed = TRUE)
+  expect_match(source, "pd_run_metadata_stage_prepared", fixed = TRUE)
+  expect_false(grepl("valid_dlw_load", source, fixed = TRUE))
+  expect_false(grepl("build_pip_inventory", source, fixed = TRUE))
+  expect_false(grepl("log_save_checkpoint", source, fixed = TRUE))
 })
