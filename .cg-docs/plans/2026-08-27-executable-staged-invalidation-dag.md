@@ -1,7 +1,8 @@
 ---
 date: 2026-08-27
 title: "Implement Executable Staged Invalidation DAG"
-status: active
+status: completed
+completed-date: 2026-09-01
 scope: "Deep"
 brainstorm: ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md"
 language: "R"
@@ -9,8 +10,7 @@ estimated-effort: "large"
 deviation-policy: "ask"
 artifact-schema-version: 1
 phases: 4
-completed-phases: [1]
-current-phase: 2
+completed-phases: [1, 2, 3, 4]
 tags: [pipeline, invalidation, orchestration, dependency-graph, caching, provenance, resumability]
 execution-report: ".cg-docs/work-reports/2026-08-28-executable-staged-invalidation-dag.md"
 ---

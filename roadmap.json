@@ -626,7 +626,7 @@
                     "id": "step-level-invalidation-dag",
                     "title": "Build dependency DAG for step-level cache invalidation",
                     "description": "Define a formal dependency graph between pipeline steps (inv_dlw_load → pd_cpfw_merge → pd_dlw_clean → pd_aux_attr → save_pip_data → pd_deflation) with per-step input hashes tracked in the master inventory. When an upstream input changes (e.g., CPI data), only steps that depend on CPI (pd_aux_attr, pd_deflation) are invalidated — not the entire survey cleaning pipeline. Implementation: (1) define the DAG as a named list in aaa.R (step → depends_on), (2) compute per-step input hashes (e.g., pd_dlw_clean hashes the recode spec, pd_aux_attr hashes CPI/PPP/pop content), (3) store step-level hashes in a new inventory column or a separate step_hash artifact, (4) in pd_process_data(), skip steps whose inputs haven't changed. This is the core architecture for the user's vision: 'if Colombia 2018 CPI updates, recompute only downstream.' Prerequisites: code-hash-invalidation, targeted-force-surveys.",
-                    "status": "active",
+                    "status": "done",
                     "plan": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
                     "tags": [
                         "invalidation",
