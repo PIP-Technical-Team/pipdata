@@ -49,6 +49,7 @@ pd_build_dependency_snapshot <- function(
   master,
   context,
   measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  metadata_measures = c("cpi", "ppp", "pop"),
   verbose = FALSE,
   aux = NULL,
   catalogs = NULL,
@@ -73,6 +74,7 @@ pd_build_dependency_snapshot <- function(
     inventory = data.table::copy(data.table::as.data.table(inv)),
     master = data.table::copy(data.table::as.data.table(master)),
     measures = unique(tolower(measures)),
+    metadata_measures = unique(tolower(metadata_measures)),
     aux = aux,
     catalogs = catalogs,
     fingerprints = fingerprints,
@@ -226,6 +228,7 @@ pd_prepare_dependency_facts <- function(
   context = pd_dependency_context(),
   manifest = NULL,
   measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  metadata_measures = c("cpi", "ppp", "pop"),
   verbose = FALSE,
   aux = NULL,
   catalogs = NULL,
@@ -262,6 +265,7 @@ pd_prepare_dependency_facts <- function(
     master = master,
     context = context,
     measures = measures,
+    metadata_measures = metadata_measures,
     verbose = verbose,
     aux = aux,
     catalogs = catalogs,
@@ -288,6 +292,7 @@ pd_refresh_execution_facts <- function(
     master = master,
     context = execution$context,
     measures = execution$snapshot$measures,
+    metadata_measures = execution$snapshot$metadata_measures,
     verbose = verbose,
     aux = execution$snapshot$aux,
     fingerprints = execution$snapshot$fingerprints
@@ -328,16 +333,66 @@ pd_catalog_receipt <- function(catalog, artifact) {
 }
 
 pd_deflate_current_receipt <- function(receipt, master_row) {
-  current <- isTRUE(master_row$deflated) &&
-    !is.null(master_row$version_id_deflated) &&
-    !is.null(master_row$content_hash_deflated) &&
-    !is.na(master_row$version_id_deflated) &&
-    !is.na(master_row$content_hash_deflated) &&
-    identical(receipt$version_id, master_row$version_id_deflated) &&
-    identical(receipt$content_hash, master_row$content_hash_deflated)
+  current <- isTRUE(master_row$deflated) && pd_receipt_matches_pointer(
+    receipt, master_row, "version_id_deflated", "content_hash_deflated"
+  )
   if (current) return(receipt)
-  list(version_id = NA_character_, content_hash = NA_character_,
-       path = NA_character_)
+  pd_missing_catalog_receipt()
+}
+
+pd_missing_catalog_receipt <- function() {
+  list(
+    version_id = NA_character_, content_hash = NA_character_,
+    path = NA_character_
+  )
+}
+
+pd_receipt_matches_pointer <- function(receipt, master_row, version_field,
+                                       hash_field) {
+  row <- as.list(master_row)
+  required <- c(version_field, hash_field)
+  all(required %in% names(row)) &&
+    all(vapply(row[required], function(value) {
+      is.character(value) && length(value) == 1L && !is.na(value) &&
+        nzchar(value)
+    }, logical(1L))) &&
+    identical(receipt$version_id, row[[version_field]]) &&
+    identical(receipt$content_hash, row[[hash_field]])
+}
+
+pd_metadata_current_receipt <- function(receipt, master_row) {
+  if (pd_receipt_matches_pointer(
+    receipt, master_row, "version_id_metadata", "content_hash_metadata"
+  )) {
+    return(receipt)
+  }
+  pd_missing_catalog_receipt()
+}
+
+pd_clean_current_receipts <- function(receipts, master, survey_id,
+                                      expected_pip_ids) {
+  receipts <- data.table::as.data.table(data.table::copy(receipts))
+  master <- data.table::as.data.table(data.table::copy(master))
+  expected <- sort(as.character(expected_pip_ids))
+  selected_survey <- survey_id
+  rows <- master[
+    master$survey_id == selected_survey & master$pip_id %in% expected
+  ]
+  if (!length(expected) || nrow(rows) != length(expected) ||
+      anyDuplicated(rows$pip_id) ||
+      !identical(sort(rows$pip_id), expected) ||
+      nrow(receipts) != length(expected) || anyDuplicated(receipts$pip_id) ||
+      !identical(sort(receipts$pip_id), expected)) {
+    return(FALSE)
+  }
+  rows <- rows[match(expected, pip_id)]
+  receipts <- receipts[match(expected, pip_id)]
+  return(all(vapply(seq_along(expected), function(i) {
+    pd_receipt_matches_pointer(
+      as.list(receipts[i]), as.list(rows[i]),
+      "version_id_data", "content_hash_data"
+    )
+  }, logical(1L))))
 }
 
 pd_entity_aux_hash <- function(snapshot, row, measures) {
@@ -397,6 +452,12 @@ pd_snapshot_current <- function(snapshot) {
         output_hash = NA_character_
       )
     )
+    if (!pd_clean_current_receipts(
+      receipts, snapshot$master, entity, expected
+    )) {
+      receipt_set$output_version_id <- NA_character_
+      receipt_set$output_hash <- NA_character_
+    }
     rows[[length(rows) + 1L]] <- data.table::data.table(
       stage = "clean", entity_id = entity, survey_id = entity,
       pip_id = NA_character_, input_hash = state$input_hash,
@@ -469,6 +530,8 @@ pd_snapshot_current <- function(snapshot) {
       )
       if (identical(selected_stage, "deflate")) {
         receipt <- pd_deflate_current_receipt(receipt, row_list)
+      } else {
+        receipt <- pd_metadata_current_receipt(receipt, row_list)
       }
       rows[[length(rows) + 1L]] <- data.table::data.table(
         stage = selected_stage,
@@ -708,13 +771,55 @@ pd_revalidate_snapshot <- function(snapshot, advanced_receipts = NULL) {
   invisible(snapshot)
 }
 
+pd_advance_execution_state <- function(execution, master, receipts) {
+  if (is.null(execution$snapshot)) {
+    return(execution)
+  }
+  snapshot <- execution$snapshot
+  snapshot$master <- data.table::copy(data.table::as.data.table(master))
+  catalogs <- snapshot$catalogs %||% list()
+  receipts <- data.table::as.data.table(data.table::copy(receipts))
+  required <- c("alias", "path", "version_id", "content_hash", "success")
+  if (all(required %in% names(receipts)) && nrow(receipts)) {
+    receipts <- receipts[
+      success %in% TRUE & !is.na(alias) & nzchar(alias) &
+        !is.na(path) & nzchar(path)
+    ]
+    for (alias in intersect(unique(receipts$alias), names(catalogs))) {
+      selected_alias <- alias
+      incoming <- unique(receipts[
+        receipts$alias == selected_alias,
+        .(path, version_id, content_hash)
+      ], by = "path")
+      catalog <- data.table::as.data.table(data.table::copy(
+        catalogs[[selected_alias]]
+      ))
+      if ("path" %in% names(catalog)) {
+        catalog <- catalog[!path %in% incoming$path]
+      } else {
+        catalog <- data.table::data.table()
+      }
+      catalogs[[selected_alias]] <- data.table::rbindlist(
+        list(catalog, incoming), use.names = TRUE, fill = TRUE
+      )
+      data.table::setorder(catalogs[[selected_alias]], path)
+    }
+  }
+  snapshot$catalogs <- catalogs
+  execution$snapshot <- snapshot
+  return(execution)
+}
+
 pd_prepare_execution <- function(inv, master, context = pd_dependency_context(),
                                  advisory_plan = NULL, bootstrap = FALSE,
                                   bootstrap_entities = NULL, force = FALSE,
-                                  force_surveys = NULL, verbose = FALSE,
-                                  measures = c(
-                                    "pfw", "cpi", "ppp", "pop", "gdp", "pce"
-                                  )) {
+                                   force_surveys = NULL, verbose = FALSE,
+                                   measures = c(
+                                     "pfw", "cpi", "ppp", "pop", "gdp", "pce"
+                                   ),
+                                   metadata_measures = setdiff(
+                                     measures, "pfw"
+                                   )) {
   check_removed_surveys <- is.data.frame(inv) && ncol(inv) > 0L
   prepare_plan <- function() {
     prepared <- pd_prepare_dependency_facts(
@@ -722,6 +827,7 @@ pd_prepare_execution <- function(inv, master, context = pd_dependency_context(),
       master = master,
       context = context,
       measures = measures,
+      metadata_measures = metadata_measures,
       verbose = verbose,
       check_removed_surveys = check_removed_surveys
     )
@@ -755,7 +861,8 @@ pd_prepare_execution <- function(inv, master, context = pd_dependency_context(),
       force = force,
       force_surveys = force_surveys,
       verbose = verbose,
-      measures = measures
+      measures = measures,
+      metadata_measures = metadata_measures
     ),
     error = function(cnd) {
       try(pd_lease_release(lease), silent = TRUE)
@@ -804,6 +911,7 @@ pd_prepare_execution_locked <- function(
   force_surveys = NULL,
   verbose = FALSE,
   measures = c("pfw", "cpi", "ppp", "pop", "gdp", "pce"),
+  metadata_measures = c("cpi", "ppp", "pop"),
   strict_bootstrap_selectors = FALSE
 ) {
   prepared <- pd_prepare_dependency_facts(
@@ -811,6 +919,7 @@ pd_prepare_execution_locked <- function(
     master = master,
     context = context,
     measures = measures,
+    metadata_measures = metadata_measures,
     verbose = verbose,
     check_removed_surveys = TRUE
   )

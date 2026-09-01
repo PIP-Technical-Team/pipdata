@@ -271,11 +271,13 @@ pd_run_deflate_stage_prepared <- function(
           outcome$units <<- rbind(outcome$units, outcome_units)
           outcome$errors[[length(outcome$errors) + 1L]] <<- outcome_record
           pd_log_stage_condition(run_id, outcome_record)
-          master <<- pd_persist_failed_invalidation(
+          persisted <- pd_persist_failed_invalidation(
             execution, master, action,
             writer("pip_inv", "pip_release_inventory"),
             writer("pip_master", "pip_master_inventory")
           )
+          master <<- persisted$candidate
+          execution <<- persisted$execution
           if (identical(options$entity_error_policy, "abort")) {
             rlang::cnd_signal(outcome_record)
           }
@@ -430,8 +432,19 @@ pd_persist_failed_invalidation <- function(execution, master, action,
   } else {
     invalidate(master, action)
   }
-  pd_assert_execution_fence(execution)
-  release_receipt <- release_writer(candidate, execution$lease)
+  advanced_receipts <- data.table::data.table()
+  assert_fence <- function() {
+    fence <- pd_assert_execution_fence
+    if ("advanced_receipts" %in% names(formals(fence))) {
+      fence(execution, advanced_receipts)
+    } else {
+      fence(execution)
+    }
+  }
+  assert_fence()
+  release_receipt <- release_writer(
+    pd_release_inventory_candidate(candidate), execution$lease
+  )
   if (!isTRUE(release_receipt$success)) {
     rlang::abort("Failed invalidation release write was not verified.",
                  class = "pipdata_failed_invalidation_release_error")
@@ -439,8 +452,12 @@ pd_persist_failed_invalidation <- function(execution, master, action,
   if (all(c("alias", "path", "content_hash") %in% names(release_receipt))) {
     pd_revalidate_receipt(release_receipt)
   }
+  advanced_receipts <- data.table::rbindlist(list(
+    advanced_receipts,
+    data.table::as.data.table(release_receipt)
+  ), fill = TRUE)
   candidate[, latest_release_version_id := release_receipt$version_id]
-  pd_assert_execution_fence(execution)
+  assert_fence()
   master_receipt <- master_writer(candidate, execution$lease)
   if (!isTRUE(master_receipt$success)) {
     rlang::abort("Failed invalidation master write was not verified.",
@@ -449,8 +466,21 @@ pd_persist_failed_invalidation <- function(execution, master, action,
   if (all(c("alias", "path", "content_hash") %in% names(master_receipt))) {
     pd_revalidate_receipt(master_receipt)
   }
-  pd_assert_execution_fence(execution)
-  candidate
+  advanced_receipts <- data.table::rbindlist(list(
+    advanced_receipts,
+    data.table::as.data.table(master_receipt)
+  ), fill = TRUE)
+  assert_fence()
+  execution <- pd_advance_execution_state(
+    execution, candidate, advanced_receipts
+  )
+  list(
+    candidate = candidate,
+    execution = execution,
+    release_receipt = release_receipt,
+    master_receipt = master_receipt,
+    advanced_receipts = advanced_receipts
+  )
 }
 
 #' Deflate one survey (worker for [pd_deflate_pipeline()])

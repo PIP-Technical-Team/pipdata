@@ -120,24 +120,6 @@ pd_accept_stage_wave <- function(execution, stage,
   return(accepted)
 }
 
-pd_refresh_accepted_wave <- function(
-  execution, master, arguments, resolved_force, resolved_bootstrap
-) {
-  accepted_plan <- execution$plan
-  refreshed <- pd_refresh_execution_facts(
-    execution,
-    master,
-    force = arguments$force,
-    force_surveys = resolved_force,
-    bootstrap = arguments$bootstrap,
-    bootstrap_entities = resolved_bootstrap,
-    verbose = arguments$verbose,
-    strict_bootstrap_selectors = TRUE
-  )
-  refreshed$plan <- accepted_plan
-  return(refreshed)
-}
-
 pd_boundary_stage_outcome <- function(execution, stage, cnd) {
   actions <- execution$plan$actions
   outcome <- pd_new_stage_outcome(stage, execution$manifest_identity)
@@ -441,6 +423,7 @@ pd_run_pipeline <- function(
     force_surveys = resolved_force,
     verbose = arguments$verbose,
     measures = .PD_PIPELINE_MEASURES,
+    metadata_measures = c("cpi", "ppp", "pop"),
     strict_bootstrap_selectors = TRUE
   )
   manifest_before <- execution$manifest_identity
@@ -493,11 +476,6 @@ pd_run_pipeline <- function(
     } else {
       NULL
     }
-    checkpoint_refresh <- function(execution, master) {
-      pd_refresh_accepted_wave(
-        execution, master, arguments, resolved_force, resolved_bootstrap
-      )
-    }
     clean <- pd_run_clean_stage_prepared(
       execution,
       execution$plan$actions,
@@ -507,8 +485,7 @@ pd_run_pipeline <- function(
       inv,
       options,
       recode_spec,
-      arguments$verbose,
-      checkpoint_callback = checkpoint_refresh
+      arguments$verbose
     )
     execution <- clean$execution
     active_execution <- execution
@@ -556,8 +533,7 @@ pd_run_pipeline <- function(
         contexts$metadata,
         master,
         options,
-        arguments$verbose,
-        checkpoint_callback = checkpoint_refresh
+        arguments$verbose
       )
       execution <- metadata$execution
       active_execution <- execution
@@ -606,8 +582,7 @@ pd_run_pipeline <- function(
         contexts$deflate,
         master,
         options,
-        arguments$verbose,
-        checkpoint_callback = checkpoint_refresh
+        arguments$verbose
       )
       execution <- deflate$execution
       active_execution <- execution

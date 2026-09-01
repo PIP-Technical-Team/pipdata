@@ -187,13 +187,15 @@ pd_run_clean_stage_prepared <- function(
         )
         outcome$errors[[length(outcome$errors) + 1L]] <- result$condition
         pd_log_stage_condition(run_id, result$condition)
-        master <- pd_persist_failed_invalidation(
+        persisted <- pd_persist_failed_invalidation(
           execution,
           master,
           action,
           pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
           pd_inventory_writer("pip_master", "pip_master_inventory", verbose)
         )
+        master <- persisted$candidate
+        execution <- persisted$execution
         if (identical(options$entity_error_policy, "abort")) {
           rlang::cnd_signal(result$condition)
         }
@@ -274,7 +276,8 @@ pd_metadata_reconstruct_reasons <- function() {
   c(
     "new_entity", "unknown_provenance", "output_missing", "output_drift",
     "metadata_code_changed", "upstream_output_changed", "clean_code_changed",
-    "recode_spec_changed", "dlw_changed", "pfw_changed", "forced"
+    "recode_spec_changed", "dlw_changed", "pfw_changed",
+    "legacy_input_changed", "forced"
   )
 }
 
@@ -402,13 +405,15 @@ pd_run_metadata_stage_prepared <- function(
           )
           outcome$errors[[length(outcome$errors) + 1L]] <<- result$condition
           pd_log_stage_condition(run_id, result$condition)
-          master <<- pd_persist_failed_invalidation(
+          persisted <- pd_persist_failed_invalidation(
             execution,
             master,
             action,
             pd_inventory_writer("pip_inv", "pip_release_inventory", verbose),
             pd_inventory_writer("pip_master", "pip_master_inventory", verbose)
           )
+          master <<- persisted$candidate
+          execution <<- persisted$execution
           if (identical(options$entity_error_policy, "abort")) {
             rlang::cnd_signal(result$condition)
           }

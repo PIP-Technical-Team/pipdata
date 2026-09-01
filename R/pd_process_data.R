@@ -115,7 +115,8 @@ pd_process_data <- function(
     inv = inv, master = master, context = pd_dependency_context(),
     advisory_plan = dependency_plan, bootstrap = bootstrap,
     bootstrap_entities = bootstrap_entities, force = force,
-    force_surveys = force_surveys, verbose = verbose, measures = aux_measures
+    force_surveys = force_surveys, verbose = verbose, measures = aux_measures,
+    metadata_measures = setdiff(aux_measures, "pfw")
   )
   on.exit(pd_lease_release(execution$lease), add = TRUE)
   if (force) {
