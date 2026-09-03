@@ -14,6 +14,93 @@ pd_canonical_projection <- function(x, keys, columns = names(x)) {
   list(data = dt, hash = pd_hash_object(dt))
 }
 
+pd_build_aux_projection_indexes <- function(objects) {
+  allowed <- c("pfw", "cpi", "ppp", "pop", "gdp", "pce")
+  measures <- names(objects)
+  if (is.list(objects) && !length(objects)) {
+    return(list())
+  }
+  if (!is.list(objects) || is.null(measures) || any(!measures %in% allowed)) {
+    rlang::abort(
+      "Auxiliary projection indexes contain unsupported measures.",
+      class = "pipdata_dependency_input_missing"
+    )
+  }
+  indexes <- lapply(measures, function(measure) {
+    table <- data.table::as.data.table(data.table::copy(objects[[measure]]))
+    if (!"country_code" %in% names(table)) {
+      rlang::abort(
+        paste("Auxiliary", measure, "data lack country_code."),
+        class = "pipdata_dependency_input_missing"
+      )
+    }
+    table[, .pd_country_code := toupper(as.character(country_code))]
+    keys <- ".pd_country_code"
+    if (measure %in% c("pfw", "cpi")) {
+      year_column <- if (identical(measure, "pfw")) {
+        "surveyid_year"
+      } else {
+        "year"
+      }
+      if (!all(c(year_column, "survey_acronym") %in% names(table))) {
+        rlang::abort(
+          paste("Auxiliary", measure, "data lack exact survey keys."),
+          class = "pipdata_dependency_input_missing"
+        )
+      }
+      table[, .pd_year := as.integer(get(year_column))]
+      table[, .pd_survey_acronym := toupper(as.character(survey_acronym))]
+      keys <- c(keys, ".pd_year", ".pd_survey_acronym")
+    } else if (measure %in% c("pop", "gdp", "pce")) {
+      if (!"year" %in% names(table)) {
+        rlang::abort(
+          paste("Auxiliary", measure, "data lack year."),
+          class = "pipdata_dependency_input_missing"
+        )
+      }
+      table[, .pd_year := as.integer(year)]
+      keys <- c(keys, ".pd_year")
+    }
+    data.table::setkeyv(table, keys)
+    table
+  })
+  names(indexes) <- measures
+  indexes
+}
+
+pd_indexed_aux_rows <- function(indexes, measure, keys) {
+  table <- indexes[[measure]]
+  if (!data.table::is.data.table(table)) {
+    rlang::abort(
+      paste("Auxiliary projection index is absent for", measure),
+      class = "pipdata_dependency_input_missing"
+    )
+  }
+  selected <- switch(
+    measure,
+    pfw = table[.(
+      keys$country_code, keys$surveyid_year, keys$survey_acronym
+    ), nomatch = 0L],
+    cpi = table[.(
+      keys$country_code, keys$surveyid_year, keys$survey_acronym
+    ), nomatch = 0L],
+    ppp = table[.(keys$country_code), nomatch = 0L],
+    pop = table[.(keys$country_code, keys$surveyid_year), nomatch = 0L],
+    gdp = table[.(keys$country_code, keys$surveyid_year), nomatch = 0L],
+    pce = table[.(keys$country_code, keys$surveyid_year), nomatch = 0L],
+    rlang::abort(
+      paste("Unsupported auxiliary projection index:", measure),
+      class = "pipdata_dependency_input_ambiguous"
+    )
+  )
+  helper_columns <- grep("^[.]pd_", names(selected), value = TRUE)
+  if (length(helper_columns)) {
+    selected[, (helper_columns) := NULL]
+  }
+  data.table::setattr(selected, "sorted", NULL)
+  selected[]
+}
+
 pd_select_aux <- function(aux, measure, country, year = NULL,
                           survey_acronym = NULL, reporting_level = NULL) {
   dt <- data.table::as.data.table(data.table::copy(aux))
@@ -409,8 +496,14 @@ pd_entity_input_state <- function(snapshot, row, stage, measures) {
   row_list <- as.list(row_dt[1L])
   require_welfare <- !identical(stage, "clean")
   keys <- pd_dependency_key_adapter(row_dt, require_welfare)
+  indexes <- snapshot$aux$indexes %||% NULL
+  pfw_source <- if (is.null(indexes)) {
+    snapshot$aux$objects$pfw
+  } else {
+    pd_indexed_aux_rows(indexes, "pfw", keys)
+  }
   pfw <- pd_exact_pfw_projection(
-    row_dt, snapshot$aux$objects$pfw,
+    row_dt, pfw_source,
     if (require_welfare) keys$pip_id else NULL
   )
   entity_id <- if (identical(stage, "clean")) {
@@ -449,8 +542,13 @@ pd_entity_input_state <- function(snapshot, row, stage, measures) {
       )
     }
     auxiliary <- lapply(measures, function(measure) {
+      source <- if (is.null(indexes)) {
+        snapshot$aux$objects[[measure]]
+      } else {
+        pd_indexed_aux_rows(indexes, measure, keys)
+      }
       projection <- pd_aux_component_projection(
-        measure, snapshot$aux$objects[[measure]], keys, pfw$data
+        measure, source, keys, pfw$data
       )
       aux_projection[[measure]] <<- projection$value
       receipt <- pd_aux_catalog_version(snapshot, measure)

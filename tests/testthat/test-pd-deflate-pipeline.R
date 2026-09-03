@@ -133,11 +133,109 @@ test_that("failed deflation invalidation is written durably for restart", {
     list(lease = list()), master, action,
     writer("release"), writer("master")
   )
-  expect_false(out$deflated)
+  expect_false(out$candidate$deflated)
   expect_false(writes$master$deflated)
   expect_true(is.na(writes$master$version_id_deflated))
   expect_identical(
     writes$master$latest_release_version_id, "release-v1"
+  )
+})
+
+test_that("failed invalidation fences exact advanced real Stamp receipts", {
+  root <- withr::local_tempdir()
+  suffix <- gsub("[^A-Za-z0-9]", "", fs::path_file(root))
+  aliases <- c(
+    release = paste0("failed_release_", suffix),
+    master = paste0("failed_master_", suffix)
+  )
+  roots <- stats::setNames(
+    file.path(root, paste0("store-", names(aliases))), names(aliases)
+  )
+  for (name in names(aliases)) {
+    stamp::st_init(root = roots[[name]], alias = aliases[[name]])
+  }
+  context <- list(scope_id = paste0("failed-invalidation-", suffix))
+  lease <- pd_lease_acquire(context, root, run_id = "failed-invalidation")
+  withr::defer(pd_lease_release(lease))
+  action <- deflation_action()
+  action[, `:=`(stage = "deflate", entity_id = pip_id)]
+  master <- data.table::copy(action)
+  master[, `:=`(
+    deflated = TRUE, version_id_deflated = "old-v",
+    content_hash_deflated = "old-h"
+  )]
+  old_release <- pd_save_receipt(
+    master, "pip_release_inventory", aliases[["release"]], lease = lease
+  )
+  master[, latest_release_version_id := old_release$version_id]
+  pd_save_receipt(
+    master, "pip_master_inventory", aliases[["master"]], lease = lease
+  )
+  inventory_aliases <- unname(aliases[c("release", "master")])
+  catalogs <- stats::setNames(lapply(inventory_aliases, function(alias) {
+    data.table::as.data.table(stamp::st_catalog_query(alias = alias))
+  }), inventory_aliases)
+  execution <- list(
+    context = context,
+    lease = lease,
+    manifest = pd_empty_manifest(context),
+    manifest_identity = NULL,
+    snapshot = list(
+      context = context,
+      fingerprints = list(),
+      aux = list(catalog = data.table::data.table()),
+      catalogs = catalogs,
+      master = data.table::copy(master)
+    )
+  )
+  writer <- function(alias, id) {
+    function(candidate, active_lease) {
+      pd_save_receipt(candidate, id, alias, lease = active_lease)
+    }
+  }
+
+  testthat::local_mocked_bindings(
+    pd_dependency_context = function() context,
+    pd_code_fingerprints = function() list(),
+    pd_manifest_read = function(...) structure(
+      list(), class = "pipdata_manifest_absent"
+    ),
+    .package = "pipdata"
+  )
+  real_catalog_query <- stamp::st_catalog_query
+  testthat::local_mocked_bindings(
+    st_catalog_query = function(alias, ...) {
+      if (identical(alias, "aux")) {
+        return(data.table::data.table())
+      }
+      real_catalog_query(alias = alias, ...)
+    },
+    .package = "stamp"
+  )
+  out <- pd_persist_failed_invalidation(
+    execution, master, action,
+    writer(aliases[["release"]], "pip_release_inventory"),
+    writer(aliases[["master"]], "pip_master_inventory")
+  )
+
+  candidate <- out$candidate
+  expect_false(candidate$deflated)
+  expect_true(is.na(candidate$version_id_deflated))
+  expect_identical(
+    candidate$latest_release_version_id,
+    out$release_receipt$version_id
+  )
+  expect_identical(
+    nrow(stamp::st_versions(
+      "pip_release_inventory.qs2", alias = aliases[["release"]]
+    )),
+    2L
+  )
+  expect_identical(
+    nrow(stamp::st_versions(
+      "pip_master_inventory.qs2", alias = aliases[["master"]]
+    )),
+    2L
   )
 })
 
@@ -267,4 +365,90 @@ test_that("real core accounts for checkpoint-pending and unattempted units", {
   )
   expect_identical(unname(result$counts[c("selected", "attempted", "skipped")]),
                    c(3L, 2L, 1L))
+})
+
+test_that("recoverable deflation failure keeps its condition code out of reasons", {
+  action <- deflation_action()
+  action[, `:=`(
+    stage = "deflate", entity_id = pip_id, action = "refresh",
+    input_hash = "ih", code_hash = "ch", data_version_id = version_id_data,
+    data_hash = content_hash_data, metadata_version_id = version_id_metadata,
+    metadata_hash = content_hash_metadata
+  )]
+  condition <- new_stage_condition_record(
+    severity = "error", code = "deflation_na", message = "bad data",
+    stage = "deflate", entity_id = action$pip_id, survey_id = action$survey_id,
+    pip_id = action$pip_id, operation = "transform", recoverable = TRUE
+  )
+  reasons <- action[, .(
+    stage, entity_id, reason = "aux_cpi_changed", input = "aux_cpi",
+    old = "old", new = "new"
+  )]
+  master <- data.table::copy(action)
+  master[, `:=`(
+    deflated = TRUE, version_id_deflated = "old-v",
+    content_hash_deflated = "old-h"
+  )]
+  execution <- list(
+    plan = list(actions = action, reasons = reasons), manifest_identity = NULL,
+    lease = list()
+  )
+  persisted <- 0L
+  testthat::local_mocked_bindings(
+    pd_execute_deflate = function(...) list(success = FALSE, condition = condition),
+    pd_persist_failed_invalidation = function(execution, master, action, ...) {
+      persisted <<- persisted + 1L
+      master[, `:=`(
+        deflated = FALSE, version_id_deflated = NA_character_,
+        content_hash_deflated = NA_character_
+      )]
+      list(candidate = master, execution = execution)
+    },
+    pd_log_stage_condition = function(...) invisible(NULL),
+    .package = "pipdata"
+  )
+
+  out <- pd_run_deflate_stage_prepared(
+    execution, action, "run", list(run_id = "run"), master,
+    pd_pipeline_options(checkpoint_seconds = Inf), verbose = FALSE
+  )
+
+  expect_false(out$terminal)
+  expect_identical(persisted, 1L)
+  expect_false(out$master$deflated)
+  expect_identical(out$outcome$units$reason_codes, list("entity_failed"))
+  expect_identical(out$outcome$errors[[1L]]$code, "deflation_na")
+  expect_no_error(validate_stage_units(out$outcome$units))
+})
+
+test_that("prepared deflate path accounts for cached nodes without preparation", {
+  action <- data.table::data.table(
+    stage = "deflate", entity_id = "P1", survey_id = "S1", pip_id = "P1",
+    action = "none"
+  )
+  prepare_calls <- 0L
+  worker_calls <- 0L
+  testthat::local_mocked_bindings(
+    pd_prepare_execution = function(...) {
+      prepare_calls <<- prepare_calls + 1L
+      stop("prepared path must not prepare execution")
+    },
+    pd_execute_deflate = function(...) {
+      worker_calls <<- worker_calls + 1L
+      stop("cached deflate work reached worker")
+    },
+    .package = "pipdata"
+  )
+
+  out <- pd_run_deflate_stage_prepared(
+    execution = list(plan = list(actions = action), lease = list(),
+                     manifest_identity = NULL),
+    actions = action, run_id = "run", context = list(run_id = "run"),
+    master = data.table::data.table(survey_id = "S1", pip_id = "P1"),
+    options = pd_pipeline_options(checkpoint_seconds = Inf), verbose = FALSE
+  )
+
+  expect_identical(out$outcome$units$status, "cached")
+  expect_identical(prepare_calls, 0L)
+  expect_identical(worker_calls, 0L)
 })

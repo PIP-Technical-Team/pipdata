@@ -95,6 +95,7 @@ pipeline class or retry token.
 
 ## Related
 
+- [Separate Stage Failure Status From Condition Provenance](../bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md)
 - `.cg-docs/plans/2026-08-25-dlw-wrapper-rewrite.md`
 - `.cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md`
 - `.cg-docs/solutions/testing-patterns/2026-04-27-contract-testing-for-logging-side-effects.md`

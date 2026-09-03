@@ -8,7 +8,7 @@ root-cause: "The typed stage boundary trusted mutable joined inputs, classified 
 severity: "P0"
 plan: ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md"
 reviewed-in: ".cg-docs/reviews/2026-08-24-pipdata-staged-dependency-manifest-verify-review-2.md"
-related: [".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md"]
+related: [".cg-docs/solutions/data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md", ".cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md"]
 ---
 
 # Typed Stage Orchestration Must Fail Closed and Account for Every Unit
@@ -101,5 +101,6 @@ unattempted units, then assert worker/write call counts and complete accounting.
 ## Related
 
 - [Authoritative Staged Provenance Requires Result-Bound Checkpoints](../data-quality/2026-08-25-authoritative-staged-provenance-checkpoints.md)
+- [Separate Stage Failure Status From Condition Provenance](2026-09-01-separate-stage-failure-status-from-condition-provenance.md)
 - `.cg-docs/plans/2026-08-25-pipeline-stage-interface.md`
 - `.cg-docs/work-reports/2026-08-26-pipeline-stage-interface.md`

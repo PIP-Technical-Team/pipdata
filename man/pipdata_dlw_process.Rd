@@ -57,8 +57,8 @@ not-run stage still has names \code{stage}, \code{outcome}, \code{inventory}, \c
 \code{pipdata_dlw_process()} is the current supported DLW entry point. It runs the
 explicit acquisition and validation stages in order, emits a scalar
 \code{dlw_summary_inf} entry from their returned facts, and attempts the existing
-\code{"dlw"} checkpoint. A broader \code{run_pipeline()} orchestrator is future
-direction only and is not part of the current API.
+\code{"dlw"} checkpoint. After validation, use \code{\link[=pd_run_pipeline]{pd_run_pipeline()}} for incremental
+clean, metadata, and deflate execution.
 }
 \details{
 Validation continues after acquisition \code{"no_work"}, \code{"partial"}, or even

@@ -5,11 +5,11 @@ this file is committed to git and shared with the team.
 
 ## Pipeline Architecture
 
-The **PIP (Poverty and Inequality Platform)** data ingestion pipeline transforms raw survey microdata and grouped distributions from Datalibweb (DLW) into cleaned, versioned, analysis-ready datasets. The pipeline runs in three sequential stages:
+The **PIP (Poverty and Inequality Platform)** data ingestion pipeline transforms raw survey microdata and grouped distributions from Datalibweb (DLW) into cleaned, versioned, analysis-ready datasets. The operational lifecycle has three entry points:
 
 1. **Auxiliary Data Refresh** (`update_aux_measures()` in pipaux) — Refresh CPI, PPP, population, GDP, PCE, PFW, etc. from GitHub and Y-drive
 2. **DLW Data Acquisition & Validation** (`pipdata_dlw_process()` in pipdata) — Download GMD survey files and validate them
-3. **Survey Cleaning & Metadata** (`pd_process_data()` in pipdata) — Merge auxiliary data with DLW surveys, clean variables, create metadata, save versioned outputs, update master inventory
+3. **Incremental Processing** (`pd_run_pipeline()` in pipdata) - Execute the durable clean, metadata, and deflate stages from completed validation state
 
 For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 
@@ -31,7 +31,7 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 - Error handling uses custom `piperr` conditions for graceful recovery without silencing failures
 - `dplyr`, `tidyr`, and `tibble` are **not** in `DESCRIPTION Imports` — use `data.table` (`:=`, `rbindlist`, `[, .N, by]`) and `collapse` (`fcase`, `ftransform`, `fmutate`) instead. Do not add new dplyr/tidyr/tibble calls anywhere. `dlw_scan_and_validate.R` still has ~19 legacy dplyr calls (Phase 2 migration, tracked in roadmap as `dplyr-to-collapse-phase2`).
 - Always qualify `fcase()` and `fifelse()` with `data.table::` (i.e. `data.table::fcase(...)`) even when called inside `collapse::ftransform()` or `collapse::fmutate()`. This makes the dependency surface explicit and avoids ambiguity with similarly-named collapse functions.
-- The pipeline emits 12 canonical logmeta entry types, parsed by
+- The pipeline emits 13 canonical logmeta entry types, parsed by
   `log_report()` to build report sections. Their `info`/`error` field values
   are:
   - `"process_summary_inf"` — emitted by `pd_process_data()`
@@ -49,7 +49,9 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
     validation start, workflow phases, and per-survey failures
   - `"dlw_summary_inf"` - emitted by `pipdata_dlw_process()` at stage
     completion and used as the DLW stage marker
-  These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section. The report suppresses the 11 internal summary/marker types in `.log_internal_types`; genuine error types remain in the type-summary table.
+  - `"pipeline_run_summary_inf"` - emitted once by `pd_run_pipeline()` with
+    compact run, state, stage-status, and manifest-generation counts
+  These strings are used as string literals across multiple files; any typo silently breaks the corresponding report section. The report suppresses internal summary/marker types in `.log_internal_types`; genuine error types remain in the type-summary table.
 - **`logmeta$error` and `logmeta$info` are always string type discriminators** — never R condition objects. Caught condition messages go in `logmeta$condition_msg = conditionMessage(e)`. The old pattern `logmeta = list(error = e)` (passing the condition object directly) is incorrect and will break `parse_log_meta()` which uses `vapply(..., character(1))`.
 - **Logging inside `tryCatch` error handlers and `lapply` callbacks**: `capture_log_args()` in pipfun resolves to the anonymous handler's frame (`function(e)`), so `args` will contain `list(e = <condition>)` rather than the enclosing function's context. This is expected and harmless — put all structured context in `logmeta` instead of relying on `args` auto-capture. See `.cg-docs/solutions/testing-patterns/2026-04-29-logging-in-trycatch-handlers.md`.
 - **Avoid typed logging in hot per-survey functions whose formals include large objects**: `pipfun::log_info()` / `log_warn()` / `log_error()` capture the caller's formals into persistent log state (`.piplogenv`) via `capture_log_args()`. In functions like `apply_recode_spec(dt, ...)`, a per-survey typed log call can retain the full cleaned survey `dt` by reference across the run, defeating `rm()` / `gc()` and causing runaway RAM growth. Keep typed logging at orchestration boundaries; for per-survey provenance prefer compact attributes or inventory columns (for example `recode_spec_version_id`, `version_id_recode_spec`). See `.cg-docs/solutions/performance-issues/2026-07-22-per-survey-logging-retains-large-survey-objects.md`.
@@ -79,6 +81,35 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 - **Auxiliary re-cleaning requires two gates**: compare the current aux artifact `content_hash` from `stamp::st_catalog_query(alias = "aux")` with the per-survey hash stored in the master inventory, then run `valid_aux_load()`/`compare_aux_*` only for globally changed measures and intersect the changed country/year keys with requested surveys. Match master rows by both `survey_id` and the current DLW `content_hash_dlw`; when a survey is reprocessed, replace all its current master rows by `survey_id` so stale welfare-type `pip_id` rows are removed. Stamp retains prior master snapshots for recovery. See `.cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md`.
 - **Retiring an exported R API requires installed-surface evidence**: Before deletion, confirm there are no active callers and capture a built-package baseline using the same library, isolated environment, and safety flags as the final check. Delete orphaned `.Rd` files explicitly, regenerate once, require the complete ordered `NAMESPACE` to differ only by the intended export, and query the independently installed final namespace and help database to prove only the target disappeared. Compare complete normalized baseline/final diagnostics rather than counts. See `.cg-docs/solutions/testing-patterns/2026-08-25-verify-exported-r-api-retirement.md`.
 - **Dependency invalidation separates exact provenance from semantic change**: Named manifest components retain exact immutable `version_id` and `content_hash` values, but shared auxiliary and PFW artifacts invalidate an entity only when its keyed semantic projection hash changes. Missing selected-node records must emit `new_entity` or `unknown_provenance`, never default to cached work. Before inventory writes, checkpoint inputs and stage code hashes must match accepted C2 fingerprints and exact committed receipts. See `.cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md`.
+- **Executable staged invalidation**: `pd_run_pipeline()` is the exported
+  top-level processing API after DLW validation. Its only durable nodes are
+  `clean:<survey_id>`, `metadata:<pip_id>`, and `deflate:<pip_id>`. Internal
+  load, PFW merge, recode, auxiliary attachment, and save functions remain
+  fingerprint components. Stamp is authoritative for immutable versions and
+  exact receipts; the C2 manifest is the only pipdata currentness/provenance
+  index. States are current/stale/forced and cached/runnable/success/failed/
+  skipped/blocked. Targeted force is additive. Unknown legacy provenance needs
+  explicit bootstrap. Keyed auxiliary invalidation means a Colombia 2018 CPI
+  change does not run another Colombia year or an unrelated country/year.
+  Recoverable failures block descendants; retry creates a new authoritative
+  plan from the last valid manifest. No run cursor is persisted. Existing stage
+  wrapper signatures, aliases, and master-inventory returns remain compatible.
+  Production activation is blocked until signed target Windows/SMB fencing and
+  immutable unique-rename evidence are complete.
+- **Stage failure status is separate from condition provenance**: Recoverable
+  worker failures use the controlled unit reason `entity_failed`; exact worker
+  condition classes and messages stay in typed condition records. Clean and
+  metadata failures persist narrowed release/master invalidation under the C2
+  fence even when no sibling checkpoint follows. Artifact-bearing results are
+  built only after the final retained manifest is reloaded and verified. See
+  `.cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md`.
+- **Restart currentness requires both catalog evidence and durable pointers**:
+  A surviving Stamp artifact is historical evidence, not proof that the failed
+  stage remains current. Clean and metadata receipts are current only when
+  their exact versions and hashes match complete master inventory pointers.
+  Clearing a pointer makes the stage stale on the next authoritative plan while
+  preserving immutable history. See
+  `.cg-docs/solutions/data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md`.
 
 ## Work in Progress
 

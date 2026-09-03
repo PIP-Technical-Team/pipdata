@@ -69,14 +69,102 @@ test_that("DLW logmeta discriminators are registered and report-suppressed", {
   expect_equal(.logtype_dlw_acquisition, "dlw_acquisition_inf")
   expect_equal(.logtype_dlw_validation, "dlw_validation_inf")
   expect_equal(.logtype_dlw_summary, "dlw_summary_inf")
-  expect_length(.log_internal_types, 11L)
+  expect_length(.log_internal_types, 12L)
   expect_false(anyDuplicated(.log_internal_types) > 0L)
   expect_true(all(c(
     .logtype_dlw_acquisition,
     .logtype_dlw_validation,
     .logtype_dlw_summary
   ) %in% .log_internal_types))
-  expect_true(all(c("release_write_err", "deflate_summary_inf") %in% .log_internal_types))
+  expect_true(all(c(
+    "release_write_err", "deflate_summary_inf", "pipeline_run_summary_inf"
+  ) %in% .log_internal_types))
+})
+
+test_that("pipeline run report selects the latest completed run", {
+  first <- make_entry(
+    "info", "first run",
+    list(
+      info = "pipeline_run_summary_inf", run_id = "run-1",
+      status = "success", terminal = FALSE,
+      n_selected = 3L, n_attempted = 3L, n_success = 3L, n_failed = 0L,
+      n_cached = 0L, n_blocked = 0L, clean_status = "success",
+      metadata_status = "success", deflate_status = "success",
+      manifest_before_generation = 1L, manifest_after_generation = 4L,
+      started_at = as.POSIXct("2026-08-31 10:00:00", tz = "UTC"),
+      completed_at = as.POSIXct("2026-08-31 10:01:00", tz = "UTC")
+    )
+  )
+  latest <- make_entry(
+    "info", "latest run",
+    list(
+      info = "pipeline_run_summary_inf", run_id = "run-2",
+      status = "cached", terminal = FALSE,
+      n_selected = 3L, n_attempted = 0L, n_success = 0L, n_failed = 0L,
+      n_cached = 3L, n_blocked = 0L, clean_status = "cached",
+      metadata_status = "cached", deflate_status = "cached",
+      manifest_before_generation = 4L, manifest_after_generation = 4L,
+      started_at = as.POSIXct("2026-08-31 11:00:00", tz = "UTC"),
+      completed_at = as.POSIXct("2026-08-31 11:00:01", tz = "UTC")
+    )
+  )
+
+  output <- build_pipeline_run_summary(
+    parse_log_meta(make_piplog(latest, first))
+  )
+
+  expect_true(any(grepl("Pipeline Run Summary", output)))
+  expect_true(any(grepl("run-2", output)))
+  expect_true(any(grepl("cached", output)))
+  expect_false(any(grepl("run-1", output)))
+})
+
+test_that("stage summaries and header follow the latest pipeline run ID", {
+  pipeline_summary <- function(run_id, completed_at) {
+    make_entry("info", paste(run_id, "pipeline"), list(
+      info = "pipeline_run_summary_inf", run_id = run_id,
+      status = "success", terminal = FALSE,
+      n_selected = 3L, n_attempted = 3L, n_success = 3L, n_failed = 0L,
+      n_cached = 0L, n_blocked = 0L, clean_status = "success",
+      metadata_status = "success", deflate_status = "success",
+      manifest_before_generation = 1L, manifest_after_generation = 4L,
+      started_at = completed_at - 1, completed_at = completed_at
+    ))
+  }
+  process_summary <- function(run_id, total) {
+    make_entry("info", paste(run_id, "clean"), list(
+      info = "process_summary_inf", run_id = run_id, n_total = total,
+      n_success = total, n_failed = 0L, surveys_success = character()
+    ))
+  }
+  deflate_summary <- function(run_id, total) {
+    make_entry("info", paste(run_id, "deflate"), list(
+      info = "deflate_summary_inf", run_id = run_id, status = "success",
+      n_total = total, n_success = total, n_failed = 0L,
+      surveys_success = character(), surveys_failed = character(),
+      cached = 0L, skipped = 0L
+    ))
+  }
+  older_time <- as.POSIXct("2026-08-31 10:00:00", tz = "UTC")
+  latest_time <- as.POSIXct("2026-08-31 11:00:00", tz = "UTC")
+  dt <- parse_log_meta(make_piplog(
+    process_summary("run-old", 99L),
+    deflate_summary("run-new", 7L),
+    pipeline_summary("run-new", latest_time),
+    process_summary("run-new", 7L),
+    deflate_summary("run-old", 99L),
+    pipeline_summary("run-old", older_time)
+  ))
+
+  header <- build_header(dt, "Test Report")
+  processing <- build_processing_summary(dt)
+  deflation <- build_deflation_summary(dt)
+
+  expect_true(any(grepl("7 total", header, fixed = TRUE)))
+  expect_true(any(grepl("| 7 |", processing, fixed = TRUE)))
+  expect_false(any(grepl("| 99 |", processing, fixed = TRUE)))
+  expect_true(any(grepl("| 7 |", deflation, fixed = TRUE)))
+  expect_false(any(grepl("| 99 |", deflation, fixed = TRUE)))
 })
 
 test_that("build_dlw_acquisition_summary uses denominator and failure rows", {

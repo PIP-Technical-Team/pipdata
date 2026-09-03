@@ -106,7 +106,6 @@ pd_deflate_pipeline_core <- function(
   inv, force, verbose, bootstrap, bootstrap_entities, dependency_plan,
   force_surveys, entity_error_policy, fatal_error_policy
 ) {
-  started_at <- Sys.time()
   run_id <- pd_random_id()
   if (is.null(inv)) inv <- pipload::load_pip_master_inventory(verbose = verbose)
   data.table::setDT(inv)
@@ -129,32 +128,87 @@ pd_deflate_pipeline_core <- function(
     getOption("pipdata.manifest_checkpoint_seconds", 60),
     entity_error_policy, fatal_error_policy
   )
-  actions <- execution$plan$actions[stage == "deflate" & action != "none"]
-  selected <- sort(unique(execution$plan$actions[stage == "deflate", pip_id]))
+  actions <- execution$plan$actions[stage == "deflate"]
   runtime <- new.env(parent = emptyenv())
   runtime$execution <- execution
-  context <- new_pipeline_context(
-    execution, run_id, options,
-    list(survey_id = sort(unique(actions$survey_id)), pip_id = selected,
-         force_requested = sort(unique(force_surveys))),
-    pd_pipeline_storage(dependency_context), runtime = runtime
+  context <- pd_stage_context(
+    execution, run_id, options, actions, force_surveys
   )
-  units <- pd_empty_stage_units()
-  artifacts <- pd_empty_artifact_references()
-  warnings <- list()
-  errors <- list()
-  checkpoint_generations <- numeric()
+  context$runtime <- runtime
+  validate_pipeline_context(context)
+  prepared <- tryCatch(
+    pd_run_deflate_stage_prepared(
+      execution, actions, run_id, context, inv, options, verbose
+    ),
+    error = function(cnd) {
+      primary <<- cnd
+      rlang::cnd_signal(cnd)
+    }
+  )
+  primary <- prepared$error
+  execution <- prepared$execution
+  inv <- prepared$master
+  outcome <- prepared$outcome
+  runtime$execution <- execution
+  result <- pd_stage_outcome_result(
+    outcome,
+    context,
+    execution,
+    terminal = isTRUE(prepared$terminal),
+    log_ref = list(
+      name = "pipdata_log",
+      run_id = run_id,
+      summary_discriminator = if (sum(
+        outcome$units$status %in% c("success", "failed")
+      )) "deflate_summary_inf" else NA_character_,
+      log_checkpoint = NULL
+    )
+  )
+  if (result$counts[["attempted"]] > 0L) pd_log_deflate_summary(result)
+  list(result = result, master = inv, context = context)
+}
+
+pd_run_deflate_stage_prepared <- function(
+  execution, actions, run_id, context, master, options, verbose = FALSE,
+  checkpoint_callback = NULL
+) {
+  actions <- pd_prepared_stage_actions(actions, "deflate", run_id, context)
+  outcome <- pd_new_stage_outcome("deflate", execution$manifest_identity)
+  blocked <- if ("scheduling_state" %in% names(actions)) {
+    actions$scheduling_state == "blocked"
+  } else {
+    rep(FALSE, nrow(actions))
+  }
+  blocked[is.na(blocked)] <- FALSE
+  for (i in which(actions$action == "none" & !blocked)) {
+    outcome$units <- rbind(
+      outcome$units,
+      pd_stage_unit_row(actions[i], "deflate", "cached", "current")
+    )
+  }
+  for (i in which(blocked)) {
+    outcome$units <- rbind(
+      outcome$units,
+      pd_stage_unit_row(
+        actions[i], "deflate", "skipped", "upstream_failed"
+      )
+    )
+  }
+  runnable <- actions[action != "none" & !blocked]
   receipts <- list()
   writer <- function(alias, id) {
     function(candidate, lease) pd_save_receipt(candidate, id, alias, verbose, lease)
   }
-  if (nrow(actions)) {
-    if (anyDuplicated(actions$pip_id) || anyDuplicated(inv$pip_id)) {
+  primary <- NULL
+  if (nrow(runnable)) {
+    master <- data.table::as.data.table(data.table::copy(master))
+    if (anyDuplicated(runnable$pip_id) || anyDuplicated(master$pip_id)) {
       rlang::abort("Deflation actions and inventory must match one-to-one.",
                    class = "pipdata_deflation_action_invalid")
     }
-    inventory_rows <- inv[match(actions$pip_id, inv$pip_id)]
-    if (nrow(inventory_rows) != nrow(actions) || anyNA(inventory_rows$pip_id)) {
+    inventory_rows <- master[match(runnable$pip_id, master$pip_id)]
+    if (nrow(inventory_rows) != nrow(runnable) ||
+        anyNA(inventory_rows$pip_id)) {
       rlang::abort("Fresh deflation actions are absent from the inventory.",
                    class = "pipdata_deflation_action_invalid")
     }
@@ -163,25 +217,29 @@ pd_deflate_pipeline_core <- function(
       metadata_version_id = "version_id_metadata",
       metadata_hash = "content_hash_metadata"
     )
-    if (!all(names(comparisons) %in% names(actions)) ||
+    if (!all(names(comparisons) %in% names(runnable)) ||
         !all(unlist(comparisons) %in% names(inventory_rows)) ||
         any(vapply(names(comparisons), function(plan_field) {
           inventory_field <- comparisons[[plan_field]]
-          anyNA(actions[[plan_field]]) ||
-            !identical(actions[[plan_field]], inventory_rows[[inventory_field]])
+          anyNA(runnable[[plan_field]]) ||
+            !identical(
+              runnable[[plan_field]], inventory_rows[[inventory_field]]
+            )
         }, logical(1L)))) {
       rlang::abort("Fresh deflation actions lack exact input receipts.",
                    class = "pipdata_deflation_action_invalid")
     }
-    inventory_fields <- setdiff(names(inventory_rows), names(actions))
-    actions <- cbind(actions, inventory_rows[, inventory_fields, with = FALSE])
-    actions[, `:=`(
+    inventory_fields <- setdiff(names(inventory_rows), names(runnable))
+    runnable <- cbind(
+      runnable, inventory_rows[, inventory_fields, with = FALSE]
+    )
+    runnable[, `:=`(
       version_id_data = data_version_id,
       content_hash_data = data_hash,
       version_id_metadata = metadata_version_id,
       content_hash_metadata = metadata_hash
     )]
-    action_rows <- split(actions, seq_len(nrow(actions)))
+    action_rows <- split(runnable, seq_len(nrow(runnable)))
     pending_ids <- character()
     pending_started <- list()
     active_id <- NULL
@@ -194,126 +252,118 @@ pd_deflate_pipeline_core <- function(
         active_started <<- stamp
         attr(action, "lease") <- execution$lease
         attr(action, "execution") <- execution
-        outcome <- pd_execute_deflate(action, verbose)
-        if (isTRUE(outcome$success)) {
+        worker_result <- pd_execute_deflate(action, verbose)
+        if (isTRUE(worker_result$success)) {
           pending_ids <<- c(pending_ids, action$pip_id)
           pending_started[[action$pip_id]] <<- stamp
-          receipts[[action$pip_id]] <<- outcome
+          receipts[[action$pip_id]] <<- worker_result
         } else {
-          units <<- rbind(units, pd_deflate_unit_row(
-            action, "failed", outcome$condition$code, stamp, Sys.time()
-          ))
-          errors[[length(errors) + 1L]] <<- outcome$condition
-          pd_log_stage_condition(run_id, outcome$condition)
-          inv <<- pd_persist_failed_invalidation(
-            execution, inv, action,
+          if (is.null(worker_result$condition)) {
+            rlang::abort(
+              "Deflation worker returned an unclassified failure.",
+              class = "pipdata_deflation_worker_result_invalid"
+            )
+          }
+          outcome_record <- worker_result$condition
+          outcome_units <- pd_deflate_unit_row(
+            action, "failed", "entity_failed", stamp, Sys.time()
+          )
+          outcome$units <<- rbind(outcome$units, outcome_units)
+          outcome$errors[[length(outcome$errors) + 1L]] <<- outcome_record
+          pd_log_stage_condition(run_id, outcome_record)
+          persisted <- pd_persist_failed_invalidation(
+            execution, master, action,
             writer("pip_inv", "pip_release_inventory"),
             writer("pip_master", "pip_master_inventory")
           )
-          if (identical(entity_error_policy, "abort")) stop(outcome$condition)
+          master <<- persisted$candidate
+          execution <<- persisted$execution
+          if (identical(options$entity_error_policy, "abort")) {
+            rlang::cnd_signal(outcome_record)
+          }
         }
         active_id <<- NULL
         active_started <<- NULL
-        outcome
+        worker_result
       },
       checkpoint = function(results) {
         finalized <- pd_finalize_checkpoint(
-          execution, inv, "deflate", data.table::rbindlist(results, fill = TRUE),
+          execution, master, "deflate",
+          data.table::rbindlist(results, fill = TRUE),
           writer("pip_inv", "pip_release_inventory"),
           writer("pip_master", "pip_master_inventory")
         )
-        inv <<- finalized$candidate
+        master <<- finalized$candidate
         execution <<- finalized$execution
-        runtime$execution <- execution
-        checkpoint_generations <<- c(
-          checkpoint_generations, execution$manifest_identity$generation
+        outcome$checkpoint_generations <<- c(
+          outcome$checkpoint_generations,
+          execution$manifest_identity$generation
         )
+        outcome$manifest_after <<- execution$manifest_identity
         for (id in pending_ids) {
-          action <- actions[pip_id == id][1L]
-          units <<- rbind(units, pd_deflate_unit_row(
-            action, "success", action$reason[[1L]] %||% character(),
+          action <- runnable[pip_id == id][1L]
+          outcome$units <<- rbind(outcome$units, pd_deflate_unit_row(
+            action, "success", pd_action_reason_codes(execution, action),
             pending_started[[id]], Sys.time(), receipts[[id]]$content_hash
           ))
+          outcome$receipts[[id]] <<-
+            data.table::as.data.table(receipts[[id]])
         }
         pending_ids <<- character()
         pending_started <<- list()
+        if (is.function(checkpoint_callback)) {
+          execution <<- checkpoint_callback(execution, master)
+        }
       }, checkpoint_n = options$checkpoint_size,
       checkpoint_seconds = options$checkpoint_seconds
     )
     caught <- tryCatch({ run(); NULL }, error = function(cnd) cnd)
     if (!is.null(caught)) {
+      if (pd_is_pipeline_cancellation(caught)) {
+        rlang::cnd_signal(caught)
+      }
       primary <- caught
-      if (identical(fatal_error_policy, "abort")) stop(caught)
+      if (identical(options$fatal_error_policy, "abort")) {
+        rlang::cnd_signal(caught)
+      }
       completed <- Sys.time()
       for (id in pending_ids) {
-        action <- actions[pip_id == id][1L]
-        units <- rbind(units, pd_deflate_unit_row(
+        action <- runnable[pip_id == id][1L]
+        outcome$units <- rbind(outcome$units, pd_deflate_unit_row(
           action, "failed", "checkpoint_uncommitted",
           pending_started[[id]], completed
         ))
       }
-      if (!is.null(active_id) && !active_id %in% units$entity_id) {
-        action <- actions[pip_id == active_id][1L]
-        units <- rbind(units, pd_deflate_unit_row(
+      if (!is.null(active_id) && !active_id %in% outcome$units$entity_id) {
+        action <- runnable[pip_id == active_id][1L]
+        outcome$units <- rbind(outcome$units, pd_deflate_unit_row(
           action, "failed", "fatal_uncommitted", active_started, completed
         ))
       }
-      remaining_ids <- setdiff(actions$pip_id, units$entity_id)
+      remaining_ids <- setdiff(runnable$pip_id, outcome$units$entity_id)
       for (id in remaining_ids) {
-        action <- actions[pip_id == id][1L]
-        units <- rbind(units, pd_deflate_unit_row(
+        action <- runnable[pip_id == id][1L]
+        outcome$units <- rbind(outcome$units, pd_deflate_unit_row(
           action, "skipped", "upstream_failed",
           as.POSIXct(NA, tz = "UTC"), as.POSIXct(NA, tz = "UTC")
         ))
       }
-      errors[[length(errors) + 1L]] <- new_stage_condition_record(
+      outcome$errors[[length(outcome$errors) + 1L]] <- new_stage_condition_record(
         caught, "error", stage = "deflate", operation = "stage",
         recoverable = FALSE
       )
     }
   }
-  represented <- units$entity_id
-  cached_ids <- setdiff(selected, c(actions$pip_id, represented))
-  for (id in cached_ids) {
-    units <- rbind(units, pd_deflate_unit_row(
-      data.table::data.table(stage = "deflate", entity_id = id, pip_id = id,
-                             survey_id = NA_character_, action = "none",
-                             input_hash = NA_character_),
-      "cached", "current", as.POSIXct(NA, tz = "UTC"),
-      as.POSIXct(NA, tz = "UTC")
-    ))
-  }
-  if (!length(selected)) context$selection$pip_id <- character()
-  latest <- execution$manifest_identity
-  if (pd_manifest_identity_valid(latest, FALSE)) {
-    for (id in names(receipts)[names(receipts) %in% units[status == "success", entity_id]]) {
-      finalized <- list(execution = execution)
-      artifacts <- rbind(artifacts, new_artifact_reference(
-        receipts[[id]], finalized, "deflate", id
-      ))
-    }
-  }
-  provenance <- list(
-    release = context$release, identity = context$identity,
-    scope_id = context$dependency$scope_id,
-    context_hash = context$dependency$context_hash,
-    plan_hash = context$dependency$plan_hash,
-    manifest_before = context$dependency$manifest_before,
-    manifest_after = latest,
-    checkpoint_generations = sort(unique(checkpoint_generations)),
-    stage_reason_codes = if (!length(selected)) "no_selection" else
-      sort(unique(unlist(units$reason_codes)))
+  data.table::setorder(outcome$units, stage, entity_id)
+  outcome$completed_at <- pd_utc_time(Sys.time())
+  list(
+    execution = execution,
+    master = master,
+    context = context,
+    outcome = outcome,
+    terminal = !is.null(primary),
+    error = primary
   )
-  terminal <- !is.null(primary)
-  result <- new_pipdata_stage_result(
-    context, "deflate", terminal, units, artifacts, warnings, errors,
-    list(name = "pipdata_log", run_id = run_id,
-         summary_discriminator = if (sum(units$status %in% c("success", "failed")))
-           "deflate_summary_inf" else NA_character_, log_checkpoint = NULL),
-    provenance, started_at, Sys.time()
-  )
-  if (result$counts[["attempted"]] > 0L) pd_log_deflate_summary(result)
-  list(result = result, master = inv, context = context)
 }
 
 pd_deflate_unit_row <- function(action, status, reasons, started_at, completed_at,
@@ -329,31 +379,49 @@ pd_deflate_unit_row <- function(action, status, reasons, started_at, completed_a
 }
 
 pd_log_stage_condition <- function(run_id, record) {
-  pipfun::log_add(
-    event = "error", message = record$message, name = "pipdata_log",
-    args = list(run_id = run_id, stage = record$stage,
-                entity_id = record$entity_id, condition_id = record$condition_id),
-    logmeta = list(error = record$code, survey = record$pip_id,
-                   condition_id = record$condition_id)
+  survey <- if (identical(record$stage, "clean")) {
+    record$survey_id
+  } else {
+    record$pip_id
+  }
+  tryCatch(
+    pipfun::log_add(
+      event = "error", message = record$message, name = "pipdata_log",
+      args = list(run_id = run_id, stage = record$stage,
+                  entity_id = record$entity_id,
+                  condition_id = record$condition_id),
+      logmeta = list(
+        error = record$code, survey = survey,
+        condition_id = record$condition_id,
+        condition_msg = record$message
+      )
+    ),
+    error = function(cnd) invisible(NULL)
   )
+  invisible(record)
 }
 
 pd_log_deflate_summary <- function(result) {
   successful <- result$units[status == "success", pip_id]
   failed <- result$units[status == "failed", pip_id]
-  pipfun::log_add(
-    event = "info", message = "Deflation stage completed.", name = "pipdata_log",
-    args = list(run_id = result$run_id, stage = "deflate",
-                entity_id = NA_character_, condition_id = NA_character_),
-    logmeta = list(
-      info = "deflate_summary_inf", run_id = result$run_id,
-      status = result$status, n_total = result$counts[["attempted"]],
-      n_success = result$counts[["succeeded"]],
-      n_failed = result$counts[["failed"]], surveys_success = successful,
-      surveys_failed = failed, cached = result$counts[["cached"]],
-      skipped = result$counts[["skipped"]]
-    )
+  tryCatch(
+    pipfun::log_add(
+      event = "info", message = "Deflation stage completed.",
+      name = "pipdata_log",
+      args = list(run_id = result$run_id, stage = "deflate",
+                  entity_id = NA_character_, condition_id = NA_character_),
+      logmeta = list(
+        info = "deflate_summary_inf", run_id = result$run_id,
+        status = result$status, n_total = result$counts[["attempted"]],
+        n_success = result$counts[["succeeded"]],
+        n_failed = result$counts[["failed"]], surveys_success = successful,
+        surveys_failed = failed, cached = result$counts[["cached"]],
+        skipped = result$counts[["skipped"]]
+      )
+    ),
+    error = function(cnd) invisible(NULL)
   )
+  invisible(result)
 }
 
 pd_persist_failed_invalidation <- function(execution, master, action,
@@ -364,21 +432,55 @@ pd_persist_failed_invalidation <- function(execution, master, action,
   } else {
     invalidate(master, action)
   }
-  pd_assert_execution_fence(execution)
-  release_receipt <- release_writer(candidate, execution$lease)
+  advanced_receipts <- data.table::data.table()
+  assert_fence <- function() {
+    fence <- pd_assert_execution_fence
+    if ("advanced_receipts" %in% names(formals(fence))) {
+      fence(execution, advanced_receipts)
+    } else {
+      fence(execution)
+    }
+  }
+  assert_fence()
+  release_receipt <- release_writer(
+    pd_release_inventory_candidate(candidate), execution$lease
+  )
   if (!isTRUE(release_receipt$success)) {
     rlang::abort("Failed invalidation release write was not verified.",
                  class = "pipdata_failed_invalidation_release_error")
   }
+  if (all(c("alias", "path", "content_hash") %in% names(release_receipt))) {
+    pd_revalidate_receipt(release_receipt)
+  }
+  advanced_receipts <- data.table::rbindlist(list(
+    advanced_receipts,
+    data.table::as.data.table(release_receipt)
+  ), fill = TRUE)
   candidate[, latest_release_version_id := release_receipt$version_id]
-  pd_assert_execution_fence(execution)
+  assert_fence()
   master_receipt <- master_writer(candidate, execution$lease)
   if (!isTRUE(master_receipt$success)) {
     rlang::abort("Failed invalidation master write was not verified.",
                  class = "pipdata_failed_invalidation_master_error")
   }
-  pd_assert_execution_fence(execution)
-  candidate
+  if (all(c("alias", "path", "content_hash") %in% names(master_receipt))) {
+    pd_revalidate_receipt(master_receipt)
+  }
+  advanced_receipts <- data.table::rbindlist(list(
+    advanced_receipts,
+    data.table::as.data.table(master_receipt)
+  ), fill = TRUE)
+  assert_fence()
+  execution <- pd_advance_execution_state(
+    execution, candidate, advanced_receipts
+  )
+  list(
+    candidate = candidate,
+    execution = execution,
+    release_receipt = release_receipt,
+    master_receipt = master_receipt,
+    advanced_receipts = advanced_receipts
+  )
 }
 
 #' Deflate one survey (worker for [pd_deflate_pipeline()])

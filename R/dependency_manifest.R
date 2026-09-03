@@ -227,11 +227,15 @@ pd_checkpoint_named_inputs <- function(execution, stage, results, entities) {
   if (!nrow(current) || !"input_rows" %in% names(current)) {
     return(NULL)
   }
+  selected_stage <- stage
   output <- list()
   for (entity_id in sort(unique(entities))) {
     selected_entity <- entity_id
     accepted <- current[
-      which(current$stage == stage & current$entity_id == selected_entity)
+      which(
+        current$stage == selected_stage &
+          current$entity_id == selected_entity
+      )
     ]
     if (nrow(accepted) != 1L || !length(accepted$input_rows[[1L]])) {
       rlang::abort(
@@ -274,6 +278,7 @@ pd_checkpoint_named_inputs <- function(execution, stage, results, entities) {
         )
       }
       for (name in names(upstream)) {
+        selected_name <- name
         fields <- upstream[[name]]
         if (!fields[[1L]] %in% names(result_rows) ||
             is.na(result_rows[[fields[[1L]]]][[1L]]) ||
@@ -284,13 +289,13 @@ pd_checkpoint_named_inputs <- function(execution, stage, results, entities) {
           )
         }
         accepted_version <- components[
-          which(components$name == name), version_id
+          which(components$name == selected_name), version_id
         ][[1L]]
         final_version <- result_rows[[fields[[1L]]]][[1L]]
         if (fields[[2L]] %in% names(result_rows) &&
             !is.na(result_rows[[fields[[2L]]]][[1L]]) &&
             nzchar(result_rows[[fields[[2L]]]][[1L]])) {
-          components[which(components$name == name), `:=`(
+          components[which(components$name == selected_name), `:=`(
             version_id = final_version,
             content_hash = result_rows[[fields[[2L]]]][[1L]]
           )]
@@ -345,8 +350,9 @@ pd_assert_checkpoint_provenance <- function(execution, master, stage, results,
   summary <- data.table::as.data.table(
     execution$snapshot$fingerprints$summary %||% data.table::data.table()
   )
+  selected_stage <- stage
   expected_code <- if (all(c("stage", "hash") %in% names(summary))) {
-    summary[summary$stage == stage][["hash"]]
+    summary[summary$stage == selected_stage][["hash"]]
   } else {
     character()
   }
@@ -402,19 +408,59 @@ pd_assert_checkpoint_provenance <- function(execution, master, stage, results,
   return(invisible(NULL))
 }
 
+pd_release_inventory_candidate <- function(candidate) {
+  release_candidate <- data.table::copy(data.table::as.data.table(candidate))
+  if ("latest_release_version_id" %in% names(release_candidate)) {
+    release_candidate[, latest_release_version_id := NA_character_]
+  }
+  release_candidate
+}
+
+pd_inventory_replay_current <- function(execution, master, candidate) {
+  if (!identical(
+    pd_canonical_snapshot_table(candidate),
+    pd_canonical_snapshot_table(master)
+  )) {
+    return(FALSE)
+  }
+  master <- data.table::as.data.table(master)
+  if (!"latest_release_version_id" %in% names(master)) {
+    return(FALSE)
+  }
+  versions <- unique(master$latest_release_version_id)
+  versions <- versions[!is.na(versions) & nzchar(versions)]
+  if (length(versions) != 1L) {
+    return(FALSE)
+  }
+  catalog <- data.table::as.data.table(
+    execution$snapshot$catalogs$pip_inv %||% data.table::data.table()
+  )
+  all(c("version_id", "content_hash", "path") %in% names(catalog)) &&
+    nrow(catalog[
+      version_id == versions[[1L]] & !is.na(content_hash) &
+        nzchar(content_hash) & !is.na(path) & nzchar(path)
+    ]) == 1L
+}
+
 pd_finalize_checkpoint <- function(execution, master, stage, results,
                                    release_writer, master_writer,
                                    manifest_root = NULL, survey_id = NULL,
                                    expected_pip_ids = NULL) {
+  results <- data.table::as.data.table(data.table::copy(results))
+  advanced_receipts <- results
   assert_fence <- function() {
     if (!is.null(execution$snapshot)) {
-      pd_assert_execution_fence(execution)
+      fence <- pd_assert_execution_fence
+      if ("advanced_receipts" %in% names(formals(fence))) {
+        fence(execution, advanced_receipts)
+      } else {
+        fence(execution)
+      }
     } else {
       pd_lease_assert(execution$lease)
     }
   }
   assert_fence()
-  results <- data.table::as.data.table(data.table::copy(results))
   if (!nrow(results) || any(!results$success)) {
     rlang::abort("Checkpoint contains an unverified stage result.",
                  class = "pipdata_checkpoint_unverified")
@@ -455,24 +501,41 @@ pd_finalize_checkpoint <- function(execution, master, stage, results,
                  reason = reconciliation$reason)
   }
   candidate <- reconciliation$candidate
-  assert_fence()
-  release_receipt <- release_writer(candidate, execution$lease)
-  if (!isTRUE(release_receipt$success)) {
-    rlang::abort("Release inventory verification failed.",
-                 class = "pipdata_checkpoint_release_error")
-  }
-  if (all(c("alias", "path", "content_hash") %in% names(release_receipt))) {
-    pd_revalidate_receipt(release_receipt)
-  }
-  candidate[, latest_release_version_id := release_receipt$version_id]
-  assert_fence()
-  master_receipt <- master_writer(candidate, execution$lease)
-  if (!isTRUE(master_receipt$success)) {
-    rlang::abort("Master inventory verification failed.",
-                 class = "pipdata_checkpoint_master_error")
-  }
-  if (all(c("alias", "path", "content_hash") %in% names(master_receipt))) {
-    pd_revalidate_receipt(master_receipt)
+  inventory_changed <- !pd_inventory_replay_current(
+    execution, master, candidate
+  )
+  release_receipt <- NULL
+  master_receipt <- NULL
+  if (inventory_changed) {
+    assert_fence()
+    release_receipt <- release_writer(
+      pd_release_inventory_candidate(candidate), execution$lease
+    )
+    if (!isTRUE(release_receipt$success)) {
+      rlang::abort("Release inventory verification failed.",
+                   class = "pipdata_checkpoint_release_error")
+    }
+    if (all(c("alias", "path", "content_hash") %in% names(release_receipt))) {
+      pd_revalidate_receipt(release_receipt)
+    }
+    advanced_receipts <- data.table::rbindlist(list(
+      advanced_receipts,
+      data.table::as.data.table(release_receipt)
+    ), fill = TRUE)
+    candidate[, latest_release_version_id := release_receipt$version_id]
+    assert_fence()
+    master_receipt <- master_writer(candidate, execution$lease)
+    if (!isTRUE(master_receipt$success)) {
+      rlang::abort("Master inventory verification failed.",
+                   class = "pipdata_checkpoint_master_error")
+    }
+    if (all(c("alias", "path", "content_hash") %in% names(master_receipt))) {
+      pd_revalidate_receipt(master_receipt)
+    }
+    advanced_receipts <- data.table::rbindlist(list(
+      advanced_receipts,
+      data.table::as.data.table(master_receipt)
+    ), fill = TRUE)
   }
   if (all(receipt_columns %in% names(results))) {
     for (i in seq_len(nrow(results))) {
@@ -566,6 +629,9 @@ pd_finalize_checkpoint <- function(execution, master, stage, results,
   )
   execution$manifest <- published
   execution$manifest_identity <- attr(published, "manifest_identity")
+  execution <- pd_advance_execution_state(
+    execution, candidate, advanced_receipts
+  )
   list(candidate = candidate, execution = execution,
        release_receipt = release_receipt, master_receipt = master_receipt)
 }

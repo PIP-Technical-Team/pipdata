@@ -96,6 +96,7 @@ log_report <- function(
       build_stage_warning(dt),
       build_dlw_acquisition_summary(dt),
       build_dlw_validation_summary(dt),
+      build_pipeline_run_summary(dt),
       build_processing_summary(dt),
       build_deflation_summary(dt),
       build_aux_changes(dt),
@@ -126,7 +127,9 @@ log_report <- function(
 build_stage_warning <- function(dt) {
   dlw_idx <- which(dt$error_type == .logtype_dlw_summary)
   pipeline_ran <- any(
-    dt$error_type == "process_summary_inf",
+    dt$error_type %in% c(
+      "process_summary_inf", "pipeline_run_summary_inf"
+    ),
     na.rm = TRUE
   )
 
@@ -165,6 +168,154 @@ build_stage_warning <- function(dt) {
   }
 
   character(0)
+}
+
+
+.valid_pipeline_run_summary <- function(meta) {
+  expected <- c(
+    "info", "run_id", "status", "terminal", "n_selected",
+    "n_attempted", "n_success", "n_failed", "n_cached", "n_blocked",
+    "clean_status", "metadata_status", "deflate_status",
+    "manifest_before_generation", "manifest_after_generation",
+    "started_at", "completed_at"
+  )
+  count_fields <- c(
+    "n_selected", "n_attempted", "n_success", "n_failed", "n_cached",
+    "n_blocked"
+  )
+  generation_fields <- c(
+    "manifest_before_generation", "manifest_after_generation"
+  )
+  stage_statuses <- c("success", "partial", "failed", "cached", "skipped")
+  valid_stage <- function(value) {
+    is.character(value) && length(value) == 1L &&
+      (is.na(value) || value %in% stage_statuses)
+  }
+  is.list(meta) && identical(names(meta), expected) &&
+    identical(meta$info, "pipeline_run_summary_inf") &&
+    is.character(meta$run_id) && length(meta$run_id) == 1L &&
+    !is.na(meta$run_id) && nzchar(meta$run_id) &&
+    is.character(meta$status) && length(meta$status) == 1L &&
+    meta$status %in% stage_statuses &&
+    is.logical(meta$terminal) && length(meta$terminal) == 1L &&
+    !is.na(meta$terminal) &&
+    all(vapply(meta[count_fields], function(value) {
+      is.integer(value) && length(value) == 1L &&
+        !is.na(value) && value >= 0L
+    }, logical(1L))) &&
+    all(vapply(meta[generation_fields], function(value) {
+      is.integer(value) && length(value) == 1L &&
+        (is.na(value) || value > 0L)
+    }, logical(1L))) &&
+    all(vapply(
+      meta[c("clean_status", "metadata_status", "deflate_status")],
+      valid_stage,
+      logical(1L)
+    )) &&
+    inherits(meta$started_at, "POSIXct") && length(meta$started_at) == 1L &&
+    !is.na(meta$started_at) &&
+    inherits(meta$completed_at, "POSIXct") &&
+    length(meta$completed_at) == 1L && !is.na(meta$completed_at) &&
+    meta$completed_at >= meta$started_at
+}
+
+
+.latest_pipeline_run_index <- function(dt) {
+  indices <- which(dt$error_type == "pipeline_run_summary_inf")
+  if (!length(indices)) {
+    return(NA_integer_)
+  }
+  valid <- indices[vapply(
+    dt$logmeta[indices], .valid_pipeline_run_summary, logical(1L)
+  )]
+  if (!length(valid)) {
+    return(NA_integer_)
+  }
+  completed <- as.POSIXct(vapply(
+    dt$logmeta[valid],
+    function(meta) as.numeric(meta$completed_at),
+    numeric(1L)
+  ), origin = "1970-01-01", tz = "UTC")
+  run_ids <- vapply(dt$logmeta[valid], `[[`, character(1L), "run_id")
+  return(valid[order(completed, run_ids, decreasing = TRUE)][[1L]])
+}
+
+
+.latest_pipeline_stage_summary <- function(dt, discriminator, legacy = "first") {
+  indices <- which(vapply(
+    dt$logmeta,
+    function(meta) identical(meta$info, discriminator),
+    logical(1L)
+  ))
+  if (!length(indices)) {
+    return(NULL)
+  }
+  pipeline_index <- .latest_pipeline_run_index(dt)
+  if (!is.na(pipeline_index)) {
+    run_id <- dt$logmeta[[pipeline_index]]$run_id
+    indices <- indices[vapply(dt$logmeta[indices], function(meta) {
+      identical(meta$run_id, run_id)
+    }, logical(1L))]
+    if (!length(indices)) {
+      return(NULL)
+    }
+  }
+  selected <- if (identical(legacy, "last")) {
+    indices[[length(indices)]]
+  } else {
+    indices[[1L]]
+  }
+  return(dt$logmeta[[selected]])
+}
+
+
+#' Build the latest top-level pipeline run summary
+#'
+#' @param dt Parsed log `data.table` (output of [parse_log_meta()]).
+#' @return Character vector of markdown lines, or an empty vector.
+#' @keywords internal
+build_pipeline_run_summary <- function(dt) {
+  selected <- .latest_pipeline_run_index(dt)
+  if (is.na(selected)) {
+    return(character())
+  }
+  meta <- dt$logmeta[[selected]]
+  stage_value <- function(value) {
+    if (is.na(value)) "not accepted" else value
+  }
+  generation_value <- function(value) {
+    if (is.na(value)) "none" else as.character(value)
+  }
+  return(c(
+    "## Pipeline Run Summary",
+    "",
+    sprintf("**Run ID:** `%s`", meta$run_id),
+    sprintf(
+      "**Status:** `%s`%s",
+      meta$status,
+      if (meta$terminal) " (terminal)" else ""
+    ),
+    sprintf(
+      "**Manifest generations:** %s -> %s",
+      generation_value(meta$manifest_before_generation),
+      generation_value(meta$manifest_after_generation)
+    ),
+    "",
+    "| Metric | Count |",
+    "|--------|------:|",
+    sprintf("| Selected | %d |", meta$n_selected),
+    sprintf("| Attempted | %d |", meta$n_attempted),
+    sprintf("| Succeeded | %d |", meta$n_success),
+    sprintf("| Failed | %d |", meta$n_failed),
+    sprintf("| Cached | %d |", meta$n_cached),
+    sprintf("| Blocked | %d |", meta$n_blocked),
+    "",
+    "| Stage | Status |",
+    "|-------|--------|",
+    sprintf("| Clean | `%s` |", stage_value(meta$clean_status)),
+    sprintf("| Metadata | `%s` |", stage_value(meta$metadata_status)),
+    sprintf("| Deflate | `%s` |", stage_value(meta$deflate_status))
+  ))
 }
 
 
@@ -584,14 +735,9 @@ build_header <- function(dt, title) {
   n_errors <- dt[event == "error", .N]
   n_info <- dt[event == "info", .N]
 
-  # Enrich header with survey counts when process_summary_inf is present
-  ps_idx <- which(vapply(
-    dt$logmeta,
-    \(x) identical(x$info, "process_summary_inf"),
-    logical(1)
-  ))
-  ps_line <- if (length(ps_idx) > 0L) {
-    ps <- dt$logmeta[[ps_idx[1L]]]
+  # Enrich the header only with the selected pipeline run.
+  ps <- .latest_pipeline_stage_summary(dt, "process_summary_inf")
+  ps_line <- if (!is.null(ps)) {
     sprintf(
       "**Surveys processed:** %d total \u2014 %d cleaned, %d failed",
       ps$n_total,
@@ -787,17 +933,10 @@ build_null_surveys <- function(dt) {
 #' @return Character vector of markdown lines.
 #' @keywords internal
 build_processing_summary <- function(dt) {
-  ps_idx <- which(vapply(
-    dt$logmeta,
-    \(x) identical(x$info, "process_summary_inf"),
-    logical(1)
-  ))
-
-  if (length(ps_idx) == 0L) {
+  ps <- .latest_pipeline_stage_summary(dt, "process_summary_inf")
+  if (is.null(ps)) {
     return(character(0))
   }
-
-  ps <- dt$logmeta[[ps_idx[1L]]]
 
   c(
     "## Processing Summary",
@@ -822,17 +961,12 @@ build_processing_summary <- function(dt) {
 #' @return Character vector of markdown lines.
 #' @keywords internal
 build_deflation_summary <- function(dt) {
-  ds_idx <- which(vapply(
-    dt$logmeta,
-    \(x) identical(x$info, "deflate_summary_inf"),
-    logical(1)
-  ))
-
-  if (length(ds_idx) == 0L) {
+  ds <- .latest_pipeline_stage_summary(
+    dt, "deflate_summary_inf", legacy = "last"
+  )
+  if (is.null(ds)) {
     return(character(0))
   }
-
-  ds <- dt$logmeta[[ds_idx[length(ds_idx)]]]
 
   lines <- c(
     "## Deflation Summary",

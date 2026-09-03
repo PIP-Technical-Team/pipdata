@@ -1,10 +1,12 @@
-.PDS_SCHEMA <- 1L
+.PDS_SCHEMA <- 2L
+.PDS_LEGACY_SCHEMA <- 1L
+.PDS_CONDITION_SCHEMA <- 1L
 .PDS_STAGES <- c("acquisition", "validation", .PD_STAGES)
 .PDS_STATUSES <- c("success", "partial", "failed", "cached", "skipped")
 .PDS_UNIT_STATUSES <- setdiff(.PDS_STATUSES, "partial")
 .PDS_REASONS <- c(
   "no_selection", "current", "upstream_failed", "policy_excluded",
-  "checkpoint_uncommitted", "fatal_uncommitted"
+  "checkpoint_uncommitted", "fatal_uncommitted", "entity_failed"
 )
 .PDS_ARTIFACT_ROLES <- c("primary", "metadata", "inventory", "log")
 
@@ -139,7 +141,7 @@ new_stage_condition_record <- function(
   }
   parent <- if (!is.null(condition)) condition$parent else NULL
   record <- list(
-    schema_version = .PDS_SCHEMA,
+    schema_version = .PDS_CONDITION_SCHEMA,
     condition_id = pd_random_id(),
     severity = severity,
     code = pd_bounded_text(code, "code"),
@@ -168,7 +170,7 @@ validate_stage_condition_record <- function(x, portable = FALSE) {
     "timestamp", "parent_code", "parent_message", "details"
   )
   if (!is.list(x) || !identical(names(x), expected) ||
-      !identical(x$schema_version, .PDS_SCHEMA) ||
+      !identical(x$schema_version, .PDS_CONDITION_SCHEMA) ||
       !x$severity %in% c("warning", "error") || !x$stage %in% .PDS_STAGES ||
       !is.logical(x$recoverable) || length(x$recoverable) != 1L ||
       is.na(x$recoverable)) {
@@ -207,20 +209,23 @@ pd_manifest_identity_valid <- function(x, allow_null = TRUE) {
 new_artifact_reference <- function(receipt, finalized, stage, entity_id,
                                    role = "primary") {
   identity <- finalized$execution$manifest_identity
-  records <- finalized$execution$manifest$records
   if (!pd_manifest_identity_valid(identity, FALSE) || !stage %in% .PDS_STAGES ||
       !role %in% .PDS_ARTIFACT_ROLES || !isTRUE(receipt$success)) {
     pd_stage_abort("Artifact reference lacks finalized manifest evidence.")
   }
   target_stage <- stage
   target_entity <- entity_id
-  row <- records[stage == target_stage & entity_id == target_entity]
-  receipts <- if (nrow(row) == 1L) row$output_receipts[[1L]] else NULL
   fields <- c("alias", "artifact", "path", "version_id", "content_hash")
-  matched <- is.list(receipts) && any(vapply(receipts, function(candidate) {
-    all(vapply(fields, function(field) identical(candidate[[field]], receipt[[field]]),
-               logical(1L)))
-  }, logical(1L)))
+  candidate <- pd_committed_output_receipt(
+    finalized$execution$manifest,
+    target_stage,
+    target_entity,
+    receipt$artifact
+  )
+  matched <- is.list(candidate) && all(fields %in% names(candidate)) &&
+    all(vapply(fields, function(field) {
+      identical(candidate[[field]], receipt[[field]])
+    }, logical(1L)))
   if (!matched) pd_stage_abort("Receipt is absent from the finalized manifest.")
   data.table::data.table(
     entity_id = entity_id, alias = receipt$alias, artifact = receipt$artifact,
@@ -285,8 +290,11 @@ validate_pipdata_stage_result <- function(x, context = NULL, portable = FALSE) {
     "artifacts", "units", "counts", "log_ref", "warnings", "errors",
     "provenance", "input_hashes", "output_hashes", "started_at", "completed_at"
   )
+  valid_schema <- is.list(x) && is.integer(x$schema_version) &&
+    length(x$schema_version) == 1L &&
+    x$schema_version %in% c(.PDS_LEGACY_SCHEMA, .PDS_SCHEMA)
   if (!is.list(x) || !identical(names(x), expected) ||
-      !identical(x$schema_version, .PDS_SCHEMA) || !x$stage %in% .PDS_STAGES ||
+      !valid_schema || !x$stage %in% .PDS_STAGES ||
       !x$status %in% .PDS_STATUSES || !is.logical(x$terminal) ||
       length(x$terminal) != 1L || is.na(x$terminal) || !is.null(x$data)) {
     pd_stage_abort("Stage result has an invalid top-level schema.")
@@ -302,11 +310,20 @@ validate_pipdata_stage_result <- function(x, context = NULL, portable = FALSE) {
   invisible(lapply(x$errors, validate_stage_condition_record,
                    portable = portable))
   log_names <- c("name", "run_id", "summary_discriminator", "log_checkpoint")
-  provenance_names <- c(
+  provenance_names_v1 <- c(
     "release", "identity", "scope_id", "context_hash", "plan_hash",
     "manifest_before", "manifest_after", "checkpoint_generations",
     "stage_reason_codes"
   )
+  provenance_names <- if (identical(x$schema_version, .PDS_SCHEMA)) {
+    append(
+      provenance_names_v1,
+      "final_evidence_manifest",
+      after = match("checkpoint_generations", provenance_names_v1)
+    )
+  } else {
+    provenance_names_v1
+  }
   if (!is.list(x$log_ref) || !identical(names(x$log_ref), log_names) ||
       !identical(x$log_ref$name, "pipdata_log") ||
       !identical(x$log_ref$run_id, x$run_id) ||
@@ -319,6 +336,40 @@ validate_pipdata_stage_result <- function(x, context = NULL, portable = FALSE) {
       any(x$provenance$checkpoint_generations <= 0) ||
       any(x$provenance$checkpoint_generations %% 1 != 0)) {
     pd_stage_abort("Stage result references or provenance are invalid.")
+  }
+  final_evidence <- if (identical(x$schema_version, .PDS_SCHEMA)) {
+    x$provenance$final_evidence_manifest
+  } else {
+    x$provenance$manifest_after
+  }
+  if (!pd_manifest_identity_valid(final_evidence) ||
+      !is.character(x$provenance$stage_reason_codes) ||
+      anyNA(x$provenance$stage_reason_codes)) {
+    pd_stage_abort("Stage result final evidence is invalid.")
+  }
+  if (identical(x$schema_version, .PDS_SCHEMA)) {
+    manifest_before <- x$provenance$manifest_before
+    manifest_after <- x$provenance$manifest_after
+    checkpoints <- sort(unique(x$provenance$checkpoint_generations))
+    if (is.null(final_evidence) &&
+        (!is.null(manifest_before) || !is.null(manifest_after))) {
+      pd_stage_abort("A valid stage manifest requires final evidence.")
+    }
+    before_generation <- if (is.null(manifest_before)) 0 else
+      manifest_before$generation
+    after_generation <- if (is.null(manifest_after)) 0 else
+      manifest_after$generation
+    invalid_wave <- if (length(checkpoints)) {
+      is.null(manifest_after) || any(checkpoints <= before_generation) ||
+        any(checkpoints > after_generation) ||
+        max(checkpoints) != after_generation
+    } else {
+      !identical(manifest_before, manifest_after)
+    }
+    if (invalid_wave || (!is.null(final_evidence) &&
+        final_evidence$generation < after_generation)) {
+      pd_stage_abort("Stage checkpoint generations do not match the wave.")
+    }
   }
   if (!is.null(context) && (!identical(x$provenance$release, context$release) ||
       !identical(x$provenance$identity, context$identity) ||
@@ -350,14 +401,31 @@ validate_pipdata_stage_result <- function(x, context = NULL, portable = FALSE) {
       pd_stage_abort("Stage result counts or status are contradictory.")
     }
     successful <- x$units[status == "success"]
-    if (nrow(x$artifacts) != nrow(successful) ||
-        !setequal(x$artifacts$entity_id, successful$entity_id) ||
+    artifact_entities <- unique(x$artifacts$entity_id)
+    artifact_keys <- intersect(
+      c("entity_id", "alias", "artifact", "version_id"), names(x$artifacts)
+    )
+    invalid_artifact_count <- if (identical(x$stage, "clean")) {
+      (nrow(successful) > 0L &&
+       !setequal(artifact_entities, successful$entity_id)) ||
+        (nrow(successful) == 0L && nrow(x$artifacts) > 0L)
+    } else {
+      nrow(x$artifacts) != nrow(successful) ||
+        !setequal(artifact_entities, successful$entity_id)
+    }
+    expected_generations <- if (identical(x$schema_version, .PDS_SCHEMA)) {
+      if (is.null(final_evidence)) numeric() else final_evidence$generation
+    } else {
+      x$provenance$checkpoint_generations
+    }
+    if (invalid_artifact_count ||
+        (nrow(x$artifacts) && anyDuplicated(x$artifacts[, ..artifact_keys])) ||
         !identical(sort(names(x$input_hashes)),
                    sort(x$units[!is.na(input_hash), entity_id])) ||
         !identical(sort(names(x$output_hashes)),
                    sort(successful[!is.na(output_hash), entity_id])) ||
         any(!x$artifacts$manifest_generation %in%
-              x$provenance$checkpoint_generations)) {
+              expected_generations)) {
       pd_stage_abort("Stage result artifacts and hashes contradict its units.")
     }
   }
@@ -410,6 +478,107 @@ pd_stage_result_portable <- function(x) {
   out$completed_at <- format(x$completed_at, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")
   validate_pipdata_stage_result(out, portable = TRUE)
   out
+}
+
+pd_new_stage_outcome <- function(stage, manifest_before = NULL,
+                                 started_at = Sys.time()) {
+  if (!stage %in% .PD_STAGES) {
+    pd_stage_abort("Stage outcome uses an invalid stage.")
+  }
+  list(
+    stage = stage,
+    units = pd_empty_stage_units(),
+    receipts = list(),
+    warnings = list(),
+    errors = list(),
+    checkpoint_generations = numeric(),
+    manifest_before = manifest_before,
+    manifest_after = manifest_before,
+    started_at = pd_utc_time(started_at),
+    completed_at = pd_utc_time(started_at)
+  )
+}
+
+pd_stage_unit_row <- function(action, stage, status, reasons,
+                              started_at = as.POSIXct(NA, tz = "UTC"),
+                              completed_at = as.POSIXct(NA, tz = "UTC"),
+                              output_hash = NA_character_) {
+  if (!data.table::is.data.table(action)) {
+    action <- data.table::as.data.table(action)
+  }
+  data.table::data.table(
+    stage = stage,
+    entity_id = action$entity_id[[1L]],
+    survey_id = action$survey_id[[1L]] %||% NA_character_,
+    pip_id = action$pip_id[[1L]] %||% NA_character_,
+    status = status,
+    action = action$action[[1L]] %||% NA_character_,
+    reason_codes = list(sort(unique(as.character(reasons)))),
+    input_hash = action$input_hash[[1L]] %||% NA_character_,
+    output_hash = output_hash,
+    started_at = started_at,
+    completed_at = completed_at
+  )
+}
+
+pd_stage_outcome_result <- function(outcome, context, execution,
+                                    terminal = FALSE, log_ref) {
+  stage <- outcome$stage
+  final_identity <- execution$manifest_identity
+  artifacts <- pd_empty_artifact_references()
+  successful <- outcome$units[status == "success", entity_id]
+  if (length(successful)) {
+    if (!pd_manifest_identity_valid(final_identity, FALSE)) {
+      pd_stage_abort("Committed stage work lacks final manifest evidence.")
+    }
+    finalized <- list(execution = execution)
+    for (entity_id in successful) {
+      receipts <- outcome$receipts[[entity_id]]
+      if (is.null(receipts)) {
+        pd_stage_abort("Committed stage work lacks retained receipts.")
+      }
+      receipts <- data.table::as.data.table(receipts)
+      for (i in seq_len(nrow(receipts))) {
+        receipt <- as.list(receipts[i])
+        if (!"success" %in% names(receipt)) {
+          receipt$success <- TRUE
+        }
+        artifacts <- rbind(
+          artifacts,
+          new_artifact_reference(
+            receipt, finalized, stage, entity_id
+          )
+        )
+      }
+    }
+  }
+  reasons <- sort(unique(unlist(outcome$units$reason_codes)))
+  if (!length(reasons)) reasons <- "no_selection"
+  provenance <- list(
+    release = context$release,
+    identity = context$identity,
+    scope_id = context$dependency$scope_id,
+    context_hash = context$dependency$context_hash,
+    plan_hash = context$dependency$plan_hash,
+    manifest_before = outcome$manifest_before,
+    manifest_after = outcome$manifest_after,
+    checkpoint_generations = sort(unique(outcome$checkpoint_generations)),
+    final_evidence_manifest = final_identity,
+    stage_reason_codes = reasons
+  )
+  new_pipdata_stage_result(
+    context = context,
+    stage = stage,
+    terminal = terminal,
+    units = outcome$units,
+    artifacts = artifacts,
+    warnings = outcome$warnings,
+    errors = outcome$errors,
+    log_ref = log_ref,
+    provenance = provenance,
+    started_at = outcome$started_at,
+    completed_at = outcome$completed_at
+  )
 }
 
 #' Print a compact pipeline stage result

@@ -378,12 +378,12 @@ test_that("clean worker rejects output-defined IDs before artifact writes", {
     .package = "pipdata"
   )
 
-  result <- pd_execute_clean(
-    action, data.table::data.table(survey_id = "survey"), execution,
-    recode_spec = list()
+  expect_error(
+    pd_execute_clean(
+      action, data.table::data.table(survey_id = "survey"), execution,
+      recode_spec = list()
+    ),
+    class = "pipdata_clean_output_incomplete"
   )
-
-  expect_false(result$success)
   expect_identical(writes, 0L)
-  expect_match(result$error, "accepted expected PIP IDs")
 })

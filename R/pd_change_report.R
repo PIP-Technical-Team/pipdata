@@ -42,8 +42,29 @@ pd_change_report <- function(inv = pipload::load_gmd_valid_inv(verbose = FALSE),
 
 #' @export
 print.pip_dependency_plan <- function(x, ...) {
-  totals <- x$actions[, .N, by = .(stage, action)]
+  nodes <- data.table::copy(x$actions)
+  nodes[, `:=`(
+    state = data.table::fifelse(action == "none", "current", "stale"),
+    scheduling_state = data.table::fifelse(
+      action == "none", "cached", "runnable"
+    )
+  )]
+  forced <- unique(x$reasons[
+    reason == "forced", .(stage, entity_id)
+  ])
+  if (nrow(forced)) {
+    nodes[forced, on = c("stage", "entity_id"), state := "forced"]
+  }
+  totals <- nodes[, .N, by = .(stage, action)]
+  dispositions <- nodes[, .N, by = .(stage, state, scheduling_state)]
+  reasons <- x$reasons[, .N, by = .(stage, reason)]
   cat("PIP dependency plan\n")
   if (!nrow(totals)) cat("  no changes\n") else print(totals)
+  cat("Disposition summary\n")
+  if (!nrow(dispositions)) cat("  no selected nodes\n") else {
+    print(dispositions)
+  }
+  cat("Reason summary\n")
+  if (!nrow(reasons)) cat("  no invalidation reasons\n") else print(reasons)
   invisible(x)
 }

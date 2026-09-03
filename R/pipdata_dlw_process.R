@@ -587,8 +587,8 @@
 #' `pipdata_dlw_process()` is the current supported DLW entry point. It runs the
 #' explicit acquisition and validation stages in order, emits a scalar
 #' `dlw_summary_inf` entry from their returned facts, and attempts the existing
-#' `"dlw"` checkpoint. A broader `run_pipeline()` orchestrator is future
-#' direction only and is not part of the current API.
+#' `"dlw"` checkpoint. After validation, use [pd_run_pipeline()] for incremental
+#' clean, metadata, and deflate execution.
 #'
 #' Validation continues after acquisition `"no_work"`, `"partial"`, or even
 #' `"failed"` when acquisition still returns a trustworthy non-`NULL` durable

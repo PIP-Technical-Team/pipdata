@@ -160,6 +160,100 @@ test_that("manifest publication failure leaves prior generation current", {
   expect_length(pd_manifest_files(fixture$context, fixture$root), 0L)
 })
 
+test_that("inventory-ahead failure retains prior authority and reschedules", {
+  fixture <- checkpoint_fixture(withr::local_tempdir())
+  withr::defer(pd_lease_release(fixture$lease))
+  prior <- pd_manifest_publish(
+    pd_empty_manifest(fixture$context),
+    fixture$context,
+    fixture$lease,
+    fixture$root,
+    parent = NULL
+  )
+  prior_identity <- attr(prior, "manifest_identity")
+  fixture$execution$manifest <- prior
+  fixture$execution$manifest_identity <- prior_identity
+  writes <- 0L
+  writer <- function(...) {
+    writes <<- writes + 1L
+    list(success = TRUE, version_id = paste0("inventory-", writes))
+  }
+  testthat::local_mocked_bindings(
+    pd_manifest_publish = function(...) {
+      rlang::abort("injected", class = "pipdata_manifest_write_error")
+    },
+    .package = "pipdata"
+  )
+
+  expect_error(
+    pd_finalize_checkpoint(
+      fixture$execution, fixture$master, "metadata", fixture$results,
+      writer, writer, fixture$root
+    ),
+    class = "pipdata_manifest_write_error"
+  )
+
+  retained <- pd_manifest_read(fixture$context, fixture$root)
+  expect_identical(attr(retained, "manifest_identity"), prior_identity)
+  expect_identical(writes, 2L)
+  snapshot <- list(
+    current = data.table::data.table(
+      stage = "metadata", entity_id = "p", survey_id = "s", pip_id = "p",
+      output_version_id = "m1", output_hash = "h", input_hash = "input",
+      legacy_input_hash = "input", legacy_input_version = "m1",
+      code_hash = "code", input_rows = list(data.table::data.table())
+    ),
+    fingerprints = list(
+      components = data.table::data.table(
+        stage = character(), component = character(), hash = character()
+      )
+    )
+  )
+  facts <- pd_snapshot_facts(snapshot, retained)
+  expect_identical(facts$reason, "unknown_provenance")
+})
+
+test_that("inventory-ahead replay publishes manifest without duplicate writes", {
+  fixture <- checkpoint_fixture(withr::local_tempdir())
+  withr::defer(pd_lease_release(fixture$lease))
+  fixture$master[, `:=`(
+    version_id_metadata = "m1", content_hash_metadata = "h",
+    version_id_deflated = NA_character_,
+    content_hash_deflated = NA_character_, deflated = FALSE,
+    latest_release_version_id = "release-v1"
+  )]
+  fixture$execution$snapshot <- list(catalogs = list(
+    pip_inv = data.table::data.table(
+      path = "pip_release_inventory.qs2", version_id = "release-v1",
+      content_hash = "release-h1"
+    )
+  ))
+  writer_calls <- 0L
+  writer <- function(...) {
+    writer_calls <<- writer_calls + 1L
+    rlang::abort("Unchanged inventory must not be rewritten.")
+  }
+  testthat::local_mocked_bindings(
+    pd_assert_execution_fence = function(...) invisible(NULL),
+    pd_manifest_publish = function(payload, ...) payload,
+    .package = "pipdata"
+  )
+
+  finalized <- pd_finalize_checkpoint(
+    fixture$execution, fixture$master, "metadata", fixture$results,
+    writer, writer, fixture$root
+  )
+
+  expect_identical(writer_calls, 0L)
+  expect_identical(finalized$candidate, fixture$master)
+  expect_identical(
+    finalized$execution$manifest$records[
+      stage == "metadata", output_version_id
+    ],
+    "m1"
+  )
+})
+
 test_that("checkpoint publishes only after release and master verify", {
   root <- withr::local_tempdir()
   context <- list(scope_id = "scope")

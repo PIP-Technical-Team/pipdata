@@ -14,7 +14,10 @@
             "add_area", "add_area.pipmd", "add_area.pipgd",
             "get_gd_type", "area_gd_clean", "format_wgt", "format_wlf",
             "shift_subnatid", "pip_vars"),
-  metadata = c("pd_aux_attr", "pd_metadata_refresh", "pd_normalize_metadata_keys"),
+  metadata = c(
+    "pd_aux_attr", "pd_metadata_refresh", "pd_normalize_metadata_keys",
+    "pd_validate_metadata_base"
+  ),
   deflate = c("pd_deflation_exact", "pd_deflation_exact_strict", "pd_deflation", "adjust_population",
               ".load_deflation_aux", "deflation", "deflation.pipmd",
               "deflation.pipgd", "safe_deflation", ".validate_deflation_input",

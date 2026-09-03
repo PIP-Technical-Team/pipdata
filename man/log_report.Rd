@@ -91,6 +91,7 @@ Other pd_process_data pipeline:
 \code{\link[=inv_to_process]{inv_to_process()}},
 \code{\link[=pd_aux_attr]{pd_aux_attr()}},
 \code{\link[=pd_deflation]{pd_deflation()}},
+\code{\link[=pd_run_pipeline]{pd_run_pipeline()}},
 \code{\link[=resolve_force_surveys]{resolve_force_surveys()}},
 \code{\link[=save_pip_data]{save_pip_data()}},
 \code{\link[=survey_id_to_attr]{survey_id_to_attr()}},

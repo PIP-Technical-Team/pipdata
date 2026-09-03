@@ -83,6 +83,49 @@ test_that("persisted failed deflation is missing on restart", {
   expect_identical(pd_deflate_current_receipt(receipt, current), receipt)
 })
 
+test_that("cleared durable clean pointers stale the atomic output set", {
+  receipts <- data.table::data.table(
+    pip_id = c("P1", "P2"), alias = "pip", artifact = c("P1", "P2"),
+    path = c("p1.qs2", "p2.qs2"), version_id = c("d1", "d2"),
+    content_hash = c("dh1", "dh2"), success = TRUE
+  )
+  current_master <- data.table::data.table(
+    survey_id = "S1", pip_id = c("P1", "P2"),
+    version_id_data = c("d1", "d2"), content_hash_data = c("dh1", "dh2")
+  )
+
+  expect_true(pd_clean_current_receipts(
+    receipts, current_master, "S1", c("P1", "P2")
+  ))
+  invalidated <- data.table::copy(current_master)
+  invalidated[pip_id == "P2", `:=`(
+    version_id_data = NA_character_, content_hash_data = NA_character_
+  )]
+  expect_false(pd_clean_current_receipts(
+    receipts, invalidated, "S1", c("P1", "P2")
+  ))
+})
+
+test_that("cleared durable metadata pointers stale old catalog receipts", {
+  receipt <- list(
+    version_id = "meta-v1", content_hash = "meta-h1", path = "p1.qs2"
+  )
+  current <- list(
+    version_id_metadata = "meta-v1", content_hash_metadata = "meta-h1"
+  )
+  invalidated <- list(
+    version_id_metadata = NA_character_, content_hash_metadata = NA_character_
+  )
+
+  expect_identical(
+    pd_metadata_current_receipt(receipt, current),
+    receipt
+  )
+  restarted <- pd_metadata_current_receipt(receipt, invalidated)
+  expect_true(is.na(restarted$version_id))
+  expect_true(is.na(restarted$content_hash))
+})
+
 test_that("write fence fails before work after lease loss", {
   root <- withr::local_tempdir()
   context <- list(scope_id = "scope")
@@ -457,6 +500,59 @@ test_that("execution rebuilds its authoritative plan after lease acquisition", {
     execution$plan$snapshot$snapshot_identity,
     "snapshot-2"
   )
+})
+
+test_that("locked execution prepares once under the supplied lease", {
+  context <- list(scope_id = "scope")
+  lease <- list(token = "supplied-lease")
+  inv <- make_dependency_validation_inventory()[1L]
+  master <- data.table::data.table(
+    survey_id = inv$survey_id, pip_id = "BOL_2020_EH_INC"
+  )
+  manifest <- pd_empty_manifest(context)
+  snapshot <- list(
+    inventory = data.table::copy(inv),
+    master = data.table::copy(master),
+    fingerprints = list(),
+    current = data.table::data.table(),
+    facts = data.table::data.table()
+  )
+  prepare_calls <- 0L
+  plan_calls <- 0L
+  lease_acquires <- 0L
+
+  testthat::local_mocked_bindings(
+    pd_prepare_dependency_facts = function(...) {
+      prepare_calls <<- prepare_calls + 1L
+      list(context = context, manifest = manifest, snapshot = snapshot)
+    },
+    pd_dependency_plan = function(...) {
+      plan_calls <<- plan_calls + 1L
+      structure(
+        list(
+          context = context,
+          actions = pd_empty_actions(),
+          reasons = pd_empty_reasons(),
+          snapshot = snapshot
+        ),
+        class = "pip_dependency_plan"
+      )
+    },
+    pd_lease_acquire = function(...) {
+      lease_acquires <<- lease_acquires + 1L
+      rlang::abort("locked preparation must not acquire another lease")
+    },
+    .package = "pipdata"
+  )
+
+  execution <- pd_prepare_execution_locked(
+    inv, master, context, lease
+  )
+
+  expect_identical(execution$lease, lease)
+  expect_identical(prepare_calls, 1L)
+  expect_identical(plan_calls, 1L)
+  expect_identical(lease_acquires, 0L)
 })
 
 test_that("partial manifests make every unrecorded node actionable", {
