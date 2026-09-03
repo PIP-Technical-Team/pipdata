@@ -8,6 +8,8 @@
 ^\.github$
 ^vignettes/articles$
 ^\.cg-docs$
+^\.compound-gpid$
+^\.kilo$
 ^\.vscode$
 ^Pipdata_script\.R$
 ^compound-gpid\.context\.md$

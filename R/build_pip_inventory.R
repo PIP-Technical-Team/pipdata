@@ -1,4 +1,4 @@
-﻿#' Build the PIP master and release inventories from stamp catalogs
+#' Build the PIP master and release inventories from stamp catalogs
 #'
 #' Delta/update assembler replacing `update_pip_inventory()`. Reads version
 #' facts for **current-run surveys only** from stamp's persisted catalogs
