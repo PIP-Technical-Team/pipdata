@@ -7,6 +7,21 @@ Platform) pipeline. It handles the end-to-end workflow from raw DLW (DataLibWeb)
 data to cleaned, deflated, and validated micro-data ready for poverty and
 inequality calculations.
 
+## Version 1.0.0
+
+Version 1.0.0 adds `pd_run_pipeline()` as the top-level incremental executor
+for clean, metadata, and deflate stages. It uses exact Stamp receipts and a
+release-scoped dependency manifest to run only stale or explicitly forced
+nodes.
+
+This release changes the public DLW contracts. Assign the result from
+`pipdata_dlw_process()`, `pipdata_get_gmd()`, or `pipdata_validate_gmd()` and
+inspect its `outcome` before conditional continuation. These functions no
+longer accept `log` or `save_log`; logging is unconditional.
+`copy_dlw_metadata()` was removed without a replacement. See the
+[changelog](https://pip-technical-team.github.io/pipdata/news/index.html) for
+the full migration notes.
+
 ## Installation
 
 ```r
@@ -18,6 +33,7 @@ remotes::install_github("PIP-Technical-Team/pipdata")
 
 | Function | Purpose |
 |---|---|
+| `pipdata_dlw_process()` | Acquire and validate DLW surveys and return an inspectable aggregate outcome |
 | `pd_run_pipeline()` | Incrementally run the durable clean, metadata, and deflate stages |
 | `pd_process_data()` | Compatible clean/metadata stage wrapper; returns the master inventory |
 | `pd_deflate_pipeline()` | Batch-deflate every survey in the master inventory |
