@@ -151,6 +151,9 @@ validation, survey cleaning, and deflation with stage-aware warnings.
 - [`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md)
   : Clean data from datalibweb structure (High level)
 
+- [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+  : Run the staged PIP data pipeline incrementally
+
 - [`pd_split_alt_welfare()`](https://pip-technical-team.github.io/pipdata/reference/pd_split_alt_welfare.md)
   : Split data based on alternative welfare
 
@@ -164,6 +167,9 @@ validation, survey cleaning, and deflation with stage-aware warnings.
   :
 
   Convert PPP data from `pipload` to wide format
+
+- [`print(`*`<pipdata_pipeline_result>`*`)`](https://pip-technical-team.github.io/pipdata/reference/print.pipdata_pipeline_result.md)
+  : Print a compact pipeline run result
 
 - [`print(`*`<pipdata_stage_result>`*`)`](https://pip-technical-team.github.io/pipdata/reference/print.pipdata_stage_result.md)
   : Print a compact pipeline stage result

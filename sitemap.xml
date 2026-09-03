@@ -36,6 +36,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_inventory_additions.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_null_surveys.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_pip_inventory.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/build_pipeline_run_summary.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_processing_summary.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_skipped_surveys.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/build_stage_warning.html</loc></url>
@@ -97,6 +98,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_deflation.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_process_data.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_split_alt_welfare.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pd_wbpip_clean.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pip_vars.html</loc></url>
@@ -108,6 +110,7 @@
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/piperr.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/ppp_to_wide.html</loc></url>
+<url><loc>https://pip-technical-team.github.io/pipdata/reference/print.pipdata_pipeline_result.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/print.pipdata_stage_result.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/print.pipeline_context.html</loc></url>
 <url><loc>https://pip-technical-team.github.io/pipdata/reference/process_data.html</loc></url>

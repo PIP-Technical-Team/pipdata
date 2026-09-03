@@ -51,6 +51,18 @@
 
 ### New features
 
+- Add exported
+  [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md),
+  a C2-authoritative incremental executor for the durable `clean`,
+  `metadata`, and `deflate` nodes. It reports cached, runnable, failed,
+  and blocked units in a compact typed aggregate; performs keyed
+  auxiliary invalidation; supports additive targeted force and explicit
+  bootstrap; and resumes by a new authoritative replan without a
+  persisted run cursor. Existing stage wrappers retain their signatures,
+  aliases, positional behavior, and master-inventory return types.
+  Production activation remains blocked pending signed Windows/SMB
+  fencing and immutable unique-rename evidence.
+
 - Add internal, versioned `pipeline_context` and `pipdata_stage_result`
   S3 contracts and adopt them for deflation through a shared execution
   core. Independent survey failures are retained as compact condition
@@ -126,8 +138,10 @@
   automation return failed stage results. Validation can continue after
   an acquisition failure when a trustworthy durable inventory remains.
   Aggregate outcome and summary logging come from stage facts, while
-  checkpoint failure remains separate from the business outcome. A
-  broader `run_pipeline()` API is future direction only.
+  checkpoint failure remains separate from the business outcome. After
+  validation,
+  [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+  is the supported incremental clean/metadata/deflate executor.
 
 - [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
   now segments acquisition and validation independently from each latest

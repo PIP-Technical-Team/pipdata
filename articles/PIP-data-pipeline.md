@@ -15,24 +15,29 @@ functions](https://pip-technical-team.github.io/pipdata/articles/Processing-Data
 
 ## Current pipeline entry points
 
-The pipeline currently runs through three explicit entry points, each
-owned by a package and (typically) a different developer:
+The pipeline lifecycle uses three explicit entry points:
 
 | Order | Wrapper | Package | Developer scope | Purpose |
 |:--:|----|----|----|----|
 | 1 | `update_aux_measures()` | **pipaux** | Auxiliary data engineer | Refresh auxiliary data (CPI, PPP, population, GDP, PCE, PFW) |
 | 2 | [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md) | **pipdata** | Survey ingestion engineer | Download new Datalibweb (DLW) survey files, validate them, update the DLW inventory |
-| 3 | [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md) | **pipdata** | Survey cleaning engineer | Merge auxiliary data with each DLW survey, clean variables, attach metadata, save versioned outputs, update the PIP master inventory |
+| 3 | [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md) | **pipdata** | Survey processing engineer | Incrementally run clean, metadata, and deflate from completed validation state |
 
 `update_aux_measures()` lives in the {pipaux} package and is not
 detailed in this {pipdata} article beyond this table — it is a
 prerequisite step that should run before Step 2 so that the latest
 auxiliary data is available.
 
-There is no current top-level `run_pipeline()` API.
 [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
-is the supported DLW entry point; a broader orchestrator remains future
-direction.
+is the supported DLW acquisition/validation entry point.
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+is the top-level incremental entry point for the existing durable
+processing stages. The older
+[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+and
+[`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+wrappers remain independently callable and keep their master-inventory
+returns.
 
 **Important**:
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
@@ -102,24 +107,37 @@ execution never prompts. See [Validating
 Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md)
 for the exact result and persistence contracts.
 
-### 3. Clean surveys and build metadata (pipdata)
+### 3. Run clean, metadata, and deflate incrementally (pipdata)
 
 ``` r
 
-new_pip_inv <- pd_process_data()
+pipeline_result <- pd_run_pipeline(verbose = FALSE)
 ```
 
-[`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
 loads the completed validation inventory internally (via
 [`pipload::load_gmd_valid_inv()`](https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html))
 when `inv` is not supplied. It accepts current `valid` and `invalid`
 available rows under existing cleaning policy, filters recognized legacy
-blank/unavailable retry rows before planning, then iterates, merges
-auxiliary measures, cleans each survey, attaches metadata, saves
-versioned outputs, and returns the updated PIP master inventory. See
-[Processing Data
+blank/unavailable retry rows before planning, then runs only stale or
+forced `clean:<survey_id>`, `metadata:<pip_id>`, and `deflate:<pip_id>`
+nodes. It returns a compact `pipdata_pipeline_result`; it does not
+return the master inventory. See [Processing Data
 functions](https://pip-technical-team.github.io/pipdata/articles/Processing-Data.md)
 for the internal mechanics.
+
+Current nodes are cached. Stale or forced nodes are runnable. Failed
+prerequisites make descendants blocked/skipped. `force_surveys` adds
+selected survey or PIP chains without suppressing independent staleness.
+Unknown legacy provenance requires explicit `bootstrap = TRUE`; use
+`bootstrap_entities` for a restrictive canary.
+
+The C2 manifest and exact Stamp receipts are the currentness authority.
+A Colombia 2018 CPI change runs only matching Colombia 2018 metadata and
+deflate nodes, while another Colombia year and unrelated country/year
+remain cached. There is no persisted run cursor. After failure, call
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+again; it replans from the last valid manifest and exact Stamp facts.
 
 ### 4. Build a consolidated log report
 
@@ -138,7 +156,7 @@ stage sections use each latest attempt and exact completion metadata,
 with confined fallback for older logs. DLW discriminators are excluded
 from generic type and country tables to avoid double counting.
 
-## Architecture: why three wrappers?
+## Architecture and compatibility
 
 Each stage is intentionally isolated because a different engineer
 developed it independently, with its own auxiliary data, error handling,
@@ -159,6 +177,10 @@ and logging:
   Internally, it iterates one survey at a time, so that a per-survey
   failure is caught, logged, and skipped without aborting the rest of
   the run.
+
+The top-level executor composes these existing stage cores. Only clean,
+metadata, and deflate are durable cached nodes. Load, PFW merge, recode,
+auxiliary attachment, and save remain internal fingerprint components.
 
 Each survey’s cleaning pass inside
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
@@ -218,6 +240,12 @@ bol_deflated <- pipload::load_pip_deflated_data(
 See [Processing Data
 functions](https://pip-technical-team.github.io/pipdata/articles/Processing-Data.md)
 for details on both modes.
+
+## Production activation block
+
+Local tests do not activate production. Production remains blocked until
+the signed target Windows/SMB fencing and immutable unique-rename
+evidence are complete.
 
 ## Logging and reporting scope
 

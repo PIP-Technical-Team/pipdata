@@ -68,10 +68,11 @@
 
     
     
-<p>This article is a deep dive into the third pipeline wrapper,
-<code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>, and the functions that consume its
-output: <code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> (the second, batch-deflation
-stage), <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code>, and
+<p>This article is a deep dive into the compatible clean/metadata
+wrapper, <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>, and the functions that consume
+its output: <code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> (the second,
+batch-deflation stage),
+<code><a href="../reference/pd_deflation.html">pd_deflation()</a></code>/<code><a href="../reference/deflation.html">deflation()</a></code>, and
 <code><a href="../reference/log_report.html">log_report()</a></code>. Code in this article is illustrative and does
 not execute when the article is built — running it requires a configured
 working release and write access to PIP storage.</p>
@@ -79,12 +80,49 @@ working release and write access to PIP storage.</p>
 other two, see <a href="PIP-data-pipeline.html">PIP Data Pipeline:
 Orchestration Overview</a>. For the internal mechanics of DLW
 acquisition and validation (the step before this one), see <a href="Validating-Data.html">Validating Data</a>.</p>
+<div class="section level2">
+<h2 id="pd_run_pipeline-incremental-top-level-execution">
+<code>pd_run_pipeline()</code>: incremental top-level execution<a class="anchor" aria-label="anchor" href="#pd_run_pipeline-incremental-top-level-execution"></a>
+</h2>
+<p>Use <code><a href="../reference/pd_run_pipeline.html">pd_run_pipeline()</a></code> after DLW validation:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_run_pipeline.html">pd_run_pipeline</a></span><span class="op">(</span></span>
+<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  force_surveys <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  bootstrap <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  checkpoint_size <span class="op">=</span> <span class="fl">25L</span>,</span>
+<span>  checkpoint_seconds <span class="op">=</span> <span class="cn">Inf</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The only durable nodes are <code>clean:&lt;survey_id&gt;</code>,
+<code>metadata:&lt;pip_id&gt;</code>, and
+<code>deflate:&lt;pip_id&gt;</code>. Internal load, PFW merge, recode,
+auxiliary attachment, and save functions are fingerprint components
+rather than cached nodes. The result reports current/stale/forced
+planning state and cached/runnable/success/failed/ skipped/blocked
+execution state. Cached clean nodes do not load household data.</p>
+<p>Stamp owns immutable artifact versions and exact receipts. The C2
+dependency manifest is the only pipdata currentness/provenance index.
+Success is published only after exact receipt verification, inventory
+reconciliation, and a manifest checkpoint. A Colombia 2018 CPI change
+refreshes matching Colombia 2018 metadata and deflate nodes only.</p>
+<p><code>force_surveys</code> is additive to normal invalidation.
+Explicit bootstrap is required for absent or unknown legacy provenance.
+Recoverable failures block descendants while independent siblings can
+continue. A retry starts a new authoritative replan from the last valid
+manifest; no run cursor is persisted. Production remains blocked until
+signed target Windows/SMB fencing and immutable unique-rename evidence
+are complete.</p>
+<p>The existing wrappers below remain compatible. They keep their
+signatures, durable aliases, positional behavior, and master-inventory
+return types.</p>
 <p><strong>Important</strong>: <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> cleans
 surveys and attaches metadata — it does <strong>not</strong> deflate
 welfare. Deflation is a separate pipeline stage: use
 <code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> (below) to batch-deflate the whole
 inventory, or <code><a href="../reference/pd_deflation.html">pd_deflation()</a></code> (see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
 below) for a single survey.</p>
+</div>
 <div class="section level2">
 <h2 id="pd_process_data-clean-surveys-and-build-metadata">
 <code>pd_process_data()</code>: clean surveys and build
@@ -94,7 +132,7 @@ metadata<a class="anchor" aria-label="anchor" href="#pd_process_data-clean-surve
 merges auxiliary data with each survey, cleans it, attaches metadata,
 saves versioned outputs, and returns the updated PIP master
 inventory:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_process_data.html">pd_process_data</a></span><span class="op">(</span></span>
 <span>  inv          <span class="op">=</span> <span class="cn">NULL</span>, <span class="co"># NULL loads pipload::load_gmd_valid_inv() internally</span></span>
 <span>  aux_measures <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pfw"</span>, <span class="st">"cpi"</span>, <span class="st">"ppp"</span>, <span class="st">"pop"</span>, <span class="st">"gdp"</span>, <span class="st">"pce"</span><span class="op">)</span>,</span>
@@ -181,7 +219,7 @@ them.</li>
 </ol>
 <p><code><a href="../reference/pd_change_report.html">pd_change_report()</a></code> applies the same completed-inventory
 guard without writing artifacts:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">change_plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_change_report.html">pd_change_report</a></span><span class="op">(</span></span>
 <span>  inv <span class="op">=</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">load_gmd_valid_inv</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  master <span class="op">=</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_data.html" class="external-link">load_pip_master_inventory</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -222,7 +260,7 @@ single cleaned survey’s welfare values using CPI, PPP, and population
 auxiliary data. It is <strong>not</strong> called automatically by
 <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> — it must be run afterwards, per survey,
 once cleaned data exists in PIP storage. There are two input modes:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Mode A: pass a cleaned survey directly (aux auto-loaded from the master</span></span>
 <span><span class="co"># inventory when cpi/ppp/pop are NULL)</span></span>
 <span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/pip_read.html" class="external-link">pip_read</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span>, alias <span class="op">=</span> <span class="st">"pip"</span><span class="op">)</span></span>
@@ -253,7 +291,7 @@ locates a survey (by <code>id_name</code> or by filter arguments such as
 <code>country_code</code>/<code>surveyid_year</code>/<code>module</code>),
 loads it, and deflates it in one call — useful when you don’t already
 have the survey’s <code>pip_id</code> in hand:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bol_deflated</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_pip_deflated_data.html" class="external-link">load_pip_deflated_data</a></span><span class="op">(</span>id_name <span class="op">=</span> <span class="st">"BOL_2022_EH_INC_ALL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or filter by country/year/module instead of a known id_name</span></span>
@@ -279,7 +317,7 @@ only), detects and skips failures (including <code>NA</code> returns),
 saves every deflated survey to the dedicated <code>"pip_deflated"</code>
 stamp alias, updates the master inventory with deflation columns, and
 logs a <code>deflate_summary_inf</code> summary entry:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline</a></span><span class="op">(</span></span>
 <span>  inv     <span class="op">=</span> <span class="cn">NULL</span>, <span class="co"># NULL loads the master inventory internally</span></span>
 <span>  force   <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -330,7 +368,7 @@ section.</p>
 </h2>
 <p><code><a href="../reference/log_report.html">log_report()</a></code> parses a <code>piplog</code> object and
 writes (or returns) a structured markdown report:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># log defaults to pipfun::log_filter(name = "pipdata_log") when not supplied</span></span>
 <span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/log_report.html">log_report</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>

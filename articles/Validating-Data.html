@@ -130,9 +130,9 @@ displays a menu; a missing acquisition inventory is returned as a failed
 validation result. A noninteractive call that requests acquisition also
 returns a failed acquisition result rather than prompting. Only an
 interactive acquisition call can offer the Download/Abort menu.</p>
-<p>This wrapper remains the supported DLW lifecycle entry point. A
-broader <code>run_pipeline()</code> orchestrator is future direction,
-not a current function to call.</p>
+<p>This wrapper remains the supported DLW lifecycle entry point. After
+validation, call <code><a href="../reference/pd_run_pipeline.html">pd_run_pipeline()</a></code> for incremental clean,
+metadata, and deflate execution.</p>
 </div>
 <div class="section level2">
 <h2 id="returned-results-and-errors">Returned results and errors<a class="anchor" aria-label="anchor" href="#returned-results-and-errors"></a>

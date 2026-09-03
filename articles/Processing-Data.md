@@ -1,6 +1,6 @@
 # Processing Data functions
 
-This article is a deep dive into the third pipeline wrapper,
+This article is a deep dive into the compatible clean/metadata wrapper,
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md),
 and the functions that consume its output:
 [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
@@ -18,6 +18,48 @@ Overview](https://pip-technical-team.github.io/pipdata/articles/PIP-data-pipelin
 For the internal mechanics of DLW acquisition and validation (the step
 before this one), see [Validating
 Data](https://pip-technical-team.github.io/pipdata/articles/Validating-Data.md).
+
+## `pd_run_pipeline()`: incremental top-level execution
+
+Use
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+after DLW validation:
+
+``` r
+
+result <- pd_run_pipeline(
+  force = FALSE,
+  force_surveys = NULL,
+  bootstrap = FALSE,
+  checkpoint_size = 25L,
+  checkpoint_seconds = Inf,
+  verbose = FALSE
+)
+```
+
+The only durable nodes are `clean:<survey_id>`, `metadata:<pip_id>`, and
+`deflate:<pip_id>`. Internal load, PFW merge, recode, auxiliary
+attachment, and save functions are fingerprint components rather than
+cached nodes. The result reports current/stale/forced planning state and
+cached/runnable/success/failed/ skipped/blocked execution state. Cached
+clean nodes do not load household data.
+
+Stamp owns immutable artifact versions and exact receipts. The C2
+dependency manifest is the only pipdata currentness/provenance index.
+Success is published only after exact receipt verification, inventory
+reconciliation, and a manifest checkpoint. A Colombia 2018 CPI change
+refreshes matching Colombia 2018 metadata and deflate nodes only.
+
+`force_surveys` is additive to normal invalidation. Explicit bootstrap
+is required for absent or unknown legacy provenance. Recoverable
+failures block descendants while independent siblings can continue. A
+retry starts a new authoritative replan from the last valid manifest; no
+run cursor is persisted. Production remains blocked until signed target
+Windows/SMB fencing and immutable unique-rename evidence are complete.
+
+The existing wrappers below remain compatible. They keep their
+signatures, durable aliases, positional behavior, and master-inventory
+return types.
 
 **Important**:
 [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)

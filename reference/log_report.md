@@ -105,6 +105,7 @@ Other pd_process_data pipeline:
 [`inv_to_process()`](https://pip-technical-team.github.io/pipdata/reference/inv_to_process.md),
 [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md),
 [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md),
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md),
 [`resolve_force_surveys()`](https://pip-technical-team.github.io/pipdata/reference/resolve_force_surveys.md),
 [`save_pip_data()`](https://pip-technical-team.github.io/pipdata/reference/save_pip_data.md),
 [`survey_id_to_attr()`](https://pip-technical-team.github.io/pipdata/reference/survey_id_to_attr.md),

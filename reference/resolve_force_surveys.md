@@ -57,6 +57,7 @@ Other pd_process_data pipeline:
 [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md),
 [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md),
 [`pd_deflation()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflation.md),
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md),
 [`save_pip_data()`](https://pip-technical-team.github.io/pipdata/reference/save_pip_data.md),
 [`survey_id_to_attr()`](https://pip-technical-team.github.io/pipdata/reference/survey_id_to_attr.md),
 [`valid_dlw_load()`](https://pip-technical-team.github.io/pipdata/reference/valid_dlw_load.md)

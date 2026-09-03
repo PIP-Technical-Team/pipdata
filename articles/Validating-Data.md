@@ -51,9 +51,10 @@ validation result. A noninteractive call that requests acquisition also
 returns a failed acquisition result rather than prompting. Only an
 interactive acquisition call can offer the Download/Abort menu.
 
-This wrapper remains the supported DLW lifecycle entry point. A broader
-`run_pipeline()` orchestrator is future direction, not a current
-function to call.
+This wrapper remains the supported DLW lifecycle entry point. After
+validation, call
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+for incremental clean, metadata, and deflate execution.
 
 ## Returned results and errors
 

@@ -80,8 +80,7 @@ for survey cleaning, deflation, and logging, see <a href="Processing-Data.html">
 <div class="section level2">
 <h2 id="current-pipeline-entry-points">Current pipeline entry points<a class="anchor" aria-label="anchor" href="#current-pipeline-entry-points"></a>
 </h2>
-<p>The pipeline currently runs through three explicit entry points, each
-owned by a package and (typically) a different developer:</p>
+<p>The pipeline lifecycle uses three explicit entry points:</p>
 <table class="table">
 <colgroup>
 <col width="13%">
@@ -115,11 +114,11 @@ the DLW inventory</td>
 </tr>
 <tr class="odd">
 <td align="center">3</td>
-<td><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code></td>
+<td><code><a href="../reference/pd_run_pipeline.html">pd_run_pipeline()</a></code></td>
 <td><strong>pipdata</strong></td>
-<td>Survey cleaning engineer</td>
-<td>Merge auxiliary data with each DLW survey, clean variables, attach
-metadata, save versioned outputs, update the PIP master inventory</td>
+<td>Survey processing engineer</td>
+<td>Incrementally run clean, metadata, and deflate from completed
+validation state</td>
 </tr>
 </tbody>
 </table>
@@ -127,9 +126,12 @@ metadata, save versioned outputs, update the PIP master inventory</td>
 is not detailed in this {pipdata} article beyond this table — it is a
 prerequisite step that should run before Step 2 so that the latest
 auxiliary data is available.</p>
-<p>There is no current top-level <code>run_pipeline()</code> API.
-<code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> is the supported DLW entry point; a
-broader orchestrator remains future direction.</p>
+<p><code><a href="../reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code> is the supported DLW
+acquisition/validation entry point. <code><a href="../reference/pd_run_pipeline.html">pd_run_pipeline()</a></code> is
+the top-level incremental entry point for the existing durable
+processing stages. The older <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> and
+<code><a href="../reference/pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code> wrappers remain independently
+callable and keep their master-inventory returns.</p>
 <p><strong>Important</strong>: <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> cleans and
 attaches metadata to survey data — it does <strong>not</strong> deflate
 welfare. Deflation is a separate, currently manual step; see <a href="#deflation-is-a-separate-step">Deflation is a separate step</a>
@@ -194,19 +196,34 @@ execution never prompts. See <a href="Validating-Data.html">Validating
 Data</a> for the exact result and persistence contracts.</p>
 </div>
 <div class="section level3">
-<h3 id="clean-surveys-and-build-metadata-pipdata">3. Clean surveys and build metadata (pipdata)<a class="anchor" aria-label="anchor" href="#clean-surveys-and-build-metadata-pipdata"></a>
+<h3 id="run-clean-metadata-and-deflate-incrementally-pipdata">3. Run clean, metadata, and deflate incrementally (pipdata)<a class="anchor" aria-label="anchor" href="#run-clean-metadata-and-deflate-incrementally-pipdata"></a>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">new_pip_inv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_process_data.html">pd_process_data</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/pd_process_data.html">pd_process_data()</a></code> loads the completed validation
+<code class="sourceCode R"><span><span class="va">pipeline_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pd_run_pipeline.html">pd_run_pipeline</a></span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/pd_run_pipeline.html">pd_run_pipeline()</a></code> loads the completed validation
 inventory internally (via <code><a href="https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html" class="external-link">pipload::load_gmd_valid_inv()</a></code>)
 when <code>inv</code> is not supplied. It accepts current
 <code>valid</code> and <code>invalid</code> available rows under
 existing cleaning policy, filters recognized legacy blank/unavailable
-retry rows before planning, then iterates, merges auxiliary measures,
-cleans each survey, attaches metadata, saves versioned outputs, and
-returns the updated PIP master inventory. See <a href="Processing-Data.html">Processing Data functions</a> for the
-internal mechanics.</p>
+retry rows before planning, then runs only stale or forced
+<code>clean:&lt;survey_id&gt;</code>,
+<code>metadata:&lt;pip_id&gt;</code>, and
+<code>deflate:&lt;pip_id&gt;</code> nodes. It returns a compact
+<code>pipdata_pipeline_result</code>; it does not return the master
+inventory. See <a href="Processing-Data.html">Processing Data
+functions</a> for the internal mechanics.</p>
+<p>Current nodes are cached. Stale or forced nodes are runnable. Failed
+prerequisites make descendants blocked/skipped.
+<code>force_surveys</code> adds selected survey or PIP chains without
+suppressing independent staleness. Unknown legacy provenance requires
+explicit <code>bootstrap = TRUE</code>; use
+<code>bootstrap_entities</code> for a restrictive canary.</p>
+<p>The C2 manifest and exact Stamp receipts are the currentness
+authority. A Colombia 2018 CPI change runs only matching Colombia 2018
+metadata and deflate nodes, while another Colombia year and unrelated
+country/year remain cached. There is no persisted run cursor. After
+failure, call <code><a href="../reference/pd_run_pipeline.html">pd_run_pipeline()</a></code> again; it replans from the
+last valid manifest and exact Stamp facts.</p>
 </div>
 <div class="section level3">
 <h3 id="build-a-consolidated-log-report">4. Build a consolidated log report<a class="anchor" aria-label="anchor" href="#build-a-consolidated-log-report"></a>
@@ -225,7 +242,7 @@ tables to avoid double counting.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="architecture-why-three-wrappers">Architecture: why three wrappers?<a class="anchor" aria-label="anchor" href="#architecture-why-three-wrappers"></a>
+<h2 id="architecture-and-compatibility">Architecture and compatibility<a class="anchor" aria-label="anchor" href="#architecture-and-compatibility"></a>
 </h2>
 <p>Each stage is intentionally isolated because a different engineer
 developed it independently, with its own auxiliary data, error handling,
@@ -249,6 +266,10 @@ responsible for the cleaning/metadata transformation. Internally, it
 iterates one survey at a time, so that a per-survey failure is caught,
 logged, and skipped without aborting the rest of the run.</li>
 </ul>
+<p>The top-level executor composes these existing stage cores. Only
+clean, metadata, and deflate are durable cached nodes. Load, PFW merge,
+recode, auxiliary attachment, and save remain internal fingerprint
+components.</p>
 <p>Each survey’s cleaning pass inside <code><a href="../reference/pd_process_data.html">pd_process_data()</a></code>
 follows: <code><a href="../reference/inv_dlw_load.html">inv_dlw_load()</a></code> (load raw survey) -&gt;
 <code><a href="../reference/pd_cpfw_merge.html">pd_cpfw_merge()</a></code> (merge Price Framework metadata) -&gt;
@@ -290,6 +311,13 @@ have the survey’s <code>pip_id</code> in hand:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>See <a href="Processing-Data.html">Processing Data functions</a> for
 details on both modes.</p>
+</div>
+<div class="section level2">
+<h2 id="production-activation-block">Production activation block<a class="anchor" aria-label="anchor" href="#production-activation-block"></a>
+</h2>
+<p>Local tests do not activate production. Production remains blocked
+until the signed target Windows/SMB fencing and immutable unique-rename
+evidence are complete.</p>
 </div>
 <div class="section level2">
 <h2 id="logging-and-reporting-scope">Logging and reporting scope<a class="anchor" aria-label="anchor" href="#logging-and-reporting-scope"></a>

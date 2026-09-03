@@ -8,7 +8,7 @@ Additional context for Copilot and the Compound GPID plugin. Edit freely
 The **PIP (Poverty and Inequality Platform)** data ingestion pipeline
 transforms raw survey microdata and grouped distributions from
 Datalibweb (DLW) into cleaned, versioned, analysis-ready datasets. The
-pipeline runs in three sequential stages:
+operational lifecycle has three entry points:
 
 1.  **Auxiliary Data Refresh** (`update_aux_measures()` in pipaux) —
     Refresh CPI, PPP, population, GDP, PCE, PFW, etc. from GitHub and
@@ -16,11 +16,10 @@ pipeline runs in three sequential stages:
 2.  **DLW Data Acquisition & Validation**
     ([`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
     in pipdata) — Download GMD survey files and validate them
-3.  **Survey Cleaning & Metadata**
-    ([`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
-    in pipdata) — Merge auxiliary data with DLW surveys, clean
-    variables, create metadata, save versioned outputs, update master
-    inventory
+3.  **Incremental Processing**
+    ([`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+    in pipdata) - Execute the durable clean, metadata, and deflate
+    stages from completed validation state
 
 For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
 
@@ -64,7 +63,7 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   [`collapse::fmutate()`](https://fastverse.org/collapse/reference/ftransform.html).
   This makes the dependency surface explicit and avoids ambiguity with
   similarly-named collapse functions.
-- The pipeline emits 12 canonical logmeta entry types, parsed by
+- The pipeline emits 13 canonical logmeta entry types, parsed by
   [`log_report()`](https://pip-technical-team.github.io/pipdata/reference/log_report.md)
   to build report sections. Their `info`/`error` field values are:
   - `"process_summary_inf"` — emitted by
@@ -103,11 +102,15 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
     for validation start, workflow phases, and per-survey failures
   - `"dlw_summary_inf"` - emitted by
     [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
-    at stage completion and used as the DLW stage marker These strings
-    are used as string literals across multiple files; any typo silently
-    breaks the corresponding report section. The report suppresses the
-    11 internal summary/marker types in `.log_internal_types`; genuine
-    error types remain in the type-summary table.
+    at stage completion and used as the DLW stage marker
+  - `"pipeline_run_summary_inf"` - emitted once by
+    [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+    with compact run, state, stage-status, and manifest-generation
+    counts These strings are used as string literals across multiple
+    files; any typo silently breaks the corresponding report section.
+    The report suppresses internal summary/marker types in
+    `.log_internal_types`; genuine error types remain in the
+    type-summary table.
 - **`logmeta$error` and `logmeta$info` are always string type
   discriminators** — never R condition objects. Caught condition
   messages go in `logmeta$condition_msg = conditionMessage(e)`. The old
@@ -330,6 +333,40 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   writes, checkpoint inputs and stage code hashes must match accepted C2
   fingerprints and exact committed receipts. See
   `.cg-docs/solutions/data-quality/2026-08-28-separate-exact-provenance-from-semantic-invalidation.md`.
+- **Executable staged invalidation**:
+  [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+  is the exported top-level processing API after DLW validation. Its
+  only durable nodes are `clean:<survey_id>`, `metadata:<pip_id>`, and
+  `deflate:<pip_id>`. Internal load, PFW merge, recode, auxiliary
+  attachment, and save functions remain fingerprint components. Stamp is
+  authoritative for immutable versions and exact receipts; the C2
+  manifest is the only pipdata currentness/provenance index. States are
+  current/stale/forced and cached/runnable/success/failed/
+  skipped/blocked. Targeted force is additive. Unknown legacy provenance
+  needs explicit bootstrap. Keyed auxiliary invalidation means a
+  Colombia 2018 CPI change does not run another Colombia year or an
+  unrelated country/year. Recoverable failures block descendants; retry
+  creates a new authoritative plan from the last valid manifest. No run
+  cursor is persisted. Existing stage wrapper signatures, aliases, and
+  master-inventory returns remain compatible. Production activation is
+  blocked until signed target Windows/SMB fencing and immutable
+  unique-rename evidence are complete.
+- **Stage failure status is separate from condition provenance**:
+  Recoverable worker failures use the controlled unit reason
+  `entity_failed`; exact worker condition classes and messages stay in
+  typed condition records. Clean and metadata failures persist narrowed
+  release/master invalidation under the C2 fence even when no sibling
+  checkpoint follows. Artifact-bearing results are built only after the
+  final retained manifest is reloaded and verified. See
+  `.cg-docs/solutions/bugs/2026-09-01-separate-stage-failure-status-from-condition-provenance.md`.
+- **Restart currentness requires both catalog evidence and durable
+  pointers**: A surviving Stamp artifact is historical evidence, not
+  proof that the failed stage remains current. Clean and metadata
+  receipts are current only when their exact versions and hashes match
+  complete master inventory pointers. Clearing a pointer makes the stage
+  stale on the next authoritative plan while preserving immutable
+  history. See
+  `.cg-docs/solutions/data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md`.
 
 ## Work in Progress
 
