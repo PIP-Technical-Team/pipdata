@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">pipdata</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,12 @@
 <p><a href="https://deepwiki.com/PIP-Technical-Team/pipdata" class="external-link"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a></p>
 <p><code>pipdata</code> prepares and processes survey data for the PIP (Poverty and Inequality Platform) pipeline. It handles the end-to-end workflow from raw DLW (DataLibWeb) data to cleaned, deflated, and validated micro-data ready for poverty and inequality calculations.</p>
 <div class="section level2">
+<h2 id="version-100">Version 1.0.0<a class="anchor" aria-label="anchor" href="#version-100"></a>
+</h2>
+<p>Version 1.0.0 adds <code><a href="reference/pd_run_pipeline.html">pd_run_pipeline()</a></code> as the top-level incremental executor for clean, metadata, and deflate stages. It uses exact Stamp receipts and a release-scoped dependency manifest to run only stale or explicitly forced nodes.</p>
+<p>This release changes the public DLW contracts. Assign the result from <code><a href="reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code>, <code><a href="reference/pipdata_get_gmd.html">pipdata_get_gmd()</a></code>, or <code><a href="reference/pipdata_validate_gmd.html">pipdata_validate_gmd()</a></code> and inspect its <code>outcome</code> before conditional continuation. These functions no longer accept <code>log</code> or <code>save_log</code>; logging is unconditional. <code>copy_dlw_metadata()</code> was removed without a replacement. See the <a href="https://pip-technical-team.github.io/pipdata/news/index.html">changelog</a> for the full migration notes.</p>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -80,6 +86,10 @@
 <th>Purpose</th>
 </tr></thead>
 <tbody>
+<tr>
+<td><code><a href="reference/pipdata_dlw_process.html">pipdata_dlw_process()</a></code></td>
+<td>Acquire and validate DLW surveys and return an inspectable aggregate outcome</td>
+</tr>
 <tr>
 <td><code><a href="reference/pd_run_pipeline.html">pd_run_pipeline()</a></code></td>
 <td>Incrementally run the durable clean, metadata, and deflate stages</td>

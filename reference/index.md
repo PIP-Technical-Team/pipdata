@@ -1,9 +1,10 @@
 # Package index
 
-## Pipeline wrappers
+## Pipeline entry points
 
-The three top-level wrapper functions that make up the pipeline (see the
-“Pipeline” articles for the narrative walkthrough).
+Top-level functions for DLW ingestion, incremental processing,
+compatible stage execution, and read-only planning (see the “Pipeline”
+articles for the narrative walkthrough).
 
 - [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md)
   : Acquire and validate DLW data
@@ -11,8 +12,14 @@ The three top-level wrapper functions that make up the pipeline (see the
   : Acquire GMD catalog datasets and reconcile the local inventory
 - [`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)
   : Validate available GMD data and commit completed validation state
+- [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+  : Run the staged PIP data pipeline incrementally
 - [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md)
   : Process DLW inventory and create cleaned pip data
+- [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
+  : Batch-deflate every survey in the PIP master inventory
+- [`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
+  : Report staged dependency changes without writing artifacts
 
 ## Deflation
 
@@ -139,20 +146,11 @@ validation, survey cleaning, and deflation with stage-aware warnings.
 - [`pd_aux_attr()`](https://pip-technical-team.github.io/pipdata/reference/pd_aux_attr.md)
   : Build auxiliary metadata attributes for cleaned survey data
 
-- [`pd_change_report()`](https://pip-technical-team.github.io/pipdata/reference/pd_change_report.md)
-  : Report staged dependency changes without writing artifacts
-
 - [`pd_cpfw_merge()`](https://pip-technical-team.github.io/pipdata/reference/pd_cpfw_merge.md)
   : Merge country/survey PFW info with dataliweb survey data
 
-- [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md)
-  : Batch-deflate every survey in the PIP master inventory
-
 - [`pd_dlw_clean()`](https://pip-technical-team.github.io/pipdata/reference/pd_dlw_clean.md)
   : Clean data from datalibweb structure (High level)
-
-- [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
-  : Run the staged PIP data pipeline incrementally
 
 - [`pd_split_alt_welfare()`](https://pip-technical-team.github.io/pipdata/reference/pd_split_alt_welfare.md)
   : Split data based on alternative welfare

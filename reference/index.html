@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pipdata</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,9 +39,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="pipeline-wrappers">Pipeline wrappers<a class="anchor" aria-label="anchor" href="#pipeline-wrappers"></a></h2>
+      <h2 id="pipeline-entry-points">Pipeline entry points<a class="anchor" aria-label="anchor" href="#pipeline-entry-points"></a></h2>
 
-      <div class="section-desc"><p>The three top-level wrapper functions that make up the pipeline (see the “Pipeline” articles for the narrative walkthrough).</p></div>
+      <div class="section-desc"><p>Top-level functions for DLW ingestion, incremental processing, compatible stage execution, and read-only planning (see the “Pipeline” articles for the narrative walkthrough).</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -71,10 +71,31 @@
 
         <dt>
 
+          <code><a href="pd_run_pipeline.html">pd_run_pipeline()</a></code>
+
+        </dt>
+        <dd>Run the staged PIP data pipeline incrementally</dd>
+
+        <dt>
+
           <code><a href="pd_process_data.html">pd_process_data()</a></code>
 
         </dt>
         <dd>Process DLW inventory and create cleaned pip data</dd>
+
+        <dt>
+
+          <code><a href="pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>
+
+        </dt>
+        <dd>Batch-deflate every survey in the PIP master inventory</dd>
+
+        <dt>
+
+          <code><a href="pd_change_report.html">pd_change_report()</a></code>
+
+        </dt>
+        <dd>Report staged dependency changes without writing artifacts</dd>
       </dl></div><div class="section level2">
       <h2 id="deflation">Deflation<a class="anchor" aria-label="anchor" href="#deflation"></a></h2>
 
@@ -364,13 +385,6 @@
 
         <dt>
 
-          <code><a href="pd_change_report.html">pd_change_report()</a></code>
-
-        </dt>
-        <dd>Report staged dependency changes without writing artifacts</dd>
-
-        <dt>
-
           <code><a href="pd_cpfw_merge.html">pd_cpfw_merge()</a></code>
 
         </dt>
@@ -378,24 +392,10 @@
 
         <dt>
 
-          <code><a href="pd_deflate_pipeline.html">pd_deflate_pipeline()</a></code>
-
-        </dt>
-        <dd>Batch-deflate every survey in the PIP master inventory</dd>
-
-        <dt>
-
           <code><a href="pd_dlw_clean.html">pd_dlw_clean()</a></code>
 
         </dt>
         <dd>Clean data from datalibweb structure (High level)</dd>
-
-        <dt>
-
-          <code><a href="pd_run_pipeline.html">pd_run_pipeline()</a></code>
-
-        </dt>
-        <dd>Run the staged PIP data pipeline incrementally</dd>
 
         <dt>
 

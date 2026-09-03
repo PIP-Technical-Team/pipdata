@@ -8,6 +8,26 @@ Inequality Platform) pipeline. It handles the end-to-end workflow from
 raw DLW (DataLibWeb) data to cleaned, deflated, and validated micro-data
 ready for poverty and inequality calculations.
 
+## Version 1.0.0
+
+Version 1.0.0 adds
+[`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md)
+as the top-level incremental executor for clean, metadata, and deflate
+stages. It uses exact Stamp receipts and a release-scoped dependency
+manifest to run only stale or explicitly forced nodes.
+
+This release changes the public DLW contracts. Assign the result from
+[`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md),
+[`pipdata_get_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_get_gmd.md),
+or
+[`pipdata_validate_gmd()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_validate_gmd.md)
+and inspect its `outcome` before conditional continuation. These
+functions no longer accept `log` or `save_log`; logging is
+unconditional. `copy_dlw_metadata()` was removed without a replacement.
+See the
+[changelog](https://pip-technical-team.github.io/pipdata/news/index.html)
+for the full migration notes.
+
 ## Installation
 
 ``` r
@@ -20,6 +40,7 @@ remotes::install_github("PIP-Technical-Team/pipdata")
 
 | Function | Purpose |
 |----|----|
+| [`pipdata_dlw_process()`](https://pip-technical-team.github.io/pipdata/reference/pipdata_dlw_process.md) | Acquire and validate DLW surveys and return an inspectable aggregate outcome |
 | [`pd_run_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_run_pipeline.md) | Incrementally run the durable clean, metadata, and deflate stages |
 | [`pd_process_data()`](https://pip-technical-team.github.io/pipdata/reference/pd_process_data.md) | Compatible clean/metadata stage wrapper; returns the master inventory |
 | [`pd_deflate_pipeline()`](https://pip-technical-team.github.io/pipdata/reference/pd_deflate_pipeline.md) | Batch-deflate every survey in the master inventory |
