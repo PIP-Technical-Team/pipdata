@@ -375,6 +375,14 @@ pd_final_retained_manifest <- function(execution) {
 #' and unsupported S3 generics are rejected. Reviewed base operations reject
 #' classed operands; explicitly unclass reviewed input values before operations.
 #' The read/base/closure policy code is also SHA-256 bound into request proof.
+#' Recursive guarded operations also reject classed elements nested in lists,
+#' so registered methods cannot silently supply undeclared value dependencies.
+#' The route checks consumed public producer exports and explicit arguments
+#' before recipe preparation, lease acquisition or rebuild; version labels alone
+#' do not establish those capabilities. Nonempty recipes require the suggested
+#' package `codetools` for proof generation. If unavailable, an actionable
+#' `pipdata_engine_dependency_error` requests installation in an approved library;
+#' no proof bypass, automatic installation or write-side work is performed.
 #'
 #' A separate lease is scoped to release, TEST identity, and canonical root;
 #' changing a calculation never creates a different writer scope. Frozen proof,

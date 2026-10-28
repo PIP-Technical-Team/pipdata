@@ -2,16 +2,17 @@
 date: 2026-10-27
 type: standard
 depth: full
-status: open
+status: fixed
 review-mode: full
 plan: .cg-docs/plans/2026-10-26-m2-pipdata-authority.md
 scope: uncommitted
 findings:
   P0.1: fixed
-  P0.2: open
+  P0.2: fixed
   P1.1: fixed
   P1.2: fixed
   P1.3: fixed
+  P1.4: fixed
   P2.1: fixed
   P2.2: fixed
   P2.3: fixed
@@ -24,6 +25,7 @@ findings:
   P2.10: fixed
   P2.11: fixed
   P2.12: fixed
+  P2.14: fixed
 ---
 
 # M2 Pipdata Authority Automatic Review
@@ -146,3 +148,54 @@ actions are recorded in the new canonical
 `2026-10-27-m2-pipdata-authority-verify-review.md`. No source correction authorized
 or performed. The selector initially recognized17 fixed entries before this
 fresh result; it was not rerouted or silently replaced by a broad review.
+
+## Authorized Correction Tracking: 2026-10-28
+
+Outer caller reconciliation before triage for m2-authority-review-fixes. Source
+report verify-review.md has three open IDs; parent now tracks all three plus16
+historically fixed IDs. Descriptions/history above retained. No fixed result
+inferred before new tests. Explicit current correction anchors:
+
+| ID | Attribution | Authorized fixed-scope anchor (pending evidence) |
+|---|---|---|
+| P0.2 / A2 | cg-testing ses_e7d616f83ffe3M92YwNqyJueOg | R/code_fingerprint.R pd_engine_base_boundary recursive operand rejection; nested registered-method regression in test-m2-engine-authority.R |
+| P1.4 | cg-code-quality local P1.1 plus cg-testing local P2.13 | R/code_fingerprint.R exported API capability preflight, R/dependency_execution.R early pd_engine_run entry; positive API and before-lease/planner/publication negatives in selected tests |
+| P2.14 | cg-code-quality local P2.1, not original A6 | R/code_fingerprint.R optional codetools gate before proof; controlled availability-seam regression; existing roxygen/Rd/article requirements |
+
+Choices: preserve dependencies/exported API and existing proof schema; reject
+nested classed operands, inspect actual consumed function exports/formals before
+write-side work, gate optional codetools actionably rather than bypass proof.
+Budget two correction/retests per finding and two light verification rounds.
+Generic PowerShell testing is replaced by explicitly authorized E5 R gate;
+no ordinary/full-suite or production/merge/whole-M2 certification follows.
+
+### Correction Evidence: First Retest Passed
+
+Outer caller disposition after required red/green evidence, not an inferred fix.
+P0.2 now recursively rejects classed elements in list operands; a registered
+length.Date fixture is proven active, mutated twice and restored, and cannot
+influence a successful engine result. P1.4 checks ordinary exported consumed
+producer APIs/explicit arguments at pd_engine_run entry before preparation,
+lease, planner or publication. P2.14 gates optional codetools at proof entry with
+an actionable approved-library requirement, never a bypass or auto-install.
+Existing DESCRIPTION/NAMESPACE/dependencies/proof schema remain unchanged.
+
+Red results46 cases/14 failures across all four new negatives saved before source
+fixes (20261028T1400118419885Z-tests.csv). First corrected gate native
+gate-phase2-20261028T1406251674086Z-native.json exit0:46tests324expectations,
+0 failures/errors/warnings/skips. Build1407282155705Z, install1407300470342Z,
+installed1407387038907Z all exit0, no timeout. Source/install/native artifacts
+are preserved in S/evidence/history/gate-phase2-20261028T1406199320761Z-after.
+Owned Rd regenerated/parsed in S/docs and only owned file synchronized.
+Current map19 fixed entries; source verification report three entries fixed.
+Final genuine light verification still pending. Historical report bodies retained.
+
+### Final Correction Verification
+
+Genuine native selector chose this exact19-fixed-ID parent, no fallback. Both
+authorized read-only light critics returned FIXED for P0.2/P1.4/P2.14 in round1,
+no applicable new P0-P3 findings/cross-file regressions. Saved current result:
+`2026-10-27-m2-pipdata-authority-verify-review-2.md`. Fresh46tests324expectations
+plus source build/local install/fresh smoke remain bound to current corrected
+bytes. No second corrective attempt or verification round needed. E5 limits
+and historical bodies retained; no merge/whole-M2 certification or Git changes.

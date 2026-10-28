@@ -132,7 +132,41 @@ pd_engine_value <- function(x, allow_na = FALSE) {
   is.null(attrs) || all(vapply(attrs, pd_engine_value, logical(1L), allow_na = allow_na))
 }
 
+pd_engine_require_codetools <- function() {
+  if (!requireNamespace("codetools", quietly = TRUE)) {
+    rlang::abort(paste0("The recipes route requires optional package codetools. ",
+      "Install it in an approved library before retrying; proof was not generated."),
+      class = "pipdata_engine_dependency_error")
+  }
+  invisible(NULL)
+}
+
+pd_engine_require_capabilities <- function() {
+  required <- list(
+    pip_read = c("id", "format", "version", "alias", "verbose", "metadata_only"),
+    st_plan_rebuild = c("targets", "include_targets", "requests"),
+    st_rebuild = c("plan", "rebuild_fun"),
+    st_execution_info = c("path", "receipt_id", "alias"),
+    st_read_sidecar = c("rel_path", "alias", "version_id"),
+    st_load_version = c("path", "version_id"), st_alias_list = character(),
+    st_alias_get = "alias", st_opts = ".get")
+  for (name in names(required)) {
+    package <- if (identical(name, "pip_read")) "pipload" else "stamp"
+    api <- tryCatch(getExportedValue(package, name), error = function(e) NULL)
+    ordinary <- is.function(api) && !is.primitive(api)
+    missing <- if (ordinary) setdiff(required[[name]], names(formals(api))) else required[[name]]
+    if (!ordinary || length(missing)) {
+      rlang::abort(paste0("The recipes route requires ", package, "::", name,
+        " with explicit arguments: ", paste(required[[name]], collapse = ", "),
+        ". Use a compatible reviewed producer build; no lease or rebuild started."),
+        class = "pipdata_engine_dependency_error")
+    }
+  }
+  invisible(NULL)
+}
+
 pd_engine_proof <- function(calculation, helpers, constants) {
+  pd_engine_require_codetools()
   fail <- function(message) rlang::abort(message,
     class = "pipdata_engine_recipe_error")
   if (!pd_engine_names(helpers) || !pd_engine_names(constants)) {
@@ -337,7 +371,10 @@ pd_engine_base_boundary <- function(op) {
         any(vapply(args, has_character, logical(1L)))) {
       rlang::abort("Ambient character collation is unsupported.")
     }
-    if (any(vapply(args, is.object, logical(1L)))) {
+    has_classed <- function(x) {
+      is.object(x) || (is.list(x) && any(vapply(x, has_classed, logical(1L))))
+    }
+    if (any(vapply(args, has_classed, logical(1L)))) {
       rlang::abort("Implicit S3 dispatch is unsupported; use unclass explicitly.")
     }
     do.call(primitive, args)

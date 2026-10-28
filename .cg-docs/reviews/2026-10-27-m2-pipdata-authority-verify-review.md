@@ -4,9 +4,9 @@ depth: light
 parent-review: .cg-docs/reviews/2026-10-27-m2-pipdata-authority-review.md
 type: verification
 findings:
-  P0.2: open
-  P1.4: open
-  P2.14: open
+  P0.2: fixed
+  P1.4: fixed
+  P2.14: fixed
 ---
 
 # M2 Merge-Readiness Verification
@@ -158,3 +158,21 @@ for bounded metadata/capability work, not as substitute for the P0 analysis.
 Rationale: method dispatch can silently falsify currentness; API mismatches cross
 durable write boundaries. Capability-only suggestions, no execution settings;
 availability differs by platform/date and the user chooses model and effort.
+
+## Authorized Correction Disposition: 2026-10-28
+
+Historical NOT CONVERGED verdict/body above preserved. Under the subsequent
+direct m2-authority-review-fixes authorization, all three findings now have
+red/green correction evidence and fixed frontmatter statuses. Required red
+regressions reproduced nested dispatch, post-publication adapter failure, and
+missing codetools gate. First corrected three-file gate46tests324expectations,
+no failures/errors/warnings/skips; source build, local install and fresh public
+engine/storage smoke exit0. No global library or dependency declaration changed.
+Controlled codetools availability seam is not a dependency-minimal installation.
+New verification attempt reserved as verify-review-2.md; no old body rewritten.
+Fresh evidence is distinct from historical41tests286expectations above.
+
+Final native-selected light round1 converged: both critics FIXED for all three
+IDs, no new applicable findings. Current canonical verification is the preserved
+new attempt `2026-10-27-m2-pipdata-authority-verify-review-2.md`; this historical
+body remains untouched above. No merge/full-package/whole-M2 claim follows.

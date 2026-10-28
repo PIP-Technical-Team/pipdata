@@ -63,6 +63,7 @@ pd_engine_outcome <- function(path, id, alias, root, max_records = 1000L) {
 }
 
 pd_engine_run <- function(recipes, verbose = FALSE) {
+  pd_engine_require_capabilities()
   bundle <- pd_engine_prepare(recipes)
   context <- bundle$context
   feedback <- pd_engine_feedback(context$release)

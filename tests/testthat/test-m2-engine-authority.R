@@ -638,3 +638,94 @@ test_that("M2 character ordering cannot introduce ambient collation into proof",
   expect_error(pd_engine_base_boundary("range")(list("Z", "a")),
                "Ambient character collation")
 })
+
+test_that("M2 nested registered methods cannot change results outside proof", {
+  f <- m2_fixture()
+  methods <- get(".__S3MethodsTable__.", asNamespace("base"))
+  existed <- exists("length.Date", methods, inherits = FALSE)
+  previous <- if (existed) get("length.Date", methods, inherits = FALSE) else NULL
+  withr::defer({
+    if (existed) registerS3method("length", "Date", previous, envir = baseenv())
+    else rm(list = "length.Date", envir = methods)
+  })
+  node <- m2_node(value = as.Date("2026-01-01"))
+  node$calculation <- function(path, parents) list(x = lengths(list(value)))
+  for (answer in c(10L, 20L)) {
+    calls <- 0L
+    registerS3method("length", "Date", function(x) {
+      calls <<- calls + 1L
+      answer
+    }, envir = baseenv())
+    expect_identical(lengths(list(as.Date("2026-01-01"))), answer)
+    calls <- 0L
+    result <- m2_run(f, list(node))
+    expect_true(result$status %in% c("failed", "blocked"))
+    expect_true(is.na(result$version_id))
+    expect_identical(calls, 0L)
+  }
+  expect_identical(pd_engine_base_boundary("lengths")(list(1:3)), 3L)
+})
+
+test_that("M2 incompatible pipload is rejected before any write-side work", {
+  f <- m2_fixture()
+  before <- list.files(f$root, recursive = TRUE, all.files = TRUE)
+  lease_calls <- 0L
+  acquire <- pd_lease_acquire
+  testthat::local_mocked_bindings(pd_lease_acquire = function(...) {
+    lease_calls <<- lease_calls + 1L
+    acquire(...)
+  }, .package = "pipdata")
+  testthat::local_mocked_bindings(pip_read = function(id, format = NULL,
+    version = NULL, alias = NULL, verbose = TRUE, pk = NULL) {
+      stop("Incompatible adapter must not be invoked")
+    }, .package = "pipload")
+  expect_error(m2_run(f, list(m2_node())), "pipload::pip_read.*metadata_only",
+               class = "pipdata_engine_dependency_error")
+  expect_identical(lease_calls, 0L)
+  expect_false(dir.exists(file.path(f$root, "a.rds")))
+  expect_identical(list.files(f$root, recursive = TRUE, all.files = TRUE), before)
+})
+
+test_that("M2 incompatible stamp requests are rejected before lease or planning", {
+  f <- m2_fixture()
+  before <- list.files(f$root, recursive = TRUE, all.files = TRUE)
+  lease_calls <- 0L
+  planner_calls <- 0L
+  acquire <- pd_lease_acquire
+  testthat::local_mocked_bindings(pd_lease_acquire = function(...) {
+    lease_calls <<- lease_calls + 1L
+    acquire(...)
+  }, .package = "pipdata")
+  testthat::local_mocked_bindings(st_plan_rebuild = function(targets,
+    include_targets = FALSE) {
+      planner_calls <<- planner_calls + 1L
+      stop("Incompatible planner must not be invoked")
+    }, .package = "stamp")
+  expect_error(m2_run(f, list(m2_node())), "stamp::st_plan_rebuild.*requests",
+               class = "pipdata_engine_dependency_error")
+  expect_identical(lease_calls, 0L)
+  expect_identical(planner_calls, 0L)
+  expect_identical(list.files(f$root, recursive = TRUE, all.files = TRUE), before)
+})
+
+test_that("M2 unavailable codetools fails actionably before lease without bypass", {
+  f <- m2_fixture()
+  before <- list.files(f$root, recursive = TRUE, all.files = TRUE)
+  lease_calls <- 0L
+  acquire <- pd_lease_acquire
+  available <- base::requireNamespace
+  testthat::local_mocked_bindings(pd_lease_acquire = function(...) {
+    lease_calls <<- lease_calls + 1L
+    acquire(...)
+  }, .package = "pipdata")
+  # Controlled availability seam; the real package/library stays untouched.
+  testthat::local_mocked_bindings(requireNamespace = function(package, ...,
+    quietly = FALSE) {
+      if (identical(package, "codetools")) return(FALSE)
+      available(package, ..., quietly = quietly)
+    }, .package = "base")
+  expect_error(m2_run(f, list(m2_node())), "codetools.*approved library",
+               class = "pipdata_engine_dependency_error")
+  expect_identical(lease_calls, 0L)
+  expect_identical(list.files(f$root, recursive = TRUE, all.files = TRUE), before)
+})

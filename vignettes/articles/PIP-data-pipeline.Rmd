@@ -204,6 +204,14 @@ format. Ambient locale/timezone conversions and unsupported S3 generics are
 rejected; guarded base operations reject classed operands rather than silently
 dispatching an unfingerprinted method. Explicitly unclass reviewed inputs before
 operations. The internal read/base/closure policy code is itself SHA-256 bound.
+Nested classed list elements are rejected too, including implicit method dispatch
+inside `lengths()`. Consumed producer exports and explicit arguments are checked
+before recipe preparation, lease or rebuild; a version label alone is insufficient.
+Nonempty recipes require the existing suggested package `codetools`. When it is
+unavailable, `pipdata_engine_dependency_error` gives an actionable approved-library
+requirement before proof or write-side work. No package is installed automatically
+and fingerprint proof is never bypassed. Availability-seam tests do not certify
+a dependency-minimal installation.
 
 Feedback is one row per selected artifact: `release_id`, canonical `path`,
 stamp `preview_decision`, actual `status`/`reason`, `version_id`, `request_id`,

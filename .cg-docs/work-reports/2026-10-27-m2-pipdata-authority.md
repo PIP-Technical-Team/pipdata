@@ -352,3 +352,71 @@ final closeout and completed current.json. Results agree with native records and
 review verdicts. Final changed paths match scope including two requested review
 reports; prior untracked Plan adopted, no unrelated changes reverted. No pending
 assignment work or user action. No commits/pushes.
+
+## Correction Section: 2026-10-28 M2 Authority Review Fixes
+
+Subsequent direct user instruction at13:46:19Z authorized P0.2/P1.4/P2.14 source
+fixes, tests and two-round light verification, not a new Plan/phase or Git mutation.
+Started clean at4728a2b2d2aadb43ce72ddf6c19732f75188a208 on existing branch;
+prior commits preserved. Original Plan, active state, DESCRIPTION, NAMESPACE,
+hooks/config and other repositories remain read-only (exact central reports excepted).
+
+Reconciled new finding IDs/attribution/anchors into parent before triage. All
+three in scope, none skipped;16 older resolved entries retained. Source choices:
+recursive classed-list operand rejection; actual public producer capability
+shape/export validation before modern preparation/lease/planning/publication;
+optional codetools availability gate before proof with approved-library guidance.
+No new exported API, dependency, proof schema or fallback. Existing policy-code
+SHA256 component changes automatically represent the corrected implementation.
+
+Before refresh preserved404 original files byte-for-byte at
+S/evidence/baseline-20261028T133236Z-code-fixes; runner now captures before/after
+candidate/manifests/source/install/archive snapshots on every invocation, including
+failures. Producer pin records are preserved and asserted, never recaptured.
+Red gate46 cases/14 failed expectations across all four new negatives;
+20261028T1400118419885Z-tests.csv proves prior cases green and each new case red.
+Registered method fixture mutated/restored real registry; availability seam does
+not uninstall codetools or claim a dependency-minimal environment. Adapter red
+case actually published before metadata_only failure. All fixture writes under E.
+
+First corrected selected gate46tests324expectations,0 failures/errors/warnings/
+skips: gate-phase2-20261028T1406251674086Z-native.json exit0/no timeout. Source
+build1407282155705Z, local install1407300470342Z and fresh installed smoke
+1407387038907Z also exit0. Engine built/skipped/empty, pinned data, and real
+rds/qs2/fst exact receipt/data/metadata/repeat smoke passed. Owned Rd generated
+and parsed in disposable docs tree; only approved owned Rd copied.
+No generic PowerShell or full ordinary R suite run: task explicitly retains E5
+substitute and41 excluded files above. No production/SMB/full-concurrency/merge/
+whole-M2 certification. Fresh byte binding and final light review recorded next.
+
+### Correction Closeout
+
+All three covered findings FIXED;0 skipped/out of scope. First corrected retest
+and first genuine light verification round passed, no applicable new P0-P3 issue.
+Native Step1.7 selected exact reconciled standard parent from18 eligible with19
+fixed IDs; no fallback. Both cg-code-quality and cg-testing read-only critics
+verified actual correction/test blocks and read fresh red/green/native evidence.
+No reviewer independently ran processes or recomputed outer byte hashes; outer
+saved attributed reports under the exact m2-authority-review-fixes central run.
+
+Current canonical result: .cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review-2.md.
+Current182-file source manifest SHA256
+E96B7C6AE85D1AF0CB52C7CFF7E35DA1D20D209936396562D8BDEDF978480B82,0 mismatches;
+installed30 files match manifest322CB95976830C3F02FD84FD3D8F085590023B2FD680831400924DD82093C276;
+fresh archive4B50A54C3CC100A02536BDEBB06CC4FFDA2DDB1498329C0834A439183BC21ABB.
+Immutable404-file post-run snapshot validates; producer pin records match baseline.
+Rechecked after review14:21:19Z, no source drift; HEAD4728a2b unchanged, original
+Plan blob unchanged, no staging/commit/merge/push. Only permitted source/tests/docs,
+authorized report metadata/body append and scoped runtime outputs changed.
+
+Selected46tests324expectations are fresh corrected evidence, not the old41/286;
+41 existing files remain excluded. No full-suite/check/production/SMB/full
+concurrency/merge/whole-M2 certification, no dependency-minimal environment claim,
+no article rendering. No pending authorized correction or user action. Saved
+central outputs and final readback are recorded in the new task's evidence.md.
+
+Correction final readback: central handoff/evidence/attributed reviewer reports
+and canonical verify-review-2.md substantively read after saves. Completed
+pip-handoff-v1 JSON/10 headings/four central outputs validated14:26:32Z; covered
+maps fixed, no blocker. All fresh source/archive/install identities retained.
+No further Git/source changes after tested bytes beyond owned report appends.

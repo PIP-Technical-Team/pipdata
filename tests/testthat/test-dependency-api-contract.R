@@ -14,6 +14,23 @@ test_that("required public storage APIs retain exact-version contracts", {
   )
 })
 
+test_that("M2 fixed producers expose every consumed modern API argument", {
+  required <- list(
+    pip_read = c("id", "format", "version", "alias", "verbose", "metadata_only"),
+    st_plan_rebuild = c("targets", "include_targets", "requests"),
+    st_rebuild = c("plan", "rebuild_fun"),
+    st_execution_info = c("path", "receipt_id", "alias"),
+    st_read_sidecar = c("rel_path", "alias", "version_id"),
+    st_load_version = c("path", "version_id"), st_alias_list = character(),
+    st_alias_get = "alias", st_opts = ".get")
+  for (name in names(required)) {
+    package <- if (identical(name, "pip_read")) "pipload" else "stamp"
+    expect_true(name %in% getNamespaceExports(package))
+    expect_true(all(required[[name]] %in%
+      names(formals(getExportedValue(package, name)))))
+  }
+})
+
 test_that("V14 touched APIs retain exact formals defaults and positional order", {
   expect_identical(
     names(formals(pd_process_data)),
