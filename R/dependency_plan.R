@@ -334,3 +334,107 @@ pd_plan_node_states <- function(plan, blocked = NULL) {
   data.table::setorder(nodes, stage, entity_id)
   return(nodes)
 }
+
+pd_engine_string <- function(x) {
+  is.character(x) && length(x) == 1L && !is.na(x) && nzchar(trimws(x))
+}
+
+pd_engine_path <- function(path, root) {
+  if (!pd_engine_string(path)) rlang::abort("Recipe path must be a character scalar.")
+  absolute <- as.character(fs::path_norm(fs::path_abs(path, start = root)))
+  cursor <- absolute
+  suffix <- character()
+  while (!fs::file_exists(cursor) && !fs::dir_exists(cursor)) {
+    suffix <- c(fs::path_file(cursor), suffix)
+    parent <- fs::path_dir(cursor)
+    if (identical(as.character(parent), cursor)) rlang::abort("Unresolvable recipe path.")
+    cursor <- as.character(parent)
+  }
+  resolved <- as.character(fs::path_real(cursor))
+  if (length(suffix)) resolved <- do.call(fs::path, as.list(c(resolved, suffix)))
+  resolved <- as.character(resolved)
+  if (.Platform$OS.type == "windows") resolved <- tolower(resolved)
+  if (!grepl("^e:/", resolved, ignore.case = TRUE) ||
+      !startsWith(tolower(resolved), paste0(tolower(root), "/"))) {
+    rlang::abort("Recipe path escapes the initialized E root.")
+  }
+  return(resolved)
+}
+
+pd_engine_prepare <- function(recipes) {
+  fail <- function(message) rlang::abort(message,
+    class = "pipdata_engine_recipe_error")
+  if (!pd_engine_names(recipes) || !setequal(names(recipes), c("context", "nodes"))) {
+    fail("recipes requires exactly context and nodes.")
+  }
+  context <- recipes$context
+  if (!pd_engine_names(context) ||
+      !setequal(names(context), c("release", "identity", "root")) ||
+      !pd_engine_string(context$release) || !identical(context$identity, "TEST") ||
+      !pd_engine_string(context$root) || !fs::is_absolute_path(context$root) ||
+      !fs::dir_exists(context$root)) fail("Invalid explicit TEST context/root.")
+  root <- as.character(fs::path_real(context$root))
+  if (!grepl("^e:/", root, ignore.case = TRUE)) fail("Context root must resolve on E.")
+  if (.Platform$OS.type == "windows") root <- tolower(root)
+  aliases <- stamp::st_alias_list()
+  matching <- aliases$alias[tolower(aliases$root) == tolower(root)]
+  if (!length(matching)) fail("Context root must already be initialized in stamp.")
+  alias <- sort(matching)[[1L]]
+  config <- stamp::st_alias_get(alias)
+  pd_engine_path(config$stamp_path, root)
+  nodes <- recipes$nodes
+  if (!is.list(nodes) || is.object(nodes) || !is.null(names(nodes))) {
+    fail("nodes must be an unnamed list.")
+  }
+  required <- c("path", "parents", "calculation", "helpers", "constants",
+                "semantic_schema", "semantic", "format")
+  prepared <- lapply(nodes, function(node) {
+    if (!pd_engine_names(node) || !all(required %in% names(node)) ||
+        any(!names(node) %in% c(required, "audit", "review"))) fail("Invalid recipe fields.")
+    if (!pd_engine_string(node$format) || !node$format %in% c("rds", "qs2", "fst")) {
+      fail("Unsupported exact physical format; use rds, qs2 or fst.")
+    }
+    path <- pd_engine_path(node$path, root)
+    extension <- fs::path_ext(path)
+    if (nzchar(extension) && !identical(extension, node$format)) {
+      fail("Recipe extension conflicts with requested format.")
+    }
+    if (!is.list(node$parents) || is.object(node$parents) ||
+        !is.null(names(node$parents))) fail("Parents require an unnamed list.")
+    parents <- lapply(node$parents, function(parent) {
+      if (!pd_engine_names(parent) ||
+          !setequal(names(parent), c("path", "version_id"))) fail("Invalid exact parent record.")
+      pin <- parent$version_id
+      if (!is.null(pin) && (!pd_engine_string(pin) ||
+          tolower(trimws(pin)) %in% c("latest", "current", "available", "oldest",
+            "select", "pick", "choose", "0") || grepl("^[+-][0-9]+$", pin))) {
+        fail("Parents require exact character pins, not selectors.")
+      }
+      list(path = pd_engine_path(parent$path, root), version_id = pin)
+    })
+    proof <- pd_engine_proof(node$calculation, node$helpers, node$constants)
+    request <- list(schema = 1L, path = path, root = !length(parents),
+      parents = parents, required_components = names(proof$components),
+      components = proof$components, semantic_schema = node$semantic_schema,
+      semantic = node$semantic, format = node$format)
+    for (name in intersect(c("audit", "review"), names(node))) request[[name]] <- node[[name]]
+    # Requests are values only; do not carry a mutable semantic/config reference.
+    if (!pd_engine_value(request, allow_na = TRUE)) fail("Request contains opaque proof values.")
+    request <- unserialize(serialize(request, NULL, version = 3L))
+    list(request = request, proof = proof)
+  })
+  paths <- vapply(prepared, function(node) node$request$path, character(1L))
+  if (anyDuplicated(paths)) fail("Recipes require unique output paths.")
+  for (node in prepared) {
+    for (parent in node$request$parents) {
+      if (is.null(parent$version_id) && !parent$path %in% paths) {
+        fail("NULL pins are permitted only for selected upstream recipes.")
+      }
+    }
+  }
+  context <- list(schema = 1L, release = context$release, identity = "TEST",
+                  canonical_root = root)
+  context$scope_id <- pd_engine_digest(context)
+  context$proof_digest <- pd_engine_digest(lapply(prepared, function(x) x$request))
+  return(list(context = context, nodes = prepared, paths = paths, alias = alias))
+}

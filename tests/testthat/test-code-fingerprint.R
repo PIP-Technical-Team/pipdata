@@ -7,6 +7,31 @@ test_that("canonical fingerprints ignore source references and preserve formals"
   expect_false(identical(pd_hash_object(pd_canonical_function(f)), a))
 })
 
+test_that("M2 descriptors hash exactly the locked callback copies with SHA-256", {
+  value <- 900L
+  calculation <- function(path, parents) list(x = helper(value))
+  helper <- function(x) x + offset
+  proof <- pd_engine_proof(calculation, list(helper = helper),
+                           list(value = 1L, offset = 2L))
+  value <- 999L
+  expect_identical(proof$calculation("unused", list())$x, 3L)
+  expect_true(environmentIsLocked(proof$environment))
+  component <- proof$components$calculation
+  expect_identical(component$algorithm, "sha256")
+  expect_identical(component$schema, "pipdata-r-function-v1")
+  expect_identical(component$hash, digest::digest(serialize(
+    pd_canonical_function(proof$calculation), NULL, version = 3L),
+    serialize = FALSE, algo = "sha256"))
+  expect_match(component$hash, "^[0-9a-f]{64}$")
+  reordered <- pd_engine_proof(calculation, list(helper = helper),
+                               list(offset = 2L, value = 1L))
+  expect_identical(proof$components, reordered$components)
+  changed <- pd_engine_proof(calculation, list(helper = helper),
+                             list(offset = 3L, value = 1L))
+  expect_false(identical(proof$components, changed$components))
+  expect_error(assign("value", 10L, proof$environment), "locked")
+})
+
 test_that("component ordering is deterministic", {
   env <- new.env(parent = emptyenv())
   env$a <- function() 1

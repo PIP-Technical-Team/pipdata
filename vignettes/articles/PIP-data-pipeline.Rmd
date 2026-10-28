@@ -147,6 +147,98 @@ country tables to avoid double counting.
 
 ## Architecture and compatibility
 
+### Opt-in M2 recipe authority (TEST only)
+
+`pd_run_pipeline(recipes = ...)` is a separate, bounded route. The default
+`recipes = NULL` retains the staged pipeline above and its existing return.
+The opt-in route does not call its selectors or C2 currentness manifest. It
+passes complete requests and all supplied outputs to public stamp planning and
+rebuild APIs; stamp alone decides run, skip and blocked work and revalidates at
+execution time. No production stage adapters are activated.
+
+```{r m2-recipe-example}
+# Illustrative only: choose an already approved, disposable E fixture root.
+root <- "E:/approved-m2-fixture"
+stamp::st_init(root, alias = "m2-fixture")
+recipes <- list(
+  context = list(release = "m2-example", identity = "TEST", root = root),
+  nodes = list(list(
+    path = "value.rds", parents = list(),
+    calculation = function(path, parents) list(x = value),
+    helpers = list(), constants = list(value = 42L),
+    semantic_schema = NULL, semantic = list(), format = "rds"
+  ))
+)
+feedback <- pd_run_pipeline(recipes = recipes, verbose = FALSE)
+```
+
+Each node requires exactly the fields shown; optional `audit` is descriptive
+only and optional `review` names a governing failure `outcome_id`. Parents are
+an unnamed list of `list(path = ..., version_id = ...)`. Each pin is an exact
+nonempty character ID, never a numeric position or `"latest"`/`"current"` selector.
+Only a selected upstream recipe may use `version_id = NULL`; stamp resolves it
+within the selected first-build graph. Multiple roots and diamonds are supported;
+cycles are rejected. `nodes = list()` returns the typed empty feedback without
+acquiring a lease. Nondefault force/bootstrap/checkpoint controls and `inv`
+cannot be combined with recipes. Formats are exactly `rds`, `qs2`, and `fst`;
+the callback cannot override the requested format.
+
+The callback has exactly `(path, parents)` formals, consumes supplied exact pins,
+and returns exactly one named `x`, optionally `metadata`, `format`, `code`, and
+`code_label`. A named NULL value is different from omitting `x`; physical formats
+must support the value. Declared semantic values are supplied as metadata and
+any callback-supplied semantic fields must agree, preserving types and missing,
+NULL and NA distinctions.
+
+Pure calculation code, named ordinary-R helper closures and disjoint named
+immutable constants are copied into a locked environment with a base parent.
+SHA-256 component descriptors cover the actual copied bodies/formals and values,
+not a manually supplied digest or package-version label. Reordering declarations
+does not invalidate; helper/constant/body edits do. An audit-only edit does not.
+This deliberately narrow trusted callback contract rejects mutable captures,
+missing constant values, primitive components, hidden dependencies, dynamic
+lookup/dispatch and direct side effects. It is not a sandbox or support for
+arbitrary legacy closures, and does not discover undeclared dependencies.
+Guarded reads require the effective declared parent path/pin pair and explicit
+format. Ambient locale/timezone conversions and unsupported S3 generics are
+rejected; guarded base operations reject classed operands rather than silently
+dispatching an unfingerprinted method. Explicitly unclass reviewed inputs before
+operations. The internal read/base/closure policy code is itself SHA-256 bound.
+
+Feedback is one row per selected artifact: `release_id`, canonical `path`,
+stamp `preview_decision`, actual `status`/`reason`, `version_id`, `request_id`,
+`receipt_id`, `outcome_id`, `failure_class`, `governing_failure_id`, `message`,
+and actual `attempted`. Missing proof IDs are typed NA, not fabricated successes.
+Exact returned receipt IDs and same-pin `pipload::pip_read(metadata_only = TRUE)`
+must validate before successful feedback is returned. Retained-output work can
+return `unchanged` with a new receipt and the same output pin; an unchanged
+downstream artifact can consequently remain skipped.
+
+Deterministic and unknown failures block descendants while independent nodes
+can continue. External failures are retried only by another explicit call.
+Signal classified calculation failures with
+`rlang::abort(..., class = "stamp_deterministic_failure")` or
+`rlang::abort(..., class = "stamp_external_failure")`; unclassified errors are
+unknown failures.
+A review supplies `list(outcome_id = feedback$governing_failure_id[[i]])` on the
+relevant node after an actual parent/component change. The failure ID is recovered
+from committed exact outcome history, not a process-local cache or error text;
+it remains usable after repeated blocked calls and a fresh process.
+
+A dedicated lease under the selected root is scoped to release/TEST/root, never
+to a code fingerprint, and does not publish a legacy currentness manifest.
+Frozen proof, root, options and lease ownership are checked on every callback
+entry and exit, including errors. A failed integrity guard stops later callback
+attempts and raises `pipdata_engine_integrity_error` with actual `feedback` and
+original/secondary `causes`; cancellation still propagates as cancellation.
+
+Verification for this slice is deliberately partial: only three selected test
+files and a built/installed public-API smoke run in an E-only disposable runtime.
+The ordinary test suite, production DLW/survey/deflation workflows, production
+SMB semantics, full concurrency and umbrella milestone closure are not certified.
+
+### Existing staged architecture
+
 Each stage is intentionally isolated because a different engineer developed it
 independently, with its own auxiliary data, error handling, and logging:
 

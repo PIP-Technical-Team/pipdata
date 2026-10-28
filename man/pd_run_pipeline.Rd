@@ -12,13 +12,14 @@ pd_run_pipeline(
   bootstrap = FALSE,
   bootstrap_entities = NULL,
   checkpoint_size = 25L,
-  checkpoint_seconds = Inf
+  checkpoint_seconds = Inf,
+  recipes = NULL
 )
 }
 \arguments{
 \item{inv}{The complete completed-validation inventory. If \code{NULL}, the
 current durable validation inventory is loaded with
-\code{\link[pipload:load_gmd_valid_inv]{pipload::load_gmd_valid_inv()}}.}
+\code{\link[pipload:load_dlw_data]{pipload::load_gmd_valid_inv()}}.}
 
 \item{force}{Logical scalar. Rebuild all selected nodes and temporarily use
 Stamp timestamp versioning. Mutually exclusive with \code{force_surveys}.}
@@ -39,10 +40,22 @@ batch size.}
 
 \item{checkpoint_seconds}{\code{Inf} or a positive numeric checkpoint interval in
 seconds.}
+
+\item{recipes}{Optional opt-in M2 envelope with exactly \code{context} and \code{nodes}.
+\code{context} supplies nonempty \code{release}, \code{identity = "TEST"}, and an existing
+absolute E-drive \code{root} already initialized in stamp. \code{nodes} is an unnamed
+list, including an empty list. Each node requires \code{path}, \code{parents},
+\code{calculation}, \code{helpers}, \code{constants}, \code{semantic_schema}, \code{semantic}, and
+lowercase \code{format} (\code{rds}, \code{qs2}, or \code{fst}); only \code{audit} and \code{review} are
+optional. See the M2 section below. \code{NULL} preserves the legacy route.}
 }
 \value{
 A visible \code{pipdata_pipeline_result}. This differs intentionally from
 the legacy stage wrappers, which continue to return master inventories.
+With \code{recipes}, a data.table of stamp feedback instead: \code{release_id}, \code{path},
+\code{preview_decision}, \code{status}, \code{reason}, \code{version_id}, \code{request_id},
+\code{receipt_id}, \code{outcome_id}, \code{failure_class}, \code{governing_failure_id},
+\code{message}, and actual \code{attempted}. Unavailable proof IDs are \code{NA_character_}.
 }
 \description{
 Runs the durable \code{clean}, \code{metadata}, and \code{deflate} stages in topological
@@ -51,6 +64,7 @@ as cached units. Downstream waves are accepted only after committed upstream
 receipts have been reloaded into the authoritative dependency facts.
 }
 \details{
+The following staged-pipeline description applies when \code{recipes = NULL}.
 The C2 dependency manifest and exact Stamp receipts are the only currentness
 authority. The function does not persist a run cursor. A restart creates a
 new run and replans from the latest valid manifest. Recoverable entity errors
@@ -80,10 +94,66 @@ are finalized. Recoverable entity failures block only their descendants. A
 later call resumes by authoritative replan from Stamp and the last valid
 manifest, without a persisted run cursor or an exactly-once guarantee.
 
-The top-level API always uses the canonical auxiliary measures \code{pfw}, \code{cpi},
+The legacy route always uses the canonical auxiliary measures \code{pfw}, \code{cpi},
 \code{ppp}, \code{pop}, \code{gdp}, and \code{pce}. Production activation remains blocked until
 signed target Windows/SMB fencing and immutable unique-rename evidence are
 complete.
+
+With \code{recipes}, pipdata supplies a complete request set to public
+\code{\link[stamp:st_plan_rebuild]{stamp::st_plan_rebuild()}} and \code{\link[stamp:st_rebuild]{stamp::st_rebuild()}}. Stamp alone selects and
+revalidates run/skip/blocked work; legacy manifests and selectors are not used.
+Nondefault legacy controls are rejected. All selected outputs are targets,
+including multiple roots and intermediate nodes. Parents are unnamed lists
+of exactly \code{path} and \code{version_id}; pins must be explicit nonempty character
+IDs, never numeric or mutable selectors. \code{NULL} is allowed only for a selected
+upstream recipe and is resolved by stamp during this call. Cycles are rejected.
+
+Calculations have exactly \verb{(path, parents)} formals and return exactly one
+named \code{x} (including \code{NULL} when supported), optionally \code{metadata}, \code{format},
+\code{code}, and \code{code_label}. Format must agree with the request. Declared semantic
+values are passed as metadata; supplied semantic metadata must match exactly.
+Ordinary R helper closures and complete immutable constants are explicitly
+declared in disjoint named lists. Deep copies run in a locked environment
+whose parent is the base environment, not their original capturing environment.
+Fingerprints are SHA-256 over serialized canonical bodies/formals and values;
+neither caller digests nor package-version substitutes are accepted. Changes
+to helpers/constants invalidate the request; audit-only edits do not.
+
+Only reviewed pure base operations, declared helper calls, exact-version
+public pipload/stamp reads and explicit stamp-classified failures are supported.
+Dynamic lookup/dispatch, primitives as components, mutable run-state captures,
+hidden global dependencies, package-internal calls and direct side effects
+are rejected. This is a trusted declarative callback contract, not a security
+sandbox, arbitrary legacy closure support, or automatic dependency discovery.
+Read callbacks must consume the supplied exact parents, not mutable selectors.
+A guarded public-read boundary enforces the effective parent path/pin pair and
+explicit physical format before reading. Ambient locale/timezone conversions
+and unsupported S3 generics are rejected. Reviewed base operations reject
+classed operands; explicitly unclass reviewed input values before operations.
+The read/base/closure policy code is also SHA-256 bound into request proof.
+
+A separate lease is scoped to release, TEST identity, and canonical root;
+changing a calculation never creates a different writer scope. Frozen proof,
+root/options and ownership are checked before and after callbacks, including
+exceptions. A latched guard prevents later callback attempts. Required success
+proof is read through returned exact receipt IDs and same-pin metadata, never
+a catalog/latest substitute. Integrity failures raise
+\code{pipdata_engine_integrity_error} carrying actual \code{feedback} and \code{causes};
+cancellation remains cancellation even if cleanup also fails.
+
+Deterministic and unknown node failures block descendants but not independent
+work. External failures retry only on a later explicit call.
+\code{rlang::abort(..., class = "stamp_deterministic_failure")} and
+\code{rlang::abort(..., class = "stamp_external_failure")} signal the corresponding
+classified calculation failures; unclassified errors are unknown failures.
+Review is explicit
+\code{list(outcome_id = governing_failure_id)} plus a real parent/component change;
+review alone is not force. Governing IDs are recovered from exact committed
+outcome history across repeated blocks and process restarts. Retained-output
+recalculation can return \code{unchanged} with a new receipt but the same output pin;
+descendants can then remain skipped. No in-call retry or run cursor is created.
+This bounded TEST route does not activate production stages or certify SMB,
+concurrency beyond the local lease, full-suite coverage, or umbrella closure.
 }
 \examples{
 \dontrun{
@@ -94,23 +164,23 @@ print(result)
 }
 \seealso{
 Other pd_process_data pipeline:
-\code{\link[=add_attr]{add_attr()}},
-\code{\link[=aux_hash_candidates]{aux_hash_candidates()}},
-\code{\link[=build_pip_inventory]{build_pip_inventory()}},
-\code{\link[=create_attr]{create_attr()}},
-\code{\link[=data_to_dt]{data_to_dt()}},
-\code{\link[=filter_aux_data]{filter_aux_data()}},
-\code{\link[=filter_aux_inv]{filter_aux_inv()}},
-\code{\link[=fix_year_var]{fix_year_var()}},
-\code{\link[=get_aux_hashes]{get_aux_hashes()}},
-\code{\link[=inv_dlw_load]{inv_dlw_load()}},
-\code{\link[=inv_to_process]{inv_to_process()}},
-\code{\link[=log_report]{log_report()}},
-\code{\link[=pd_aux_attr]{pd_aux_attr()}},
-\code{\link[=pd_deflation]{pd_deflation()}},
-\code{\link[=resolve_force_surveys]{resolve_force_surveys()}},
-\code{\link[=save_pip_data]{save_pip_data()}},
-\code{\link[=survey_id_to_attr]{survey_id_to_attr()}},
-\code{\link[=valid_dlw_load]{valid_dlw_load()}}
+\code{\link{add_attr}()},
+\code{\link{aux_hash_candidates}()},
+\code{\link{build_pip_inventory}()},
+\code{\link{create_attr}()},
+\code{\link{data_to_dt}()},
+\code{\link{filter_aux_data}()},
+\code{\link{filter_aux_inv}()},
+\code{\link{fix_year_var}()},
+\code{\link{get_aux_hashes}()},
+\code{\link{inv_dlw_load}()},
+\code{\link{inv_to_process}()},
+\code{\link{log_report}()},
+\code{\link{pd_aux_attr}()},
+\code{\link{pd_deflation}()},
+\code{\link{resolve_force_surveys}()},
+\code{\link{save_pip_data}()},
+\code{\link{survey_id_to_attr}()},
+\code{\link{valid_dlw_load}()}
 }
 \concept{pd_process_data pipeline}

@@ -1,3 +1,215 @@
+pd_engine_feedback <- function(release, paths = character(), preview = NULL) {
+  n <- length(paths)
+  data.table::data.table(release_id = rep(release, n), path = paths,
+    preview_decision = if (is.null(preview)) rep(NA_character_, n) else preview,
+    status = rep(NA_character_, n), reason = rep(NA_character_, n),
+    version_id = rep(NA_character_, n), request_id = rep(NA_character_, n),
+    receipt_id = rep(NA_character_, n), outcome_id = rep(NA_character_, n),
+    failure_class = rep(NA_character_, n), governing_failure_id = rep(NA_character_, n),
+    message = rep(NA_character_, n), attempted = rep(FALSE, n))
+}
+
+pd_engine_guard <- function(bundle, lease, frozen) {
+  resolved <- pd_engine_path(lease$path, bundle$context$canonical_root)
+  if (!identical(tolower(resolved), tolower(as.character(lease$path)))) rlang::abort("Lease path changed.")
+  pd_lease_assert(lease)
+  root <- as.character(fs::path_real(bundle$context$canonical_root))
+  if (!identical(tolower(root), tolower(bundle$context$canonical_root)) ||
+      !identical(stamp::st_alias_list(), frozen$aliases) ||
+      !identical(stamp::st_opts(.get = TRUE), frozen$stamp) ||
+      !identical(options(), frozen$options) ||
+      !identical(pd_engine_digest(bundle$context), frozen$context)) {
+    rlang::abort("Engine root/context/options invariant changed.",
+                  class = "pipdata_engine_integrity_error")
+  }
+  for (node in bundle$nodes) {
+    proof <- node$proof
+    if (!identical(environment(proof$calculation), proof$environment) ||
+        !identical(parent.env(proof$environment), baseenv()) ||
+        !environmentIsLocked(proof$environment) ||
+        !identical(pd_engine_components(proof), node$request$components)) {
+      rlang::abort("Frozen callback proof changed.",
+                    class = "pipdata_engine_integrity_error")
+    }
+  }
+  invisible(NULL)
+}
+
+pd_engine_outcome <- function(path, id, alias, root, max_records = 1000L) {
+  seen <- character()
+  latest <- NULL
+  for (i in seq_len(max_records)) {
+    if (!pd_engine_string(id) || id %in% seen) rlang::abort("Malformed/cyclic exact outcome history.")
+    seen <- c(seen, id)
+    info <- stamp::st_execution_info(path, receipt_id = id, alias = alias)
+    record <- info$outcome
+    if (!is.list(record) || !identical(record$id, id) ||
+        !identical(record$request$path, path) ||
+        !identical(tolower(record$artifact$root), tolower(root))) {
+      rlang::abort("Missing or cross-artifact exact outcome proof.")
+    }
+    if (is.null(latest)) latest <- record
+    if (!identical(record$outcome, "blocked")) {
+      failed <- record$outcome %in% c("failed_deterministic", "failed_external", "failed_unknown")
+      return(list(class = latest$failure$class %||% NA_character_,
+        governing = if (failed) record$id else NA_character_))
+    }
+    if (is.null(record$previous_id)) {
+      return(list(class = record$failure$class, governing = NA_character_))
+    }
+    id <- record$previous_id
+  }
+  rlang::abort("Exact outcome history exceeds its bounded lookup limit.")
+}
+
+pd_engine_run <- function(recipes, verbose = FALSE) {
+  bundle <- pd_engine_prepare(recipes)
+  context <- bundle$context
+  feedback <- pd_engine_feedback(context$release)
+  if (!length(bundle$nodes)) return(feedback)
+  lease_root <- pd_engine_path(fs::path(context$canonical_root,
+    ".pipdata-engine-state"), context$canonical_root)
+  pd_engine_path(fs::path(lease_root, "dependency-manifest", context$scope_id,
+                         "writer.lease", "owner.rds"), context$canonical_root)
+  lease <- pd_lease_acquire(context, root = lease_root)
+  cleanup_attempted <- FALSE
+  on.exit({
+    if (!cleanup_attempted) {
+      pd_lease_assert(lease)
+      pd_lease_release(lease)
+    }
+  }, add = TRUE)
+  state <- new.env(parent = emptyenv())
+  state$latched <- NULL
+  state$causes <- list()
+  state$cancellation <- NULL
+  state$attempted <- stats::setNames(rep(FALSE, length(bundle$paths)), bundle$paths)
+  frozen <- list(options = options(), aliases = stamp::st_alias_list(),
+    stamp = stamp::st_opts(.get = TRUE), context = pd_engine_digest(context))
+  check <- function() {
+    if (!is.null(state$cancellation)) stop(state$cancellation)
+    if (!is.null(state$latched)) rlang::abort("Engine integrity guard is latched.")
+    tryCatch(pd_engine_guard(bundle, lease, frozen), error = function(e) {
+      state$latched <- e
+      rlang::cnd_signal(e)
+    })
+  }
+  callback <- function(path, parents) {
+    check()
+    index <- match(path, bundle$paths)
+    if (is.na(index)) rlang::abort("Stamp invoked an undeclared callback.")
+    state$attempted[[path]] <- TRUE
+    node <- bundle$nodes[[index]]
+    node$proof$access$parents <- parents
+    primary <- NULL
+    post <- NULL
+    value <- tryCatch(tryCatch(node$proof$calculation(path, parents),
+      error = function(e) { primary <<- e; NULL },
+      interrupt = function(e) { primary <<- e; NULL }), finally = {
+        node$proof$access$parents <- list()
+        post <- tryCatch({ check(); NULL }, error = identity)
+      })
+    if (!is.null(primary)) state$causes <- c(state$causes, list(primary))
+    if (!is.null(primary) && pd_is_pipeline_cancellation(primary)) {
+      state$cancellation <- primary
+    }
+    if (inherits(primary, "interrupt")) stop(primary)
+    if (!is.null(post)) rlang::cnd_signal(post)
+    if (!is.null(primary)) rlang::cnd_signal(primary)
+    if (!pd_engine_names(value) || sum(names(value) == "x") != 1L ||
+        any(!names(value) %in% c("x", "metadata", "format", "code", "code_label"))) {
+      rlang::abort("Builder must return exactly one named x and allowed metadata.")
+    }
+    if (!is.null(value$format) && !identical(value$format, node$request$format)) {
+      rlang::abort("Builder format conflicts with requested format.")
+    }
+    value$format <- node$request$format
+    metadata <- value$metadata %||% list()
+    if (!pd_engine_names(metadata)) rlang::abort("Builder metadata must be a named list.")
+    semantic_names <- names(node$request$semantic_schema)
+    supplied <- intersect(names(metadata), semantic_names)
+    for (name in supplied) {
+      if (!name %in% names(node$request$semantic) ||
+          !identical(metadata[[name]], node$request$semantic[[name]])) {
+        rlang::abort("Builder semantic metadata contradicts declared request.")
+      }
+    }
+    value$metadata <- c(node$request$semantic,
+      metadata[setdiff(names(metadata), names(node$request$semantic))])
+    return(value)
+  }
+  primary <- tryCatch({
+    check()
+    requests <- lapply(bundle$nodes, function(node) node$request)
+    plan <- stamp::st_plan_rebuild(bundle$paths, include_targets = TRUE,
+                                    requests = requests)
+    feedback <- pd_engine_feedback(context$release, plan$path, plan$decision)
+    check()
+    result <- stamp::st_rebuild(plan, rebuild_fun = callback)
+    index <- match(feedback$path, result$path)
+    if (nrow(result) != nrow(feedback) || anyNA(index) || anyDuplicated(result$path)) {
+      rlang::abort("Incomplete stamp execution accounting.")
+    }
+    for (name in c("status", "reason", "version_id", "request_id", "receipt_id", "outcome_id")) {
+      data.table::set(feedback, j = name, value = as.character(result[[name]][index]))
+    }
+    data.table::set(feedback, j = "message", value = result$msg[index])
+    data.table::set(feedback, j = "attempted", value = unname(state$attempted[feedback$path]))
+    if (any(result$reason %in% c("publication_failed", "invalid_state"))) {
+      state$latched <- simpleError("Stamp reported publication_failed/invalid_state.")
+    }
+    for (i in seq_len(nrow(feedback))) {
+      path <- feedback$path[[i]]
+      id <- feedback$outcome_id[[i]]
+      if (!is.na(id)) {
+        outcome <- pd_engine_outcome(path, id, bundle$alias, context$canonical_root)
+        data.table::set(feedback, i, "failure_class", outcome$class)
+        data.table::set(feedback, i, "governing_failure_id", outcome$governing)
+      }
+      if (feedback$status[[i]] %in% c("built", "unchanged", "skipped")) {
+        receipt <- feedback$receipt_id[[i]]
+        pin <- feedback$version_id[[i]]
+        if (!pd_engine_string(receipt) || !pd_engine_string(pin)) {
+          rlang::abort("Success without required exact output/receipt proof.")
+        }
+        info <- stamp::st_execution_info(path, receipt_id = receipt, alias = bundle$alias)
+        node <- bundle$nodes[[match(path, bundle$paths)]]
+        metadata <- pipload::pip_read(path, format = node$request$format,
+          version = pin, alias = bundle$alias, verbose = FALSE, metadata_only = TRUE)
+        if (!identical(info$state, "success") || !identical(info$version_id, pin) ||
+            !identical(info$receipt$request_id, feedback$request_id[[i]]) ||
+            !is.list(metadata) || !identical(metadata$format, node$request$format)) {
+          rlang::abort("Inconsistent exact receipt or same-pin metadata.")
+        }
+      }
+    }
+    check()
+    NULL
+  }, error = identity, interrupt = identity)
+  if (nrow(feedback)) data.table::set(feedback, j = "attempted",
+    value = unname(state$attempted[feedback$path]))
+  # Cleanup cannot replace cancellation or erase actual feedback/primary causes.
+  cleanup <- tryCatch({ pd_lease_assert(lease); pd_lease_release(lease); NULL },
+                       error = identity, interrupt = identity)
+  cleanup_attempted <- TRUE
+  if (!is.null(state$cancellation)) primary <- state$cancellation
+  if (!is.null(primary) && pd_is_pipeline_cancellation(primary)) {
+    primary$feedback <- feedback
+    primary$secondary <- c(state$causes, list(state$latched, cleanup))
+    stop(primary)
+  }
+  if (!is.null(state$latched) || !is.null(cleanup) ||
+      (!is.null(primary) && nrow(feedback))) {
+    rlang::abort("Engine integrity validation failed; inspect actual feedback.",
+      class = "pipdata_engine_integrity_error", feedback = feedback,
+      parent = primary %||% state$latched %||% cleanup,
+      causes = c(state$causes, list(state$latched, cleanup)))
+  }
+  if (!is.null(primary)) rlang::cnd_signal(primary)
+  if (verbose) cli::cli_inform("Stamp returned {nrow(feedback)} engine outcomes.")
+  return(feedback[])
+}
+
 .filter_completed_dlw_validation_inventory <- function(inv) {
   if (!is.data.frame(inv)) {
     .abort_dlw_validation_inventory_schema(

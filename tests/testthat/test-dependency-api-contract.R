@@ -9,7 +9,7 @@ test_that("required public storage APIs retain exact-version contracts", {
     names(formals(pd_run_pipeline)),
     c(
       "inv", "force", "verbose", "force_surveys", "bootstrap",
-      "bootstrap_entities", "checkpoint_size", "checkpoint_seconds"
+      "bootstrap_entities", "checkpoint_size", "checkpoint_seconds", "recipes"
     )
   )
 })
@@ -49,7 +49,7 @@ test_that("V14 touched APIs retain exact formals defaults and positional order",
     names(formals(pd_run_pipeline)),
     c(
       "inv", "force", "verbose", "force_surveys", "bootstrap",
-      "bootstrap_entities", "checkpoint_size", "checkpoint_seconds"
+      "bootstrap_entities", "checkpoint_size", "checkpoint_seconds", "recipes"
     )
   )
 
@@ -70,6 +70,12 @@ test_that("V14 touched APIs retain exact formals defaults and positional order",
   expect_identical(formals(pd_deflate_pipeline)$dependency_plan, NULL)
   expect_identical(formals(pd_run_pipeline)$checkpoint_size, 25L)
   expect_identical(formals(pd_run_pipeline)$checkpoint_seconds, Inf)
+  expected <- formals(function(inv = NULL, force = FALSE,
+    verbose = getOption("pipdata.verbose", default = TRUE), force_surveys = NULL,
+    bootstrap = FALSE, bootstrap_entities = NULL, checkpoint_size = 25L,
+    checkpoint_seconds = Inf) NULL)
+  expect_identical(as.list(formals(pd_run_pipeline))[1:8], as.list(expected))
+  expect_null(formals(pd_run_pipeline)$recipes)
 })
 
 test_that("V14 export and S3 registration delta is exact", {
