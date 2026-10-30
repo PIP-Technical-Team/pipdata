@@ -32,7 +32,7 @@ pipfun::setup_working_release(release)
 #> Git credentials are missing or invalid in non-interactive mode.
 #> ⠙ 10 items, page 1 | 2ms
 #> Git credentials are missing or invalid in non-interactive mode.
-#> ⠙ 0 items, page 1 | 2ms
+#> ⠙ 0 items, page 1 | 1ms
 #> Error in value[[3L]](cond): ✖ Error downloading file from github
 #> ℹ check file ppp_vintage.csv exists
 #> ✖ `password` must be a single string, not a character `NA`.
