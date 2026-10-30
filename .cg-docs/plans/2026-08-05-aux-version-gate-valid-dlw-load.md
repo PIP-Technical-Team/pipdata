@@ -10,6 +10,7 @@ deviation-policy: "ask"
 artifact-schema-version: 1
 tags: [valid_dlw_load, valid_aux_load, aux, stamp, content_hash, master-inventory, pipeline, incremental-processing]
 phases: 2  # convenience hint -- may be stale; always recount from ## Phase headers
+---
 
 # Plan: Gate aux-change detection in `valid_dlw_load()` on per-survey aux content-hash comparison
 

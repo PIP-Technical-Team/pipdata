@@ -1,4 +1,3 @@
-````markdown
 ---
 date: 2026-04-27
 title: "Error handling audit: utils.R cleanup and nested tryCatch patterns"
@@ -282,5 +281,3 @@ Found comments in code:
 - Roadmap item: `utils-cleanup` — Clean utils.R
 - Roadmap item: `nested-tryCatch` — Audit nested tryCatch patterns
 - Previous work: Phase 1 dplyr migration (2026-04-27) — established code quality baseline
-
-````
