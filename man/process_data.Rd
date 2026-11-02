@@ -7,7 +7,10 @@
 process_data(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...)
 }
 \arguments{
-\item{inv}{inventory with survey_id and pins folder}
+\item{inv}{A one-row \code{data.frame} or \code{data.table} from the completed DLW
+validation inventory containing \code{survey_id}, \code{status == "valid"}, and
+\code{data_available == "Yes"}. Rows missing validation fields or having
+\code{status != "valid"} or \code{data_available != "Yes"} are rejected before loading.}
 
 \item{aux_list}{Named list of auxiliary data frames; expected keys:
 \code{"pfw"}, \code{"cpi"}, \code{"ppp"}, \code{"pop"}, \code{"gdp"}, \code{"pce"}.}
@@ -21,7 +24,9 @@ the spec is read once upstream rather than once per survey. Default \code{NULL}.
 \item{...}{other parameters}
 }
 \value{
-data.table
+Invisibly, a list with element \code{pip_names} (character vector of saved
+clean \code{pip_id} names) when cleaning, post-format validation, and saving
+succeed, or \code{NULL} when an error or validation failure is logged and caught.
 }
 \description{
 Process datalibweb data: merge PFW data and clean variables

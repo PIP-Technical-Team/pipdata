@@ -13,7 +13,8 @@
             "add_dist_type", "add_dist_type.pipmd", "add_dist_type.pipgd",
             "add_area", "add_area.pipmd", "add_area.pipgd",
             "get_gd_type", "area_gd_clean", "format_wgt", "format_wlf",
-            "shift_subnatid", "pip_vars"),
+            "shift_subnatid", "pip_vars", "pd_validate_clean_output",
+            ".validate_clean_survey", ".assert_clean_eligible_inv_row"),
   metadata = c(
     "pd_aux_attr", "pd_metadata_refresh", "pd_normalize_metadata_keys",
     "pd_validate_metadata_base"

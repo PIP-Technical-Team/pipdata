@@ -13,9 +13,9 @@ pd_change_report(
 }
 \arguments{
 \item{inv}{Completed DLW validation inventory metadata. Before dependency
-planning, only \code{data_available = "Yes"} rows with status \code{"valid"} or
-\code{"invalid"} are retained. Recognized legacy blank/\code{"No"} retry rows are
-excluded, while malformed completed rows abort.}
+planning, only \code{data_available = "Yes"} rows with status \code{"valid"}
+are retained (\code{status == "invalid"} and recognized legacy blank/\code{"No"}
+retry rows are excluded, while malformed completed rows abort).}
 
 \item{master}{PIP master inventory metadata.}
 

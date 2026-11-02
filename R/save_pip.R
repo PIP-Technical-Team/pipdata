@@ -121,7 +121,7 @@ pd_save_receipt <- function(x, id, alias, verbose = FALSE, lease = NULL) {
     identical(content_hash, attempted_hash) && exact
   list(alias = alias, artifact = id, path = path, version_id = version_id,
        content_hash = content_hash, skipped = skipped, success = success,
-       error = if (success) NULL else "Stamp receipt verification failed.")
+       error = if (success) NA_character_ else "Stamp receipt verification failed.")
 }
 
 pd_revalidate_receipt <- function(receipt) {

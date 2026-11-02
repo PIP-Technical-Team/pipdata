@@ -980,7 +980,8 @@
 
 .pipdata_validate_gmd_core <- function(
     acquisition_inventory_id = "dlw_gmd_inv",
-    verbose = getOption("pipdata.verbose", default = TRUE)
+    verbose = getOption("pipdata.verbose", default = TRUE),
+    selected_survey_ids = NULL
 ) {
   .validate_dlw_validation_arguments(verbose, acquisition_inventory_id)
   pipfun::get_wrk_release()
@@ -1535,6 +1536,9 @@
   }
 
   candidates <- state$candidates
+  if (!is.null(selected_survey_ids)) {
+    candidates <- candidates[survey_id %in% selected_survey_ids]
+  }
   if (nrow(candidates) == 0L) {
     emit_info(
       "No new GMD data was available for validation.",

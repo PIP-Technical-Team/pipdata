@@ -227,6 +227,7 @@ pd_engine_run <- function(recipes, verbose = FALSE) {
       "Completed validation inventory contains duplicate survey IDs."
     )
   }
+  completed <- completed[status == "valid" & data_available == "Yes"]
   completed[]
 }
 

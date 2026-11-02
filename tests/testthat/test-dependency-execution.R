@@ -137,7 +137,7 @@ test_that("write fence fails before work after lease loss", {
   )
 })
 
-test_that("completed validation filter excludes retries and rejects malformed rows", {
+test_that("completed validation filter excludes invalid and retry rows and rejects malformed rows", {
   completed <- make_dependency_validation_inventory()
   retry <- completed[1L]
   retry[, `:=`(
@@ -151,7 +151,9 @@ test_that("completed validation filter excludes retries and rejects malformed ro
   filtered <- .filter_completed_dlw_validation_inventory(
     data.table::rbindlist(list(completed, retry))
   )
-  expect_identical(nrow(filtered), 2L)
+  expect_identical(nrow(filtered), 1L)
+  expect_identical(filtered$status, "valid")
+  expect_false(any(filtered$status == "invalid"))
   expect_false(any(filtered$data_available == "No"))
 
   malformed <- data.table::copy(completed)
@@ -170,7 +172,7 @@ test_that("completed validation filter excludes retries and rejects malformed ro
   exact <- data.table::rbindlist(list(completed, completed[1L]))
   expect_identical(
     nrow(.filter_completed_dlw_validation_inventory(exact)),
-    2L
+    1L
   )
 
   conflicting <- data.table::rbindlist(list(completed, completed[1L]))
