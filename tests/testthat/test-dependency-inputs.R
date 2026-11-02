@@ -369,6 +369,7 @@ test_that("clean worker rejects output-defined IDs before artifact writes", {
     inv_dlw_load = function(...) data.table::data.table(),
     pd_cpfw_merge = function(...) data.table::data.table(),
     pd_dlw_clean = function(...) wrong,
+    pd_validate_clean_output = function(clean) invisible(clean),
     pd_aux_attr = function(...) wrong,
     pd_assert_execution_fence = function(...) invisible(NULL),
     pd_save_receipt = function(...) {
@@ -380,7 +381,13 @@ test_that("clean worker rejects output-defined IDs before artifact writes", {
 
   expect_error(
     pd_execute_clean(
-      action, data.table::data.table(survey_id = "survey"), execution,
+      action,
+      data.table::data.table(
+        survey_id = "survey",
+        status = "valid",
+        data_available = "Yes"
+      ),
+      execution,
       recode_spec = list()
     ),
     class = "pipdata_clean_output_incomplete"

@@ -1144,3 +1144,146 @@ dlw_gmd_list <- function(inv_gmd_list = "dlw_gmd_inv") {
   .require_verified_dlw_acquisition_write(persisted)
   return(invisible(data.table::copy(persisted$value)))
 }
+
+#' Resolve and validate an explicit M2 single-survey selection against the server catalog
+#'
+#' Validates that `selection` is a named list or one-row `data.frame` containing
+#' the nine required fields (`country_code`, `surveyid_year`, `survey_acronym`,
+#' `welfare_type`, `module`, `FileName`, `Checksum`, `Vermast`, `Veralt`),
+#' verifies that `FileName` parses to the same identity fields via
+#' [pipload::survey_id_to_vars()], and confirms that the pinned row and checksum
+#' exist in `server_catalog`. Preserves the DLW source `survey_id` (`FileName`
+#' without extension) and derives the expected clean `pip_id`
+#' (`<COUNTRY>_<YEAR>_<ACRONYM>_<INC|CON>_<MODULE>`) separately.
+#'
+#' @param selection Named list or one-row `data.frame` describing the single
+#'   selected survey and its pins (`country_code`, `surveyid_year`,
+#'   `survey_acronym`, `welfare_type` in `"income"`/`"consumption"`, active GMD
+#'   `module`, `FileName`, `Checksum`, `Vermast`, `Veralt`).
+#' @param server_catalog Tabular GMD server catalog to match against.
+#' @return Named list with `survey_id`, `pip_id`, normalized selection fields,
+#'   and one-row `catalog_row`.
+#' @keywords internal
+.resolve_m2_one_survey_selection <- function(selection, server_catalog) {
+  if (!is.list(selection) && !is.data.frame(selection)) {
+    .abort_dlw_acquisition_contract(
+      "Single-survey selection must be a named list or one-row data.frame."
+    )
+  }
+  if (is.data.frame(selection)) {
+    if (nrow(selection) != 1L) {
+      .abort_dlw_acquisition_contract(
+        "Single-survey selection data.frame must have exactly one row."
+      )
+    }
+    selection <- as.list(selection[1L, ])
+  }
+  required <- c(
+    "country_code", "surveyid_year", "survey_acronym", "welfare_type",
+    "module", "FileName", "Checksum", "Vermast", "Veralt"
+  )
+  missing_fields <- setdiff(required, names(selection))
+  if (length(missing_fields) > 0L) {
+    .abort_dlw_acquisition_contract(paste0(
+      "Single-survey selection is missing required fields: ",
+      paste(missing_fields, collapse = ", "),
+      "."
+    ))
+  }
+  scalar_string <- function(x, name) {
+    if (!is.character(x) || length(x) != 1L || is.na(x) ||
+        !nzchar(trimws(x))) {
+      .abort_dlw_acquisition_contract(paste0(
+        "Single-survey selection field `", name,
+        "` must be a non-empty character scalar."
+      ))
+    }
+    trimws(x)
+  }
+  country_code <- toupper(scalar_string(selection$country_code, "country_code"))
+  survey_acronym <- toupper(scalar_string(selection$survey_acronym, "survey_acronym"))
+  welfare_type <- tolower(scalar_string(selection$welfare_type, "welfare_type"))
+  if (!welfare_type %in% c("income", "consumption")) {
+    .abort_dlw_acquisition_contract(
+      "Single-survey selection `welfare_type` must be `income` or `consumption`."
+    )
+  }
+  module <- toupper(scalar_string(selection$module, "module"))
+  if (!module %in% .dlw_acquisition_active_modules) {
+    .abort_dlw_acquisition_contract(
+      "Single-survey selection `module` must be an active GMD module."
+    )
+  }
+  file_name <- scalar_string(selection$FileName, "FileName")
+  checksum <- scalar_string(selection$Checksum, "Checksum")
+  vermast <- scalar_string(selection$Vermast, "Vermast")
+  veralt <- scalar_string(selection$Veralt, "Veralt")
+  year_raw <- selection$surveyid_year
+  if ((!is.integer(year_raw) && !is.numeric(year_raw)) ||
+      length(year_raw) != 1L || is.na(year_raw) || !is.finite(year_raw) ||
+      year_raw != floor(year_raw) || year_raw < 0) {
+    .abort_dlw_acquisition_contract(
+      "Single-survey selection `surveyid_year` must be a finite whole number."
+    )
+  }
+  surveyid_year <- as.integer(year_raw)
+  survey_id <- .dlw_survey_id(file_name)
+  parsed <- tryCatch(
+    pipload::survey_id_to_vars(data.table::data.table(survey_id = survey_id)),
+    error = function(e) e
+  )
+  if (inherits(parsed, "condition") || !is.data.frame(parsed) ||
+      nrow(parsed) != 1L) {
+    .abort_dlw_acquisition_contract(
+      "Single-survey selection `FileName` does not parse to a valid GMD survey_id."
+    )
+  }
+  norm_ver <- function(v) tolower(sub("^[vV]", "", trimws(as.character(v))))
+  if (!identical(toupper(as.character(parsed$country_code[[1L]])), country_code) ||
+      !identical(as.integer(parsed$surveyid_year[[1L]]), surveyid_year) ||
+      !identical(toupper(as.character(parsed$survey_acronym[[1L]])), survey_acronym) ||
+      !identical(toupper(as.character(parsed$module[[1L]])), module) ||
+      !identical(norm_ver(parsed$vermast[[1L]]), norm_ver(vermast)) ||
+      !identical(norm_ver(parsed$veralt[[1L]]), norm_ver(veralt))) {
+    .abort_dlw_acquisition_contract(
+      "Single-survey selection fields do not match parsed `FileName` identity."
+    )
+  }
+  server <- .normalize_dlw_acquisition_catalog(server_catalog, source = "server")
+  matched <- server[
+    .dlw_normalized_filename(FileName) == .dlw_normalized_filename(file_name)
+  ]
+  if (nrow(matched) != 1L) {
+    .abort_dlw_acquisition_contract(
+      "Selected survey `FileName` is absent from the GMD server catalog."
+    )
+  }
+  row <- matched[1L]
+  if (!identical(toupper(row$Country), country_code) ||
+      !identical(as.integer(row$Year), surveyid_year) ||
+      !identical(toupper(row$Survey_acronym), survey_acronym) ||
+      !identical(toupper(row$Module), module) ||
+      !identical(norm_ver(row$Vermast), norm_ver(vermast)) ||
+      !identical(norm_ver(row$Veralt), norm_ver(veralt)) ||
+      !identical(row$Checksum, checksum)) {
+    .abort_dlw_acquisition_contract(
+      "Selected survey pins (Checksum/versions/module) do not match the server catalog row."
+    )
+  }
+  wt_code <- if (identical(welfare_type, "income")) "INC" else "CON"
+  pip_id <- paste(country_code, surveyid_year, survey_acronym, wt_code, module, sep = "_")
+  list(
+    survey_id = survey_id,
+    pip_id = pip_id,
+    country_code = country_code,
+    surveyid_year = surveyid_year,
+    survey_acronym = survey_acronym,
+    welfare_type = welfare_type,
+    module = module,
+    FileName = row$FileName[[1L]],
+    Checksum = row$Checksum[[1L]],
+    Vermast = row$Vermast[[1L]],
+    Veralt = row$Veralt[[1L]],
+    catalog_row = data.table::copy(matched)
+  )
+}

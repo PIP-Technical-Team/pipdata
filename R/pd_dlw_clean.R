@@ -164,6 +164,13 @@ format_wgt <- function(dt) {
       }
 
       dt[, weight := as.double(weight)]
+      if (!nrow(dt) || !all(is.finite(dt$weight)) ||
+          any(dt$weight < 0) || sum(dt$weight) <= 0) {
+        rlang::abort(
+          "Formatted weight column contains missing, non-finite, negative, or non-positive-sum values.",
+          class = c("pipdata_clean_validation_error", "piperr")
+        )
+      }
 
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,9 +193,23 @@ format_wlf <- function(dt) {
   # computations   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  if (!"welfare" %in% colnames(dt)) {
+    rlang::abort(
+      "Input is missing required column `welfare`.",
+      class = c("pipdata_clean_validation_error", "piperr")
+    )
+  }
+
   dt[, welfare := as.double(welfare)]
 
   dt[, welfare := welfare / 365]
+
+  if (!nrow(dt) || !all(is.finite(dt$welfare))) {
+    rlang::abort(
+      "Formatted welfare column contains missing or non-finite values.",
+      class = c("pipdata_clean_validation_error", "piperr")
+    )
+  }
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return   ---------
@@ -593,4 +614,125 @@ pip_vars <- function(dt) {
   # Return   ---------
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   return(dt)
+}
+
+#' Validate a single cleaned survey table before persistence
+#'
+#' Checks that `dt` is a non-empty `data.table` inheriting from `"pipmd"` or
+#' `"pipgd"`, contains finite double `welfare` and `weight` columns with
+#' non-negative weights and positive total weight, carries valid scalar identity
+#' and domain attributes (`survey_id`, `country_code`, `survey_acronym`,
+#' `surveyid_year`, `welfare_type`, `reporting_level`, `distribution_type`,
+#' `ppp_data_level`, `cpi_data_level`, `pop_data_level`, `gdp_data_level`,
+#' `pce_data_level`, `aux_data_levels`), and—when any auxiliary domain level is
+#' `"area"`—has a character or factor `area` column with non-missing, non-empty
+#' values.
+#'
+#' @param dt Cleaned survey `data.table`.
+#' @param pip_id Optional character scalar clean artifact ID for error context.
+#' @return Invisibly returns `TRUE`; aborts with class
+#'   `c("pipdata_clean_validation_error", "piperr")` on any violation.
+#' @keywords internal
+.validate_clean_survey <- function(dt, pip_id = NULL) {
+  abort_clean <- function(msg) {
+    rlang::abort(
+      msg,
+      class = c("pipdata_clean_validation_error", "piperr"),
+      pip_id = pip_id
+    )
+  }
+  if (!data.table::is.data.table(dt) || nrow(dt) < 1L) {
+    abort_clean("Cleaned survey must be a non-empty `data.table`.")
+  }
+  if (!any(c("pipmd", "pipgd") %in% class(dt))) {
+    abort_clean("Cleaned survey must inherit from `pipmd` or `pipgd`.")
+  }
+  required_cols <- c("welfare", "weight")
+  if (!all(required_cols %in% names(dt))) {
+    abort_clean("Cleaned survey is missing required `welfare` or `weight` columns.")
+  }
+  if (!is.double(dt$welfare) || !is.double(dt$weight) ||
+      !all(is.finite(dt$welfare)) || !all(is.finite(dt$weight))) {
+    abort_clean("Cleaned survey `welfare` and `weight` must be finite double vectors.")
+  }
+  if (any(dt$weight < 0) || sum(dt$weight) <= 0) {
+    abort_clean("Cleaned survey `weight` must be non-negative with positive total weight.")
+  }
+  att <- attributes(dt)
+  scalar_char <- function(x) {
+    is.character(x) && length(x) == 1L && !is.na(x) && nzchar(trimws(x))
+  }
+  for (field in c("survey_id", "country_code", "survey_acronym",
+                  "welfare_type", "reporting_level", "distribution_type")) {
+    if (!scalar_char(att[[field]])) {
+      abort_clean(paste0("Cleaned survey attribute `", field, "` must be a non-empty character scalar."))
+    }
+  }
+  if (!att$welfare_type %in% c("income", "consumption")) {
+    abort_clean("Cleaned survey attribute `welfare_type` must be `income` or `consumption`.")
+  }
+  if (!att$reporting_level %in% c("1", "2")) {
+    abort_clean("Cleaned survey attribute `reporting_level` must be `1` or `2`.")
+  }
+  if (!att$distribution_type %in% c("micro", "imputed", "group", "aggregate")) {
+    abort_clean("Cleaned survey attribute `distribution_type` is invalid.")
+  }
+  yr <- att$surveyid_year
+  if ((!is.integer(yr) && !is.numeric(yr)) || length(yr) != 1L ||
+      is.na(yr) || !is.finite(yr) || yr != floor(yr) || yr < 0) {
+    abort_clean("Cleaned survey attribute `surveyid_year` must be a finite whole number.")
+  }
+  level_attrs <- c(
+    "ppp_data_level", "cpi_data_level", "pop_data_level",
+    "gdp_data_level", "pce_data_level"
+  )
+  for (field in level_attrs) {
+    if (!scalar_char(att[[field]]) || !att[[field]] %in% c("national", "area")) {
+      abort_clean(paste0("Cleaned survey attribute `", field, "` must be `national` or `area`."))
+    }
+  }
+  if (!scalar_char(att$aux_data_levels) ||
+      !att$aux_data_levels %in% c("same", "different")) {
+    abort_clean("Cleaned survey attribute `aux_data_levels` must be `same` or `different`.")
+  }
+  needs_area <- any(vapply(level_attrs, function(field) {
+    identical(att[[field]], "area")
+  }, logical(1L)))
+  if (needs_area) {
+    if (!"area" %in% names(dt) ||
+        (!is.character(dt$area) && !is.factor(dt$area))) {
+      abort_clean("Subnational (`area`) domain requires a character or factor `area` column.")
+    }
+    area_chr <- trimws(as.character(dt$area))
+    if (anyNA(area_chr) || any(!nzchar(area_chr))) {
+      abort_clean("Subnational (`area`) domain cannot contain missing or empty `area` values.")
+    }
+  }
+  invisible(TRUE)
+}
+
+#' Validate formatted clean survey output list before saving
+#'
+#' Ensures `clean` is a non-empty, uniquely named list of cleaned survey tables
+#' and validates every element via [.validate_clean_survey()] before any clean
+#' data or metadata save occurs.
+#'
+#' @param clean Named list of cleaned survey `data.table` objects produced by
+#'   [pd_dlw_clean()].
+#' @return Invisibly returns `clean`; aborts with class
+#'   `c("pipdata_clean_validation_error", "piperr")` on any violation.
+#' @keywords internal
+pd_validate_clean_output <- function(clean) {
+  if (!is.list(clean) || length(clean) < 1L || is.null(names(clean)) ||
+      anyNA(names(clean)) || any(!nzchar(trimws(names(clean)))) ||
+      anyDuplicated(names(clean))) {
+    rlang::abort(
+      "Cleaned survey output must be a non-empty uniquely named list.",
+      class = c("pipdata_clean_validation_error", "piperr")
+    )
+  }
+  for (nm in names(clean)) {
+    .validate_clean_survey(clean[[nm]], pip_id = nm)
+  }
+  invisible(clean)
 }

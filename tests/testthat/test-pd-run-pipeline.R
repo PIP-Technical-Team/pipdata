@@ -3,7 +3,7 @@ test_that("pd_run_pipeline has the frozen public signature", {
     names(formals(pd_run_pipeline)),
     c(
       "inv", "force", "verbose", "force_surveys", "bootstrap",
-      "bootstrap_entities", "checkpoint_size", "checkpoint_seconds"
+      "bootstrap_entities", "checkpoint_size", "checkpoint_seconds", "recipes"
     )
   )
   expect_identical(formals(pd_run_pipeline)$inv, NULL)
@@ -13,6 +13,7 @@ test_that("pd_run_pipeline has the frozen public signature", {
   expect_identical(formals(pd_run_pipeline)$bootstrap_entities, NULL)
   expect_identical(formals(pd_run_pipeline)$checkpoint_size, 25L)
   expect_identical(formals(pd_run_pipeline)$checkpoint_seconds, Inf)
+  expect_identical(formals(pd_run_pipeline)$recipes, NULL)
 })
 
 test_that("pipeline pure guards precede lease and storage access", {

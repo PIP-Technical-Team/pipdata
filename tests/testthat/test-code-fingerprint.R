@@ -84,6 +84,18 @@ test_that("active S3 method mutation invalidates only clean", {
                    before[c("metadata", "deflate")])
 })
 
+test_that("post-format validation helper mutation invalidates only clean", {
+  before <- fingerprint_hashes()
+  testthat::local_mocked_bindings(
+    .validate_clean_survey = function(dt, pip_id = NULL) invisible(FALSE),
+    .package = "pipdata"
+  )
+  after <- fingerprint_hashes()
+  expect_false(identical(after[["clean"]], before[["clean"]]))
+  expect_identical(after[c("metadata", "deflate")],
+                   before[c("metadata", "deflate")])
+})
+
 test_that("quantile implementation mutation invalidates only clean", {
   before <- fingerprint_hashes()
   testthat::local_mocked_bindings(

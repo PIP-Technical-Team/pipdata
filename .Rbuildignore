@@ -6,6 +6,7 @@
 ^docs$
 ^pkgdown$
 ^\.github$
+^\.git$
 ^vignettes/articles$
 ^\.cg-docs$
 ^\.compound-gpid$

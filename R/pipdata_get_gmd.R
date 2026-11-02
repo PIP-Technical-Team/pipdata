@@ -803,6 +803,21 @@ pipdata_get_gmd <- function(
   check_missing = TRUE,
   verbose = getOption("pipdata.verbose", default = TRUE)
 ) {
+  .pipdata_get_gmd_core(
+    inv_gmd_list = inv_gmd_list,
+    check_missing = check_missing,
+    verbose = verbose,
+    selected_filenames = NULL
+  )
+}
+
+.pipdata_get_gmd_core <- function(
+  inv_gmd_list = "dlw_gmd_inv",
+  check_missing = TRUE,
+  verbose = getOption("pipdata.verbose", default = TRUE),
+  selected_filenames = NULL,
+  server_catalog_override = NULL
+) {
   .validate_dlw_acquisition_arguments(
     inv_gmd_list,
     check_missing,
@@ -1002,7 +1017,26 @@ pipdata_get_gmd <- function(
   }
 
   prior_result <- tryCatch(
-    .load_dlw_acquisition_inventory(inv_gmd_list, verbose = verbose),
+    if (is.null(selected_filenames)) {
+      .load_dlw_acquisition_inventory(inv_gmd_list, verbose = verbose)
+    } else {
+      state <- .reload_dlw_acquisition_inventory_state(inv_gmd_list, verbose = verbose)
+      if (identical(state$state, "present")) {
+        state$value
+      } else {
+        .normalize_dlw_acquisition_catalog(
+          data.table::data.table(
+            Country = character(), Year = integer(),
+            Survey_acronym = character(), Vermast = character(),
+            Veralt = character(), Module = character(),
+            Collection = character(), FileName = character(),
+            Checksum = character(), Ext = character(),
+            data_available = character()
+          ),
+          source = "local"
+        )
+      }
+    },
     error = function(e) e
   )
   if (inherits(prior_result, "condition")) {
@@ -1053,7 +1087,14 @@ pipdata_get_gmd <- function(
   )
 
   server_result <- tryCatch(
-    .load_dlw_acquisition_server_catalog(),
+    if (is.null(server_catalog_override)) {
+      .load_dlw_acquisition_server_catalog()
+    } else {
+      .normalize_dlw_acquisition_catalog(
+        server_catalog_override,
+        source = "server"
+      )
+    },
     error = function(e) e
   )
   if (inherits(server_result, "condition")) {
@@ -1101,6 +1142,32 @@ pipdata_get_gmd <- function(
     )))
   }
   candidates <- data.table::copy(candidates_result)
+  if (!is.null(selected_filenames)) {
+    selected_norm <- .dlw_normalized_filename(selected_filenames)
+    candidates <- candidates[
+      .dlw_normalized_filename(FileName) %in% selected_norm
+    ]
+    prior_other <- if (!is.null(prior) && nrow(prior) > 0L) {
+      other <- data.table::copy(
+        prior[!.dlw_normalized_filename(FileName) %in% selected_norm]
+      )
+      other[, data_available := NULL]
+      other
+    } else {
+      server[0L]
+    }
+    server <- .normalize_dlw_acquisition_catalog(
+      data.table::rbindlist(
+        list(
+          prior_other,
+          server[.dlw_normalized_filename(FileName) %in% selected_norm]
+        ),
+        use.names = TRUE,
+        fill = TRUE
+      ),
+      source = "server"
+    )
+  }
 
   persist_intended <- function(intended) {
     persisted <- tryCatch(
@@ -1337,4 +1404,86 @@ pipdata_get_gmd <- function(
     summary,
     persisted$fact
   )))
+}
+
+#' Acquire and validate an explicit M2 single-survey selection
+#'
+#' Resolves `selection` against the current GMD server catalog, runs the shared
+#' acquisition core (`.pipdata_get_gmd_core()`) restricted to the selected
+#' `FileName` while preserving unrelated prior rows in `inv_gmd_list`, and—only
+#' when the selected survey is durably available (`data_available == "Yes"`) with
+#' its pinned `Checksum`—runs `.pipdata_validate_gmd_core()` restricted to the
+#' selected `survey_id` (`selected_survey_ids = resolved$survey_id`).
+#'
+#' @param selection Named list or one-row `data.frame` accepted by
+#'   [.resolve_m2_one_survey_selection()].
+#' @param inv_gmd_list Character scalar acquisition inventory ID in alias
+#'   `"dlw_inv"`. Default `"dlw_gmd_inv"`.
+#' @param check_missing Logical scalar forwarded to candidate selection.
+#' @param verbose Logical scalar controlling downstream verbosity.
+#' @return A named list with `selection`, `acquisition` (full acquisition stage
+#'   result), `acquisition_inventory`, `acquisition_failures`, `validation`
+#'   (validation stage result or `NULL` when gated at acquisition), and logical
+#'   scalar `eligible_for_clean`.
+#' @keywords internal
+.acquire_and_validate_m2_one_survey <- function(
+    selection,
+    inv_gmd_list = "dlw_gmd_inv",
+    check_missing = TRUE,
+    verbose = FALSE
+) {
+  .validate_dlw_acquisition_arguments(inv_gmd_list, check_missing, verbose)
+  pipfun::get_wrk_release()
+  server_full <- .load_dlw_acquisition_server_catalog()
+  resolved <- .resolve_m2_one_survey_selection(selection, server_full)
+  selected_norm <- .dlw_normalized_filename(resolved$FileName)
+  acquisition <- .pipdata_get_gmd_core(
+    inv_gmd_list = inv_gmd_list,
+    check_missing = check_missing,
+    verbose = verbose,
+    selected_filenames = resolved$FileName,
+    server_catalog_override = resolved$catalog_row
+  )
+  acq_inv <- acquisition$inventory
+  acq_row <- if (!is.null(acq_inv) && nrow(acq_inv) > 0L) {
+    acq_inv[
+      .dlw_normalized_filename(FileName) == selected_norm &
+        Checksum == resolved$Checksum
+    ]
+  } else {
+    data.table::data.table()
+  }
+  if (nrow(acq_row) != 1L || acq_row$data_available[[1L]] != "Yes") {
+    return(list(
+      selection = resolved,
+      acquisition = acquisition,
+      acquisition_inventory = if (is.null(acq_inv)) NULL else data.table::copy(acq_inv),
+      acquisition_failures = data.table::copy(acquisition$failures),
+      validation = NULL,
+      eligible_for_clean = FALSE
+    ))
+  }
+  validation <- .pipdata_validate_gmd_core(
+    acquisition_inventory_id = inv_gmd_list,
+    verbose = verbose,
+    selected_survey_ids = resolved$survey_id
+  )
+  val_row <- if (!is.null(validation$inventory) && nrow(validation$inventory)) {
+    validation$inventory[
+      survey_id == resolved$survey_id & Checksum == resolved$Checksum
+    ]
+  } else {
+    .empty_dlw_validation_inventory()
+  }
+  eligible <- nrow(val_row) == 1L &&
+    identical(val_row$status[[1L]], "valid") &&
+    identical(val_row$data_available[[1L]], "Yes")
+  list(
+    selection = resolved,
+    acquisition = acquisition,
+    acquisition_inventory = data.table::copy(acq_inv),
+    acquisition_failures = data.table::copy(acquisition$failures),
+    validation = validation,
+    eligible_for_clean = eligible
+  )
 }

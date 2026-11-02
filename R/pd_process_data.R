@@ -9,9 +9,9 @@
 #' @param inv A data.frame or tibble containing the completed DLW validation
 #'   inventory. Default `NULL`, in which case it is loaded internally via
 #'   `pipload::load_gmd_valid_inv()`. Before planning or row lookup, input is
-#'   normalized to `data_available = "Yes"` rows whose status is `"valid"` or
-#'   `"invalid"`. Recognized legacy blank/`"No"` retry rows are excluded;
-#'   malformed completed rows abort rather than entering cleaning.
+#'   normalized to `data_available = "Yes"` rows whose status is `"valid"`.
+#'   Completed `"invalid"` rows and recognized legacy blank/`"No"` retry rows
+#'   are excluded; malformed completed rows abort rather than entering cleaning.
 #' @param aux_measures A character vector of auxiliary measures to load and merge
 #' with the DLW data. The default is `c("pfw", "cpi", "ppp", "pop", "gdp", "pce")`.
 #' @param force Logical. If `TRUE`, forces reprocessing of all surveys by
@@ -36,10 +36,11 @@
 #'   versions for cleaned data and metadata.
 #'
 #' @details
-#' **Validation handoff**: Both valid and invalid completed validation rows keep
-#' their existing cleaning eligibility. Execution-failure control rows are not
-#' eligible. The guard is applied here and again during dependency execution so
-#' legacy inventories cannot create cleaning, metadata, or deflation actions.
+#' **Validation handoff**: Only valid completed validation rows (`status == "valid"`
+#' and `data_available == "Yes"`) are eligible for cleaning. Completed `"invalid"`
+#' rows and execution-failure control rows are excluded before planning and again
+#' at the clean worker boundary so invalid or unvalidated surveys cannot create
+#' cleaning, metadata, or deflation actions.
 #'
 #' **Logging**: This function writes `process_summary_inf` and `null_svys_inf` entries
 #' to the `"pipdata_log"`, summarizing totals and failed surveys. Additional entries for
@@ -222,13 +223,29 @@ pd_inventory_writer <- function(alias, id, verbose = FALSE) {
   }
 }
 
+.assert_clean_eligible_inv_row <- function(inv_row) {
+  if (!is.data.frame(inv_row) || nrow(inv_row) != 1L ||
+      !all(c("survey_id", "status", "data_available") %in% names(inv_row)) ||
+      is.na(inv_row$survey_id[[1L]]) || !nzchar(trimws(as.character(inv_row$survey_id[[1L]]))) ||
+      !identical(as.character(inv_row$status[[1L]]), "valid") ||
+      !identical(as.character(inv_row$data_available[[1L]]), "Yes")) {
+    rlang::abort(
+      "Clean execution requires a single validated (`status == 'valid'`, `data_available == 'Yes'`) inventory row.",
+      class = c("pipdata_clean_validation_error", "piperr")
+    )
+  }
+  invisible(inv_row)
+}
+
 pd_execute_clean <- function(action, inv_row, execution, recode_spec,
                              verbose = FALSE) {
   survey_id <- action$survey_id[[1L]]
   result <- tryCatch({
+    .assert_clean_eligible_inv_row(inv_row)
     df <- inv_dlw_load(inv_row)
     merged <- pd_cpfw_merge(df, execution$snapshot$aux$objects$pfw)
     clean <- pd_dlw_clean(merged, verbose = verbose, recode_spec = recode_spec)
+    pd_validate_clean_output(clean)
     metadata <- pd_aux_attr(clean, execution$snapshot$aux$objects)
     expected <- pd_assert_clean_output_set(
       action$expected_pip_ids[[1L]], clean, metadata
@@ -250,6 +267,13 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
       )
     }
     invariant <- data.table::copy(inv_row)
+    inv_drop <- intersect(
+      c("content_hash", "version_id", "path", "alias", "artifact", "skipped", "success", "error"),
+      names(invariant)
+    )
+    if (length(inv_drop)) {
+      invariant[, (inv_drop) := NULL]
+    }
     invariant[, pip_id := expected[1L]]
     if (length(expected) > 1L) {
       invariant <- invariant[rep(seq_len(.N), each = length(expected))]
@@ -278,7 +302,10 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
 
 #' Process datalibweb data: merge PFW data and clean variables
 #'
-#' @param inv inventory with survey_id and pins folder
+#' @param inv A one-row `data.frame` or `data.table` from the completed DLW
+#'   validation inventory containing `survey_id`, `status == "valid"`, and
+#'   `data_available == "Yes"`. Rows missing validation fields or having
+#'   `status != "valid"` or `data_available != "Yes"` are rejected before loading.
 #' @param aux_list Named list of auxiliary data frames; expected keys:
 #'   `"pfw"`, `"cpi"`, `"ppp"`, `"pop"`, `"gdp"`, `"pce"`.
 #' @param recode_spec Optional pre-resolved recode spec (as returned by
@@ -287,7 +314,9 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
 #' @param verbose Logical. Print progress messages. Default `TRUE`.
 #' @param ...  other parameters
 #'
-#' @return data.table
+#' @return Invisibly, a list with element `pip_names` (character vector of saved
+#'   clean `pip_id` names) when cleaning, post-format validation, and saving
+#'   succeed, or `NULL` when an error or validation failure is logged and caught.
 #' @export
 #'
 #' @examples
@@ -319,6 +348,7 @@ process_data <- function(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...)
   res <- tryCatch(
     expr = {
       # Load file
+      .assert_clean_eligible_inv_row(inv)
       df <- inv_dlw_load(inv)
 
       # Merge country PFW information
@@ -327,10 +357,8 @@ process_data <- function(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...)
       # Clean main variables
       ls_clean <- pd_dlw_clean(ls_cpfw, verbose = verbose, recode_spec = recode_spec)
 
-      # Validate
-
-      #valid_inv    <- pip_validation(ls_clean)
-      #valid_data   <- valid_clean_data(valid_inv)
+      # Validate post-format clean output before any metadata or data save
+      pd_validate_clean_output(ls_clean)
 
       # Create Aux Metadata
 

@@ -210,7 +210,8 @@ test_that("pd_process_data filters retry rows before dependency preparation", {
 
   pd_process_data(inv = inv, verbose = FALSE)
   expect_false(retry$survey_id %in% observed$survey_id)
-  expect_true(any(observed$status == "invalid"))
+  expect_false(any(observed$status == "invalid"))
+  expect_identical(observed$status, "valid")
 })
 
 test_that("pd_process_data filters loaded durable retry rows", {

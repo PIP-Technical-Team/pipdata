@@ -129,7 +129,8 @@ pd_terminalize_stage_outcome <- function(
 
 .PD_CLEAN_RECOVERABLE_CLASSES <- c(
   "yr_wrng", "report_lvl", "info_pfw", "no_unq_pfw", "no_wlf_tp",
-  "dom_var", "alt_welf_issue", "gd_type_miss"
+  "dom_var", "alt_welf_issue", "gd_type_miss",
+  "pipdata_clean_validation_error"
 )
 
 .PD_METADATA_RECOVERABLE_CLASSES <- c(

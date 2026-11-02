@@ -380,10 +380,12 @@ last_ver_inv <- function(dt) {
 #' @export
 #'
 #' @examples
-#' release <- "20260401"
-#' pipfun::setup_working_release(release)
-#'
-#' pfw <- pipload::load_aux_data("pfw")
+#' pfw <- data.table::data.table(
+#'   country_code = c("COL", "PER"),
+#'   survey_year = 2020,
+#'   survey_acronym = c("GEIH", "ENAHO"),
+#'   welfare_type = "income"
+#' )
 #' keyVar <- c("country_code", "survey_year", "survey_acronym", "welfare_type")
 #' unq_obs_dt(pfw, keyVar)
 unq_obs_dt <- function(dt, keyVar) {
