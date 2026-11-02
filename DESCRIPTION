@@ -33,6 +33,7 @@ Imports:
     dlw,
     stamp (>= 0.0.11)
 Suggests: 
+    pkgload,
     testthat (>= 3.0.0),
     withr,
     codetools

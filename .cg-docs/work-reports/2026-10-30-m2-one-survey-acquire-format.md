@@ -33,3 +33,17 @@ None.
 ## Remaining Uncertainty
 - Live DLW server and `Y:` drive access remain outside this isolated `E:` verification scope.
 - M2 Phase 3 (`deflate` stage `welfare_YYYY` column rename and `pipster` mean calculation) and Phase 4 (test release manifest) remain scheduled for downstream steps in the umbrella walking skeleton.
+
+## Merge Preparation: 2026-11-02
+- The subsequent user requests authorized commit/push and a PR targeting `PROD`; the original no-commit constraint above records the implementation-stage state, not this later authorization. No merge was authorized or performed.
+- Updated the stale public-signature assertion to include `recipes = NULL`.
+- Broader recovery tests exposed unchanged Stamp writes returning `skipped = TRUE` with an existing version ID but no metadata hash. `pd_save_receipt()` now recognizes that result and verifies the existing version against the attempted content hash and the reported version ID. A real-store regression checks unchanged-write reuse, zero extra versions, and wrong-pin rejection.
+- Made the fresh-process authority test load installed packages during `R CMD check` and source packages during development; declared its existing `pkgload` test dependency.
+- Replaced the credential-dependent `unq_obs_dt()` example with local data, kept the Rd example synchronized, and excluded the worktree `.git` file from source packages.
+- Verification used `stamp` 0.1.0 built from exact commit `4a1fa5d92313aa223296fae0e29cf3446a314aea`, plus the `pipload` adapter at `4ef0d90`, with all session/temp/cache/build/check paths on `E:`. The older `phase2` runtime overlay contains Stamp 0.0.11; library precedence was explicitly overridden rather than relying on the overlay's historical label.
+- Source suite excluding the separately exercised pipeline file: 2,456 passed, zero failures/errors, 354 upstream tidyselect deprecation warnings, zero skips.
+- Final uninstrumented source pipeline regression file: 384 passed, zero failures/errors/warnings/skips. One earlier post-fix rerun had three clean-retry assertion failures that could not be recaptured; a standalone reproduction, four repetitions of that retry test, and the final full-file run passed. This transient remains disclosed rather than being treated as conclusively explained.
+- Source-package build passed. `R CMD check --no-manual --no-build-vignettes` of the built tarball completed with zero errors, zero package-check warnings, and two NOTEs. Installed tests: 2,840 passed, zero failures, 354 upstream tidyselect deprecation warnings, two empty-test skips from existing disabled tests.
+- Remaining NOTEs concern the existing `wbpip:::md_clean_data` dependency and existing partial-argument/global-variable diagnostics. Neither is suppressed. No live DLW, `Y:` storage, or production release was exercised.
+- Independent focused review of the merge-preparation corrections reported no findings.
+- Check evidence: `.tmp/premerge-57006c2-stamp4a1fa5d/package-check-final/pipdata.Rcheck/00check.log` and `tests/testthat.Rout` under that check directory (local generated artifacts, not committed).

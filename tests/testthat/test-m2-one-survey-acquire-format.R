@@ -168,6 +168,35 @@ m2_step56_fixture <- function(env = parent.frame()) {
   )
 }
 
+test_that("unchanged saves retain verified exact receipts without new versions", {
+  f <- m2_step56_fixture()
+  object <- list(value = "unchanged")
+  first <- pd_save_receipt(object, "unchanged-receipt", "pip")
+  second <- pd_save_receipt(object, "unchanged-receipt", "pip")
+
+  expect_true(first$success)
+  expect_true(second$success)
+  expect_true(second$skipped)
+  expect_identical(second$version_id, first$version_id)
+  expect_identical(second$content_hash, first$content_hash)
+  expect_no_error(pd_revalidate_receipt(second))
+  expect_identical(nrow(stamp::st_versions(second$path, alias = "pip")), 1L)
+
+  write <- pipload::pip_write
+  testthat::local_mocked_bindings(
+    pip_write = function(...) {
+      receipt <- write(...)
+      receipt$version_id <- "unrelated-version"
+      receipt
+    },
+    .package = "pipload"
+  )
+  mismatched <- pd_save_receipt(object, "unchanged-receipt", "pip")
+  expect_false(mismatched$success)
+  expect_error(pd_revalidate_receipt(mismatched),
+               class = "pipdata_receipt_invalid")
+})
+
 m2_step56_server_catalog <- function() {
   data.table::data.table(
     Country = c("BOL", "PRY"),

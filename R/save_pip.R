@@ -103,12 +103,16 @@ pd_save_receipt <- function(x, id, alias, verbose = FALSE, lease = NULL) {
   path <- result$path %||% NA_character_
   version_id <- result$version_id %||% NA_character_
   content_hash <- result$metadata$content_hash %||% NA_character_
-  skipped <- !nzchar(version_id) || is.na(version_id)
+  skipped <- isTRUE(result$skipped) || is.na(version_id) || !nzchar(version_id)
   versions <- if (!is.na(path) && nzchar(path)) {
     tryCatch(stamp::st_versions(path, alias = alias), error = function(e) NULL)
   } else NULL
   if (skipped && !is.null(versions)) {
-    match <- versions[content_hash == attempted_hash]
+    match_rows <- versions$content_hash == attempted_hash
+    if (!is.na(version_id) && nzchar(version_id)) {
+      match_rows <- match_rows & versions$version_id == version_id
+    }
+    match <- versions[which(match_rows)]
     if (nrow(match) == 1L) {
       version_id <- match$version_id[[1L]]
       content_hash <- match$content_hash[[1L]]
