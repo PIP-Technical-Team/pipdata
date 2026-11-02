@@ -18,9 +18,9 @@ pd_change_report(
 - inv:
 
   Completed DLW validation inventory metadata. Before dependency
-  planning, only `data_available = "Yes"` rows with status `"valid"` or
-  `"invalid"` are retained. Recognized legacy blank/`"No"` retry rows
-  are excluded, while malformed completed rows abort.
+  planning, only `data_available = "Yes"` rows with status `"valid"` are
+  retained (`status == "invalid"` and recognized legacy blank/`"No"`
+  retry rows are excluded, while malformed completed rows abort).
 
 - master:
 

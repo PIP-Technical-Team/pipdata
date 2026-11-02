@@ -29,9 +29,10 @@ pd_process_data(
   inventory. Default `NULL`, in which case it is loaded internally via
   [`pipload::load_gmd_valid_inv()`](https://pip-technical-team.github.io/pipload/reference/load_dlw_data.html).
   Before planning or row lookup, input is normalized to
-  `data_available = "Yes"` rows whose status is `"valid"` or
-  `"invalid"`. Recognized legacy blank/`"No"` retry rows are excluded;
-  malformed completed rows abort rather than entering cleaning.
+  `data_available = "Yes"` rows whose status is `"valid"`. Completed
+  `"invalid"` rows and recognized legacy blank/`"No"` retry rows are
+  excluded; malformed completed rows abort rather than entering
+  cleaning.
 
 - aux_measures:
 
@@ -82,10 +83,11 @@ for cleaned data and metadata.
 
 ## Details
 
-**Validation handoff**: Both valid and invalid completed validation rows
-keep their existing cleaning eligibility. Execution-failure control rows
-are not eligible. The guard is applied here and again during dependency
-execution so legacy inventories cannot create cleaning, metadata, or
+**Validation handoff**: Only valid completed validation rows
+(`status == "valid"` and `data_available == "Yes"`) are eligible for
+cleaning. Completed `"invalid"` rows and execution-failure control rows
+are excluded before planning and again at the clean worker boundary so
+invalid or unvalidated surveys cannot create cleaning, metadata, or
 deflation actions.
 
 **Logging**: This function writes `process_summary_inf` and

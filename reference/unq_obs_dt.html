@@ -68,24 +68,18 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">release</span> <span class="op">&lt;-</span> <span class="st">"20260401"</span></span></span>
-<span class="r-in"><span><span class="fu">pipfun</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipfun/reference/setup_working_release.html" class="external-link">setup_working_release</a></span><span class="op">(</span><span class="va">release</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Git credentials are missing or invalid in non-interactive mode.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Git credentials are missing or invalid in non-interactive mode.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Git credentials are missing or invalid in non-interactive mode.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> ⠙ 10 items, page 1 | 2ms</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Git credentials are missing or invalid in non-interactive mode.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> ⠙ 0 items, page 1 | 1ms</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in value[[3L]](cond):</span> <span style="color: #BB0000;">✖</span> Error downloading file from github</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> check file <span style="color: #0000BB;">ppp_vintage.csv</span> exists</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #BB0000;">✖</span> `password` must be a single string, not a character `NA`.</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">pfw</span> <span class="op">&lt;-</span> <span class="fu">pipload</span><span class="fu">::</span><span class="fu"><a href="https://pip-technical-team.github.io/pipload/reference/load_aux_data.html" class="external-link">load_aux_data</a></span><span class="op">(</span><span class="st">"pfw"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in pipfun::get_wrk_release(verbose = FALSE):</span> <span style="color: #BB0000;">✖</span> Working release has not been set up</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> You need to set a working release with `pipfun::setup_working_release()`</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pfw</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  country_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"COL"</span>, <span class="st">"PER"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  survey_year <span class="op">=</span> <span class="fl">2020</span>,</span></span>
+<span class="r-in"><span>  survey_acronym <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GEIH"</span>, <span class="st">"ENAHO"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  welfare_type <span class="op">=</span> <span class="st">"income"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">keyVar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"country_code"</span>, <span class="st">"survey_year"</span>, <span class="st">"survey_acronym"</span>, <span class="st">"welfare_type"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">unq_obs_dt</span><span class="op">(</span><span class="va">pfw</span>, <span class="va">keyVar</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'pfw' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    country_code survey_year survey_acronym welfare_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          &lt;char&gt;       &lt;num&gt;         &lt;char&gt;       &lt;char&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:          COL        2020           GEIH       income</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:          PER        2020          ENAHO       income</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

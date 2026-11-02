@@ -60,9 +60,9 @@
 
 <dl><dt id="arg-inv">inv<a class="anchor" aria-label="anchor" href="#arg-inv"></a></dt>
 <dd><p>Completed DLW validation inventory metadata. Before dependency
-planning, only <code>data_available = "Yes"</code> rows with status <code>"valid"</code> or
-<code>"invalid"</code> are retained. Recognized legacy blank/<code>"No"</code> retry rows are
-excluded, while malformed completed rows abort.</p></dd>
+planning, only <code>data_available = "Yes"</code> rows with status <code>"valid"</code>
+are retained (<code>status == "invalid"</code> and recognized legacy blank/<code>"No"</code>
+retry rows are excluded, while malformed completed rows abort).</p></dd>
 
 
 <dt id="arg-master">master<a class="anchor" aria-label="anchor" href="#arg-master"></a></dt>

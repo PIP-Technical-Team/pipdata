@@ -54,7 +54,10 @@
 
 
 <dl><dt id="arg-inv">inv<a class="anchor" aria-label="anchor" href="#arg-inv"></a></dt>
-<dd><p>inventory with survey_id and pins folder</p></dd>
+<dd><p>A one-row <code>data.frame</code> or <code>data.table</code> from the completed DLW
+validation inventory containing <code>survey_id</code>, <code>status == "valid"</code>, and
+<code>data_available == "Yes"</code>. Rows missing validation fields or having
+<code>status != "valid"</code> or <code>data_available != "Yes"</code> are rejected before loading.</p></dd>
 
 
 <dt id="arg-aux-list">aux_list<a class="anchor" aria-label="anchor" href="#arg-aux-list"></a></dt>
@@ -78,7 +81,9 @@ the spec is read once upstream rather than once per survey. Default <code>NULL</
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>data.table</p>
+    <p>Invisibly, a list with element <code>pip_names</code> (character vector of saved
+clean <code>pip_id</code> names) when cleaning, post-format validation, and saving
+succeed, or <code>NULL</code> when an error or validation failure is logged and caught.</p>
     </div>
 
     <div class="section level2">

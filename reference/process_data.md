@@ -12,7 +12,11 @@ process_data(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...)
 
 - inv:
 
-  inventory with survey_id and pins folder
+  A one-row `data.frame` or `data.table` from the completed DLW
+  validation inventory containing `survey_id`, `status == "valid"`, and
+  `data_available == "Yes"`. Rows missing validation fields or having
+  `status != "valid"` or `data_available != "Yes"` are rejected before
+  loading.
 
 - aux_list:
 
@@ -38,7 +42,10 @@ process_data(inv, aux_list, recode_spec = NULL, verbose = TRUE, ...)
 
 ## Value
 
-data.table
+Invisibly, a list with element `pip_names` (character vector of saved
+clean `pip_id` names) when cleaning, post-format validation, and saving
+succeed, or `NULL` when an error or validation failure is logged and
+caught.
 
 ## Examples
 
