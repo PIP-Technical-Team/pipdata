@@ -433,9 +433,9 @@ test_that("Step 5 & 6 (Check 1): valid one-survey fixture is acquired, formatted
     .package = "dlw"
   )
   testthat::local_mocked_bindings(
-    load_dlw_data = function(id_name, verbose = FALSE) {
+    load_dlw_data = function(id_name, version = NULL, verbose = FALSE) {
       file_id <- paste0(tolower(id_name), ".qs2")
-      stamp::st_load(file = file_id, alias = "dlw", verbose = FALSE)
+      stamp::st_load(file = file_id, version = version, alias = "dlw", verbose = FALSE)
     },
     .package = "pipload"
   )

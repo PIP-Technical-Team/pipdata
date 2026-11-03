@@ -247,6 +247,7 @@ pd_freeze_aux_snapshot <- function(measures, verbose = FALSE) {
   objects <- lapply(seq_len(nrow(rows)), function(i) {
     object <- pipload::load_aux_data(rows$measure[i],
                                      version = rows$version_id[i],
+                                     ppp_defaults = FALSE,
                                      verbose = verbose)
     if (!identical(stamp::st_hash_obj(object), rows$content_hash[i])) {
       rlang::abort("Pinned auxiliary artifact failed hash verification.",

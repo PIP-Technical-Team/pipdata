@@ -274,6 +274,47 @@ Framework metadata) -> `pd_dlw_clean()` (S3-dispatched cleaning) ->
 `save_pip_data()` (write cleaned data and metadata to PIP storage). No
 deflation step is part of this chain.
 
+### Offline upstream acceptance
+
+`tests/testthat/test-one-survey-upstream-acceptance.R` exercises one synthetic
+`AAA`/2010/`SYNA` GPWG survey in an inspected, disposable E-drive child.
+Only the external catalog, survey download and raw GitHub acquisition are
+substituted. The selected validator, CPI/PPP/PFW producers, auxiliary loaders,
+PFW merge, cleaning/recode, metadata construction and storage remain real.
+The country-list prerequisite and supplemental population/GDP/PCE tables are
+disclosed fixtures, not certified producer outputs.
+
+The independent row-level expectations are annual LCU welfare
+`365, 730, 1095, 1460`, daily welfare `1, 2, 3, 4`, and person weights
+`10, 20, 30, 40`. Exact readback uses the receipts recorded by the acceptance
+run, not whichever version is latest. For example, after that isolated run:
+
+```{r offline-upstream-readback, eval=FALSE}
+# Use the actual clean_pin and metadata_pin from the acceptance receipts.
+# Run only inside the configured disposable child, never production aliases.
+clean <- pipload::pip_read(
+  id = "AAA_2010_SYNA_INC_GPWG", alias = "pip", version = clean_pin
+)
+metadata <- pipload::pip_read(
+  id = "AAA_2010_SYNA_INC_GPWG", alias = "pip_meta", version = metadata_pin
+)
+stopifnot(
+  identical(clean$welfare, c(1, 2, 3, 4)),
+  identical(clean$weight, c(10, 20, 30, 40)),
+  identical(metadata$survey_id, "AAA_2010_SYNA_V01_M_V01_A_GMD_GPWG")
+)
+```
+
+The test also requires a malformed counterpart to be rejected without
+downstream cleaning or metadata saves. Its executed results, input/output
+pins and remaining gaps belong in the execution Work Report,
+`.cg-docs/work-reports/2026-11-03-one-survey-upstream-acceptance.md`; this illustrative
+chunk is not evidence of a pass. Offline stage acceptance does not establish
+live DLW access, stamp-selected orchestration, incremental/restart behavior,
+deflation, a mean, or complete M2 readiness. Use the inspected runner recorded
+in the Work Report rather than running the acceptance test in an ambient
+session; its child-only guard prevents unconfigured execution.
+
 ## Deflation is a separate step
 
 `pd_deflation()`/`deflation()` deflates a single cleaned survey's welfare

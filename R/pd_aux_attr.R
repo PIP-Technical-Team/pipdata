@@ -72,8 +72,10 @@ pd_aux_attr <- function(
 #' @param aux_data A `data.table` of auxiliary data for the given measure.
 #' @param keys Character vector of primary-key column names for `aux_data`.
 #'
-#' @return The input `ls` with a new element named `measure` appended,
-#'   or unmodified if no matching auxiliary rows were found.
+#' @return The input `ls` with a new element named `measure` appended.
+#' @details Missing or duplicate matching primary keys abort with
+#'   `pipdata_dependency_input_missing` or
+#'   `pipdata_dependency_input_ambiguous`, respectively.
 #'
 #' @family pd_process_data pipeline
 #' @keywords internal
@@ -93,13 +95,17 @@ add_attr <- function(ls, measure, aux_data, keys) {
     id = id
   )
 
-  # No aux data to add, return original attributes
+  # Missing required metadata must not produce a successful clean receipt.
   if (nrow(filtered_aux) == 0) {
-    return(ls)
+    rlang::abort(paste("Missing exact", measure, "projection."),
+                 class = "pipdata_dependency_input_missing")
   }
-
   # Create attributes
   aux_attr <- create_attr(measure = measure, filtered_aux = filtered_aux)
+  if (anyDuplicated(names(aux_attr))) {
+    rlang::abort(paste("Ambiguous exact", measure, "projection."),
+                 class = "pipdata_dependency_input_ambiguous")
+  }
 
   # Add to other attributes under the measure name
   ls <- append(ls, stats::setNames(list(aux_attr), measure))

@@ -6,6 +6,7 @@
 #'
 #' @param inv A one-row data.frame (or data.table) from the DLW inventory.
 #'   Must contain a `survey_id` column.
+#'   When present, `latest_version_id` selects the validated raw version.
 #'
 #' @return A `data.table` with PIP class and survey-ID attributes.
 #'
@@ -18,7 +19,9 @@ inv_dlw_load <- function(inv) {
 
   # Load survey files
 
-  dt <- pipload::load_dlw_data(id_name = inv$survey_id, verbose = FALSE)
+  dt <- pipload::load_dlw_data(
+    id_name = inv$survey_id, version = inv$latest_version_id, verbose = FALSE
+  )
 
   # Add data from inventory to attributes of data table and add pip class
 

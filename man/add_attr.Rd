@@ -17,13 +17,17 @@ add_attr(ls, measure, aux_data, keys)
 \item{keys}{Character vector of primary-key column names for \code{aux_data}.}
 }
 \value{
-The input \code{ls} with a new element named \code{measure} appended,
-or unmodified if no matching auxiliary rows were found.
+The input \code{ls} with a new element named \code{measure} appended.
 }
 \description{
 Matches the survey's identifying keys (country, year, acronym) against
 the auxiliary dataset, filters the relevant rows, and appends the
 result as a named element of the attribute list.
+}
+\details{
+Missing or duplicate matching primary keys abort with
+\code{pipdata_dependency_input_missing} or
+\code{pipdata_dependency_input_ambiguous}, respectively.
 }
 \seealso{
 Other pd_process_data pipeline:

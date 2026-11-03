@@ -8,7 +8,8 @@ inv_dlw_load(inv)
 }
 \arguments{
 \item{inv}{A one-row data.frame (or data.table) from the DLW inventory.
-Must contain a \code{survey_id} column.}
+Must contain a \code{survey_id} column.
+When present, \code{latest_version_id} selects the validated raw version.}
 }
 \value{
 A \code{data.table} with PIP class and survey-ID attributes.

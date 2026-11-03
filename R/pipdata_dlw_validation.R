@@ -421,12 +421,17 @@ dlw_validation_engine <- function(dlw_data, svy_id, module) {
               },
               na_threshold = {
                 error_fn <- if (chk_severity == "critical") error_append else warning_append
+                missing_count <- if (na_threshold == 0) {
+                  in_set(0)
+                } else {
+                  within_bounds(0, na_threshold)
+                }
                 validate_rows(
                   d = chain,
                   description = chk_desc %||% glue::glue("{var} NAs within %10"),
                   skip_chain_opts = TRUE,
                   error_fun = error_fn,
-                  num_row_NAs, within_bounds(0, na_threshold), var
+                  num_row_NAs, missing_count, var
                 )
               },
               chain
