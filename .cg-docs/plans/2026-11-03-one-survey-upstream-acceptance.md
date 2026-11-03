@@ -1,7 +1,9 @@
 ---
 date: 2026-11-03
 title: "One-survey upstream acceptance: real stages, offline transport"
-status: active
+status: completed
+completed-date: 2026-11-03
+execution-report: .cg-docs/work-reports/2026-11-03-one-survey-upstream-acceptance.md
 scope: "Standard"
 language: "R"
 estimated-effort: "medium"
