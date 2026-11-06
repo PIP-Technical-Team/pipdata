@@ -1,3 +1,208 @@
+# Fixed M2 adapter. Only admitted atomic columns are operated on, after removing
+# the table class; the legacy S3 deflation route below is deliberately unchanged.
+pd_deflation_frame <- function(x) {
+  if (!is.list(x) || !(identical(class(x), "data.frame") ||
+      identical(class(x), c("data.table", "data.frame")) ||
+      identical(class(x), c("pipmd", "data.table", "data.frame")))) {
+    stop("bounded input requires a supported microdata table")
+  }
+  x <- unclass(x)
+  if (!length(x) || anyNA(names(x)) || any(!nzchar(names(x))) ||
+      anyDuplicated(names(x))) stop("bounded empty or duplicate table columns")
+  sizes <- integer(length(x))
+  for (i in seq_along(x)) {
+    value <- x[[i]]
+    if (is.object(value)) {
+      if (!identical(class(value), "factor")) {
+        stop("bounded column has unsupported class")
+      }
+      levels <- attr(value, "levels")
+      if (length(attributes(value)) != 2L ||
+          !all(c("levels", "class") %in% names(attributes(value))) ||
+          is.object(levels) || !is.character(levels) ||
+          !is.null(attributes(levels)) || anyNA(levels) || anyDuplicated(levels)) {
+        stop("bounded malformed factor levels or attributes")
+      }
+      value <- unclass(value)
+      if (!identical(typeof(value), "integer") ||
+          any(!is.na(value) & (value < 1L | value > length(levels)))) {
+        stop("bounded malformed factor codes")
+      }
+    }
+    if (!is.atomic(value) || !is.null(attr(value, "dim"))) {
+      stop("bounded column must be an atomic vector")
+    }
+    sizes[[i]] <- length(value)
+  }
+  if (!length(sizes) || sizes[[1L]] == 0L || any(sizes != sizes[[1L]])) {
+    stop("bounded empty or malformed table")
+  }
+  return(x)
+}
+
+pd_deflation_number <- function(x, label, zero = FALSE) {
+  if (is.object(x) || !typeof(x) %in% c("integer", "double") ||
+      !is.null(attr(x, "dim")) || !length(x) || any(!is.finite(x)) ||
+      any(if (zero) x < 0 else x <= 0)) {
+    stop(paste("bounded", label, "requires finite positive values (welfare permits zero)"))
+  }
+  return(invisible(NULL))
+}
+
+pd_deflation_select <- function(values, keys, label) {
+  pd_deflation_number(values, label)
+  labels <- names(values)
+  if (is.null(labels) || anyNA(labels) || any(!nzchar(labels)) ||
+      anyDuplicated(labels)) stop(paste("bounded duplicate or unnamed", label))
+  positions <- match(keys, labels)
+  if (anyNA(positions)) stop(paste("bounded missing exact coverage for", label))
+  return(unname(values[positions]))
+}
+
+pd_deflation_domains <- function(metadata, pfw) {
+  pfw <- pd_deflation_frame(pfw)
+  required <- c("country_code", "surveyid_year", "survey_acronym",
+    "welfare_type", "is_alt_welf", "cpi_domain", "ppp_domain", "pop_domain")
+  if (!all(required %in% names(pfw))) stop("bounded PFW identity is incomplete")
+  for (field in c("country_code", "survey_acronym", "welfare_type")) {
+    if (is.object(pfw[[field]]) || !is.character(pfw[[field]]) ||
+        anyNA(pfw[[field]])) stop("bounded malformed PFW identity")
+  }
+  pd_deflation_number(pfw$surveyid_year, "PFW year")
+  if (is.object(pfw$is_alt_welf) || !is.logical(pfw$is_alt_welf) ||
+      anyNA(pfw$is_alt_welf)) stop("bounded malformed PFW alternative flag")
+  rows <- pfw$country_code == metadata$country_code &
+    pfw$surveyid_year == metadata$surveyid_year &
+    pfw$survey_acronym == metadata$survey_acronym &
+    pfw$welfare_type == metadata$welfare_type & !pfw$is_alt_welf
+  if (sum(rows) != 1L) stop("bounded missing or duplicate PFW identity")
+  out <- c(cpi = "national", ppp = "national", pop = "national")
+  for (measure in names(out)) {
+    column <- pfw[[paste0(measure, "_domain")]]
+    pd_deflation_number(column, "domain")
+    value <- column[rows]
+    if (!value %in% c(1, 2)) stop("bounded unsupported domain")
+    if (value == 2) {
+      if (measure != "pop") {
+        variable <- pfw[[paste0(measure, "_domain_var")]]
+        if (is.object(variable) || !is.character(variable) ||
+            length(variable) != length(rows) ||
+            !identical(variable[rows], "urban")) {
+          stop("bounded unsupported area domain variable")
+        }
+      }
+      out[[measure]] <- "area"
+    }
+  }
+  return(out)
+}
+
+pd_deflation_area <- function(data, level) {
+  if (level == "national") return(rep("national", length(data$welfare)))
+  column <- .data_level_columns[[level]]
+  if (!identical(column, "area") || !column %in% names(data)) {
+    stop("bounded missing area domain registry column")
+  }
+  area <- data[[column]]
+  if (identical(class(area), "factor")) {
+    area <- attr(area, "levels")[unclass(area)]
+  }
+  if (is.object(area) || !is.character(area) ||
+      length(area) != length(data$welfare) || anyNA(area) ||
+      !all(area %in% c("urban", "rural"))) stop("bounded malformed area coverage")
+  return(area)
+}
+
+pd_deflation_population <- function(weight, year, area, pop, rescale) {
+  keys <- paste0(year, "_", area)
+  target <- pd_deflation_select(pop, keys, "population")
+  if (!rescale) return(list(weight = weight, keys = unique(keys), rule = "unchanged"))
+  out <- weight
+  for (domain in unique(area)) {
+    rows <- area == domain
+    total <- sum(weight[rows])
+    pd_deflation_number(total, "domain weight sum")
+    out[rows] <- weight[rows] * (target[rows] / total)
+  }
+  pd_deflation_number(out, "final weights")
+  return(list(weight = out, keys = unique(keys), rule = "exact-year-domain-share"))
+}
+
+pd_deflate_microdata <- function(data, metadata, pfw, selections) {
+  data <- pd_deflation_frame(data)
+  required <- c("countrycode", "year", "survname", "hhid", "pid", "area",
+                "welfare", "weight")
+  if (!all(required %in% names(data))) stop("bounded microdata identity is incomplete")
+  fields <- c("country_code", "surveyid_year", "survey_acronym", "welfare_type",
+              "cpi", "ppp", "pop")
+  if (is.object(metadata) || !is.list(metadata) ||
+      anyNA(names(metadata)) || any(!nzchar(names(metadata))) ||
+      anyDuplicated(names(metadata)) || !all(fields %in% names(metadata))) {
+    stop("bounded malformed or missing exact metadata fields")
+  }
+  for (field in c("country_code", "survey_acronym", "welfare_type")) {
+    value <- metadata[[field]]
+    if (is.object(value) || !is.character(value) || length(value) != 1L ||
+        anyNA(value) || !nzchar(value)) stop("bounded malformed metadata identity")
+  }
+  year <- metadata$surveyid_year
+  pd_deflation_number(year, "survey year")
+  if (length(year) != 1L || year != as.integer(year)) stop("bounded malformed year")
+  pd_deflation_number(data$year, "row year")
+  if (any(data$year != year)) stop("bounded mixed or mismatched year identity")
+  for (field in c("countrycode", "survname", "hhid", "pid")) {
+    value <- data[[field]]
+    if (is.object(value) || !is.character(value) || anyNA(value) ||
+        any(!nzchar(value))) stop("bounded malformed row identity")
+  }
+  if (any(data$countrycode != metadata$country_code) ||
+      any(data$survname != metadata$survey_acronym) ||
+      anyDuplicated(paste0(nchar(data$hhid), ":", data$hhid, data$pid))) {
+    stop("bounded mismatched or duplicate row identity")
+  }
+  pd_deflation_number(data$welfare, "welfare", zero = TRUE)
+  pd_deflation_number(data$weight, "weights")
+  if (is.object(selections) || !is.character(selections) ||
+      !is.null(attr(selections, "dim")) || !length(selections) ||
+      anyNA(selections) || any(!grepl("^ppp_[0-9]{4}_[0-9]{2}_[0-9]{2}$", selections))) {
+    stop("bounded malformed or empty vintage selection")
+  }
+  years <- substr(selections, 5L, 8L)
+  if (anyDuplicated(years)) stop("bounded duplicate selected year")
+  domains <- pd_deflation_domains(metadata, pfw)
+  population <- pd_deflation_population(data$weight, year,
+    pd_deflation_area(data, domains[["pop"]]), metadata$pop,
+    domains[["pop"]] != "national")
+  cpi_area <- pd_deflation_area(data, domains[["cpi"]])
+  ppp_area <- pd_deflation_area(data, domains[["ppp"]])
+  old <- names(data)[grepl("^welfare_[0-9]{4}$", names(data))]
+  out <- data[setdiff(names(data), old)]
+  out$welfare_lcu <- data$welfare
+  out$weight <- population$weight
+  cpi_keys <- character()
+  ppp_keys <- character()
+  for (i in seq_along(selections)) {
+    ck <- paste0(years[[i]], "_", cpi_area)
+    pk <- paste0(selections[[i]], "_", ppp_area)
+    cpi <- pd_deflation_select(metadata$cpi, ck, "CPI")
+    ppp <- pd_deflation_select(metadata$ppp, pk, "PPP")
+    value <- wbpip::deflate_welfare_mean(data$welfare, ppp, cpi)
+    pd_deflation_number(value, "deflated welfare", zero = TRUE)
+    if (any(data$welfare > 0 & value == 0)) {
+      stop("bounded positive welfare underflowed to zero")
+    }
+    out[[paste0("welfare_", years[[i]])]] <- value
+    cpi_keys <- c(cpi_keys, unique(ck))
+    ppp_keys <- c(ppp_keys, unique(pk))
+  }
+  attributes(out) <- list(names = names(out), class = "data.frame",
+    row.names = c(NA_integer_, -as.integer(length(data$welfare))))
+  return(list(x = out, metadata = list(
+    consumed_ppp_keys = ppp_keys, consumed_cpi_keys = cpi_keys,
+    domains = domains, population_keys = population$keys,
+    final_weight_rule = population$rule, final_weight = population$weight)))
+}
+
 #' Validate a single cleaned survey for deflation
 #'
 #' @param dt A cleaned survey `data.table` with class `pipmd` or `pipgd`.

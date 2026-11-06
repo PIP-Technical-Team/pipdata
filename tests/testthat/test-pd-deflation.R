@@ -822,6 +822,197 @@ test_that("deflation output includes ppp_sort = integer year of sort column", {
   expect_identical(attr(result, "ppp_sort"), 2017L)
 })
 
+bounded_deflation_inputs <- function() {
+  list(data = data.table::data.table(
+    countrycode = "AAA", year = 2010L, survname = "SYNA",
+    hhid = paste0("h", 1:4), pid = paste0("p", 1:4),
+    area = factor(c("urban", "rural", "urban", "rural")),
+    welfare = as.double(1:4), weight = c(10, 20, 30, 40), hsize = 1:4),
+    metadata = list(country_code = "AAA", surveyid_year = 2010,
+      survey_acronym = "SYNA", welfare_type = "income",
+      cpi = c(`2005_national` = 1, `2011_national` = 1,
+              `2017_national` = 1.2, `2021_national` = 1.4),
+      ppp = c(ppp_2005_01_01_national = 1,
+        ppp_2011_02_02_national = 1.35, ppp_2017_01_02_national = 1.5,
+        ppp_2021_01_02_national = 1.7), pop = c(`2010_national` = 1000)),
+    pfw = data.table::data.table(country_code = "AAA", surveyid_year = 2010L,
+      survey_acronym = "SYNA", welfare_type = "income", is_alt_welf = FALSE,
+      cpi_domain = 1, ppp_domain = 1, pop_domain = 1,
+      cpi_domain_var = "", ppp_domain_var = ""),
+    selections = c("ppp_2005_01_01", "ppp_2011_02_02", "ppp_2017_01_02",
+                   "ppp_2021_01_02"))
+}
+
+test_that("bounded microdata uses literal factors and retains LCU rows and weights", {
+  inputs <- bounded_deflation_inputs()
+  original <- data.table::copy(inputs$data)
+  value <- do.call(pd_deflate_microdata, inputs)
+  for (year in c(2005, 2011, 2017, 2021)) {
+    factor <- c(`2005` = 1, `2011` = 20 / 27, `2017` = 5 / 9,
+                `2021` = 50 / 119)[[as.character(year)]]
+    expect_equal(value$x[[paste0("welfare_", year)]], (1:4) * factor)
+  }
+  expect_identical(value$x$welfare_lcu, as.double(1:4))
+  for (field in c("hhid", "pid", "area", "welfare", "weight", "hsize")) {
+    expect_identical(value$x[[field]], original[[field]])
+  }
+  expect_identical(inputs$data, original)
+  expect_identical(value$metadata$final_weight_rule, "unchanged")
+  expect_identical(value$metadata$final_weight, c(10, 20, 30, 40))
+  inputs$data <- inputs$data[c(3, 1, 4, 2)]
+  permuted <- do.call(pd_deflate_microdata, inputs)$x
+  expect_identical(permuted$hhid, c("h3", "h1", "h4", "h2"))
+  expect_equal(permuted$welfare_2021, c(3, 1, 4, 2) * 50 / 119)
+})
+
+test_that("bounded selection is dynamic and uses only explicit vintage keys", {
+  inputs <- bounded_deflation_inputs()
+  inputs$data <- inputs$data[1:2]
+  inputs$data$welfare <- c(8, 24)
+  inputs$metadata$cpi <- c(`2025_national` = 2)
+  inputs$metadata$ppp <- c(ppp_2025_03_04_national = 4)
+  inputs$selections <- "ppp_2025_03_04"
+  value <- do.call(pd_deflate_microdata, inputs)
+  expect_identical(value$x$welfare_2025, c(1, 3))
+  expect_false(any(c("welfare_2005", "welfare_2011", "welfare_2017",
+                     "welfare_2021") %in% names(value$x)))
+  expect_identical(value$metadata$consumed_ppp_keys,
+                   "ppp_2025_03_04_national")
+  expect_identical(value$metadata$consumed_cpi_keys, "2025_national")
+})
+
+test_that("bounded CPI and PPP domains resolve independently from PFW", {
+  inputs <- bounded_deflation_inputs()
+  inputs$selections <- "ppp_2017_01_02"
+  inputs$pfw$cpi_domain <- 2
+  inputs$pfw$cpi_domain_var <- "urban"
+  inputs$metadata$cpi <- c(`2017_urban` = 2, `2017_rural` = 4,
+                           `2021_national` = 100)
+  value <- do.call(pd_deflate_microdata, inputs)
+  expect_equal(value$x$welfare_2017, c(1, 2, 3, 4) / c(2, 4, 2, 4) / 1.5)
+  expect_identical(unname(value$metadata$domains), c("area", "national", "national"))
+  inputs$metadata$cpi[["2021_national"]] <- 500
+  expect_identical(do.call(pd_deflate_microdata, inputs)$x, value$x)
+  inputs$metadata$cpi[["2017_national"]] <- 100
+  expect_identical(do.call(pd_deflate_microdata, inputs)$x, value$x)
+  inputs$metadata$cpi[["2017_national"]] <- 500
+  expect_identical(do.call(pd_deflate_microdata, inputs)$x, value$x)
+  inputs$metadata$cpi[["2017_urban"]] <- 4
+  changed <- do.call(pd_deflate_microdata, inputs)$x
+  expect_equal(changed$welfare_2017[c(1, 3)], value$x$welfare_2017[c(1, 3)] / 2)
+  expect_identical(changed$welfare_2017[c(2, 4)], value$x$welfare_2017[c(2, 4)])
+  inputs$pfw$cpi_domain <- 1
+  inputs$pfw$ppp_domain <- 2
+  inputs$pfw$ppp_domain_var <- "urban"
+  inputs$metadata$cpi <- c(`2017_national` = 2)
+  inputs$metadata$ppp <- c(ppp_2017_01_02_urban = 2, ppp_2017_01_02_rural = 4)
+  expect_equal(do.call(pd_deflate_microdata, inputs)$x$welfare_2017,
+               (1:4) / 2 / c(2, 4, 2, 4))
+})
+
+test_that("bounded population resolves same-row PFW without hsize multiplication", {
+  inputs <- bounded_deflation_inputs()
+  inputs$pfw$pop_domain <- 2
+  inputs$metadata$pop <- c(`2010_urban` = 400, `2010_rural` = 600)
+  first <- do.call(pd_deflate_microdata, inputs)
+  expect_identical(first$x$weight, c(100, 200, 300, 400))
+  expect_identical(first$metadata$final_weight, first$x$weight)
+  expect_identical(first$metadata$final_weight_rule, "exact-year-domain-share")
+  inputs$metadata$pop[["2010_urban"]] <- 800
+  second <- do.call(pd_deflate_microdata, inputs)
+  expect_identical(second$x$weight, c(200, 200, 600, 400))
+  expect_identical(second$x$welfare_2017, first$x$welfare_2017)
+  expect_identical(second$x$welfare_lcu, first$x$welfare_lcu)
+})
+
+test_that("bounded matrix selections and malformed factor codes are rejected", {
+  inputs <- bounded_deflation_inputs()
+  inputs$metadata$ppp <- c(inputs$metadata$ppp, ppp_2005_02_02_national = 2)
+  inputs$selections <- matrix(c("ppp_2005_01_01", "ppp_2005_02_02"), nrow = 1L)
+  expect_error(do.call(pd_deflate_microdata, inputs), "bounded")
+  inputs <- bounded_deflation_inputs()
+  inputs$data <- as.data.frame(inputs$data)
+  inputs$data$area <- structure(c(1L, 0L, 2L, 0L),
+    levels = c("urban", "rural"), class = "factor")
+  inputs$selections <- "ppp_2017_01_02"
+  inputs$pfw$cpi_domain <- 2
+  inputs$pfw$cpi_domain_var <- "urban"
+  inputs$metadata$cpi <- c(`2017_urban` = 2, `2017_rural` = 4)
+  expect_error(do.call(pd_deflate_microdata, inputs), "bounded")
+})
+
+test_that("bounded factor admission rejects nested levels before S3 dispatch", {
+  methods <- get(".__S3MethodsTable__.", asNamespace("base"))
+  method <- "[.pd_m2_factor_levels_probe"
+  previous <- get0(method, methods, inherits = FALSE)
+  withr::defer({
+    if (is.null(previous)) rm(list = method, envir = methods) else
+      assign(method, previous, envir = methods)
+  })
+  calls <- 0L
+  registerS3method("[", "pd_m2_factor_levels_probe", function(x, i, ...) {
+    calls <<- calls + 1L
+    rep("urban", length(i))
+  }, envir = baseenv())
+  inputs <- bounded_deflation_inputs()
+  inputs$data <- as.data.frame(inputs$data)
+  inputs$data$area <- structure(c(1L, 2L, 1L, 2L),
+    levels = structure(c("urban", "rural"), class = "pd_m2_factor_levels_probe"),
+    class = "factor")
+  inputs$selections <- "ppp_2017_01_02"
+  inputs$pfw$cpi_domain <- 2
+  inputs$pfw$cpi_domain_var <- "urban"
+  inputs$metadata$cpi <- c(`2017_urban` = 2, `2017_rural` = 4)
+  adapter <- pd_deflation_adapter()
+  expect_error(do.call(adapter$calculation, inputs), "bounded")
+  expect_identical(calls, 0L)
+})
+
+test_that("bounded positive welfare underflow is rejected but input zeros are valid", {
+  inputs <- bounded_deflation_inputs()
+  inputs$data$welfare <- rep(1e-300, 4L)
+  inputs$selections <- "ppp_2005_01_01"
+  inputs$metadata$ppp <- c(ppp_2005_01_01_national = 1e100)
+  inputs$metadata$cpi <- c(`2005_national` = 1e-100)
+  expect_gt((1e-300 / 1e-100) / 1e100, 0)
+  adapter <- pd_deflation_adapter()
+  expect_error(do.call(adapter$calculation, inputs), "bounded.*underflow")
+  inputs$data$welfare <- rep(0, 4L)
+  expect_identical(do.call(adapter$calculation, inputs)$x$welfare_2005, rep(0, 4L))
+})
+
+test_that("bounded invalid inputs fail closed and zero welfare remains valid", {
+  inputs <- bounded_deflation_inputs()
+  inputs$data$welfare[[1L]] <- 0
+  expect_identical(do.call(pd_deflate_microdata, inputs)$x$welfare_2005[[1L]], 0)
+  mutations <- list(
+    function(x) { x$data <- x$data[0]; x },
+    function(x) { x$data$welfare[[1]] <- -1; x },
+    function(x) { x$data$welfare[[1]] <- NA_real_; x },
+    function(x) { x$data$weight[[1]] <- Inf; x },
+    function(x) { x$data$weight[[1]] <- 0; x },
+    function(x) { x$data$year[[1]] <- 2011L; x },
+    function(x) { x$metadata$surveyid_year <- 2011; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "cpi"] <- "cpi_backup"; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "ppp"] <- "ppp_backup"; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "pop"] <- "pop_backup"; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "surveyid_year"] <- "surveyid_year_backup"; x },
+    function(x) { x$selections <- character(); x },
+    function(x) { x$selections <- rep(x$selections[[1]], 2); x },
+    function(x) { x$metadata$cpi[[1]] <- 0; x },
+    function(x) { x$metadata$ppp[[1]] <- NaN; x },
+    function(x) { x$metadata$cpi <- x$metadata$cpi[-1]; x },
+    function(x) { names(x$metadata$ppp)[[2]] <- names(x$metadata$ppp)[[1]]; x },
+    function(x) { x$pfw <- rbind(x$pfw, x$pfw); x },
+    function(x) { x$pfw$pop_domain <- 2; x$metadata$pop <- c(`2011_urban` = 400); x },
+    function(x) { x$metadata$pop[[1]] <- -1; x }
+  )
+  for (mutate in mutations) {
+    expect_error(do.call(pd_deflate_microdata, mutate(bounded_deflation_inputs())),
+                 "bounded|coverage|selection|identity|positive|finite|empty|duplicate")
+  }
+})
+
 test_that("ppp_sort is NULL when no welfare_ppp_* columns are present", {
   # finalize_deflation_output sets ppp_sort = NULL when the deflated dt has
   # no welfare_ppp_* columns (the else branch)

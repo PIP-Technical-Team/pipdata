@@ -133,6 +133,28 @@ classed operands; explicitly unclass reviewed input values before operations.
 The read/base/closure policy code is also SHA-256 bound into request proof.
 Recursive guarded operations also reject classed elements nested in lists,
 so registered methods cannot silently supply undeclared value dependencies.
+
+The one package-owned exception is private \code{pd_deflate_microdata(data,
+metadata, pfw, selections)}. It admits one nonempty microdata survey and one
+exact PFW identity, strips the table class before operating on admitted
+columns, and calls a frozen copy of \code{wbpip::deflate_welfare_mean}.
+Input \code{welfare} must already be LCU/day; CPI is the dimensionless survey/base
+price ratio and PPP is base-year LCU per international dollar. The calculation
+is \code{welfare / CPI / PPP}, with no extra \code{/365} or currency/spatial multiplier.
+\code{selections}
+explicitly names one \code{ppp_YEAR_RELEASE_ADAPTATION} vintage per year; CPI and
+PPP levels resolve independently, with exact named-vector coverage and no
+default year or vintage fallback. Output retains the input row order,
+\code{welfare} and daily \code{welfare_lcu}, adding dynamic \code{welfare_YEAR} columns.
+National population leaves weights unchanged. Area population uses exact
+survey-year shares and aligned weights, never household size. The returned
+provenance names consumed keys, domains, final-weight rule and final weights;
+declare these and original/consumed source pins as typed semantic metadata.
+The adapter body, admission/selection/domain/population helpers, registry,
+frozen arithmetic body and fixed namespace boundary enter request proof.
+Callers cannot replace the reserved adapter with a helper or constant. This
+does not admit general data.table/S3 dispatch or change public legacy behavior.
+
 The route checks consumed public producer exports and explicit arguments
 before recipe preparation, lease acquisition or rebuild; version labels alone
 do not establish those capabilities. Nonempty recipes require the suggested

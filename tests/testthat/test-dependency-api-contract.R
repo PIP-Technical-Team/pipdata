@@ -1,3 +1,10 @@
+test_that("strict microdata adapter remains private and rejects caller replacement", {
+  expect_false("pd_deflate_microdata" %in% getNamespaceExports("pipdata"))
+  expect_false("pd_deflation_adapter" %in% getNamespaceExports("pipdata"))
+  expect_error(pd_engine_proof(function(path, parents) list(x = 1L), list(),
+    list(pd_deflate_microdata = 1L)), "reserved")
+})
+
 test_that("required public storage APIs retain exact-version contracts", {
   expect_named(formals(stamp::st_versions), c("path", "alias"))
   expect_named(formals(stamp::st_hash_obj), "x")

@@ -1,24 +1,27 @@
 {
   "schemaVersion": "compound-gpid-active-state-v1",
-  "updatedAt": "2026-11-03T18:53:30Z",
+  "updatedAt": "2026-11-06T00:06:00Z",
   "workflow": "/cg-work",
   "status": "completed",
-  "branch": "feat/one-survey-upstream-acceptance",
-  "plan": ".cg-docs/plans/2026-11-03-one-survey-upstream-acceptance.md",
-  "executionReport": ".cg-docs/work-reports/2026-11-03-one-survey-upstream-acceptance.md",
+  "branch": "PROD",
+  "plan": ".cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md",
+  "executionReport": ".cg-docs/work-reports/2026-11-05-m2-deflate-one-survey-approved-contract.md",
   "currentPhase": null,
   "evidenceStatus": [
-    {"id": "V1", "status": "passed", "artifact": "E:/temp/pdu-20261103T1851184462870Z-1ca4e9b8/evidence/V1-validation-gate.rds"},
-    {"id": "V2", "status": "passed", "artifact": "E:/temp/pdu-20261103T1851184462870Z-1ca4e9b8/evidence/V2-producer-consumer.rds"},
-    {"id": "V3", "status": "passed", "artifact": "E:/temp/pdu-20261103T1851184462870Z-1ca4e9b8/evidence/V3-clean-readback.rds"},
-    {"id": "V4", "status": "passed", "artifact": "E:/temp/pdu-20261103T1851184462870Z-1ca4e9b8/evidence/V4-aux-negative-controls.rds"}
+    {"id": "V1", "status": "passed", "artifact": "E:/temp/pdm2-20261105T215702Z-aa026673/evidence/tests-61e416b179a1/runtime-inventory.rds"},
+    {"id": "V2", "status": "passed", "artifact": "E:/temp/pdm2-20261105T215702Z-aa026673/evidence/current-parents.rds"},
+    {"id": "V3", "status": "passed", "artifact": "E:/temp/pdm2-20261105T215702Z-aa026673/evidence/tests-61e416b179a1/bounded-primary.rds"},
+    {"id": "V4", "status": "passed", "artifact": "E:/temp/pdm2-20261105T215702Z-aa026673/evidence/tests-61e416b179a1/bounded-populations.rds"},
+    {"id": "V5", "status": "passed", "artifact": "E:/temp/pdm2-20261105T215702Z-aa026673/evidence/tests-61e416b179a1/bounded-mutations.rds"},
+    {"id": "V6", "status": "passed", "artifact": "E:/temp/pdm2-20261105T215702Z-aa026673/evidence/tests-61e416b179a1/bounded-primary.rds"},
+    {"id": "V7", "status": "passed", "artifact": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md"}
   ],
   "unresolvedDecisions": [],
   "artifactRefs": [
-    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-11-03-one-survey-upstream-acceptance.md", "status": "completed"},
-    {"kind": "review", "path": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-review.md", "status": "fixed"},
-    {"kind": "review", "path": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-verify-review.md", "status": "completed"},
-    {"kind": "handoff", "path": "E:/PovcalNet/01.personal/wb384996/PIP/pipsystem/.cg-docs/orchestration/outputs/pipdata/one-survey-upstream-acceptance/20261103T162831Z-code/handoff.md", "status": "completed"}
+    {"kind": "work-report", "path": ".cg-docs/work-reports/2026-11-05-m2-deflate-one-survey-approved-contract.md", "status": "completed"},
+    {"kind": "review", "path": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-review.md", "status": "completed"},
+    {"kind": "review", "path": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md", "status": "completed"},
+    {"kind": "handoff", "path": "E:/PovcalNet/01.personal/wb384996/PIP/pipsystem/.cg-docs/orchestration/outputs/pipdata/m2-deflation-work/20261105T191650Z-code/handoff.md", "status": "completed"}
   ],
   "nextCommand": null
 }

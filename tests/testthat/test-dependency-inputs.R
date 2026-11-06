@@ -1,3 +1,21 @@
+test_that("bounded domains select one exact PFW row and resolve independently", {
+  metadata <- list(country_code = "AAA", surveyid_year = 2010,
+                   survey_acronym = "SYNA", welfare_type = "income")
+  pfw <- data.table::data.table(country_code = "AAA", surveyid_year = 2010L,
+    survey_acronym = "SYNA", welfare_type = "income", is_alt_welf = FALSE,
+    cpi_domain = 1, ppp_domain = 1, pop_domain = 2,
+    cpi_domain_var = "", ppp_domain_var = "")
+  expect_identical(pd_deflation_domains(metadata, pfw),
+                   c(cpi = "national", ppp = "national", pop = "area"))
+  pfw$cpi_domain <- 2
+  pfw$cpi_domain_var <- "urban"
+  expect_identical(pd_deflation_domains(metadata, pfw),
+                   c(cpi = "area", ppp = "national", pop = "area"))
+  expect_error(pd_deflation_domains(metadata, pfw[c(1, 1)]), "duplicate")
+  pfw$surveyid_year <- 2011L
+  expect_error(pd_deflation_domains(metadata, pfw), "identity")
+})
+
 test_that("canonical projections are order stable and reject duplicate keys", {
   x <- data.table::data.table(id = c(2L, 1L), value = c(3, NA))
   expect_identical(pd_canonical_projection(x, "id")$hash,

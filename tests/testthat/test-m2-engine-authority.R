@@ -1,4 +1,347 @@
 # Fixtures stay under the runner's explicitly selected E store. No auto helpers.
+m2_run <- function(fixture, nodes, ...) {
+  before <- list(options = options(), aliases = stamp::st_alias_list(),
+                 stamp = stamp::st_opts(.get = TRUE))
+  tryCatch(pd_run_pipeline(recipes = list(context = fixture$context, nodes = nodes),
+                  verbose = FALSE, ...), error = function(error) {
+    if (length(nodes) && startsWith(nodes[[1L]]$path, "bounded-")) {
+      after <- options()
+      changed <- union(names(before$options), names(after))
+      changed <- changed[!vapply(changed, function(name)
+        identical(before$options[[name]], after[[name]]), logical(1L))]
+      messages <- vapply(Filter(function(x) inherits(x, "condition"), error$causes),
+        conditionMessage, character(1L))
+      saveRDS(list(messages = messages, changed_options = changed,
+        aliases_unchanged = identical(before$aliases, stamp::st_alias_list()),
+        stamp_unchanged = identical(before$stamp, stamp::st_opts(.get = TRUE)),
+        feedback = error$feedback), file.path(Sys.getenv("PIPDATA_UPSTREAM_EVIDENCE_DIR"),
+          paste0(tools::file_path_sans_ext(basename(nodes[[1L]]$path)), "-diagnostic.rds")))
+    }
+    stop(error)
+  })
+}
+
+m2_bounded_state <- function() {
+  run <- Sys.getenv("PDM2_RUN")
+  stopifnot(nzchar(run))
+  state <- readRDS(file.path(run, "evidence", "current-parents.rds"))
+  stopifnot(!identical(state$parent_paths$clean, state$parent_paths$metadata))
+  return(state)
+}
+
+m2_bounded_node <- function(path, data = NULL, metadata = NULL, pfw = NULL,
+    selections = c("ppp_2005_01_01", "ppp_2011_02_02", "ppp_2017_01_02", "ppp_2021_01_02"),
+    final_weight = c(10, 20, 30, 40), domains = c(cpi = "national", ppp = "national", pop = "national")) {
+  state <- m2_bounded_state()
+  path <- file.path(paste0("bounded-", basename(Sys.getenv("PIPDATA_UPSTREAM_EVIDENCE_DIR"))), path)
+  root <- state$calculation_root
+  catalog <- state$aux$snapshot$catalog
+  original_pfw <- catalog$version_id[catalog$measure == "pfw"]
+  clean <- state$clean_receipt
+  meta <- state$metadata_receipt
+  pfw_pin <- state$pfw_receipt
+  save_parent <- function(value, suffix, alias) {
+    source_pin <- if (suffix == "-clean") state$upstream_clean_receipt$version_id else
+      if (suffix == "-pfw") original_pfw else state$upstream_metadata_receipt$version_id
+    result <- pipload::pip_write(value,
+      paste0(tools::file_path_sans_ext(path), suffix), alias = alias, verbose = FALSE,
+      metadata = list(control_source = source_pin), semantic_schema = list(
+        control_source = list(type = "character", shape = "scalar",
+          required = TRUE, nullable = FALSE, allow_na = FALSE)))
+    stopifnot(is.character(result$version_id), length(result$version_id) == 1L)
+    result
+  }
+  if (!is.null(data)) clean <- save_parent(data, "-clean", "pip")
+  if (!is.null(metadata)) meta <- save_parent(metadata, "-metadata", "pip_meta")
+  if (!is.null(pfw)) pfw_pin <- save_parent(pfw, "-pfw", "aux")
+  area <- if (identical(domains[["cpi"]], "area")) c("urban", "rural") else "national"
+  ppp_area <- if (identical(domains[["ppp"]], "area")) c("urban", "rural") else "national"
+  semantic <- list(
+    source_pins = c(original_clean = state$upstream_clean_receipt$version_id,
+      original_metadata = state$upstream_metadata_receipt$version_id, original_pfw = original_pfw,
+      clean = clean$version_id, metadata = meta$version_id, pfw = pfw_pin$version_id),
+    consumed_ppp_keys = as.character(unlist(lapply(selections, function(key) paste0(key, "_", ppp_area)))),
+    consumed_cpi_keys = as.character(unlist(lapply(substr(selections, 5, 8), function(year) paste0(year, "_", area)))),
+    domains = domains,
+    population_keys = if (domains[["pop"]] == "area") c("2010_urban", "2010_rural") else "2010_national",
+    final_weight_rule = if (domains[["pop"]] == "area") "exact-year-domain-share" else "unchanged",
+    final_weight = as.double(final_weight))
+  schema <- lapply(names(semantic), function(name) list(type = typeof(semantic[[name]]),
+    shape = if (name == "final_weight_rule") "scalar" else "vector",
+    required = TRUE, nullable = FALSE, allow_na = FALSE))
+  names(schema) <- names(semantic)
+  node <- list(path = path, parents = list(
+    list(path = clean$path, version_id = clean$version_id),
+    list(path = meta$path, version_id = meta$version_id),
+    list(path = pfw_pin$path, version_id = pfw_pin$version_id)),
+    calculation = function(path, parents) {
+      clean <- pipload::pip_read(clean_path, format = "qs2", version = clean_pin,
+                                alias = "pip", verbose = FALSE)
+      metadata <- pipload::pip_read(metadata_path, format = "qs2", version = metadata_pin,
+                                   alias = "pip_meta", verbose = FALSE)
+      pfw <- pipload::pip_read(pfw_path, format = "qs2", version = pfw_pin,
+                              alias = "aux", verbose = FALSE)
+      pd_deflate_microdata(clean, metadata, pfw, selections)
+    }, helpers = list(), constants = list(clean_path = clean$path, clean_pin = clean$version_id,
+      metadata_path = meta$path, metadata_pin = meta$version_id,
+      pfw_path = pfw_pin$path, pfw_pin = pfw_pin$version_id, selections = selections),
+    semantic_schema = schema, semantic = semantic, format = "rds")
+  return(list(root = root, alias = "pip_deflated", context = list(
+    release = "20261103", identity = "TEST", root = root), node = node, state = state))
+}
+
+m2_bounded_read <- function(fixture, result, metadata = FALSE) {
+  pipload::pip_read(result$path[[1L]], "rds", result$version_id[[1L]],
+                    fixture$alias, FALSE, metadata_only = metadata)
+}
+
+test_that("bounded actual upstream parents produce exact saved numerical and semantic output", {
+  f <- m2_bounded_node("bounded-primary.rds")
+  result <- m2_run(f, list(f$node))
+  expect_identical(result$status, "built")
+  value <- m2_bounded_read(f, result)
+  expect_identical(value$welfare, as.double(1:4))
+  expect_identical(value$welfare_lcu, as.double(1:4))
+  expect_identical(value$weight, c(10, 20, 30, 40))
+  for (field in c("hhid", "pid", "area", "hsize")) {
+    expect_identical(value[[field]], f$state$clean[[field]])
+  }
+  for (year in c(2005, 2011, 2017, 2021)) {
+    factor <- c(`2005` = 1, `2011` = 20 / 27, `2017` = 5 / 9, `2021` = 50 / 119)[[as.character(year)]]
+    expect_equal(value[[paste0("welfare_", year)]], (1:4) * factor)
+  }
+  metadata <- m2_bounded_read(f, result, TRUE)
+  for (name in names(f$node$semantic)) {
+    expect_identical(metadata[[name]], f$node$semantic[[name]])
+  }
+  expect_length(f$state$metadata$ppp, 9L)
+  expect_length(metadata$consumed_ppp_keys, 4L)
+  receipt <- stamp::st_execution_info(result$path, alias = f$alias,
+                                      receipt_id = result$receipt_id)
+  expect_identical(receipt$state, "success")
+  expect_identical(receipt$version_id, result$version_id)
+  expect_identical(receipt$receipt$request_id, result$request_id)
+  expect_identical(m2_run(f, list(f$node))$status, "skipped")
+  evidence <- list(result = result, payload = value, semantic = metadata,
+    original_pins = f$node$semantic$source_pins,
+    components = pd_engine_prepare(list(context = f$context, nodes = list(f$node)))$nodes[[1]]$request$components)
+  saveRDS(evidence, file.path(Sys.getenv("PIPDATA_UPSTREAM_EVIDENCE_DIR"), "bounded-primary.rds"))
+})
+
+test_that("bounded saved population controls and older semantic pins remain exact", {
+  state <- m2_bounded_state()
+  pfw <- data.table::copy(state$aux$snapshot$objects$pfw)
+  pfw$pop_domain <- 2
+  meta <- state$metadata
+  meta$pop <- c(`2010_urban` = 400, `2010_rural` = 600)
+  domains <- c(cpi = "national", ppp = "national", pop = "area")
+  f <- m2_bounded_node("bounded-population.rds", metadata = meta, pfw = pfw,
+    domains = domains, final_weight = c(100, 200, 300, 400))
+  first <- m2_run(f, list(f$node))
+  expect_identical(first$status, "built")
+  one <- m2_bounded_read(f, first)
+  old_metadata <- m2_bounded_read(f, first, TRUE)
+  expect_identical(one$weight, c(100, 200, 300, 400))
+  expect_identical(old_metadata$final_weight, one$weight)
+  meta$pop[["2010_urban"]] <- 800
+  g <- m2_bounded_node("bounded-population.rds", metadata = meta, pfw = pfw,
+    domains = domains, final_weight = c(200, 200, 600, 400))
+  second <- m2_run(g, list(g$node))
+  expect_identical(second$status, "built")
+  two <- m2_bounded_read(g, second)
+  expect_identical(two$weight, c(200, 200, 600, 400))
+  expect_identical(two$weight[c(2, 4)], one$weight[c(2, 4)])
+  for (field in c("welfare", "welfare_lcu", "welfare_2005", "welfare_2011", "welfare_2017", "welfare_2021", "hhid", "pid", "area")) {
+    expect_identical(two[[field]], one[[field]])
+  }
+  expect_false(identical(first$request_id, second$request_id))
+  expect_false(identical(first$version_id, second$version_id))
+  expect_identical(m2_bounded_read(f, first, TRUE), old_metadata)
+  new_metadata <- m2_bounded_read(g, second, TRUE)
+  for (name in names(g$node$semantic)) expect_identical(new_metadata[[name]], g$node$semantic[[name]])
+  saveRDS(list(first = first, second = second, primary = one, changed = two,
+    first_metadata = old_metadata, second_metadata = new_metadata),
+    file.path(Sys.getenv("PIPDATA_UPSTREAM_EVIDENCE_DIR"), "bounded-populations.rds"))
+})
+
+test_that("bounded saved dynamic year CPI controls and permuted rows use actual calculations", {
+  state <- m2_bounded_state()
+  meta <- state$metadata
+  meta$cpi <- c(meta$cpi, `2025_national` = 2)
+  meta$ppp <- c(meta$ppp, ppp_2025_03_04_national = 4)
+  f <- m2_bounded_node("bounded-dynamic.rds", metadata = meta, selections = "ppp_2025_03_04")
+  first <- m2_run(f, list(f$node))
+  expect_identical(first$status, "built")
+  value <- m2_bounded_read(f, first)
+  expect_identical(value$welfare_2025, (1:4) / 8)
+  expect_false(any(paste0("welfare_", c(2005, 2011, 2017, 2021)) %in% names(value)))
+  meta$cpi[["2025_urban"]] <- 100
+  domain <- m2_bounded_node("bounded-dynamic-unused-domain.rds", metadata = meta,
+                            selections = "ppp_2025_03_04")
+  unused_domain <- m2_bounded_read(domain, m2_run(domain, list(domain$node)))
+  expect_identical(unused_domain$welfare_2025, value$welfare_2025)
+  meta$cpi[["2025_urban"]] <- 500
+  domain_changed <- m2_bounded_node("bounded-dynamic-unused-domain-changed.rds", metadata = meta,
+                                    selections = "ppp_2025_03_04")
+  unused_domain_changed <- m2_bounded_read(domain_changed,
+    m2_run(domain_changed, list(domain_changed$node)))
+  expect_identical(unused_domain_changed$welfare_2025, value$welfare_2025)
+  meta$cpi[["2017_national"]] <- 900
+  g <- m2_bounded_node("bounded-dynamic-unused.rds", metadata = meta, selections = "ppp_2025_03_04")
+  unchanged <- m2_bounded_read(g, m2_run(g, list(g$node)))
+  expect_identical(unchanged$welfare_2025, value$welfare_2025)
+  meta$cpi[["2025_national"]] <- 4
+  h <- m2_bounded_node("bounded-dynamic-consumed.rds", metadata = meta, selections = "ppp_2025_03_04")
+  changed <- m2_bounded_read(h, m2_run(h, list(h$node)))
+  expect_identical(changed$welfare_2025, value$welfare_2025 / 2)
+  order <- c(3, 1, 4, 2)
+  p <- m2_bounded_node("bounded-permuted.rds", data = state$clean[order],
+                       final_weight = c(30, 10, 40, 20))
+  permuted <- m2_bounded_read(p, m2_run(p, list(p$node)))
+  expect_identical(permuted$hhid, c("h3", "h1", "h4", "h2"))
+  expect_identical(permuted$pid, c("p3", "p1", "p4", "p2"))
+  expect_identical(permuted$weight, c(30, 10, 40, 20))
+  expect_identical(permuted$welfare_lcu, as.double(order))
+  expect_equal(permuted$welfare_2021, order * 50 / 119)
+})
+
+test_that("bounded relevant component mutations change real stamp requests and unrelated edits do not", {
+  f <- m2_bounded_node("bounded-mutations.rds")
+  baseline <- m2_run(f, list(f$node))
+  expect_identical(baseline$status, "built")
+  baseline_value <- m2_bounded_read(f, baseline)
+  verify_mutation <- function(result) {
+    expect_identical(m2_bounded_read(f, result), baseline_value)
+    receipt <- stamp::st_execution_info(result$path, alias = f$alias,
+                                       receipt_id = result$receipt_id)
+    expect_identical(receipt$state, "success")
+    expect_identical(receipt$receipt$request_id, result$request_id)
+    expect_identical(receipt$version_id, result$version_id)
+    metadata <- m2_bounded_read(f, result, TRUE)
+    for (field in names(f$node$semantic)) {
+      expect_identical(metadata[[field]], f$node$semantic[[field]])
+    }
+  }
+  changed_requests <- character()
+  for (name in c("pd_deflate_microdata", "pd_deflation_frame", "pd_deflation_number",
+                 "pd_deflation_select", "pd_deflation_domains", "pd_deflation_area", "pd_deflation_population")) {
+    local({
+      changed <- get(name, asNamespace("pipdata"))
+      body(changed) <- substitute({ unused_marker <- 1L; BODY }, list(BODY = body(changed)))
+      do.call(testthat::local_mocked_bindings, c(stats::setNames(list(changed), name),
+        list(.package = "pipdata", .env = environment())))
+      result <- m2_run(f, list(f$node))
+      expect_identical(result$status, "built", info = name)
+      expect_true(result$attempted)
+      expect_false(identical(result$request_id, baseline$request_id), info = name)
+      verify_mutation(result)
+      changed_requests <<- c(changed_requests, result$request_id)
+    })
+  }
+  local({
+    testthat::local_mocked_bindings(.data_level_columns = c(.data_level_columns, list(unused = "unused")), .package = "pipdata")
+    result <- m2_run(f, list(f$node))
+    expect_identical(result$status, "built")
+    expect_false(identical(result$request_id, baseline$request_id))
+    verify_mutation(result)
+    changed_requests <<- c(changed_requests, result$request_id)
+  })
+  local({
+    changed <- wbpip::deflate_welfare_mean
+    body(changed) <- substitute({ unused_marker <- 1L; BODY }, list(BODY = body(changed)))
+    testthat::local_mocked_bindings(deflate_welfare_mean = changed, .package = "wbpip")
+    result <- m2_run(f, list(f$node))
+    expect_identical(result$status, "built")
+    expect_false(identical(result$request_id, baseline$request_id))
+    verify_mutation(result)
+    changed_requests <<- c(changed_requests, result$request_id)
+  })
+  node <- f$node
+  body(node$calculation) <- substitute({ unused_marker <- 1L; BODY }, list(BODY = body(node$calculation)))
+  changed <- m2_run(f, list(node))
+  expect_identical(changed$status, "built")
+  expect_false(identical(changed$request_id, baseline$request_id))
+  verify_mutation(changed)
+  restored <- m2_run(f, list(f$node))
+  testthat::local_mocked_bindings(get_data_status = function(...) NULL, .package = "pipdata")
+  unrelated <- m2_run(f, list(f$node))
+  expect_identical(unrelated$status, "skipped")
+  expect_identical(unrelated$request_id, restored$request_id)
+  expect_length(unique(changed_requests), 9L)
+  saveRDS(list(baseline = baseline, mutations = changed_requests,
+               calculation = changed, unrelated = unrelated),
+    file.path(Sys.getenv("PIPDATA_UPSTREAM_EVIDENCE_DIR"), "bounded-mutations.rds"))
+})
+
+test_that("bounded invalid inputs add no successful output version", {
+  state <- m2_bounded_state()
+  cases <- list(
+    function(x) { x$data <- x$data[0]; x },
+    function(x) { x$data$welfare[[1]] <- -1; x },
+    function(x) { x$data$welfare[[1]] <- Inf; x },
+    function(x) { x$data$welfare[[1]] <- NA_real_; x },
+    function(x) { x$data$weight[[1]] <- 0; x },
+    function(x) { x$data$weight[[1]] <- -1; x },
+    function(x) { x$data$weight[[1]] <- NaN; x },
+    function(x) { x$data$year[[1]] <- 2011L; x },
+    function(x) { x$metadata$surveyid_year <- 2011; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "cpi"] <- "cpi_backup"; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "ppp"] <- "ppp_backup"; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "pop"] <- "pop_backup"; x },
+    function(x) { names(x$metadata)[names(x$metadata) == "surveyid_year"] <- "surveyid_year_backup"; x },
+    function(x) { x$metadata$cpi[[1]] <- 0; x },
+    function(x) { x$metadata$ppp[[1]] <- Inf; x },
+    function(x) { x$metadata$cpi <- x$metadata$cpi[-1]; x },
+    function(x) { names(x$metadata$cpi)[[2]] <- names(x$metadata$cpi)[[1]]; x },
+    function(x) { x$metadata$pop[[1]] <- -1; x },
+    function(x) { x$pfw$pop_domain <- 2; x$metadata$pop <- c(`2011_urban` = 400, `2011_rural` = 600); x },
+    function(x) { x$pfw$pop_domain <- 2; x$metadata$pop <- c(`2010_urban` = 400); x },
+    function(x) { x$pfw <- x$pfw[c(1, 1)]; x },
+    function(x) { x$selections <- character(); x },
+    function(x) { x$selections <- rep(x$selections[[1]], 2); x },
+    function(x) {
+      x$selections <- matrix(c("ppp_2005_01_01", "ppp_2005_02_02"), nrow = 1L)
+      x$metadata$ppp <- c(x$metadata$ppp, ppp_2005_02_02_national = 2)
+      x
+    },
+    function(x) {
+      x$data <- as.data.frame(x$data)
+      x$data$area <- structure(c(1L, 0L, 2L, 0L), levels = c("urban", "rural"), class = "factor")
+      x$selections <- "ppp_2017_01_02"
+      x$pfw$cpi_domain <- 2
+      x$pfw$cpi_domain_var <- "urban"
+      x$metadata$cpi <- c(`2017_urban` = 2, `2017_rural` = 4)
+      x$domains <- c(cpi = "area", ppp = "national", pop = "national")
+      x
+    },
+    function(x) { x$data <- list(welfare = 1); x },
+    function(x) {
+      x$data$welfare <- rep(1e-300, 4L)
+      x$selections <- "ppp_2005_01_01"
+      x$metadata$ppp <- c(ppp_2005_01_01_national = 1e100)
+      x$metadata$cpi <- c(`2005_national` = 1e-100)
+      x
+    }
+  )
+  results <- vector("list", length(cases))
+  for (i in seq_along(cases)) {
+    inputs <- list(data = data.table::copy(state$clean), metadata = state$metadata,
+      pfw = data.table::copy(state$aux$snapshot$objects$pfw),
+      selections = c("ppp_2005_01_01", "ppp_2011_02_02", "ppp_2017_01_02", "ppp_2021_01_02"))
+    inputs <- cases[[i]](inputs)
+    path <- paste0("bounded-invalid-", i, ".rds")
+    f <- do.call(m2_bounded_node, c(list(path = path), inputs))
+    before <- stamp::st_versions(f$node$path, alias = f$alias)
+    result <- m2_run(f, list(f$node))
+    after <- stamp::st_versions(f$node$path, alias = f$alias)
+    expect_true(result$status %in% c("failed", "blocked"), info = path)
+    expect_identical(after, before, info = path)
+    expect_equal(nrow(after), 0L, info = path)
+    results[[i]] <- result
+  }
+  saveRDS(results, file.path(Sys.getenv("PIPDATA_UPSTREAM_EVIDENCE_DIR"), "bounded-invalid-no-save.rds"))
+})
+
 m2_fixture <- function() {
   base <- file.path(Sys.getenv("PIP_ROOT_DIR"), "..", "phase2")
   base <- normalizePath(base, winslash = "/", mustWork = FALSE)
@@ -21,11 +364,6 @@ m2_node <- function(path = "a.rds", value = 1L, parents = list()) {
     calculation = function(path, parents) list(x = value), helpers = list(),
     constants = list(value = value), semantic_schema = NULL,
     semantic = list(), format = tools::file_ext(path))
-}
-
-m2_run <- function(fixture, nodes, ...) {
-  pd_run_pipeline(recipes = list(context = fixture$context, nodes = nodes),
-                  verbose = FALSE, ...)
 }
 
 m2_read_node <- function(fixture) {

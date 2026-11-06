@@ -1,3 +1,20 @@
+test_that("bounded population uses exact-year aligned shares and no fallback", {
+  weight <- c(10, 20, 30, 40)
+  area <- c("urban", "rural", "urban", "rural")
+  pop <- c(`2010_urban` = 400, `2010_rural` = 600)
+  expect_identical(pd_deflation_population(weight, 2010, area, pop, TRUE)$weight,
+                   c(100, 200, 300, 400))
+  pop[["2010_urban"]] <- 800
+  expect_identical(pd_deflation_population(weight, 2010, area, pop, TRUE)$weight,
+                   c(200, 200, 600, 400))
+  expect_error(pd_deflation_population(weight, 2011, area, pop, TRUE), "coverage")
+  expect_error(pd_deflation_population(weight, 2010, area, pop[-2], TRUE), "coverage")
+  for (value in c(0, -1, NA_real_, NaN, Inf)) {
+    pop[[1L]] <- value
+    expect_error(pd_deflation_population(weight, 2010, area, pop, TRUE), "finite positive")
+  }
+})
+
 # Tests for adjust_population() — internal helper in pd_deflation.R
 #
 # adjust_population() scales subnational survey weights to match national

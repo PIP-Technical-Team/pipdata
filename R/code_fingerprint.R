@@ -166,6 +166,85 @@ pd_engine_require_capabilities <- function() {
   invisible(NULL)
 }
 
+pd_deflation_namespace <- function(arithmetic) {
+  function(pkg, name) {
+    if (!identical(substitute(pkg), quote(wbpip)) ||
+        !identical(substitute(name), quote(deflate_welfare_mean))) {
+      stop("bounded adapter permits only its frozen arithmetic dependency")
+    }
+    arithmetic
+  }
+}
+
+pd_deflation_adapter <- function() {
+  names <- c("pd_deflate_microdata", "pd_deflation_frame",
+    "pd_deflation_number", "pd_deflation_select", "pd_deflation_domains",
+    "pd_deflation_area", "pd_deflation_population")
+  functions <- mget(names, envir = asNamespace("pipdata"), inherits = FALSE)
+  arithmetic <- wbpip::deflate_welfare_mean
+  functions[["wbpip::deflate_welfare_mean"]] <- arithmetic
+  allowed <- c("{", "(", "if", "else", "for", "return", "<-", "=",
+    "[", "[[", "$", "[<-", "[[<-", "$<-", "!", "!=", "==", "<", ">",
+    "<=", ">=", "&&", "||", "&", "|", "%in%", "/", "*", "+", "-",
+    "c", "list", "length", "names", "class", "attr", "attributes", "attributes<-",
+    "is.object", "is.list", "is.atomic", "is.character", "is.logical",
+    "is.null", "is.finite", "is.na", "identical", "any", "all", "anyNA",
+    "anyDuplicated", "unclass", "unname", "unique", "rep", "seq_along",
+    "sum", "paste", "paste0", "match", "as.integer", "substr", "grepl",
+    "setdiff", "typeof", "stop", "invisible", "integer", "character",
+    "nzchar", "nchar", "::")
+  inspect <- function(expression) {
+    if (!is.call(expression)) return(invisible(NULL))
+    head <- expression[[1L]]
+    if (is.call(head)) {
+      if (!identical(head, quote(wbpip::deflate_welfare_mean))) {
+        rlang::abort("Unsupported bounded qualified dependency.")
+      }
+    } else if (!is.symbol(head) || !as.character(head) %in%
+               c(allowed, names(functions))) {
+      rlang::abort(paste("Unsupported bounded adapter operation:", deparse(head)))
+    }
+    args <- as.list(expression)[-1L]
+    for (i in seq_along(args)) {
+      if (!identical(args[[i]], quote(expr = ))) inspect(args[[i]])
+    }
+    invisible(NULL)
+  }
+  frozen <- new.env(parent = baseenv())
+  registry <- .data_level_columns
+  if (!pd_engine_value(registry)) rlang::abort("Invalid bounded domain registry.")
+  assign(".data_level_columns", unserialize(serialize(registry, NULL, version = 3L)), frozen)
+  for (name in names(functions)) {
+    fn <- functions[[name]]
+    if (!is.function(fn) || is.primitive(fn)) {
+      rlang::abort("Bounded adapter requires ordinary fixed functions.")
+    }
+    inspect(body(fn))
+    defaults <- formals(fn)
+    for (i in seq_along(defaults)) {
+      if (!identical(defaults[[i]], quote(expr = ))) inspect(defaults[[i]])
+    }
+    globals <- codetools::findGlobals(fn, merge = FALSE)
+    if (length(setdiff(globals$functions, c(allowed, names(functions)))) ||
+        length(setdiff(globals$variables, ".data_level_columns"))) {
+      rlang::abort("Undeclared bounded adapter dependency.")
+    }
+    copy <- utils::removeSource(fn)
+    attributes(copy) <- NULL
+    environment(copy) <- frozen
+    assign(name, copy, frozen)
+  }
+  arithmetic <- get("wbpip::deflate_welfare_mean", frozen, inherits = FALSE)
+  assign("::", pd_deflation_namespace(arithmetic), frozen)
+  lockEnvironment(frozen, bindings = TRUE)
+  components <- lapply(functions, pd_canonical_function)
+  components$pd_deflation_adapter <- pd_canonical_function(pd_deflation_adapter)
+  components$pd_deflation_namespace <- pd_canonical_function(pd_deflation_namespace)
+  components$.data_level_columns <- registry
+  return(list(calculation = get("pd_deflate_microdata", frozen, inherits = FALSE),
+              components = components))
+}
+
 pd_engine_proof <- function(calculation, helpers, constants) {
   pd_engine_require_codetools()
   fail <- function(message) rlang::abort(message,
@@ -174,12 +253,18 @@ pd_engine_proof <- function(calculation, helpers, constants) {
     fail("Helpers and constants require unique nonempty names.")
   }
   bindings <- c(names(helpers), names(constants))
+  adapter_name <- "pd_deflate_microdata"
+  if (adapter_name %in% bindings) fail("The bounded adapter name is reserved.")
   if (anyDuplicated(bindings) || any(bindings %in% c("path", "parents"))) {
     fail("Proof bindings must be disjoint from each other and callback formals.")
   }
   functions <- c(list(calculation), unname(helpers))
   if (!all(vapply(functions, function(fn) is.function(fn) && !is.primitive(fn),
-                  logical(1L)))) fail("Components must be ordinary R closures, not primitives.")
+                   logical(1L)))) fail("Components must be ordinary R closures, not primitives.")
+  adapter_used <- any(vapply(functions, function(fn)
+    adapter_name %in% codetools::findGlobals(fn), logical(1L)))
+  adapter <- if (adapter_used) pd_deflation_adapter() else NULL
+  if (adapter_used) bindings <- c(bindings, adapter_name)
   if (!identical(names(formals(calculation)), c("path", "parents"))) {
     fail("Calculation requires exactly (path, parents) formals.")
   }
@@ -272,7 +357,8 @@ pd_engine_proof <- function(calculation, helpers, constants) {
       if (as.character(expr[[1L]]) %in% forbidden) {
         fail(paste("Unsupported dynamic or side-effect operation:", expr[[1L]]))
       }
-      if (!as.character(expr[[1L]]) %in% c(pure_base, names(helpers))) {
+      if (!as.character(expr[[1L]]) %in% c(pure_base, names(helpers),
+          if (adapter_used) adapter_name)) {
         fail("Unsupported dynamic or undeclared function dispatch.")
       }
       if (as.character(expr[[1L]]) %in% c("<-", "=", "->") &&
@@ -289,6 +375,7 @@ pd_engine_proof <- function(calculation, helpers, constants) {
   # Internal audited boundaries are not caller-supplied helpers. Their code is
   # separately included in component proof; effective parents belong to stamp.
   assign("::", pd_engine_read_boundary(access), private)
+  if (adapter_used) assign(adapter_name, adapter$calculation, private)
   operators <- setdiff(pure_base, c("{", "(", "if", "else", "for", "while",
     "repeat", "break", "next", "return", "function", "<-", "=", "->",
     "&&", "||", "list", "unclass", "invisible", "stop", "stopifnot"))
@@ -326,7 +413,8 @@ pd_engine_proof <- function(calculation, helpers, constants) {
   for (i in seq_along(helpers)) assign(names(helpers)[[i]], copies[[i + 1L]], envir = private)
   lockEnvironment(private, bindings = TRUE)
   out <- list(calculation = copies[[1L]], helpers = names(helpers),
-              constants = names(constants), environment = private, access = access)
+               constants = names(constants), environment = private, access = access,
+               adapter = if (adapter_used) adapter$components else NULL)
   out$components <- pd_engine_components(out)
   return(out)
 }
@@ -349,6 +437,10 @@ pd_engine_components <- function(proof) {
   for (name in sort(proof$constants)) {
     out[[paste0("constant:", name)]] <- descriptor(
       get(name, proof$environment, inherits = FALSE), "pipdata-r-value-v1")
+  }
+  for (name in sort(names(proof$adapter))) {
+    out[[paste0("adapter:", name)]] <- descriptor(proof$adapter[[name]],
+      "pipdata-bounded-deflation-v1")
   }
   return(out[sort(names(out))])
 }

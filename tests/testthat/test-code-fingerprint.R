@@ -209,3 +209,45 @@ test_that("non-recode component and legacy summary own stage-code reasons", {
   expect_identical(legacy_fact$reason, "clean_code_changed")
   expect_identical(legacy_fact$input, "code")
 })
+
+test_that("bounded adapter proof binds actual helpers registry and arithmetic", {
+  calculation <- function(path, parents) {
+    pd_deflate_microdata(NULL, NULL, NULL, NULL)
+  }
+  fingerprint <- function() pd_engine_components(pd_engine_proof(
+    calculation, list(), list()))
+  original <- fingerprint()
+  required <- c("pd_deflate_microdata", "pd_deflation_frame",
+    "pd_deflation_number", "pd_deflation_select", "pd_deflation_domains",
+    "pd_deflation_area", "pd_deflation_population", "pd_deflation_adapter",
+    "pd_deflation_namespace", "wbpip::deflate_welfare_mean", ".data_level_columns")
+  expect_true(all(paste0("adapter:", required) %in% names(original)))
+  for (name in required[!required %in%
+      c("wbpip::deflate_welfare_mean", ".data_level_columns")]) {
+    local({
+      changed <- get(name, asNamespace("pipdata"))
+      body(changed) <- substitute({ unused_marker <- 1L; BODY },
+                                  list(BODY = body(changed)))
+      do.call(testthat::local_mocked_bindings, c(stats::setNames(list(changed), name),
+        list(.package = "pipdata", .env = environment())))
+      expect_false(identical(fingerprint(), original), info = name)
+    })
+  }
+  local({
+    registry <- c(.data_level_columns, list(unused = "unused"))
+    testthat::local_mocked_bindings(.data_level_columns = registry,
+                                    .package = "pipdata")
+    expect_false(identical(fingerprint(), original))
+  })
+  local({
+    changed <- wbpip::deflate_welfare_mean
+    body(changed) <- substitute({ unused_marker <- 1L; BODY }, list(BODY = body(changed)))
+    testthat::local_mocked_bindings(deflate_welfare_mean = changed, .package = "wbpip")
+    expect_false(identical(fingerprint(), original))
+  })
+  testthat::local_mocked_bindings(get_data_status = function(...) NULL,
+                                  .package = "pipdata")
+  expect_identical(fingerprint(), original)
+  expect_error(pd_engine_proof(calculation,
+    list(pd_deflate_microdata = function(...) NULL), list()), "reserved|overlap")
+})
