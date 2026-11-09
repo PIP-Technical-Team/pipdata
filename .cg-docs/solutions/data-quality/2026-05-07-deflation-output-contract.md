@@ -12,6 +12,10 @@ severity: "P2"
 
 ## Problem
 
+Scope: this entry describes public legacy `pd_deflation()`, not the private M2
+adapter. The latter intentionally retains `welfare`, emits dynamic
+`welfare_YYYY` and preserves row order; see the related strict-admission entry.
+
 `pd_deflation()` returned both a `welfare` column and a `welfare_lcu` column,
 where `welfare_lcu` was created as a direct copy of `welfare` before the
 `deflate_wlf()` step. This caused two issues:
@@ -117,6 +121,7 @@ After a successful `pd_deflation()` call the result is a `pipmd`/`pipgd`
 
 ## Related
 
+- [Private M2 strict admission and distinct output scope](2026-11-06-strict-admission-for-frozen-numerical-calculations.md)
 - [2026-05-06-subnational-deflation-area-attribute-not-resolved.md](../bugs/2026-05-06-subnational-deflation-area-attribute-not-resolved.md) — the fix that
   established `pop_data_level == "area"` as the guard condition for
   `adjust_population()`, which `adj_pop` now reflects

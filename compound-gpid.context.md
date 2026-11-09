@@ -111,6 +111,22 @@ For detailed technical walkthrough, see `docs/pipeline_overview.qmd`.
   preserving immutable history. See
   `.cg-docs/solutions/data-quality/2026-09-01-consume-durable-invalidation-during-restart-planning.md`.
 
+### Private M2 Microdata Contract (2026-11-06)
+
+- The private `pd_deflate_microdata()` route is distinct from public legacy
+  `pd_deflation()`: retain daily-LCU `welfare` and `welfare_lcu`, emit dynamic
+  `welfare_YYYY` from explicit vintage selections, and preserve input row order.
+  CPI, PPP and population domains resolve independently. The bounded primary
+  leaves weights unchanged; area controls use exact-year population shares with
+  aligned weights, never `hsize`. This does not activate production or supersede
+  the public output contract above.
+- Frozen code is insufficient without strict admission: require exact consumed
+  metadata names, reject matrix selections, and validate factor levels/codes
+  before decoding. Reject positive-welfare/zero-result underflow while keeping
+  genuine zeros valid. All retained helper/registry/arithmetic/admission code
+  enters request proof. See
+  `.cg-docs/solutions/data-quality/2026-11-06-strict-admission-for-frozen-numerical-calculations.md`.
+
 ## Work in Progress
 
 Currently tracked via `.cg-docs/plans/`:
@@ -119,6 +135,23 @@ Currently tracked via `.cg-docs/plans/`:
 ## Testing Patterns
 
 - **`expect_warning()` returns the condition, not the expression value** (testthat 3.2.1.1+): `result <- expect_warning(expr)` captures the warning condition object — not the return value of `expr`. Always use the block assignment pattern: `result <- NULL; expect_warning({ result <- expr }, ...)`. The same applies to `expect_error()`, `expect_message()`, and `expect_condition()`. See `.cg-docs/solutions/testing-patterns/2026-05-29-expect-warning-returns-condition-not-value.md`.
+
+### Contained Recipe Verification (2026-11-06)
+
+- Hook decoding can load namespaces: the isolated preparation must prove zero
+  added namespaces, restore both temporary namespace lookups, inspect source
+  hooks before actual loads, and bind child home/cache/temp/library/output paths
+  to resolved E locations. The tested Windows alias-spelling workaround is not
+  a portable storage design; prove one physical store and preserve explicit
+  recipe aliases and legacy fixture path auto-detection.
+- Exact legacy parent reads do not prove persisted byte checksums. Preserve
+  actual producer pins, create public-API checksum-bearing consumer parents
+  with a nonempty typed source-pin field, and compare exact payload readback.
+  Final success still requires request-aware calculation and exact receipt,
+  payload and semantic metadata checks; test exceptions alone do not prove no
+  save. The six-file TEST proof does not replace built-package/production
+  validation. See
+  `.cg-docs/solutions/environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md`.
 
 ## Workspace Notes
 

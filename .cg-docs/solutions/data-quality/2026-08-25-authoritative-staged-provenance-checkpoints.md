@@ -71,6 +71,8 @@ testing the hash mechanism alone does not prove closure completeness.
 
 ## Related
 
+- [Strict admission before frozen numerical calculations](2026-11-06-strict-admission-for-frozen-numerical-calculations.md)
+- [Contained R preflight and certified same-store parents](../environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md)
 - [Consume Durable Invalidation During Restart Planning](2026-09-01-consume-durable-invalidation-during-restart-planning.md)
 - `.cg-docs/plans/2026-08-24-pipdata-staged-dependency-manifest.md`
 - `.cg-docs/solutions/data-quality/2026-08-07-aux-content-hash-gated-recleaning.md`

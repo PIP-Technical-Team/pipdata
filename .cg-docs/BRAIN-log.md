@@ -1,6 +1,6 @@
 # 🧠 Project Brain — Chronological Log
 
-_Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
+_Generated 2026-11-06 · 168 artifacts (newest first) + 0 roadmap features_
 
 ## undated
 
@@ -12,8 +12,6 @@ _Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
   > **Review depth**: standard **Scope**: Full branch diff `DEV_v2`→`to_dos` **Files reviewed**: 13 (`R/pd_dlw_clean.R`, …
 - **[2026-04-27-dplyr-to-collapse-phase1-review](.cg-docs/reviews/2026-04-27-dplyr-to-collapse-phase1-review.md)** · `review` · _—_ · `—`
   > **Review depth**: standard **Files reviewed**: 4 (`R/pd_dlw_clean.R`, `R/pipdata_validate_gmd.R`, `R/pipdata_validati…
-- **[2026-04-27-error-handling-audit](.cg-docs/plans/2026-04-27-error-handling-audit.md)** · `plan` · _—_ · `—`
-  > grep -r "uniq_vars\|nums_vars_to_attr\|vars_to_attr\|add_attributes" R/ tests/ old_inv <- if (file.exists(path)) { if…
 - **[2026-04-27-error-handling-audit-review](.cg-docs/reviews/2026-04-27-error-handling-audit-review.md)** · `review` · _—_ · `—`
   > Status: PASSED ✅
 - **[2026-04-29-remove-date-valid-filter-light-review](.cg-docs/reviews/2026-04-29-remove-date-valid-filter-light-review.md)** · `review` · _—_ · `—`
@@ -36,8 +34,61 @@ _Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
   > **Review depth**: standard **Files reviewed**: 3 (`R/update_pip_inventory.R`, `tests/testthat/test-update_pip_invento…
 - **[2026-06-18-yaml-recode-dictionary](.cg-docs/plans/2026-06-18-yaml-recode-dictionary.md)** · `plan` · _done_ · `—`
   > The current variable recoding logic in `pd_dlw_clean.R` is hardcoded across four functions (`recode_edu()`, `recode_g…
-- **[2026-08-05-aux-version-gate-valid-dlw-load](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _—_ · `—`
-  > --- date: 2026-08-05 title: "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison" s…
+
+## 2026-11-06
+
+- **[Contained R preflight and certified same-store parents](.cg-docs/solutions/environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md)** · `solution` · _—_ · `2026-11-06`
+  > Preparation appeared read-only, but decoding installed lazy closures loaded third-party namespaces and ran startup ho…
+- **[Strict admission before frozen numerical calculations](.cg-docs/solutions/data-quality/2026-11-06-strict-admission-for-frozen-numerical-calculations.md)** · `solution` · _—_ · `2026-11-06`
+  > The private M2 microdata route passed its ordinary numerical and persistence tests, yet review found four ways to pub…
+
+## 2026-11-05
+
+- **[2026-11-05-m2-deflate-one-survey-approved-contract-review](.cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-review.md)** · `review` · _—_ · `2026-11-05`
+  > Status: acceptance PASS. All ten contributions integrated; seven findings fixed and executed green in correction roun…
+- **[2026-11-05-m2-deflate-one-survey-approved-contract-verify-review](.cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md)** · `review` · _—_ · `2026-11-05`
+  > Result: **PASS**, light-only `/cg-review mode:verify`. All seven original findings closed; no new P0/P1, cross-file b…
+- **[M2 Deflate One Survey: Approved Bounded Contract](.cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md)** · `plan` · _completed_ · `2026-11-05`
+  > Implement later the Step 7 / E7 / L-calc / V9 synthetic deflation proof: actual stamp-selected calculation, dynamic `…
+
+## 2026-11-03
+
+- **[2026-11-03-one-survey-upstream-acceptance-review](.cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-review.md)** · `review` · _—_ · `2026-11-03`
+  > `review:auto` resolved to `data-risk`: scientific consumer outputs, exact producer/consumer identities, validation an…
+- **[2026-11-03-one-survey-upstream-acceptance-verify-review](.cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-verify-review.md)** · `review` · _—_ · `2026-11-03`
+  > `/cg-review mode:verify` completed against staged intended changes in actual pipdata `feat/one-survey-upstream-accept…
+- **[One-survey upstream acceptance: real stages, offline transport](.cg-docs/plans/2026-11-03-one-survey-upstream-acceptance.md)** · `plan` · _completed_ · `2026-11-03`
+  > Demonstrate one synthetic GPWG survey through the **real validator, actual saved CPI/PPP/PFW producers, real formatti…
+
+## 2026-11-02
+
+- **[M2 Phase 3: Deflate One Survey](.cg-docs/plans/2026-11-02-m2-deflate-one-survey.md)** · `plan` · _active_ · `2026-11-02`
+  > Deliver umbrella Step 7 / E7 / L-calc / V9: deflate one validated, pinned synthetic survey into dynamic `welfare_YYYY…
+- **[M2 Phase 3: Independently Save the Mean](.cg-docs/plans/2026-11-02-m2-independent-mean-save.md)** · `plan` · _active_ · `2026-11-02`
+  > Deliver the coordination/storage part of umbrella Step 8 / E8 / L-calc / V10: supply approved deflated welfare and fi…
+
+## 2026-10-30
+
+- **[Code Review: M2 Phase 2 Steps 5 and 6 \(One-Survey Acquire and Format-Validate\)](.cg-docs/reviews/2026-10-30-m2-one-survey-acquire-format-review.md)** · `review` · _fixed_ · `2026-10-30`
+  > Reviewed uncommitted changes on `feat/m2-one-survey-acquire-format` across 9 review agents (`@cg-code-quality`, `@cg-…
+- **[M2 Phase 2 Steps 5 and 6: One-Survey Acquire and Format-Validate](.cg-docs/plans/2026-10-30-m2-one-survey-acquire-format.md)** · `plan` · _completed_ · `2026-10-30`
+  > Implement M2 Phase 2 Steps 5 (`download-one-survey`) and 6 (`format-and-validate-one-survey`) in `pipdata` so an expl…
+
+## 2026-10-28
+
+- **[2026-10-27-m2-pipdata-authority-verify-review](.cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review.md)** · `review` · _—_ · `2026-10-28`
+  > NOT CONVERGED. Candidate is not established merge-ready. Three deduplicated findings remain: P0:1, P1:1, P2:1, P3:0. …
+- **[2026-10-27-m2-pipdata-authority-verify-review-2](.cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review-2.md)** · `review` · _—_ · `2026-10-28`
+  > FIXED within the authorized correction scope and E5 evidence limits. Three findings fixed;0 skipped/out of scope; no …
+
+## 2026-10-27
+
+- **[2026-10-27-m2-pipdata-authority-review](.cg-docs/reviews/2026-10-27-m2-pipdata-authority-review.md)** · `review` · _fixed_ · `2026-10-27`
+  > User requested `review:auto` and final `cg-review mode:verify`; this report is the fixed-findings input for that expl…
+- **[2026-10-27-m2-pipdata-authority-review-verify](.cg-docs/reviews/2026-10-27-m2-pipdata-authority-review-verify.md)** · `review` · _completed_ · `2026-10-27`
+  > FIXED. All prior A1-A17 dispositions verified. No remaining applicable P0-P3 findings or regressions identified by th…
+- **[M2 Pipdata Stamp Authority: Bounded Engine Follow-up](.cg-docs/plans/2026-10-26-m2-pipdata-authority.md)** · `plan` · _completed_ · `2026-10-27`
+  > Prepare a bounded opt-in engine route in pipdata that supplies recipes, exact inputs and automatic fingerprints while…
 
 ## 2026-09-01
 
@@ -174,6 +225,8 @@ _Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
 
 - **[Gate aux-change detection in valid_dlw_load on aux version change](.cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `brainstorm` · _draft_ · `2026-08-05`
   > `valid_dlw_load()` always calls `valid_aux_load()`, which invokes `pipaux::compare_aux_releases()` and `pipaux::compa…
+- **[Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison](.cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md)** · `plan` · _active_ · `2026-08-05`
+  > Make `valid_dlw_load()` only re-clean surveys whose auxiliary data actually changed since they were last cleaned. Tod…
 
 ## 2026-08-04
 
@@ -301,7 +354,7 @@ _Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
 - **[2026-05-07-get-country-pfw-verify-review](.cg-docs/reviews/2026-05-07-get-country-pfw-verify-review.md)** · `review` · _—_ · `2026-05-07`
   > **Review depth**: light (verify mode) **Parent review**: `.cg-docs/reviews/2026-05-07-get-country-pfw-review.md` **Fi…
 - **[Deflation output contract: welfare_lcu, welfare_vars, adj_pop](.cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md)** · `solution` · _—_ · `2026-05-07`
-  > `pd_deflation()` returned both a `welfare` column and a `welfare_lcu` column, where `welfare_lcu` was created as a di…
+  > Scope: this entry describes public legacy `pd_deflation()`, not the private M2 adapter. The latter intentionally reta…
 
 ## 2026-05-06
 
@@ -389,6 +442,8 @@ _Generated 2026-09-01 · 151 artifacts (newest first) + 0 roadmap features_
   > Pipeline functions like `valid_dlw_load()` and `update_pip_inventory()` emit logmeta entries as a side effect. These …
 - **[dplyr/tidyr/tibble → data.table/collapse migration patterns](.cg-docs/solutions/data-quality/2026-04-27-dplyr-to-datatable-collapse-migration-patterns.md)** · `solution` · _—_ · `2026-04-27`
   > Functions used `dplyr::`, `tidyr::`, and `tibble::` without declaring these packages in `DESCRIPTION Imports`. This c…
+- **[Error handling audit: utils.R cleanup and nested tryCatch patterns](.cg-docs/plans/2026-04-27-error-handling-audit.md)** · `plan` · _superseded_ · `2026-04-27`
+  > Audit two structural code quality issues: 1. **utils.R cleanup**: Identify and document unused functions, dead code (…
 - **[Integration tests for logging side effects](.cg-docs/plans/2026-04-27-logging-integration-tests.md)** · `plan` · _completed_ · `2026-04-27`
   > Write integration tests to verify that the pipeline functions `valid_dlw_load()` and `update_pip_inventory()` emit co…
 - **[Migrate dplyr calls to collapse/data.table \(Phase 1: 3 files\)](.cg-docs/brainstorms/2026-04-27-dplyr-to-collapse-dt.md)** · `brainstorm` · _decided_ · `2026-04-27`

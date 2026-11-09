@@ -76,6 +76,7 @@ reading `R/*.R` paths that do not exist inside an installed tarball.
 
 ## Related
 
+- [Contained R preflight and certified parents](../environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md) complements, but does not replace, built-package validation.
 - [Validate `Authors@R` through a built R package](../build-errors/2026-08-21-authors-at-r-description-validation.md)
 - [Contract testing for logging side effects](2026-04-27-contract-testing-for-logging-side-effects.md)
 - [Verify exported R API retirement from built package surfaces](2026-08-25-verify-exported-r-api-retirement.md)

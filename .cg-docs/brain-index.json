@@ -1,5 +1,5 @@
 {
-  "edge_count": 61,
+  "edge_count": 73,
   "edges": [
     {
       "edge_type": "decided_from",
@@ -47,6 +47,12 @@
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-03-pipeline-wrapper-vignettes.md",
       "target": ".cg-docs/brainstorms/2026-08-03-pipeline-wrapper-vignettes.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
+      "target": ".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md",
       "target_missing": false
     },
     {
@@ -106,6 +112,12 @@
     {
       "edge_type": "decided_from",
       "source": ".cg-docs/plans/2026-08-27-executable-staged-invalidation-dag.md",
+      "target": ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "decided_from",
+      "source": ".cg-docs/plans/2026-10-26-m2-pipdata-authority.md",
       "target": ".cg-docs/brainstorms/2026-08-27-executable-staged-invalidation-dag.md",
       "target_missing": false
     },
@@ -302,6 +314,54 @@
       "target_missing": false
     },
     {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-review.md",
+      "target": ".cg-docs/plans/2026-10-26-m2-pipdata-authority.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review-2.md",
+      "target": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review.md",
+      "target": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-10-30-m2-one-survey-acquire-format-review.md",
+      "target": ".cg-docs/plans/2026-10-30-m2-one-survey-acquire-format.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-review.md",
+      "target": ".cg-docs/plans/2026-11-03-one-survey-upstream-acceptance.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-verify-review.md",
+      "target": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-review.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "reviews",
+      "source": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-review.md",
+      "target": ".cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "verifies",
+      "source": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md",
+      "target": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-review.md",
+      "target_missing": false
+    },
+    {
       "edge_type": "references",
       "source": ".cg-docs/solutions/bugs/2026-08-21-explicit-data-level-sentinel-registry.md",
       "target": ".cg-docs/plans/2026-08-20-explicit-data-level-sentinel-semantics.md",
@@ -311,6 +371,18 @@
       "edge_type": "references",
       "source": ".cg-docs/solutions/bugs/2026-08-26-fail-closed-typed-stage-orchestration.md",
       "target": ".cg-docs/plans/2026-08-25-pipeline-stage-interface.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/solutions/data-quality/2026-11-06-strict-admission-for-frozen-numerical-calculations.md",
+      "target": ".cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md",
+      "target_missing": false
+    },
+    {
+      "edge_type": "references",
+      "source": ".cg-docs/solutions/environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md",
+      "target": ".cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md",
       "target_missing": false
     },
     {
@@ -1004,14 +1076,19 @@
       ]
     },
     {
-      "date": "",
+      "date": "2026-04-27",
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-04-27-error-handling-audit.md",
       "slug": "2026-04-27-error-handling-audit",
-      "status": "",
-      "summary": "grep -r \"uniq_vars\\|nums_vars_to_attr\\|vars_to_attr\\|add_attributes\" R/ tests/ old_inv <- if (file.exists(path)) { if (log) { tryCatch(qs::qread(path), error = function(e) { log_add(...); NULL }) } else { qs::qread(path)  # No error guard } } else { tibble::tibble(...)  # empty default } old_inv <- if (!file.exists(path)) { tibble::tibble(...)  # empty default } else { result <- tryCatch( qs::qread(path), error = function(e) { if (log) pipfun::log_add(\"error\", ...) NULL  # Always return NULL on error (unified) } ) result %||na% tibble::tibble(...) }",
-      "tags": [],
-      "title": "2026-04-27-error-handling-audit",
+      "status": "superseded",
+      "summary": "Audit two structural code quality issues: 1. **utils.R cleanup**: Identify and document unused functions, dead code (commented-out sections), and verify remaining utilities are necessary 2. **Nested tryCatch audit**: Review error handling patterns for complexity, necessity, and consolidation opportunities",
+      "tags": [
+        "refactoring",
+        "code-quality",
+        "error-handling",
+        "cleanup"
+      ],
+      "title": "Error handling audit: utils.R cleanup and nested tryCatch patterns",
       "top_keywords": [
         "utils.r",
         "audit",
@@ -1812,14 +1889,23 @@
       ]
     },
     {
-      "date": "",
+      "date": "2026-08-05",
       "entity_type": "plan",
       "path": ".cg-docs/plans/2026-08-05-aux-version-gate-valid-dlw-load.md",
       "slug": "2026-08-05-aux-version-gate-valid-dlw-load",
-      "status": "",
-      "summary": "--- date: 2026-08-05 title: \"Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison\" status: active scope: \"Standard\" brainstorm: \".cg-docs/brainstorms/2026-08-05-aux-version-gate-valid-dlw-load.md\" language: \"R\" estimated-effort: \"medium\" deviation-policy: \"ask\" artifact-schema-version: 1 tags: [valid_dlw_load, valid_aux_load, aux, stamp, content_hash, master-inventory, pipeline, incremental-processing] phases: 2  # convenience hint -- may be stale; always recount from ## Phase headers",
-      "tags": [],
-      "title": "2026-08-05-aux-version-gate-valid-dlw-load",
+      "status": "active",
+      "summary": "Make `valid_dlw_load()` only re-clean surveys whose auxiliary data actually changed since they were last cleaned. Today it always runs `valid_aux_load()` → `compare_aux_releases()`/`compare_aux_vintages()`, which compare the current aux data against the previous aux release/vintage — not against what the pipeline used last run — so every run re-cleans affected surveys unnecessarily.",
+      "tags": [
+        "valid_dlw_load",
+        "valid_aux_load",
+        "aux",
+        "stamp",
+        "content_hash",
+        "master-inventory",
+        "pipeline",
+        "incremental-processing"
+      ],
+      "title": "Gate aux-change detection in valid_dlw_load on per-survey aux content-hash comparison",
       "top_keywords": [
         "valid_dlw_load()",
         "valid_aux_load()",
@@ -1827,10 +1913,10 @@
         "inv_to_process()",
         "compare_aux_*",
         "pd_aux_attr()",
-        "pip_meta",
         "content_hash",
-        "build_pip_inventory()",
-        "aux"
+        "aux",
+        "pip_meta",
+        "build_pip_inventory()"
       ]
     },
     {
@@ -2131,6 +2217,177 @@
         "pd_run_pipeline()",
         "force_surveys",
         "metadata"
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-10-26-m2-pipdata-authority.md",
+      "slug": "2026-10-26-m2-pipdata-authority",
+      "status": "completed",
+      "summary": "Prepare a bounded opt-in engine route in pipdata that supplies recipes, exact inputs and automatic fingerprints while stamp alone selects and revalidates run/skip/blocked work. Establish the pipdata contribution to umbrella Step 3 and L-authority/V6 using synthetic producers and actual stamp/pipload storage, without requiring a survey, mean or TEST manifest.",
+      "tags": [
+        "m2",
+        "pipdata",
+        "stamp",
+        "authority",
+        "recipes",
+        "fingerprints",
+        "receipts",
+        "test-safety"
+      ],
+      "title": "M2 Pipdata Stamp Authority: Bounded Engine Follow-up",
+      "top_keywords": [
+        "test scenarios",
+        "test-dependency-api-contract.r",
+        "test-m2-engine-authority.r",
+        "program files",
+        "test-code-fingerprint.r",
+        "execution",
+        "cg-work",
+        "evidence.md",
+        "tests/testthat/test-m2-engine-authority.r",
+        "work handoff"
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-10-30-m2-one-survey-acquire-format.md",
+      "slug": "2026-10-30-m2-one-survey-acquire-format",
+      "status": "completed",
+      "summary": "Implement M2 Phase 2 Steps 5 (`download-one-survey`) and 6 (`format-and-validate-one-survey`) in `pipdata` so an explicit single-survey module-bearing selection can be acquired and recorded in durable inventories, `status == \"invalid\"` completed-validation rows are excluded before entering the clean stage, and active post-format validation enforces LCU/day welfare, finite non-missing `welfare` and `weight`, and required `pipmd`/`pipgd` classes and domain attributes before any `save_pip()` or `stamp` write occurs.",
+      "tags": [
+        "m2",
+        "pipdata",
+        "dlw",
+        "acquisition",
+        "validation",
+        "clean",
+        "stamp"
+      ],
+      "title": "M2 Phase 2 Steps 5 and 6: One-Survey Acquire and Format-Validate",
+      "top_keywords": [
+        "stamp",
+        "status == \"invalid\"",
+        ".filter_completed_dlw_validation_inventory()",
+        "test-code-fingerprint.r",
+        "test-dependency-api-contract.r",
+        "welfare",
+        "weight",
+        "e:",
+        "test-dependency-execution.r",
+        "test-pd_process_data.r"
+      ]
+    },
+    {
+      "date": "2026-11-02",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-11-02-m2-deflate-one-survey.md",
+      "slug": "2026-11-02-m2-deflate-one-survey",
+      "status": "active",
+      "summary": "Deliver umbrella Step 7 / E7 / L-calc / V9: deflate one validated, pinned synthetic survey into dynamic `welfare_YYYY`, retain LCU/day welfare, and save/read the actual output with exact consumed-input and final-weight provenance. This Plan is saved and reviewed only; no implementation is approved.",
+      "tags": [
+        "m2",
+        "pipdata",
+        "deflation",
+        "plan-only"
+      ],
+      "title": "M2 Phase 3: Deflate One Survey",
+      "top_keywords": [
+        "pipdata-readiness.md",
+        "welfare_yyyy",
+        "phase",
+        "deflation",
+        "deflate",
+        "test-adjust-population.r",
+        "test-dependency-inputs.r",
+        "test-m2-engine-authority.r",
+        "test-dependency-api-contract.r",
+        "pd_deflation.r"
+      ]
+    },
+    {
+      "date": "2026-11-02",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-11-02-m2-independent-mean-save.md",
+      "slug": "2026-11-02-m2-independent-mean-save",
+      "status": "active",
+      "summary": "Deliver the coordination/storage part of umbrella Step 8 / E8 / L-calc / V10: supply approved deflated welfare and final weights to pipster, independently save each successful mean, then recover after an injected downstream assembly failure without recomputation when stamp says the saved result is current. Plan-only approval is not execution or contract approval.",
+      "tags": [
+        "m2",
+        "pipdata",
+        "mean",
+        "recovery",
+        "plan-only"
+      ],
+      "title": "M2 Phase 3: Independently Save the Mean",
+      "top_keywords": [
+        "mean",
+        "test-dependency-api-contract.r",
+        "test-m2-mean-save.r",
+        "independent",
+        "tests/testthat/test-code-fingerprint.r",
+        "c(1,3)",
+        "recovery",
+        "2026-11-02-m2-deflate-one-survey.md",
+        "pipdata-readiness.md",
+        "test-code-fingerprint.r"
+      ]
+    },
+    {
+      "date": "2026-11-03",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-11-03-one-survey-upstream-acceptance.md",
+      "slug": "2026-11-03-one-survey-upstream-acceptance",
+      "status": "completed",
+      "summary": "Demonstrate one synthetic GPWG survey through the **real validator, actual saved CPI/PPP/PFW producers, real formatting/cleaning and exact clean/metadata readback**; reject a malformed counterpart before downstream saves. Substitute only external acquisition, never validator success, transformed aux tables, cleaning, metadata construction or storage. This proves offline stage integration, **not live DLW, stamp-selected pipeline execution or complete M2 readiness**.",
+      "tags": [
+        "pipdata",
+        "acceptance",
+        "upstream",
+        "offline",
+        "plan-only"
+      ],
+      "title": "One-survey upstream acceptance: real stages, offline transport",
+      "top_keywords": [
+        "test-one-survey-upstream-acceptance.r",
+        "work report",
+        "acceptance",
+        "upstream",
+        "test-m2-one-survey-acquire-format.r",
+        "country_list",
+        "/cg-review mode:verify",
+        "testing strategy",
+        "real",
+        "stages"
+      ]
+    },
+    {
+      "date": "2026-11-05",
+      "entity_type": "plan",
+      "path": ".cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md",
+      "slug": "2026-11-05-m2-deflate-one-survey-approved-contract",
+      "status": "completed",
+      "summary": "Implement later the Step 7 / E7 / L-calc / V9 synthetic deflation proof: actual stamp-selected calculation, dynamic `welfare_YYYY`, retained LCU/day and aligned final-weight provenance, saved and read at exact pins. Saving/reviewing this Plan approves no implementation or runtime pass.",
+      "tags": [
+        "m2",
+        "deflation",
+        "synthetic",
+        "plan-only"
+      ],
+      "title": "M2 Deflate One Survey: Approved Bounded Contract",
+      "top_keywords": [
+        "welfare_yyyy",
+        "/cg-work",
+        "/cg-review mode:verify",
+        "test scenarios",
+        "deflation",
+        "bounded",
+        "contract",
+        "2026-11-02-m2-deflate-one-survey.md",
+        "helper-one-survey-upstream-acceptance.r",
+        "test-pd-deflation.r"
       ]
     },
     {
@@ -2879,6 +3136,204 @@
         "created_at",
         "nan",
         "inventory_row"
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-review-verify.md",
+      "slug": "2026-10-27-m2-pipdata-authority-review-verify",
+      "status": "completed",
+      "summary": "FIXED. All prior A1-A17 dispositions verified. No remaining applicable P0-P3 findings or regressions identified by the two required light verification critics. No broad re-review, test-suite waiver, commit or production approval inferred.",
+      "tags": [],
+      "title": "2026-10-27-m2-pipdata-authority-review-verify",
+      "top_keywords": [
+        "evidence",
+        "verification",
+        "review",
+        "authority",
+        "verdict",
+        "actual",
+        "dispatch",
+        "executed",
+        "limits",
+        "cg-review mode:verify"
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-review.md",
+      "slug": "2026-10-27-m2-pipdata-authority-review",
+      "status": "fixed",
+      "summary": "User requested `review:auto` and final `cg-review mode:verify`; this report is the fixed-findings input for that explicit verification command. Scope remains the canonical Plan E1-E6. No commits/pushes or production activation.",
+      "tags": [],
+      "title": "2026-10-27-m2-pipdata-authority-review",
+      "top_keywords": [
+        "test-m2-engine-authority.r",
+        "code_fingerprint.r",
+        "dependency_execution.r",
+        "verification",
+        "correction",
+        "tracking",
+        "final",
+        "evidence",
+        "disposition",
+        "run.ps1"
+      ]
+    },
+    {
+      "date": "2026-10-28",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review-2.md",
+      "slug": "2026-10-27-m2-pipdata-authority-verify-review-2",
+      "status": "",
+      "summary": "FIXED within the authorized correction scope and E5 evidence limits. Three findings fixed;0 skipped/out of scope; no remaining applicable P0-P3 finding or cross-file regression reported by either required light critic. One corrective retest/finding and one verification round used. No merge/production/whole-M2 certification; no commits or pushes in this correction task.",
+      "tags": [],
+      "title": "2026-10-27-m2-pipdata-authority-verify-review-2",
+      "top_keywords": [
+        "correction",
+        "verification",
+        "fresh",
+        "execution",
+        "producer",
+        "saved",
+        "outputs",
+        "native",
+        "corrected",
+        "scope"
+      ]
+    },
+    {
+      "date": "2026-10-28",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review.md",
+      "slug": "2026-10-27-m2-pipdata-authority-verify-review",
+      "status": "",
+      "summary": "NOT CONVERGED. Candidate is not established merge-ready. Three deduplicated findings remain: P0:1, P1:1, P2:1, P3:0. Source corrections and new runtime verification are outside this task's authorization and were not performed. The earlier review-verify.md remains unchanged as historical evidence; its clean claim does not override this genuine native-selected verification result.",
+      "tags": [],
+      "title": "2026-10-27-m2-pipdata-authority-verify-review",
+      "top_keywords": [
+        "dispatch",
+        "date",
+        "2026-10-27-m2-pipdata-authority-verify-review-2.md",
+        "code_fingerprint.r",
+        "dependency_execution.r",
+        "verification",
+        "saved",
+        "prior",
+        "test",
+        "nested"
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-10-30-m2-one-survey-acquire-format-review.md",
+      "slug": "2026-10-30-m2-one-survey-acquire-format-review",
+      "status": "fixed",
+      "summary": "Reviewed uncommitted changes on `feat/m2-one-survey-acquire-format` across 9 review agents (`@cg-code-quality`, `@cg-testing`, `@cg-documentation`, `@cg-version-control`, `@cg-reproducibility`, `@cg-performance`, `@cg-architecture`, `@cg-data-quality`, `@cg-fix-problems`) plus `@cg-adversarial`. Found 0 P0, 2 P1, 6 P2, and 3 P3 issues. All 11 findings were resolved via `/cg-fix-triage P0 P1 P2 P3` and verified clean in `/cg-review mode:verify`.",
+      "tags": [],
+      "title": "Code Review: M2 Phase 2 Steps 5 and 6 (One-Survey Acquire and Format-Validate)",
+      "top_keywords": [
+        "test-m2-one-survey-acquire-format.r",
+        "pipdata_get_gmd.r",
+        "findings",
+        "r/pipdata_get_gmd.r",
+        ".acquire_and_validate_m2_one_survey()",
+        "tests/testthat/test-m2-one-survey-acquire-format.r",
+        "r/pd_process_data.r",
+        "process_data()",
+        "pd_process_data.r",
+        "code review"
+      ]
+    },
+    {
+      "date": "2026-11-03",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-review.md",
+      "slug": "2026-11-03-one-survey-upstream-acceptance-review",
+      "status": "",
+      "summary": "`review:auto` resolved to `data-risk`: scientific consumer outputs, exact producer/consumer identities, validation and missing-data behavior changed. Eight route-appropriate reviewers ran once, read-only. Actual pipdata target: `feat/one-survey-upstream-acceptance` in the main checkout, not the session worktree. Separately approved stamp scope: `feat/one-survey-class-readback`, only `R/hashing.R` and its new exact-class regression. Other stamp dirty files were excluded. Protected artifacts were not destructively changed.",
+      "tags": [],
+      "title": "2026-11-03-one-survey-upstream-acceptance-review",
+      "top_keywords": [
+        "work report",
+        "2026-11-03-one-survey-upstream-acceptance.md",
+        "stamp",
+        "regression",
+        "scope",
+        "findings",
+        "review",
+        "work",
+        "report",
+        "data-risk"
+      ]
+    },
+    {
+      "date": "2026-11-03",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-11-03-one-survey-upstream-acceptance-verify-review.md",
+      "slug": "2026-11-03-one-survey-upstream-acceptance-verify-review",
+      "status": "",
+      "summary": "`/cg-review mode:verify` completed against staged intended changes in actual pipdata `feat/one-survey-upstream-acceptance` and approved stamp `feat/one-survey-class-readback`. Only cg-code-quality and cg-testing were dispatched, as required for light verification. P0/P1 and cross-file breakage remained reportable; P2/P3 suppression was restricted to the explicit fixed P2.1 temporary-root and P3.1 Work Report-reference blocks in the parent review.",
+      "tags": [],
+      "title": "2026-11-03-one-survey-upstream-acceptance-verify-review",
+      "top_keywords": [
+        "work report",
+        "verification",
+        "acceptance",
+        "ses_e5d46d7c2ffe2ultjsbrrwbqj9",
+        "ses_e5d46d7b2ffeyory3rhbf2xsgw",
+        "one-survey",
+        "upstream",
+        "results",
+        "conclusion",
+        "/cg-review mode:verify"
+      ]
+    },
+    {
+      "date": "2026-11-05",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-review.md",
+      "slug": "2026-11-05-m2-deflate-one-survey-approved-contract-review",
+      "status": "",
+      "summary": "Status: acceptance PASS. All ten contributions integrated; seven findings fixed and executed green in correction round 1. Final light `/cg-review mode:verify` passed with both existing light-route reviewers; see `2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md`. No open findings or waived evidence.",
+      "tags": [],
+      "title": "2026-11-05-m2-deflate-one-survey-approved-contract-review",
+      "top_keywords": [
+        "review",
+        "cpi",
+        "executed",
+        "reject",
+        "2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md",
+        "zero",
+        "metadata",
+        "ppp",
+        "acceptance",
+        "findings"
+      ]
+    },
+    {
+      "date": "2026-11-05",
+      "entity_type": "review",
+      "path": ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-verify-review.md",
+      "slug": "2026-11-05-m2-deflate-one-survey-approved-contract-verify-review",
+      "status": "",
+      "summary": "Result: **PASS**, light-only `/cg-review mode:verify`. All seven original findings closed; no new P0/P1, cross-file breakage or unresolved original blocker. No skipped/waived findings. This closes the existing exactly-once full acceptance route; it is not another full dispatch.",
+      "tags": [],
+      "title": "2026-11-05-m2-deflate-one-survey-approved-contract-verify-review",
+      "top_keywords": [
+        "verification",
+        "loaded-namespaces.txt",
+        "evidence",
+        "independent",
+        "contributions",
+        "closure",
+        "executed",
+        "ses_e51fa1aaeffevgfehyhviucs9j",
+        "ses_e51fa1aacffeg416w85em57bhb",
+        "c6105a4afbe30e64"
       ]
     },
     {
@@ -3660,7 +4115,7 @@
       "path": ".cg-docs/solutions/data-quality/2026-05-07-deflation-output-contract.md",
       "slug": "2026-05-07-deflation-output-contract",
       "status": "",
-      "summary": "`pd_deflation()` returned both a `welfare` column and a `welfare_lcu` column, where `welfare_lcu` was created as a direct copy of `welfare` before the `deflate_wlf()` step. This caused two issues: 1. **Redundant column**: `welfare` and `welfare_lcu` were always identical in value. Downstream code had to know to use `welfare_lcu` (the pre-deflation LCU value) and ignore `welfare`. 2. **No discovery metadata**: callers had no structured way to find which welfare columns were created or whether population adjustment was applied. Typically required `grep(\"^welfare_\", names(result))` or manual inspection.",
+      "summary": "Scope: this entry describes public legacy `pd_deflation()`, not the private M2 adapter. The latter intentionally retains `welfare`, emits dynamic `welfare_YYYY` and preserves row order; see the related strict-admission entry. `pd_deflation()` returned both a `welfare` column and a `welfare_lcu` column, where `welfare_lcu` was created as a direct copy of `welfare` before the `deflate_wlf()` step. This caused two issues: 1. **Redundant column**: `welfare` and `welfare_lcu` were always identical in value. Downstream code had to know to use `welfare_lcu` (the pre-deflation LCU value) and ignore `welfare`. 2. **No discovery metadata**: callers had no structured way to find which welfare columns were created or...",
       "tags": [
         "deflation",
         "output-contract",
@@ -3678,10 +4133,10 @@
         "welfare_vars",
         "deflation",
         "weight",
+        "pd_deflation()",
         "finalize_deflation_output()",
         "column",
-        "attribute",
-        "canonical"
+        "attribute"
       ]
     },
     {
@@ -4019,6 +4474,34 @@
       ]
     },
     {
+      "date": "2026-11-06",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/data-quality/2026-11-06-strict-admission-for-frozen-numerical-calculations.md",
+      "slug": "2026-11-06-strict-admission-for-frozen-numerical-calculations",
+      "status": "",
+      "summary": "The private M2 microdata route passed its ordinary numerical and persistence tests, yet review found four ways to publish incorrect values or consume an undeclared method. A frozen function environment did not make its inputs safe. | Trigger | Why the original checks missed it | |---|---| | Character matrix with two vintages for one year | Character type did not establish vector shape; duplicate detection compared matrix rows, allowing the same output column to be overwritten. | | Factor codes containing zero | Indexing levels dropped zero positions, shortened area vectors and silently recycled CPI values across retained rows....",
+      "tags": [
+        "admission",
+        "factors",
+        "partial-matching",
+        "underflow",
+        "fingerprints"
+      ],
+      "title": "Strict admission before frozen numerical calculations",
+      "top_keywords": [
+        "admission",
+        "cpi",
+        "ppp",
+        "pop",
+        "surveyid_year",
+        "numerical",
+        "frozen",
+        "strict",
+        "calculations",
+        "2026-11-05-m2-deflate-one-survey-approved-contract.md"
+      ]
+    },
+    {
       "date": "2026-04-30",
       "entity_type": "solution",
       "path": ".cg-docs/solutions/environment-issues/2026-04-30-unified-package-environment-accessor-pattern.md",
@@ -4045,6 +4528,34 @@
         "2026-04-27-testing-package-environment-state.md",
         "aaa",
         "pattern"
+      ]
+    },
+    {
+      "date": "2026-11-06",
+      "entity_type": "solution",
+      "path": ".cg-docs/solutions/environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md",
+      "slug": "2026-11-06-contained-r-preflight-and-certified-parents",
+      "status": "",
+      "summary": "Preparation appeared read-only, but decoding installed lazy closures loaded third-party namespaces and ran startup hooks. A credentials hook generated a Git helper configuration. Later runner failures involved Windows path casing, multiple aliases at one root, duplicate parent paths, and legacy snapshots without persisted byte checksums. None was a reason to bypass the engine guard.",
+      "tags": [
+        "namespace-hooks",
+        "containment",
+        "exact-pins",
+        "stamp",
+        "windows"
+      ],
+      "title": "Contained R preflight and certified same-store parents",
+      "top_keywords": [
+        "prepare.r",
+        "run.ps1",
+        "contained",
+        "preflight",
+        "certified",
+        "parents",
+        "same-store",
+        "2026-11-05-m2-deflate-one-survey-approved-contract.md",
+        "actual",
+        "evidence"
       ]
     },
     {
@@ -4521,10 +5032,10 @@
       ]
     }
   ],
-  "entity_count": 151,
-  "generated": "2026-09-01",
+  "entity_count": 168,
+  "generated": "2026-11-06",
   "schema_version": "0.2.0",
-  "topic_count": 5,
+  "topic_count": 8,
   "topics": [
     {
       "entity_count": 109,
@@ -4688,6 +5199,37 @@
       "slug": "old-files-archive-devtools-document"
     },
     {
+      "entity_count": 4,
+      "entity_paths": [
+        ".cg-docs/plans/2026-11-02-m2-deflate-one-survey.md",
+        ".cg-docs/plans/2026-11-02-m2-independent-mean-save.md",
+        ".cg-docs/plans/2026-11-03-one-survey-upstream-acceptance.md",
+        ".cg-docs/plans/2026-11-05-m2-deflate-one-survey-approved-contract.md"
+      ],
+      "keywords": [
+        "test-dependency-api-contract.r",
+        "test-dependency-inputs.r",
+        "contract"
+      ],
+      "label": "Test-Dependency-Api-Contract.R / Test-Dependency-Inputs.R / Contract",
+      "slug": "test-dependency-api-contract-r-test-dependency-inputs-r-contract"
+    },
+    {
+      "entity_count": 3,
+      "entity_paths": [
+        ".cg-docs/reviews/2026-11-05-m2-deflate-one-survey-approved-contract-review.md",
+        ".cg-docs/solutions/data-quality/2026-11-06-strict-admission-for-frozen-numerical-calculations.md",
+        ".cg-docs/solutions/environment-issues/2026-11-06-contained-r-preflight-and-certified-parents.md"
+      ],
+      "keywords": [
+        "cpi",
+        "admission",
+        "ppp"
+      ],
+      "label": "Cpi / Admission / Ppp",
+      "slug": "cpi-admission-ppp"
+    },
+    {
       "entity_count": 3,
       "entity_paths": [
         ".cg-docs/brainstorms/2026-08-17-deflate-pipeline-wrapper.md",
@@ -4716,6 +5258,21 @@
       ],
       "label": "Validation_Spec.Yml / Severity / Pipdata_Validate_Gmd.R",
       "slug": "validation-spec-yml-severity-pipdata-validate-gmd-r"
+    },
+    {
+      "entity_count": 3,
+      "entity_paths": [
+        ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-review-verify.md",
+        ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review-2.md",
+        ".cg-docs/reviews/2026-10-27-m2-pipdata-authority-verify-review.md"
+      ],
+      "keywords": [
+        "verification",
+        "dispatch",
+        "verdict"
+      ],
+      "label": "Verification / Dispatch / Verdict",
+      "slug": "verification-dispatch-verdict"
     }
   ]
 }
