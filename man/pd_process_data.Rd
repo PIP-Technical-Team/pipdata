@@ -42,7 +42,10 @@ versioning for the entire run). Unknown identifiers are warned about and
 skipped. Default \code{NULL}.}
 
 \item{bootstrap}{Logical. Explicitly permit rebuilding unknown legacy
-provenance. Default \code{FALSE}.}
+provenance and starting from verified absent master-inventory history at
+the configured root. Existing history uses the normal master reader;
+history-listing errors and warnings abort rather than becoming empty state.
+Default \code{FALSE}.}
 
 \item{bootstrap_entities}{Optional restrictive survey/pip identifiers for a
 bootstrap canary. Unlike \code{force_surveys}, this never expands selection.}

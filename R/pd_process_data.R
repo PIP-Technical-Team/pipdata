@@ -27,7 +27,10 @@
 #'   versioning for the entire run). Unknown identifiers are warned about and
 #'   skipped. Default `NULL`.
 #' @param bootstrap Logical. Explicitly permit rebuilding unknown legacy
-#'   provenance. Default `FALSE`.
+#'   provenance and starting from verified absent master-inventory history at
+#'   the configured root. Existing history uses the normal master reader;
+#'   history-listing errors and warnings abort rather than becoming empty state.
+#'   Default `FALSE`.
 #' @param bootstrap_entities Optional restrictive survey/pip identifiers for a
 #'   bootstrap canary. Unlike `force_surveys`, this never expands selection.
 #' @param dependency_plan Optional precomputed advisory plan. Execution validates
@@ -111,7 +114,7 @@ pd_process_data <- function(
   }
   inv <- .filter_completed_dlw_validation_inventory(inv)
 
-  master <- pipload::load_pip_master_inventory(verbose = verbose)
+  master <- pd_load_process_master(bootstrap, verbose)
   execution <- pd_prepare_execution(
     inv = inv, master = master, context = pd_dependency_context(),
     advisory_plan = dependency_plan, bootstrap = bootstrap,
@@ -186,6 +189,41 @@ pd_process_data <- function(
   master <- metadata$master
   return(master)
 
+}
+
+pd_load_process_master <- function(bootstrap = FALSE, verbose = FALSE) {
+  if (isTRUE(bootstrap)) {
+    root <- pipfun::get_pip_folders(
+      folder = "pip_master_inventory", verbose = FALSE
+    )
+    aliases <- stamp::st_alias_list()
+    alias <- aliases[aliases$root == root, "alias"]
+    if (length(alias) == 1L) {
+      versions <- withCallingHandlers(
+        stamp::st_versions("pip_master_inventory.qs2", alias = alias),
+        warning = function(cnd) {
+          # stamp may drop corrupt rows and return an apparently empty history.
+          rlang::abort(
+            "Master inventory history could not be verified as trustworthy.",
+            class = "pipdata_master_history_error", parent = cnd
+          )
+        }
+      )
+      if (nrow(versions) == 0L) {
+        # A missing catalog also lists zero versions; surviving artifact storage
+        # contradicts first-run absence. Directory-listing failures propagate.
+        entries <- fs::dir_ls(root, all = TRUE)
+        if ("pip_master_inventory.qs2" %in% tolower(fs::path_file(entries))) {
+          rlang::abort(
+            "Master inventory storage exists without trustworthy version history.",
+            class = "pipdata_master_history_error"
+          )
+        }
+        return(data.table::data.table())
+      }
+    }
+  }
+  return(pipload::load_pip_master_inventory(verbose = verbose))
 }
 
 pd_invalidate_failed_action <- function(master, action, emit_log = TRUE) {
