@@ -61,9 +61,9 @@ pd_reconstruct_metadata_base <- function(action, snapshot, pip_id) {
     )
   }
   clean <- pipload::load_pip_data(
-    pip_id,
+    id_name = pip_id,
     version = action$data_version_id[[1L]],
-    alias = "pip",
+    metadata = FALSE,
     verbose = FALSE
   )
   if (!identical(stamp::st_hash_obj(clean), action$data_hash[[1L]])) {
@@ -99,8 +99,8 @@ pd_execute_metadata <- function(action, snapshot, execution,
                    class = "pipdata_metadata_action_invalid")
     }
     metadata <- pipload::load_pip_data(
-      pip_id, version = action$metadata_version_id[[1L]],
-      alias = "pip_meta", verbose = FALSE
+      id_name = pip_id, version = action$metadata_version_id[[1L]],
+      metadata = TRUE, verbose = FALSE
     )
     if (!identical(stamp::st_hash_obj(metadata), action$metadata_hash[[1L]])) {
       rlang::abort("Pinned metadata failed hash verification.",

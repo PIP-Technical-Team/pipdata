@@ -942,9 +942,19 @@ pd_snapshot_facts <- function(snapshot, manifest) {
   return(facts)
 }
 
+pd_fingerprint_values <- function(x) {
+  # Secondary indices cache lookups, not fingerprint content.
+  if (data.table::is.data.table(x$components)) {
+    x$components <- data.table::copy(x$components)
+    data.table::setindexv(x$components, NULL)
+  }
+  return(x)
+}
+
 pd_revalidate_snapshot <- function(snapshot, advanced_receipts = NULL) {
   if (!identical(pd_dependency_context(), snapshot$context) ||
-      !identical(pd_code_fingerprints(), snapshot$fingerprints)) {
+      !identical(pd_fingerprint_values(pd_code_fingerprints()),
+                 pd_fingerprint_values(snapshot$fingerprints))) {
     rlang::abort("The execution context or code fingerprint changed.",
                  class = "pipdata_dependency_snapshot_stale")
   }
@@ -1094,7 +1104,8 @@ pd_assert_execution_refresh_fence <- function(execution) {
   }
   pd_lease_assert(execution$lease)
   if (!identical(pd_dependency_context(), execution$snapshot$context) ||
-      !identical(pd_code_fingerprints(), execution$snapshot$fingerprints)) {
+      !identical(pd_fingerprint_values(pd_code_fingerprints()),
+                 pd_fingerprint_values(execution$snapshot$fingerprints))) {
     rlang::abort(
       "The execution context or code fingerprint changed.",
       class = "pipdata_dependency_snapshot_stale"

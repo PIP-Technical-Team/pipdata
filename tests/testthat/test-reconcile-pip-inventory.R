@@ -74,6 +74,58 @@ test_that("incomplete clean reconciliation is a typed failure", {
   expect_identical(out$candidate, master)
 })
 
+test_that("clean reconciliation accepts a columnless empty master", {
+  master <- data.table::data.table()
+  result <- data.table::data.table(
+    pip_id = c("p1", "p2"), country_code = "COL", year = 2020L,
+    version_id = c("v1", "v2"), content_hash = c("h1", "h2"), success = TRUE
+  )
+  out <- pd_reconcile_inventory(master, "clean", result, "s", c("p1", "p2"))
+
+  expect_s3_class(out, "pipdata_reconciliation")
+  expect_true(out$success)
+  expect_identical(out$candidate[, .(
+    survey_id, pip_id, country_code, year, version_id_data, content_hash_data
+  )], data.table::data.table(
+    survey_id = "s", pip_id = c("p1", "p2"), country_code = "COL", year = 2020L,
+    version_id_data = c("v1", "v2"), content_hash_data = c("h1", "h2")
+  ))
+  expect_identical(out$tombstones, data.table::data.table(
+    survey_id = character(), pip_id = character(), reason = character()
+  ))
+  expect_identical(master, data.table::data.table())
+})
+
+test_that("clean reconciliation preserves an already typed empty schema", {
+  master <- data.table::data.table(
+    survey_id = character(), pip_id = character(),
+    first_release_version_id = character(), version_id_metadata = character(),
+    deflated = logical()
+  )
+  result <- data.table::data.table(
+    pip_id = "p", version_id = "v1", content_hash = "h1", success = TRUE
+  )
+  out <- pd_reconcile_inventory(master, "clean", result, "s", "p")
+
+  expect_true(out$success)
+  expect_identical(out$candidate$first_release_version_id, NA_character_)
+  expect_identical(out$candidate$version_id_metadata, NA_character_)
+  expect_false(out$candidate$deflated)
+  expect_identical(nrow(master), 0L)
+})
+
+test_that("clean reconciliation propagates malformed nonempty history errors", {
+  master <- data.table::data.table(survey_id = "s")
+  result <- data.table::data.table(
+    pip_id = "p", version_id = "v1", content_hash = "h1", success = TRUE
+  )
+  expect_error(
+    pd_reconcile_inventory(master, "clean", result, "s", "p"),
+    "pip_id"
+  )
+  expect_identical(master, data.table::data.table(survey_id = "s"))
+})
+
 checkpoint_fixture <- function(root) {
   context <- list(scope_id = "scope")
   lease <- pd_lease_acquire(context, root)

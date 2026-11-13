@@ -20,10 +20,11 @@ test_that("metadata-only worker reads only pinned compact metadata", {
   action[, aux_projection := list(list(list(
     cpi = stats::setNames(2, "2017_national")
   )))]
-  loaded_alias <- NULL
+  loaded_request <- NULL
   testthat::local_mocked_bindings(
-    load_pip_data = function(pip_id, version, alias, verbose) {
-      loaded_alias <<- alias
+    load_pip_data = function(country_code = NULL, id_name, version, metadata, verbose) {
+      loaded_request <<- list(country_code = country_code, id_name = id_name,
+                              version = version, metadata = metadata)
       list(
         cpi = stats::setNames(1, "2017_national"),
         ppp = stats::setNames(2, "ppp_2017_v01_v01_national"),
@@ -43,7 +44,8 @@ test_that("metadata-only worker reads only pinned compact metadata", {
   )
   result <- pd_execute_metadata(action, list(), list(lease = NULL))
   expect_true(result$success)
-  expect_identical(loaded_alias, "pip_meta")
+  expect_identical(loaded_request, list(country_code = NULL, id_name = "P1",
+                                        version = "m1", metadata = TRUE))
 })
 
 test_that("metadata restart reconstructs from exact cleaned artifact", {
@@ -56,8 +58,9 @@ test_that("metadata restart reconstructs from exact cleaned artifact", {
   )))]
   loaded <- list()
   testthat::local_mocked_bindings(
-    load_pip_data = function(pip_id, version, alias, verbose) {
-      loaded <<- list(pip_id = pip_id, version = version, alias = alias)
+    load_pip_data = function(country_code = NULL, id_name, version, metadata, verbose) {
+      loaded <<- list(country_code = country_code, id_name = id_name,
+                       version = version, metadata = metadata)
       structure(data.table::data.table(welfare = 1), base = "fresh")
     },
     .package = "pipload"
@@ -81,7 +84,8 @@ test_that("metadata restart reconstructs from exact cleaned artifact", {
   )
   snapshot <- list(aux = list(objects = list()))
   result <- pd_execute_metadata(action, snapshot, list(lease = NULL))
-  expect_identical(loaded, list(pip_id = "P1", version = "d2", alias = "pip"))
+  expect_identical(loaded, list(country_code = NULL, id_name = "P1",
+                                version = "d2", metadata = FALSE))
   expect_true(result$success)
   expect_identical(result$data_version_id, "d2")
   expect_identical(result$data_hash, "dh2")
@@ -125,9 +129,10 @@ test_that("legacy canonical migration reconstructs exact clean and frozen aux", 
   frozen <- NULL
   saved <- NULL
   testthat::local_mocked_bindings(
-    load_pip_data = function(pip_id, version, alias, verbose) {
-      loaded <<- list(pip_id = pip_id, version = version, alias = alias)
-      if (identical(alias, "pip_meta")) {
+    load_pip_data = function(country_code = NULL, id_name, version, metadata, verbose) {
+      loaded <<- list(country_code = country_code, id_name = id_name,
+                       version = version, metadata = metadata)
+      if (isTRUE(metadata)) {
         return(list(
           source = "stale-metadata",
           cpi = stats::setNames(1, "2017_national")
@@ -179,7 +184,7 @@ test_that("legacy canonical migration reconstructs exact clean and frozen aux", 
   )
 
   expect_identical(loaded, list(
-    pip_id = "P1", version = "clean-v2", alias = "pip"
+    country_code = NULL, id_name = "P1", version = "clean-v2", metadata = FALSE
   ))
   expect_identical(frozen, "aux-v1")
   expect_identical(saved$source, "clean-v2")
@@ -220,11 +225,11 @@ test_that("invalid pinned metadata schema reconstructs from exact clean data", {
   action[, aux_projection := list(list(
     cpi = stats::setNames(1, "2017_national")
   ))]
-  loaded_aliases <- character()
+  loaded_metadata <- logical()
   testthat::local_mocked_bindings(
-    load_pip_data = function(pip_id, version, alias, verbose) {
-      loaded_aliases <<- c(loaded_aliases, alias)
-      if (identical(alias, "pip_meta")) {
+    load_pip_data = function(country_code = NULL, id_name, version, metadata, verbose) {
+      loaded_metadata <<- c(loaded_metadata, metadata)
+      if (isTRUE(metadata)) {
         return(list(cpi = "wrong", ppp = 2, pop = 3))
       }
       data.table::data.table(welfare = 1)
@@ -253,7 +258,7 @@ test_that("invalid pinned metadata schema reconstructs from exact clean data", {
   )
 
   expect_true(result$success)
-  expect_identical(loaded_aliases, c("pip_meta", "pip"))
+  expect_identical(loaded_metadata, c(TRUE, FALSE))
 })
 
 test_that("metadata base schema requires all deflation vectors", {

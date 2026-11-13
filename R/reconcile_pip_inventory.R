@@ -20,6 +20,9 @@ pd_reconcile_inventory <- function(master, stage, results, survey_id = NULL,
       return(fail("incomplete_output_set"))
     }
     selected_survey_id <- survey_id
+    if (!ncol(out)) {
+      out <- data.table::data.table(survey_id = character(), pip_id = character())
+    }
     old <- out[get("survey_id") == selected_survey_id]
     out <- out[get("survey_id") != selected_survey_id]
     downstream <- c(

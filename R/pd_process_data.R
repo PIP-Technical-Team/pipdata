@@ -318,6 +318,10 @@ pd_execute_clean <- function(action, inv_row, execution, recode_spec,
       invariant[, pip_id := expected]
     }
     receipts <- invariant[receipts, on = "pip_id"]
+    receipts[, welfare_type := vapply(
+      clean[match(pip_id, toupper(names(clean)))],
+      attr, character(1L), which = "welfare_type", exact = TRUE, USE.NAMES = FALSE
+    )]
     success <- nrow(receipts) == length(expected) && all(receipts$success) &&
       setequal(receipts$pip_id, expected)
     list(stage = "clean", survey_id = survey_id, success = success,

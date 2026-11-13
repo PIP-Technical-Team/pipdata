@@ -263,10 +263,16 @@ pd_context_hash <- function(context) {
   pd_hash_object(context)
 }
 
-pd_dependency_context <- function(release = getOption("pipfun.working_release"),
-                                  identity = getOption("pipfun.identity"),
+pd_dependency_context <- function(release = NULL,
+                                  identity = NULL,
                                   main_dir = getOption("pipfun.main_dir"),
                                   namespace = getOption("pipdata.dependency_scope")) {
+  if (is.null(release) || is.null(identity)) {
+    # The public getter assigns wrk_release into this frame.
+    pipfun::get_wrk_release(verbose = FALSE)
+    if (is.null(release)) release <- wrk_release$release
+    if (is.null(identity)) identity <- wrk_release$identity
+  }
   if (!is.character(release) || length(release) != 1L || !nzchar(release) ||
       !is.character(identity) || length(identity) != 1L || !nzchar(identity)) {
     rlang::abort("A single working release and identity are required.",

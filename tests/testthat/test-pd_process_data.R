@@ -532,6 +532,7 @@ test_that("standalone process adapter actively validates its metadata subset", {
   )
   observed_measures <- NULL
   saved <- NULL
+  loaded_request <- NULL
   dependency_context <- list(
     schema_version = 1L,
     release = "20260831",
@@ -571,10 +572,12 @@ test_that("standalone process adapter actively validates its metadata subset", {
   )
   testthat::local_mocked_bindings(
     load_pip_master_inventory = function(...) data.table::copy(master),
-    load_pip_data = function(pip_id, version, alias, verbose) list(
-      pce = stats::setNames(5, "2020_national"),
-      cpi = stats::setNames(1, "2017_national")
-    ),
+    load_pip_data = function(country_code = NULL, id_name, version, metadata, verbose) {
+      loaded_request <<- list(country_code = country_code, id_name = id_name,
+                              version = version, metadata = metadata)
+      list(pce = stats::setNames(5, "2020_national"),
+           cpi = stats::setNames(1, "2017_national"))
+    },
     .package = "pipload"
   )
   testthat::local_mocked_bindings(
@@ -610,6 +613,8 @@ test_that("standalone process adapter actively validates its metadata subset", {
   expect_identical(observed_measures, list(
     measures = c("pce", "cpi"), metadata_measures = c("pce", "cpi")
   ))
+  expect_identical(loaded_request, list(country_code = NULL, id_name = "P1",
+                                        version = "meta-v1", metadata = TRUE))
   expect_setequal(names(saved), c("pce", "cpi"))
   expect_identical(saved$pce, stats::setNames(6, "2020_national"))
 })
