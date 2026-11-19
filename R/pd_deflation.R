@@ -40,23 +40,30 @@ pd_deflation_frame <- function(x) {
   return(x)
 }
 
-pd_deflation_number <- function(x, label, zero = FALSE) {
-  if (is.object(x) || !typeof(x) %in% c("integer", "double") ||
-      !is.null(attr(x, "dim")) || !length(x) || any(!is.finite(x)) ||
+pd_deflation_number <- function(x, label, zero = FALSE, allow_missing = FALSE) {
+  malformed <- is.object(x) || !typeof(x) %in% c("integer", "double") ||
+    !is.null(attr(x, "dim")) || !length(x)
+  if (!malformed && allow_missing) {
+    # Match plain NA without exempting NaN, and only after checking shape.
+    x <- x[!x %in% NA_real_]
+  }
+  if (malformed || any(!is.finite(x)) ||
       any(if (zero) x < 0 else x <= 0)) {
     stop(paste("bounded", label, "requires finite positive values (welfare permits zero)"))
   }
   return(invisible(NULL))
 }
 
-pd_deflation_select <- function(values, keys, label) {
-  pd_deflation_number(values, label)
+pd_deflation_select <- function(values, keys, label, allow_missing = FALSE) {
+  pd_deflation_number(values, label, allow_missing = allow_missing)
   labels <- names(values)
   if (is.null(labels) || anyNA(labels) || any(!nzchar(labels)) ||
       anyDuplicated(labels)) stop(paste("bounded duplicate or unnamed", label))
   positions <- match(keys, labels)
   if (anyNA(positions)) stop(paste("bounded missing exact coverage for", label))
-  return(unname(values[positions]))
+  selected <- unname(values[positions])
+  if (allow_missing) pd_deflation_number(selected, label)
+  return(selected)
 }
 
 pd_deflation_domains <- function(metadata, pfw) {
@@ -184,7 +191,7 @@ pd_deflate_microdata <- function(data, metadata, pfw, selections) {
   for (i in seq_along(selections)) {
     ck <- paste0(years[[i]], "_", cpi_area)
     pk <- paste0(selections[[i]], "_", ppp_area)
-    cpi <- pd_deflation_select(metadata$cpi, ck, "CPI")
+    cpi <- pd_deflation_select(metadata$cpi, ck, "CPI", allow_missing = TRUE)
     ppp <- pd_deflation_select(metadata$ppp, pk, "PPP")
     value <- wbpip::deflate_welfare_mean(data$welfare, ppp, cpi)
     pd_deflation_number(value, "deflated welfare", zero = TRUE)

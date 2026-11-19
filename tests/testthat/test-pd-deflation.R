@@ -881,6 +881,66 @@ test_that("bounded selection is dynamic and uses only explicit vintage keys", {
   expect_identical(value$metadata$consumed_cpi_keys, "2025_national")
 })
 
+test_that("bounded CPI allows missing values only outside the exact selection", {
+  inputs <- bounded_deflation_inputs()
+  inputs$selections <- "ppp_2021_01_02"
+  inputs$metadata$cpi <- c(`2005_national` = NA_real_, `2021_urban` = 10,
+                           `2021_national` = 1.4)
+  original_cpi <- inputs$metadata$cpi
+  calculate <- pd_deflation_adapter()$calculation
+  value <- do.call(calculate, inputs)
+
+  expect_equal(value$x$welfare_2021, (1:4) * 50 / 119)
+  expect_identical(grep("^welfare_[0-9]{4}$", names(value$x), value = TRUE),
+                   "welfare_2021")
+  expect_identical(value$metadata$consumed_cpi_keys, "2021_national")
+  expect_identical(value$metadata$consumed_ppp_keys, "ppp_2021_01_02_national")
+  expect_identical(inputs$metadata$cpi, original_cpi)
+
+  inputs$metadata$cpi[["2021_national"]] <- NA_real_
+  expect_error(do.call(calculate, inputs),
+    "bounded CPI requires finite positive values (welfare permits zero)",
+    fixed = TRUE)
+  inputs$metadata$cpi <- inputs$metadata$cpi[names(original_cpi) != "2021_national"]
+  expect_error(do.call(calculate, inputs),
+    "bounded missing exact coverage for CPI", fixed = TRUE)
+})
+
+test_that("bounded CPI preserves full-vector shape, names and other checks", {
+  inputs <- bounded_deflation_inputs()
+  inputs$selections <- "ppp_2021_01_02"
+  calculate <- pd_deflation_adapter()$calculation
+  numeric_error <- "bounded CPI requires finite positive values (welfare permits zero)"
+  cpi <- inputs$metadata$cpi
+  for (invalid in list(NaN, Inf, -1, 0)) {
+    inputs$metadata$cpi[["2005_national"]] <- invalid
+    expect_error(do.call(calculate, inputs), numeric_error, fixed = TRUE)
+  }
+  for (invalid in list(structure(cpi, class = "bounded_cpi_probe"),
+                       matrix(cpi, nrow = 1L), as.character(cpi), numeric())) {
+    inputs$metadata$cpi <- invalid
+    expect_error(do.call(calculate, inputs), numeric_error, fixed = TRUE)
+  }
+  for (invalid_name in c("2011_national", "", NA_character_)) {
+    inputs$metadata$cpi <- cpi
+    inputs$metadata$cpi[["2005_national"]] <- NA_real_
+    names(inputs$metadata$cpi)[[1L]] <- invalid_name
+    expect_error(do.call(calculate, inputs), "bounded duplicate or unnamed CPI",
+                 fixed = TRUE)
+  }
+
+  inputs$metadata$cpi <- cpi
+  inputs$metadata$ppp[["ppp_2005_01_01_national"]] <- NA_real_
+  expect_error(do.call(calculate, inputs),
+    "bounded PPP requires finite positive values (welfare permits zero)",
+    fixed = TRUE)
+  inputs$metadata$ppp <- bounded_deflation_inputs()$metadata$ppp
+  inputs$metadata$pop <- c(inputs$metadata$pop, `2005_national` = NA_real_)
+  expect_error(do.call(calculate, inputs),
+    "bounded population requires finite positive values (welfare permits zero)",
+    fixed = TRUE)
+})
+
 test_that("bounded CPI and PPP domains resolve independently from PFW", {
   inputs <- bounded_deflation_inputs()
   inputs$selections <- "ppp_2017_01_02"
